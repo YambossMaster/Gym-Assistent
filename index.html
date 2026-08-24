@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#151711" />
+    <meta name="description" content="FORM — 私人教練的學生、課程與訓練管理工作台" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>FORM — 私人教練工作台</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      if (window.location.protocol === 'file:') {
+        document.getElementById('root').innerHTML = `
+          <main style="max-width: 680px; margin: 12vh auto; padding: 32px; font-family: system-ui, sans-serif; line-height: 1.7">
+            <h1>Gym Assistant 需要透過本機伺服器啟動</h1>
+            <p>請關閉這個分頁，回到專案資料夾，雙擊 <strong>start-gym-assistant.cmd</strong>。</p>
+            <p>這個 index.html 是 Vite 的建置入口，不能直接當成一般靜態網頁開啟。</p>
+          </main>
+        `
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "FORM 私人教練工作台",
+  "short_name": "FORM",
+  "description": "私人教練的學生、課程與訓練管理工具",
+  "start_url": "/today",
+  "display": "standalone",
+  "background_color": "#f2f0e9",
+  "theme_color": "#151711",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
