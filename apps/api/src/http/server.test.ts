@@ -57,9 +57,7 @@ describe('student HTTP interface', () => {
       headers: { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000002' },
     })
 
-    expect(ownerList.json().students).toMatchObject([
-      { name: 'Alice', privateNote: 'Coach only' },
-    ])
+    expect(ownerList.json().students).toMatchObject([{ name: 'Alice', privateNote: 'Coach only' }])
     expect(otherCoachList.json()).toEqual({ students: [] })
   })
 

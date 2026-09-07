@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { Student } from '../students/student.js'
-import type {
-  NewStudent,
-  StudentRepository,
-  WorkspaceId,
-} from '../students/student-repository.js'
+import type { NewStudent, StudentRepository, WorkspaceId } from '../students/student-repository.js'
 
 export class MemoryStudentRepository implements StudentRepository {
   readonly #workspaceByIdentity = new Map<string, WorkspaceId>()

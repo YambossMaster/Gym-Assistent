@@ -1,9 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify'
 import { z, ZodError } from 'zod'
-import {
-  type IdentityVerifier,
-  IdentityVerificationError,
-} from '../identity/identity.js'
+import { type IdentityVerifier, IdentityVerificationError } from '../identity/identity.js'
 import { type CreateStudentInput } from '../students/student.js'
 import { StudentModule } from '../students/student-module.js'
 

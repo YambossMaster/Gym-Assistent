@@ -2,11 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Pool } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { Student } from '../students/student.js'
-import type {
-  NewStudent,
-  StudentRepository,
-  WorkspaceId,
-} from '../students/student-repository.js'
+import type { NewStudent, StudentRepository, WorkspaceId } from '../students/student-repository.js'
 
 interface StudentRow {
   id: string
@@ -103,7 +99,6 @@ export class PostgresStudentRepository implements StudentRepository {
     if (!student) throw new Error('Failed to create student')
     return mapStudent(student)
   }
-
 }
 
 function mapStudent(row: StudentRow): Student {

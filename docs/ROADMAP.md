@@ -48,14 +48,14 @@ Public pages ──┘                         │
 
 ### 模組與 Interface
 
-| Module | 對外 Interface | 隱藏的實作責任 |
-| --- | --- | --- |
-| Identity & Workspace | 驗證 Coach、解析 Workspace | Supabase JWT、workspace bootstrap、租戶隔離 |
-| Student & Lesson | 學生與堂數的完整操作 | Student、Lesson Purchase、餘額推導、刪除後果 |
-| Scheduling | 建立／移動／完成／取消課堂 | 衝突、固定排程、可用時間、交易與並行控制 |
-| Training | 保存一堂課的訓練成果 | 動作快照、組別結果、歷史與最佳表現推導 |
-| Public Access | 發行與兌換 Capability Link | token hash、到期、撤銷、單次使用、公開投影 |
-| Notification | 排程與追蹤通知 | outbox、重試、LINE／Email adapter；需求出現前不啟用 Worker |
+| Module               | 對外 Interface             | 隱藏的實作責任                                             |
+| -------------------- | -------------------------- | ---------------------------------------------------------- |
+| Identity & Workspace | 驗證 Coach、解析 Workspace | Supabase JWT、workspace bootstrap、租戶隔離                |
+| Student & Lesson     | 學生與堂數的完整操作       | Student、Lesson Purchase、餘額推導、刪除後果               |
+| Scheduling           | 建立／移動／完成／取消課堂 | 衝突、固定排程、可用時間、交易與並行控制                   |
+| Training             | 保存一堂課的訓練成果       | 動作快照、組別結果、歷史與最佳表現推導                     |
+| Public Access        | 發行與兌換 Capability Link | token hash、到期、撤銷、單次使用、公開投影                 |
+| Notification         | 排程與追蹤通知             | outbox、重試、LINE／Email adapter；需求出現前不啟用 Worker |
 
 每個 Module 應提供完整業務操作，而不是把資料表 CRUD 直接暴露給前端。HTTP、PostgreSQL、
 Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼叫端共用同一個 Interface。
@@ -320,14 +320,14 @@ Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼�
 
 以下問題到達指定里程碑前才需要決定；在此之前使用保守預設：
 
-| 最晚時間 | 決策 | 未決時預設 |
-| --- | --- | --- |
-| M2 開始 | 邀請制或自助註冊 | provisioned-only |
-| M2 完成 | 自訂 SMTP、CAPTCHA 與 session 限制 | 不開放外部註冊 |
-| M3 刪除功能 | 資料保留、復原與匯出政策 | 不提供不可逆批次刪除 |
-| M7 開始 | 舊 Demo 資料的匯入 UX | preview + explicit confirm |
-| M8 開始 | Web/API hosting 與網域 | 不建立 production 環境 |
-| Beta 前 | 錯誤追蹤、監控、隱私文件與試用條款 | 不邀請外部 Coach |
+| 最晚時間    | 決策                               | 未決時預設                 |
+| ----------- | ---------------------------------- | -------------------------- |
+| M2 開始     | 邀請制或自助註冊                   | provisioned-only           |
+| M2 完成     | 自訂 SMTP、CAPTCHA 與 session 限制 | 不開放外部註冊             |
+| M3 刪除功能 | 資料保留、復原與匯出政策           | 不提供不可逆批次刪除       |
+| M7 開始     | 舊 Demo 資料的匯入 UX              | preview + explicit confirm |
+| M8 開始     | Web/API hosting 與網域             | 不建立 production 環境     |
+| Beta 前     | 錯誤追蹤、監控、隱私文件與試用條款 | 不邀請外部 Coach           |
 
 ## 6. 可並行與必須序列化
 

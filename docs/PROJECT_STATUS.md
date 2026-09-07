@@ -18,16 +18,16 @@
 
 ## Current snapshot
 
-| Field | Current value |
-| --- | --- |
-| Active milestone | **M1 — Cloud foundation tracer** |
-| Milestone state | **In progress** |
-| Current branch | `main`，M0 clean baseline 已建立 |
-| Development database | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17 |
-| Remote migration | `20260907144520_initial_identity_workspace_student` applied |
-| Formal applications | `apps/api`, `apps/web` |
-| Archived prototype | independent `demo/`, storage key `form-coach-mvp-v1` |
-| Production data status | **No production environment; do not store real customer data** |
+| Field                  | Current value                                                            |
+| ---------------------- | ------------------------------------------------------------------------ |
+| Active milestone       | **M1 — Cloud foundation tracer**                                         |
+| Milestone state        | **In progress**                                                          |
+| Current branch         | `main`，M0 clean baseline 已建立                                         |
+| Development database   | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17 |
+| Remote migration       | `20260907144520_initial_identity_workspace_student` applied              |
+| Formal applications    | `apps/api`, `apps/web`                                                   |
+| Archived prototype     | independent `demo/`, storage key `form-coach-mvp-v1`                     |
+| Production data status | **No production environment; do not store real customer data**           |
 
 ## Next handoff
 
@@ -39,46 +39,50 @@
 3. 建立 development Coach 測試帳號；決定帳號識別資料前需要使用者確認。
 4. 啟動 API/Web，完成「登入 → Workspace bootstrap → 新增 Student → reload 後重讀」。
 5. 再用第二個 Coach 證明無法讀取第一個 Coach 的 Student。
-6. 將命令、結果、問題與下一動作追加到 Engineering log；滿足 Roadmap M1 全部條件後才
+6. 將 `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` 加入 GitHub
+   Actions secrets，確認 CI verify 與 migration dry-run jobs 通過。
+7. 將命令、結果、問題與下一動作追加到 Engineering log；滿足 Roadmap M1 全部條件後才
    把 milestone 改為 Done。
 
 ## Milestone status
 
-| Milestone | State | Evidence / remaining work |
-| --- | --- | --- |
-| M0 Repository & product contract | Done | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline |
-| M1 Cloud foundation tracer | In progress | migration、API、Web/Auth、測試已完成；缺 runtime login、test Coaches 與 live tenant-isolation E2E |
-| M2 Coach account operations | Not started | 先決定邀請制或自助註冊 |
-| M3 Student & Lesson entitlement | Not started | 現有 Student 只是 tracer，Lesson Purchase 尚未建模 |
-| M4 Scheduling | Not started | 以 Demo 不變量為規格來源 |
-| M5 Training | Not started | 以 completed-set gate 與 autosave 規則為規格來源 |
-| M6 Public capability links | Not started | 後端 token/hash/redemption 尚未建立 |
-| M7 Local resilience & migration | Not started | 正式 IndexedDB 與 Demo import 尚未建立 |
-| M8 Deployment & Beta readiness | Not started | staging/production、hosting、CI、observability、restore drill 尚未建立 |
-| M9 Post-V1 options | Deferred | 不得提前侵入 V1 核心 |
+| Milestone                        | State       | Evidence / remaining work                                                                                       |
+| -------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| M0 Repository & product contract | Done        | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline     |
+| M1 Cloud foundation tracer       | In progress | migration、API、Web/Auth、測試與 CI workflow 已完成；缺 runtime login、test Coaches、live E2E 與 CI secrets/run |
+| M2 Coach account operations      | Not started | 先決定邀請制或自助註冊                                                                                          |
+| M3 Student & Lesson entitlement  | Not started | 現有 Student 只是 tracer，Lesson Purchase 尚未建模                                                              |
+| M4 Scheduling                    | Not started | 以 Demo 不變量為規格來源                                                                                        |
+| M5 Training                      | Not started | 以 completed-set gate 與 autosave 規則為規格來源                                                                |
+| M6 Public capability links       | Not started | 後端 token/hash/redemption 尚未建立                                                                             |
+| M7 Local resilience & migration  | Not started | 正式 IndexedDB 與 Demo import 尚未建立                                                                          |
+| M8 Deployment & Beta readiness   | Not started | staging/production、hosting、CI、observability、restore drill 尚未建立                                          |
+| M9 Post-V1 options               | Deferred    | 不得提前侵入 V1 核心                                                                                            |
 
 ## Verified baseline
 
-| Area | Verified fact |
-| --- | --- |
-| Repository | `demo/` 獨立保存 prototype；CONTEXT、Architecture 與 ADR 0001/0002 已建立 |
-| Supabase | CLI `2.116.0` linked；remote/local migration `20260907144520` 一致；schema lint 無錯誤 |
-| Database security | `app_private.workspace/student` 已部署；browser roles 無 private-table access；runtime LOGIN 尚缺 |
-| Advisors | Security 0 errors/0 warnings；Performance 0 errors/0 warnings，只有新索引 unused info |
-| API | Student list/create、Workspace derivation、JWKS 驗證；2026-09-08：4 files/9 tests、build 通過 |
-| Web/PWA | provisioned-only Auth、Student list/create、PWA shell；2 files/5 tests、build 通過 |
-| UI | 1440px 與 390px 登入畫面通過；390px 無水平 overflow |
-| Secrets | `.env.local` ignored；repository 未包含 database、secret 或 service-role credentials |
+| Area              | Verified fact                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| Repository        | `demo/` 獨立保存 prototype；CONTEXT、Architecture 與 ADR 0001/0002 已建立                            |
+| Supabase          | CLI `2.116.0` linked；remote/local migration `20260907144520` 一致；schema lint 無錯誤               |
+| Database security | `app_private.workspace/student` 已部署；browser roles 無 private-table access；runtime LOGIN 尚缺    |
+| Advisors          | Security 0 errors/0 warnings；Performance 0 errors/0 warnings，只有新索引 unused info                |
+| API               | Student list/create、Workspace derivation、JWKS 驗證；2026-09-08：4 files/9 tests、format/build 通過 |
+| Web/PWA           | provisioned-only Auth、Student list/create、PWA shell；2 files/5 tests、build 通過                   |
+| UI                | 1440px 與 390px 登入畫面通過；390px 無水平 overflow                                                  |
+| CI                | GitHub Actions verify 與 remote migration dry-run jobs 已定義；尚待設定 secrets 並完成首次 run       |
+| Secrets           | `.env.local` ignored；repository 未包含 database、secret 或 service-role credentials                 |
 
 ## Open issues and risks
 
-| Priority | Issue | Required handling |
-| --- | --- | --- |
-| P0 | Database password 曾出現在對話 | live E2E 前由使用者輪替；新值只進 secret store／ignored `.env` |
-| P1 | 缺 runtime LOGIN 與 development Coaches | 建立後完成 live flow 與雙 Coach isolation E2E |
-| P1 | 只有 development Supabase project | M8 前建立隔離 staging/production；目前不得放真實客戶資料 |
-| P2 | Supabase connector tools 可能不隨 task 載入 | 先檢查 connector；缺少時用已 linked CLI，不索取 access token |
-| P2 | Full schema dump 需要本機 Docker | 非 M1 blocker；只有 local stack 成為需求時才評估安裝 |
+| Priority | Issue                                       | Required handling                                              |
+| -------- | ------------------------------------------- | -------------------------------------------------------------- |
+| P0       | Database password 曾出現在對話              | live E2E 前由使用者輪替；新值只進 secret store／ignored `.env` |
+| P1       | 缺 runtime LOGIN 與 development Coaches     | 建立後完成 live flow 與雙 Coach isolation E2E                  |
+| P1       | CI remote migration job 尚無 secrets/run    | 密碼輪替後設定 GitHub Actions secrets 並確認兩個 jobs 通過     |
+| P1       | 只有 development Supabase project           | M8 前建立隔離 staging/production；目前不得放真實客戶資料       |
+| P2       | Supabase connector tools 可能不隨 task 載入 | 先檢查 connector；缺少時用已 linked CLI，不索取 access token   |
+| P2       | Full schema dump 需要本機 Docker            | 非 M1 blocker；只有 local stack 成為需求時才評估安裝           |
 
 ## Validation commands
 
@@ -122,6 +126,16 @@ npm run build
 並行分支各自保留日誌變更；整合者合併時按日期保留每筆記錄並重新計算 Current snapshot。
 
 ## Engineering log
+
+### 2026-09-08 — LOG-005 — Formal CI verification gate
+
+- **Scope**：補齊 M1 CI formatting、typecheck、tests、production build 與 remote migration dry-run workflow。
+- **Outcome**：root check 現在先驗證正式 repository 格式；GitHub Actions 分成無 secrets 的 verify job
+  與需要三項 repository secrets 的 migration dry-run job。Supabase 唯讀盤點確認 runtime login 與 Auth users 皆為零。
+- **Verification**：root formatting、API 9 tests、Web 5 tests 與 production build 通過；remote migration
+  `20260907144520` 一致，Security Advisor 0 notices，Performance 僅 unused-index INFO。
+- **Known issue**：database password 尚未輪替，故未建立 runtime login、Coach 或 CI secrets，也未執行 live E2E／首次 CI。
+- **Next**：輪替 database password，建立最小權限 runtime login 與兩個 development Coaches。
 
 ### 2026-09-08 — LOG-004 — M0 clean baseline
 

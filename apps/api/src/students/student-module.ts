@@ -14,7 +14,11 @@ export class StudentModule {
   readonly #createId: () => string
   readonly #now: () => Date
 
-  constructor({ repository, createId = randomUUID, now = () => new Date() }: StudentModuleDependencies) {
+  constructor({
+    repository,
+    createId = randomUUID,
+    now = () => new Date(),
+  }: StudentModuleDependencies) {
     this.#repository = repository
     this.#createId = createId
     this.#now = now

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+demo/
+supabase/.temp/
+package-lock.json
+*.tsbuildinfo
+.env
+.env.*
