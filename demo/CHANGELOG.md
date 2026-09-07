@@ -8,6 +8,8 @@ All notable user-visible, persistence, and structural changes are recorded here.
 
 ### Changed
 
+- Moved the existing React/Vite application into the self-contained `demo/` directory so future
+  production development can use the repository without mixing new code with the frontend demo.
 - Synced reschedules made from a public link back into already-open coach tabs, reduced student
   course history to completed lessons plus the nearest future lesson, and added upcoming,
   overdue-uncompleted, and completed calendar colors.

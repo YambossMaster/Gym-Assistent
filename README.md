@@ -1,50 +1,64 @@
 # Gym Assistant
 
-Gym Assistant（目前介面品牌為 **FORM Coach Desk**）是給私人教練使用的本機優先單頁應用程式。它包含今日課表、學生與購課管理、固定排程、日／週／月行事曆、訓練紀錄、動作庫、學生動作表現趨勢，以及具時效性的學生分享／改期頁面。每個動作可擇一使用重量或次數作為最佳表現指標；只有成功完成的組別會進入最佳紀錄。教練可從課堂查看本次、上次與個人最佳，也可從學生詳情集中查看所有動作的上次、個人最佳與歷史趨勢。行事曆會依固定排程補齊學生剩餘堂數，並在週檢視同時呈現可排課與私人時段。
+這個儲存庫用於開發可供多位私人健身教練使用的正式應用。正式產品採用本地端保持
+順暢、後端保存權威資料的架構：React Web/PWA 負責互動與草稿，TypeScript 後端
+負責身分、租戶隔離和正式操作，PostgreSQL 是唯一正式資料來源。
 
-課堂中的訓練紀錄會在內容變更後自動儲存；若教練立即離開頁面，尚在等待中的變更也會先完成保存。課堂頁首的學生頭像與姓名可直接前往該學生的詳情頁。
+## 正式應用
 
-目前是可編輯的 React + TypeScript + Vite 專案，不是只能重新生成的靜態成品。每個主要功能頁都有獨立原始碼，因此可在 VS Code、WebStorm 或其他 TypeScript IDE 中針對局部修改。
+第一條可執行的正式垂直切片位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)，目前提供：
 
-## 開始使用
+- 可替換 Managed Auth 供應商的 OIDC/JWKS 驗證；
+- 一位教練對應一個私有 Workspace；
+- 不接受前端指定 Workspace 的學生建立與查詢；
+- PostgreSQL schema migration；
+- 本機開發身分 adapter 與租戶隔離測試。
+- Supabase Auth 登入殼、學生清單與新增學生；
+- 可安裝的 Web App manifest 與不快取 API 的 PWA shell。
 
-需求：Node.js 20 以上與 npm。
-
-### Windows 一鍵入口
-
-在專案根目錄雙擊 `start-gym-assistant.cmd`。它會在需要時安裝依賴、啟動本機伺服器，並自動開啟 `http://127.0.0.1:5173/today`。使用期間請保留命令視窗開啟；關閉視窗即會停止本機伺服器。
-
-`index.html` 是 Vite 的建置模板，不是可直接雙擊執行的靜態網頁。若直接開啟，它只會顯示正確啟動方式。
-
-### 命令列入口
+安裝與檢查：
 
 ```bash
+npm install
+npm run check
+npm run build
+```
+
+開發時分別執行 `npm run dev:api` 與 `npm run dev:web`。Web 端只使用 Supabase 的
+publishable key；資料庫密碼與 secret/service-role key 不得進入瀏覽器。
+
+資料庫設定與本機啟動方式請見 [`apps/api/README.md`](apps/api/README.md)。正式架構與
+核心詞彙分別記錄於 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 和
+[`CONTEXT.md`](CONTEXT.md)。
+
+## 工程接手
+
+每個新工程對話都先讀：
+
+1. [`docs/ROADMAP.md`](docs/ROADMAP.md)：里程碑、依賴、工程順序與完成門檻。
+2. [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)：目前進度、已知問題、驗證證據與下一接手點。
+
+完成 code、schema、config 或架構變更後，必須更新 Project Status 並追加 Engineering log。
+因此不同對話可以從 repository 接手，不需要依賴某一段聊天記憶。
+
+## 現有展示版
+
+先前完成的 React 前端展示版已完整收整至 [`demo/`](demo/)。Demo 是獨立的
+React + TypeScript + Vite 專案，保留原有功能、測試、文件與
+`form-coach-mvp-v1` 本機資料格式。
+
+在 Windows 可直接執行：
+
+```text
+demo\start-gym-assistant.cmd
+```
+
+或使用命令列：
+
+```bash
+cd demo
 npm ci
 npm start
 ```
 
-`npm start` 會自動開啟應用；開發時若不想自動開瀏覽器，也可使用 `npm run dev`。正式檢查與建置：
-
-```bash
-npm run check
-npm run format
-npm run build
-npm run preview
-```
-
-## 常用修改位置
-
-- 頁面與功能流程：`src/pages/`
-- 共用介面元件：`src/components/`
-- 排程、衝突、堂數等純邏輯：`src/domain.ts`
-- 本機資料與操作：`src/store.tsx`
-- 資料型別：`src/types.ts`
-- 示範資料與動作目錄：`src/seed.ts`、`src/exerciseCatalog.ts`
-- 全域視覺樣式：`src/styles.css`
-- 路由組合：`src/App.tsx`
-
-更多細節請見 [架構](docs/ARCHITECTURE.md)、[資料模型](docs/DATA_MODEL.md)、[開發流程](docs/DEVELOPMENT.md)與[測試規則](docs/TESTING.md)。
-
-## 目前邊界
-
-資料保存在瀏覽器 `localStorage`，目前沒有後端帳號、雲端同步或真正的 LINE OA 整合。分享連結也是 MVP 級本機資料能力；清除瀏覽器資料或換裝置後不會自動同步。
+Demo 仍是獨立專案，不與正式產品的依賴、資料庫或建置流程混在一起。

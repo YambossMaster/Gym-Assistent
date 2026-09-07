@@ -2,7 +2,7 @@
 
 ## IDE setup
 
-Open the project root, not `src/` or `dist/`. The checked-in VS Code tasks expose development, verification, and production build commands; other IDEs can run the matching npm scripts from `package.json`.
+Open the repository root and treat `demo/` as this application's project root. The checked-in VS Code tasks run inside `demo/` and expose development, verification, and production build commands; other IDEs can run the matching npm scripts from `demo/package.json`.
 
 `dist/`, `node_modules/`, and `*.tsbuildinfo` are generated artifacts. Edit only source and configuration files. A production build can always recreate `dist/`. The workspace uses the checked-in Prettier version and formats on save in VS Code; other IDEs should run `npm run format`.
 

@@ -1,34 +1,25 @@
 {
-  "name": "form-private-coach-mvp",
+  "name": "gym-assistant",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "scripts": {
-    "start": "vite --host 127.0.0.1 --open /today",
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "typecheck": "tsc -b --pretty false",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "check": "npm run format:check && npm run typecheck && npm test",
-    "preview": "vite preview"
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
   },
-  "dependencies": {
-    "@vitejs/plugin-react": "6.0.5",
-    "date-fns": "4.4.0",
-    "lucide-react": "1.32.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "react-router-dom": "7.18.2",
-    "vite": "8.2.1"
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run check --workspaces --if-present",
+    "dev:api": "npm run dev --workspace @gym-assistant/api",
+    "dev:web": "npm run dev --workspace @gym-assistant/web",
+    "db:push": "supabase db push --linked",
+    "db:push:dry": "supabase db push --linked --dry-run",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "prettier": "3.6.2",
-    "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "supabase": "^2.116.0"
   }
 }
