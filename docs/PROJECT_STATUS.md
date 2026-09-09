@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-08 (Asia/Taipei)
+> Last verified: 2026-09-09 (Asia/Taipei)
 
 本文件是跨對話的精簡工程交接紀錄。它只回答四個問題：目前在哪裡、已完成什麼、卡在哪裡、
 下一個人先做什麼。工程順序與完成條件完全依照 [`ROADMAP.md`](ROADMAP.md)；本文件不得建立
@@ -38,7 +38,7 @@
    Git-ignored `apps/api/.env` 及未來 secret store。
 3. 建立 development Coach 測試帳號；決定帳號識別資料前需要使用者確認。
 4. 啟動 API/Web，完成「登入 → Workspace bootstrap → 新增 Student → reload 後重讀」。
-5. 再用第二個 Coach 證明無法讀取第一個 Coach 的 Student。
+5. 從 `apps/api` 執行 `npm run e2e:m1`，以第二個 Coach 證明無法讀取第一個 Coach 的 Student。
 6. 將 `SUPABASE_ACCESS_TOKEN`、`SUPABASE_DB_PASSWORD`、`SUPABASE_PROJECT_ID` 加入 GitHub
    Actions secrets，確認 CI verify 與 migration dry-run jobs 通過。
 7. 將命令、結果、問題與下一動作追加到 Engineering log；滿足 Roadmap M1 全部條件後才
@@ -46,32 +46,33 @@
 
 ## Milestone status
 
-| Milestone                        | State       | Evidence / remaining work                                                                                       |
-| -------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
-| M0 Repository & product contract | Done        | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline     |
-| M1 Cloud foundation tracer       | In progress | migration、API、Web/Auth、測試與 CI workflow 已完成；缺 runtime login、test Coaches、live E2E 與 CI secrets/run |
-| M2 Coach account operations      | Not started | 先決定邀請制或自助註冊                                                                                          |
-| M3 Student & Lesson entitlement  | Not started | 現有 Student 只是 tracer，Lesson Purchase 尚未建模                                                              |
-| M4 Scheduling                    | Not started | 以 Demo 不變量為規格來源                                                                                        |
-| M5 Training                      | Not started | 以 completed-set gate 與 autosave 規則為規格來源                                                                |
-| M6 Public capability links       | Not started | 後端 token/hash/redemption 尚未建立                                                                             |
-| M7 Local resilience & migration  | Not started | 正式 IndexedDB 與 Demo import 尚未建立                                                                          |
-| M8 Deployment & Beta readiness   | Not started | staging/production、hosting、CI、observability、restore drill 尚未建立                                          |
-| M9 Post-V1 options               | Deferred    | 不得提前侵入 V1 核心                                                                                            |
+| Milestone                        | State       | Evidence / remaining work                                                                                            |
+| -------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------- |
+| M0 Repository & product contract | Done        | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline          |
+| M1 Cloud foundation tracer       | In progress | migration、API、Web/Auth、CI 與 live E2E verifier 已完成；缺 runtime login、test Coaches、live run 與 CI secrets/run |
+| M2 Coach account operations      | Not started | 先決定邀請制或自助註冊                                                                                               |
+| M3 Student & Lesson entitlement  | Not started | 現有 Student 只是 tracer，Lesson Purchase 尚未建模                                                                   |
+| M4 Scheduling                    | Not started | 以 Demo 不變量為規格來源                                                                                             |
+| M5 Training                      | Not started | 以 completed-set gate 與 autosave 規則為規格來源                                                                     |
+| M6 Public capability links       | Not started | 後端 token/hash/redemption 尚未建立                                                                                  |
+| M7 Local resilience & migration  | Not started | 正式 IndexedDB 與 Demo import 尚未建立                                                                               |
+| M8 Deployment & Beta readiness   | Not started | staging/production、hosting、CI、observability、restore drill 尚未建立                                               |
+| M9 Post-V1 options               | Deferred    | 不得提前侵入 V1 核心                                                                                                 |
 
 ## Verified baseline
 
-| Area              | Verified fact                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| Repository        | `demo/` 獨立保存 prototype；CONTEXT、Architecture 與 ADR 0001/0002 已建立                            |
-| Supabase          | CLI `2.116.0` linked；remote/local migration `20260907144520` 一致；schema lint 無錯誤               |
-| Database security | `app_private.workspace/student` 已部署；browser roles 無 private-table access；runtime LOGIN 尚缺    |
-| Advisors          | Security 0 errors/0 warnings；Performance 0 errors/0 warnings，只有新索引 unused info                |
-| API               | Student list/create、Workspace derivation、JWKS 驗證；2026-09-08：4 files/9 tests、format/build 通過 |
-| Web/PWA           | provisioned-only Auth、Student list/create、PWA shell；2 files/5 tests、build 通過                   |
-| UI                | 1440px 與 390px 登入畫面通過；390px 無水平 overflow                                                  |
-| CI                | GitHub Actions verify 與 remote migration dry-run jobs 已定義；尚待設定 secrets 並完成首次 run       |
-| Secrets           | `.env.local` ignored；repository 未包含 database、secret 或 service-role credentials                 |
+| Area              | Verified fact                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| Repository        | `demo/` 獨立保存 prototype；CONTEXT、Architecture 與 ADR 0001/0002 已建立                             |
+| Supabase          | CLI `2.116.0` linked；remote/local migration `20260907144520` 一致；schema lint 無錯誤                |
+| Database security | `app_private.workspace/student` 已部署；browser roles 無 private-table access；runtime LOGIN 尚缺     |
+| Advisors          | Security 0 errors/0 warnings；Performance 0 errors/0 warnings，只有新索引 unused info                 |
+| API               | Student list/create、Workspace derivation、JWKS 驗證；2026-09-09：5 files/11 tests、format/build 通過 |
+| Web/PWA           | provisioned-only Auth、Student list/create、PWA shell；2 files/5 tests、build 通過                    |
+| UI                | 1440px 與 390px 登入畫面通過；390px 無水平 overflow                                                   |
+| CI                | GitHub Actions verify 與 remote migration dry-run jobs 已定義；尚待設定 secrets 並完成首次 run        |
+| Live E2E          | 雙 Coach verifier 已建立；涵蓋 Auth、401、Workspace 拒絕、Student reload 與 tenant isolation          |
+| Secrets           | `.env.local` ignored；repository 未包含 database、secret 或 service-role credentials                  |
 
 ## Open issues and risks
 
@@ -126,6 +127,15 @@ npm run build
 並行分支各自保留日誌變更；整合者合併時按日期保留每筆記錄並重新計算 Current snapshot。
 
 ## Engineering log
+
+### 2026-09-09 — LOG-006 — Repeatable M1 live E2E verifier
+
+- **Scope**：建立使用真實 Supabase Auth token 與正式 API 的 M1 live verification command。
+- **Outcome**：`npm run e2e:m1` 可重跑雙 Coach 登入、401、client Workspace 拒絕、Student 建立／重讀與
+  tenant isolation；設定只放 ignored `.env.e2e`，輸出不含 credentials、token 或 response body。
+- **Verification**：API typecheck 與 5 files/11 tests 通過，包含完整成功流程與 Auth error 不洩漏測試。
+- **Known issue**：database password、runtime login、development Coaches 與首次 live run 仍待完成。
+- **Next**：輪替 database password，建立 runtime login 與兩個 development Coaches 後執行 `npm run e2e:m1`。
 
 ### 2026-09-08 — LOG-005 — Formal CI verification gate
 

@@ -50,3 +50,19 @@ The create payload preserves the demo Student fields that are currently part of 
 `DATABASE_URL` must point to the environment's dedicated database using a least-privilege runtime
 login that inherits the `gym_assistant_api` role created by the migration. Supabase CLI owns schema
 migration history; review with `npm run db:push:dry` before applying `npm run db:push`.
+
+## M1 live verification
+
+After the database password has been rotated, the runtime login exists, and two development Coaches
+have been provisioned, copy `m1-e2e.env.example` to the ignored `.env.e2e` and fill it locally. Do
+not paste the passwords or access tokens into issues, logs, commits, or chat.
+
+Start the API with its normal `.env`, then run from this directory:
+
+```bash
+npm run e2e:m1
+```
+
+The verifier signs in both Coaches through Supabase Auth and checks unauthenticated rejection,
+client-supplied Workspace rejection, Student creation and reload, and cross-Workspace isolation. It
+prints only the created Student ID and check names; credentials and access tokens are never printed.
