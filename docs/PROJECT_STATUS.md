@@ -20,9 +20,9 @@
 
 | Field                  | Current value                                                            |
 | ---------------------- | ------------------------------------------------------------------------ |
-| Active milestone       | **M2 — Coach account operations**                                        |
-| Milestone state        | **Done**                                                                 |
-| Current branch         | `main`，formal baseline／CI／M1 E2E 已推送至 `origin/main`               |
+| Active milestone       | **M3 — Student & Lesson entitlement**                                    |
+| Milestone state        | **Not started**                                                          |
+| Current branch         | `main`，M2 commit `cdfee3f` 已推送至 `origin/main` 且 CI #2 成功         |
 | Development database   | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17 |
 | Remote migration       | `20260910073809_schedule_direct_inactivity_deletion` applied             |
 | Formal applications    | `apps/api`, `apps/web`                                                   |
@@ -56,13 +56,13 @@
 | Area              | Verified fact                                                                                                                                                                                                                                      |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Repository        | `demo/` 獨立保存 prototype；CONTEXT、Architecture 與 ADR 0001/0002 已建立                                                                                                                                                                          |
-| Supabase          | CLI `2.116.0` linked；remote migration `20260909174245_account_lifecycle` 已套用                                                                                                                                                                   |
+| Supabase          | CLI `2.116.0` linked；remote migration `20260910073809_schedule_direct_inactivity_deletion` 已套用                                                                                                                                                 |
 | Database security | `app_private.workspace/student` 已部署；runtime LOGIN 僅繼承 `gym_assistant_api`，無 `auth`／DB create 權限                                                                                                                                        |
 | Advisors          | Security 0 errors；有 1 個 Auth leaked-password-protection warning。Performance 僅兩個新 lifecycle 索引的 unused info                                                                                                                              |
 | API               | Student list/create、Workspace derivation/settings、account deletion request/cancel/immediate、公開 registration-email check、JWKS 驗證；6 files/17 tests 通過                                                                                     |
 | Web/PWA           | 自助註冊（既有帳號提示與 12 秒 timeout、6 位 OTP）、登入頁 password recovery、local/global logout、Google entry、Workspace settings、account deletion、Student list/create、PWA shell；3 files/16 tests 通過                                       |
 | UI                | 2026-09-09：1440px 與 390px 註冊／登入入口實測；390px 無水平 overflow                                                                                                                                                                              |
-| CI                | CI #1 attempt #2 成功：verify（API 11、Web 5 tests）與 remote migration-dry-run 均通過                                                                                                                                                             |
+| CI                | CI #2 成功：commit `cdfee3f` 的 verify（API 17、Web 16 tests）與 remote migration-dry-run 均通過                                                                                                                                                   |
 | Live E2E          | 2026-09-09 實測通過雙 Coach Auth、401、Workspace 拒絕、Student reload 與 tenant isolation；2026-09-10 新隔離帳號完成 SMTP 投遞、6 位 OTP、Workspace bootstrap、Email/password re-login、recovery delivery、global logout、14 日倒數/取消及永久刪除 |
 | Secrets           | API/Web local env ignored；runtime／Auth admin key 未進 repository，但本次貼入對話的值待輪替                                                                                                                                                       |
 
@@ -127,6 +127,14 @@ npm run build
 並行分支各自保留日誌變更；整合者合併時按日期保留每筆記錄並重新計算 Current snapshot。
 
 ## Engineering log
+
+### 2026-09-10 — LOG-029 — M2 GitHub delivery and CI baseline
+
+- **Scope**：將已完成並驗證的 M2 工作包以不混入 M3 的 commit 推送到 shared `main`，並確認遠端 CI。
+- **Outcome**：M2 已推送為 `cdfee3f`（`feat: complete M2 coach account operations`）；M3 草稿已在 commit 前移除，下一次工作從乾淨的 M2 基線開始。
+- **Verification**：root `npm run check`（API 6 files／17 tests、Web 3 files／16 tests）、`npm run build`、linked `db push --dry-run` 與 `git diff --check` 通過；GitHub Actions CI #2 完成成功，verify 與 migration-dry-run 總時長 1m 1s。
+- **Known issue**：沒有正式 environment；M8 前仍須建立 staging/production、處理 leaked-password protection 的 privacy tradeoff、輪替已接受的 development credential exposure，並完成公開註冊 abuse controls。
+- **Next**：依 M3 Roadmap 定義 Student／Lesson Purchase 的 domain contract 與後端 vertical slice。
 
 ### 2026-09-10 — LOG-028 — M2 lifecycle and recovery completion
 
