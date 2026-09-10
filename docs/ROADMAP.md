@@ -381,6 +381,8 @@ Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼�
 7. secrets、private note、capability token 與個資未出現在 Git、logs 或公開 payload。
 8. `PROJECT_STATUS.md` 已更新：狀態、驗證證據、問題、下一個接手點與工程日誌。
 9. 使用者可感知或架構行為改變時，對應文件與 ADR 已同步。
+10. milestone 的交付 commit 已推送至 shared branch，且該 commit 觸發的 GitHub Actions CI
+    （至少 verify 與 migration dry-run）已完成成功；本機檢查不能取代遠端 CI 證據。
 
 ## 8. Roadmap 變更規則
 

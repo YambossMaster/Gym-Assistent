@@ -22,7 +22,7 @@
 | ---------------------- | ------------------------------------------------------------------------ |
 | Active milestone       | **M3 — Student & Lesson entitlement**                                    |
 | Milestone state        | **Not started**                                                          |
-| Current branch         | `main`，M2 commit `cdfee3f` 已推送至 `origin/main` 且 CI #2 成功         |
+| Current branch         | `main`，M2 commit `cdfee3f` 已推送至 `origin/main`，CI #2／#3 成功       |
 | Development database   | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17 |
 | Remote migration       | `20260910073809_schedule_direct_inactivity_deletion` applied             |
 | Formal applications    | `apps/api`, `apps/web`                                                   |
@@ -62,7 +62,7 @@
 | API               | Student list/create、Workspace derivation/settings、account deletion request/cancel/immediate、公開 registration-email check、JWKS 驗證；6 files/17 tests 通過                                                                                     |
 | Web/PWA           | 自助註冊（既有帳號提示與 12 秒 timeout、6 位 OTP）、登入頁 password recovery、local/global logout、Google entry、Workspace settings、account deletion、Student list/create、PWA shell；3 files/16 tests 通過                                       |
 | UI                | 2026-09-09：1440px 與 390px 註冊／登入入口實測；390px 無水平 overflow                                                                                                                                                                              |
-| CI                | CI #2 成功：commit `cdfee3f` 的 verify（API 17、Web 16 tests）與 remote migration-dry-run 均通過                                                                                                                                                   |
+| CI                | CI #2／#3 成功：M2 commit `cdfee3f` 與 delivery-record commit `e19c255` 的 verify（API 17、Web 16 tests）與 remote migration-dry-run 均通過                                                                                                        |
 | Live E2E          | 2026-09-09 實測通過雙 Coach Auth、401、Workspace 拒絕、Student reload 與 tenant isolation；2026-09-10 新隔離帳號完成 SMTP 投遞、6 位 OTP、Workspace bootstrap、Email/password re-login、recovery delivery、global logout、14 日倒數/取消及永久刪除 |
 | Secrets           | API/Web local env ignored；runtime／Auth admin key 未進 repository，但本次貼入對話的值待輪替                                                                                                                                                       |
 
@@ -127,6 +127,14 @@ npm run build
 並行分支各自保留日誌變更；整合者合併時按日期保留每筆記錄並重新計算 Current snapshot。
 
 ## Engineering log
+
+### 2026-09-10 — LOG-030 — Milestone remote-CI completion gate
+
+- **Scope**：依使用者明確授權，將每個 milestone 的 GitHub CI 成功設為 Roadmap 共同完成門檻。
+- **Outcome**：里程碑現在必須先推送交付 commit，並確認該 commit 的 GitHub Actions verify 與 migration dry-run 成功；本機驗證不能取代遠端證據。
+- **Verification**：Roadmap 與 Status 的完成門檻、M2 CI #2／#3 交付證據已對齊；`git diff --check` 通過。
+- **Known issue**：None。
+- **Next**：依 M3 Roadmap 定義 Student／Lesson Purchase 的 domain contract 與後端 vertical slice。
 
 ### 2026-09-10 — LOG-029 — M2 GitHub delivery and CI baseline
 
