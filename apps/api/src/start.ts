@@ -4,6 +4,10 @@ import { loadConfig } from './config.js'
 import { buildServer } from './http/server.js'
 import { OidcIdentityVerifier } from './identity/oidc-identity.js'
 import { StudentModule } from './students/student-module.js'
+import { WorkspaceModule } from './workspace/workspace-module.js'
+import { AccountLifecycleModule } from './account-lifecycle/account-lifecycle-module.js'
+import { SupabaseAccountDeletionExecutor } from './account-lifecycle/supabase-account-deletion-executor.js'
+import { SupabaseRegistrationEmailLookup } from './account-registration/supabase-registration-email-lookup.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -22,6 +26,18 @@ const identityVerifier = new OidcIdentityVerifier({
 const server = buildServer({
   identityVerifier,
   students: new StudentModule({ repository }),
+  workspace: new WorkspaceModule({ repository }),
+  accountLifecycle: new AccountLifecycleModule({
+    repository,
+    deletionExecutor: new SupabaseAccountDeletionExecutor({
+      supabaseUrl: config.SUPABASE_URL,
+      secretKey: config.SUPABASE_SECRET_KEY,
+    }),
+  }),
+  registrationEmails: new SupabaseRegistrationEmailLookup({
+    supabaseUrl: config.SUPABASE_URL,
+    ...(config.SUPABASE_SECRET_KEY ? { secretKey: config.SUPABASE_SECRET_KEY } : {}),
+  }),
   logger: true,
 })
 

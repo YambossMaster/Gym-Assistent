@@ -314,6 +314,52 @@ textarea:focus {
   font-weight: 600;
 }
 
+.form-notice {
+  margin: 0;
+  color: #59631e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.auth-links button {
+  padding: 0;
+  border: 0;
+  color: #59631e;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
+.auth-google {
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+}
+
 .app-loading {
   min-height: 100vh;
   display: grid;
@@ -409,7 +455,7 @@ textarea:focus {
 .coach-card {
   padding-top: 13px;
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  grid-template-columns: 36px minmax(0, 1fr) 36px 36px 36px;
   align-items: center;
   gap: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -719,6 +765,134 @@ textarea:focus {
   gap: 18px;
 }
 
+.security-modal {
+  width: min(520px, 100%);
+}
+
+.danger-confirmation {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(32, 14, 10, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.danger-confirmation-card {
+  width: min(430px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(183, 67, 47, 0.44);
+  border-radius: 18px;
+  background: #fffaf5;
+  box-shadow: 0 28px 90px rgba(34, 12, 8, 0.4);
+}
+
+.danger-confirmation-card h3 {
+  margin: 10px 0 8px;
+  font-size: 26px;
+}
+
+.danger-confirmation-card p {
+  color: #65433a;
+}
+
+.danger-confirmation-card form {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.eyebrow.danger,
+.danger-confirmation-card code {
+  color: #a93628;
+}
+
+.danger-confirmation-card code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #f6e5dc;
+  font-family: 'DM Mono', monospace;
+}
+
+.danger-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.danger-confirm-button {
+  border: 0;
+  background: #a93628;
+  color: #fff;
+}
+
+.danger-confirm-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.security-email,
+.security-footnote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.security-email {
+  margin-bottom: 22px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.security-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.security-actions .primary-button,
+.security-actions .secondary-button {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.security-password {
+  margin-top: 22px;
+  padding-top: 22px;
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.security-password h3,
+.security-password p {
+  margin: 0;
+}
+
+.security-password h3 {
+  font-size: 16px;
+}
+
+.security-password p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.security-password .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.security-footnote {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;
@@ -813,7 +987,7 @@ textarea:focus {
   }
   .coach-card {
     padding: 0;
-    grid-template-columns: 32px 36px;
+    grid-template-columns: 32px 36px 36px 36px;
     border: 0;
   }
   .mini-avatar {

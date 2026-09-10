@@ -3,16 +3,42 @@ import {
   ArrowRight,
   Check,
   Cloud,
+  KeyRound,
   LogOut,
   Plus,
   Search,
+  Settings2,
   ShieldCheck,
+  SlidersHorizontal,
   UserRound,
   UsersRound,
   X
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { ApiError, createStudent, listStudents, type Student } from './api'
+import {
+  ApiError,
+  cancelAccountDeletion,
+  createStudent,
+  deleteAccountImmediately,
+  getAccountLifecycle,
+  getWorkspaceSettings,
+  isRegistrationEmailTaken,
+  listStudents,
+  requestAccountDeletion,
+  updateWorkspaceSettings,
+  type Student,
+  type WorkspaceSettings
+} from './api'
+import {
+  requestPasswordReset,
+  resendEmailVerification,
+  signInWithGoogle,
+  signOutCurrentDevice,
+  signOutEveryDevice,
+  signUpCoach,
+  updatePassword,
+  verifySignupEmail
+} from './account-auth'
 import { supabase } from './supabase'
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
@@ -20,20 +46,25 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 export function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authReady, setAuthReady] = useState(false)
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setAuthReady(true)
     })
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession)
+      setPasswordRecovery(event === 'PASSWORD_RECOVERY')
       setAuthReady(true)
     })
     return () => data.subscription.unsubscribe()
   }, [])
 
   if (!authReady) return <AppLoading />
+  if (session && passwordRecovery) {
+    return <PasswordRecovery onComplete={() => setPasswordRecovery(false)} />
+  }
   if (!session) return <SignIn />
   return <StudentWorkspace session={session} />
 }
@@ -41,11 +72,47 @@ export function App() {
 function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [verificationCode, setVerificationCode] = useState('')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset' | 'verify'>('signin')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (mode === 'reset') {
+      await requestEmail('reset')
+      return
+    }
+    if (mode === 'verify') {
+      await verifyCode()
+      return
+    }
+    if (mode === 'signup') {
+      if (password !== confirmPassword) {
+        setError('兩次輸入的密碼不一致。')
+        return
+      }
+      setSubmitting(true)
+      setError('')
+      setNotice('')
+      try {
+        if (await isRegistrationEmailTaken(email)) {
+          setError('此帳號已經註冊過。')
+          return
+        }
+        await signUpCoach(supabase.auth, email, password, window.location.origin)
+        setMode('verify')
+        setVerificationCode('')
+        setNotice('6 位驗證碼已寄出。')
+      } catch (signupError) {
+        setError(readError(signupError))
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
     setSubmitting(true)
     setError('')
     const { error: authError } = await supabase.auth.signInWithPassword({
@@ -54,6 +121,58 @@ function SignIn() {
     })
     if (authError) setError('登入失敗，請確認 Email 與密碼。')
     setSubmitting(false)
+  }
+
+  const verifyCode = async () => {
+    setSubmitting(true)
+    setError('')
+    setNotice('')
+    try {
+      await verifySignupEmail(supabase.auth, email, verificationCode)
+      setNotice('Email 已驗證，正在開啟工作台…')
+    } catch (verificationError) {
+      setError(readError(verificationError))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const onGoogleSignIn = async () => {
+    setSubmitting(true)
+    setError('')
+    try {
+      await signInWithGoogle(supabase.auth, window.location.origin)
+    } catch (googleError) {
+      setError(readError(googleError))
+      setSubmitting(false)
+    }
+  }
+
+  const changeMode = (nextMode: typeof mode) => {
+    setMode(nextMode)
+    setError('')
+    setNotice('')
+    setPassword('')
+    setConfirmPassword('')
+    setVerificationCode('')
+  }
+
+  const requestEmail = async (kind: 'reset' | 'verify') => {
+    setSubmitting(true)
+    setError('')
+    setNotice('')
+    try {
+      const redirectTo = window.location.origin
+      if (kind === 'reset') await requestPasswordReset(supabase.auth, email, redirectTo)
+      else await resendEmailVerification(supabase.auth, email, redirectTo)
+      setNotice(
+        kind === 'reset' ? '若帳號存在，重設信已寄出。' : '若帳號需要驗證，驗證信已重新寄出。'
+      )
+    } catch (requestError) {
+      setError(readError(requestError))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -78,8 +197,24 @@ function SignIn() {
         <form className="auth-card reveal delay-1" onSubmit={onSubmit}>
           <div>
             <span className="eyebrow dark">SECURE ACCESS</span>
-            <h2>回到你的工作台</h2>
-            <p>目前僅開放已建立的教練帳號登入。</p>
+            <h2>
+              {mode === 'signin'
+                ? '回到你的工作台'
+                : mode === 'signup'
+                  ? '建立教練帳號'
+                  : mode === 'reset'
+                    ? '重設登入密碼'
+                    : '驗證你的 Email'}
+            </h2>
+            <p>
+              {mode === 'signin'
+                ? '使用 Email 密碼或 Google 帳號登入。'
+                : mode === 'signup'
+                  ? '使用你的 Email 與自訂密碼；完成 6 位驗證碼後即可開始。'
+                  : mode === 'verify'
+                    ? '輸入寄到 Email 的 6 位驗證碼。'
+                    : '我們會將重設方式寄到你的 Email。'}
+            </p>
           </div>
           <label>
             Email
@@ -93,22 +228,111 @@ function SignIn() {
               autoFocus
             />
           </label>
-          <label>
-            密碼
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="輸入你的密碼"
-              autoComplete="current-password"
-              required
-            />
-          </label>
+          {(mode === 'signin' || mode === 'signup') && (
+            <label>
+              {mode === 'signup' ? '設定密碼' : '密碼'}
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={mode === 'signup' ? '至少 12 個字元' : '輸入你的密碼'}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                minLength={mode === 'signup' ? 12 : undefined}
+                required
+              />
+            </label>
+          )}
+          {mode === 'signup' && (
+            <label>
+              再次輸入密碼
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                minLength={12}
+                required
+              />
+            </label>
+          )}
+          {mode === 'verify' && (
+            <label>
+              6 位驗證碼
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={verificationCode}
+                onChange={(event) =>
+                  setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                }
+                placeholder="123456"
+                required
+                autoFocus
+              />
+            </label>
+          )}
           {error && <p className="form-error">{error}</p>}
+          {notice && <p className="form-notice">{notice}</p>}
           <button className="primary-button" disabled={submitting}>
-            {submitting ? '驗證中…' : '安全登入'}
+            {submitting
+              ? '處理中…'
+              : mode === 'signin'
+                ? '安全登入'
+                : mode === 'signup'
+                  ? '寄送驗證碼'
+                  : mode === 'reset'
+                    ? '寄送重設信'
+                    : '驗證 Email'}
             <ArrowRight />
           </button>
+          {mode === 'verify' && (
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={submitting}
+              onClick={() => void requestEmail('verify')}
+            >
+              重新寄送驗證碼
+            </button>
+          )}
+          <div className="auth-links">
+            {mode === 'signin' ? (
+              <>
+                <button type="button" onClick={() => changeMode('signup')}>
+                  建立帳號
+                </button>
+                <button type="button" onClick={() => changeMode('reset')}>
+                  忘記密碼
+                </button>
+                <button type="button" onClick={() => changeMode('verify')}>
+                  未收到驗證信
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => changeMode('signin')}>
+                返回登入
+              </button>
+            )}
+          </div>
+          {(mode === 'signin' || mode === 'signup') && (
+            <>
+              <div className="auth-divider">或</div>
+              <button
+                type="button"
+                className="secondary-button auth-google"
+                disabled={submitting}
+                onClick={() => void onGoogleSignIn()}
+              >
+                使用 Google 繼續
+              </button>
+              {mode === 'signup' && (
+                <small>
+                  若你已用同一 Email 的 Google 帳號登入過，請先使用 Google
+                  登入，再從帳號安全設定密碼。
+                </small>
+              )}
+            </>
+          )}
           <small>登入狀態由 Supabase Auth 安全維護；應用不會保存你的密碼。</small>
         </form>
       </section>
@@ -122,6 +346,8 @@ function StudentWorkspace({ session }: { session: Session }) {
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [securityOpen, setSecurityOpen] = useState(false)
+  const [workspaceSettingsOpen, setWorkspaceSettingsOpen] = useState(false)
 
   const load = useCallback(async () => {
     setState('loading')
@@ -172,7 +398,16 @@ function StudentWorkspace({ session }: { session: Session }) {
               <strong>{session.user.email?.split('@')[0] || 'Coach'}</strong>
               <small>{session.user.email}</small>
             </div>
-            <button aria-label="登出" onClick={() => void supabase.auth.signOut()}>
+            <button aria-label="帳號安全" onClick={() => setSecurityOpen(true)}>
+              <Settings2 />
+            </button>
+            <button aria-label="工作台設定" onClick={() => setWorkspaceSettingsOpen(true)}>
+              <SlidersHorizontal />
+            </button>
+            <button
+              aria-label="登出目前裝置"
+              onClick={() => void signOutCurrentDevice(supabase.auth)}
+            >
               <LogOut />
             </button>
           </div>
@@ -246,6 +481,419 @@ function StudentWorkspace({ session }: { session: Session }) {
           onCreated={onCreated}
         />
       )}
+      {securityOpen && (
+        <AccountSecurityDialog
+          accessToken={session.access_token}
+          email={session.user.email || ''}
+          onClose={() => setSecurityOpen(false)}
+        />
+      )}
+      {workspaceSettingsOpen && (
+        <WorkspaceSettingsDialog
+          accessToken={session.access_token}
+          onClose={() => setWorkspaceSettingsOpen(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function WorkspaceSettingsDialog({
+  accessToken,
+  onClose
+}: {
+  accessToken: string
+  onClose: () => void
+}) {
+  const [settings, setSettings] = useState<WorkspaceSettings | null>(null)
+  const [displayName, setDisplayName] = useState('')
+  const [timeZone, setTimeZone] = useState('Asia/Taipei')
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    void getWorkspaceSettings(accessToken)
+      .then((loaded) => {
+        if (!active) return
+        setSettings(loaded)
+        setDisplayName(loaded.displayName)
+        setTimeZone(loaded.timeZone)
+      })
+      .catch((loadError) => active && setError(readError(loadError)))
+    return () => {
+      active = false
+    }
+  }, [accessToken])
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!settings) return
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+    try {
+      const updated = await updateWorkspaceSettings(accessToken, {
+        displayName: displayName.trim(),
+        timeZone: timeZone.trim(),
+        version: settings.version
+      })
+      setSettings(updated)
+      setDisplayName(updated.displayName)
+      setTimeZone(updated.timeZone)
+      setMessage('工作台設定已儲存。')
+    } catch (saveError) {
+      if (saveError instanceof ApiError && saveError.status === 409) {
+        setError('此設定已在另一個裝置變更。請關閉後重新開啟，再決定是否覆寫。')
+      } else {
+        setError(readError(saveError))
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onPointerDown={onClose}>
+      <section
+        className="modal settings-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="workspace-settings-title"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <span className="eyebrow dark">WORKSPACE SETTINGS</span>
+            <h2 id="workspace-settings-title">工作台設定</h2>
+          </div>
+          <button className="icon-button" aria-label="關閉" onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        {!settings && !error ? (
+          <p className="security-footnote">正在讀取設定…</p>
+        ) : (
+          <form onSubmit={onSubmit}>
+            <label>
+              工作台顯示名稱
+              <input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                maxLength={120}
+                required
+                autoFocus
+              />
+            </label>
+            <label>
+              時區（IANA 格式）
+              <input
+                value={timeZone}
+                onChange={(event) => setTimeZone(event.target.value)}
+                placeholder="Asia/Taipei"
+                maxLength={64}
+                required
+              />
+            </label>
+            <p className="security-footnote">
+              時區只影響你的工作台呈現，不參與帳號或 Workspace 授權。
+            </p>
+            {message && <p className="form-notice">{message}</p>}
+            {error && <p className="form-error">{error}</p>}
+            <footer>
+              <button type="button" className="secondary-button" onClick={onClose}>
+                關閉
+              </button>
+              <button className="primary-button compact" disabled={!settings || submitting}>
+                {submitting ? '儲存中…' : '儲存設定'} <ArrowRight />
+              </button>
+            </footer>
+          </form>
+        )}
+      </section>
+    </div>
+  )
+}
+
+function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (password !== confirmPassword) return setError('兩次輸入的新密碼不一致。')
+    setSubmitting(true)
+    setError('')
+    try {
+      await updatePassword(supabase.auth, password)
+      await signOutCurrentDevice(supabase.auth)
+      onComplete()
+    } catch (updateError) {
+      setError(readError(updateError))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <main className="auth-layout">
+      <section className="auth-story" aria-label="FORM Coach Desk">
+        <Brand />
+      </section>
+      <section className="auth-panel">
+        <form className="auth-card" onSubmit={onSubmit}>
+          <div>
+            <span className="eyebrow dark">PASSWORD RECOVERY</span>
+            <h2>設定新密碼</h2>
+            <p>完成後會登出目前裝置，請使用新密碼重新登入。</p>
+          </div>
+          <label>
+            新密碼
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={12}
+              required
+              autoFocus
+            />
+          </label>
+          <label>
+            再次輸入新密碼
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={12}
+              required
+            />
+          </label>
+          {error && <p className="form-error">{error}</p>}
+          <button className="primary-button" disabled={submitting}>
+            {submitting ? '更新中…' : '更新密碼'} <KeyRound />
+          </button>
+        </form>
+      </section>
+    </main>
+  )
+}
+
+function AccountSecurityDialog({
+  accessToken,
+  email,
+  onClose
+}: {
+  accessToken: string
+  email: string
+  onClose: () => void
+}) {
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [deletionDueAt, setDeletionDueAt] = useState<string | null>(null)
+  const [lifecycleLoading, setLifecycleLoading] = useState(true)
+  const [immediateDeleteOpen, setImmediateDeleteOpen] = useState(false)
+  const [immediateDeleteConfirmation, setImmediateDeleteConfirmation] = useState('')
+  useEffect(() => {
+    void getAccountLifecycle(accessToken)
+      .then((lifecycle) => setDeletionDueAt(lifecycle.deletionDueAt))
+      .catch((loadError) => setError(readError(loadError)))
+      .finally(() => setLifecycleLoading(false))
+  }, [accessToken])
+  const execute = async (action: () => Promise<void>, success: string) => {
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+    try {
+      await action()
+      setMessage(success)
+    } catch (actionError) {
+      setError(readError(actionError))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  const onSetPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (password !== confirmPassword) {
+      setError('兩次輸入的新密碼不一致。')
+      return
+    }
+    await execute(async () => updatePassword(supabase.auth, password), '密碼已設定。')
+    setPassword('')
+    setConfirmPassword('')
+  }
+  const confirmImmediateDeletion = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (immediateDeleteConfirmation !== 'DELETE') return
+    await execute(async () => {
+      await deleteAccountImmediately(accessToken)
+      await signOutCurrentDevice(supabase.auth)
+      onClose()
+    }, '帳號已永久刪除。')
+  }
+  return (
+    <div className="modal-backdrop" role="presentation" onPointerDown={onClose}>
+      <section
+        className="modal security-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-security-title"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <span className="eyebrow dark">ACCOUNT SECURITY</span>
+            <h2 id="account-security-title">帳號與裝置</h2>
+          </div>
+          <button className="icon-button" aria-label="關閉" onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        <p className="security-email">{email}</p>
+        <div className="security-actions">
+          <button
+            className="primary-button"
+            disabled={submitting}
+            onClick={() =>
+              void execute(() => signOutEveryDevice(supabase.auth), '所有裝置的登入已結束。')
+            }
+          >
+            登出所有裝置 <LogOut />
+          </button>
+        </div>
+        <form className="security-password" onSubmit={onSetPassword}>
+          <h3>設定或變更密碼</h3>
+          <p>Google 登入的帳號可在此設定密碼，之後同一個 Email 可用任一方式登入。</p>
+          <label>
+            新密碼
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={12}
+              required
+            />
+          </label>
+          <label>
+            再次輸入新密碼
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={12}
+              required
+            />
+          </label>
+          <button className="secondary-button" disabled={submitting}>
+            設定密碼 <KeyRound />
+          </button>
+        </form>
+        {message && <p className="form-notice">{message}</p>}
+        {error && <p className="form-error">{error}</p>}
+        <section className="security-password account-deletion">
+          <h3>刪除帳號與所有資料</h3>
+          <p>
+            {deletionDueAt
+              ? `已排定於 ${new Date(deletionDueAt).toLocaleString('zh-TW')} 永久刪除。到期前可取消，或立即永久刪除。`
+              : '提出刪除後會有 14 天反悔期；期限一到，這個 Coach、Workspace、學生與所有相關資料將永久從資料庫刪除，無法復原。'}
+          </p>
+          {deletionDueAt ? (
+            <button
+              className="secondary-button"
+              disabled={submitting || lifecycleLoading}
+              onClick={() =>
+                void execute(async () => {
+                  const lifecycle = await cancelAccountDeletion(accessToken)
+                  setDeletionDueAt(lifecycle.deletionDueAt)
+                }, '已取消帳號刪除。')
+              }
+            >
+              取消刪除
+            </button>
+          ) : (
+            <button
+              className="secondary-button"
+              disabled={submitting || lifecycleLoading}
+              onClick={() =>
+                void execute(async () => {
+                  const lifecycle = await requestAccountDeletion(accessToken)
+                  setDeletionDueAt(lifecycle.deletionDueAt)
+                }, '帳號已進入 14 天刪除倒數。')
+              }
+            >
+              開始 14 天刪除倒數
+            </button>
+          )}
+          <button
+            className="text-button danger-button"
+            disabled={submitting || lifecycleLoading}
+            onClick={() => setImmediateDeleteOpen(true)}
+          >
+            立即永久刪除
+          </button>
+        </section>
+        <p className="security-footnote">
+          刪除完成後不保留可恢復副本；系統不會寄送帳號刪除通知信。
+        </p>
+        {immediateDeleteOpen && (
+          <div className="danger-confirmation" role="presentation">
+            <section
+              className="danger-confirmation-card"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="immediate-delete-title"
+              aria-describedby="immediate-delete-description"
+            >
+              <span className="eyebrow danger">IRREVERSIBLE ACTION</span>
+              <h3 id="immediate-delete-title">立即永久刪除？</h3>
+              <p id="immediate-delete-description">
+                這會立刻刪除這個 Coach、Workspace、學生與所有相關資料，無法恢復。
+              </p>
+              <form onSubmit={(event) => void confirmImmediateDeletion(event)}>
+                <label>
+                  輸入 <code>DELETE</code> 以確認
+                  <input
+                    value={immediateDeleteConfirmation}
+                    onChange={(event) => setImmediateDeleteConfirmation(event.target.value)}
+                    autoComplete="off"
+                    autoFocus
+                    spellCheck={false}
+                  />
+                </label>
+                <div className="danger-confirmation-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={submitting}
+                    onClick={() => {
+                      setImmediateDeleteOpen(false)
+                      setImmediateDeleteConfirmation('')
+                    }}
+                  >
+                    保留帳號
+                  </button>
+                  <button
+                    className="danger-confirm-button"
+                    disabled={submitting || immediateDeleteConfirmation !== 'DELETE'}
+                  >
+                    永久刪除
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

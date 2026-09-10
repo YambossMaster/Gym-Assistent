@@ -29,7 +29,8 @@ publishable key；資料庫密碼與 secret/service-role key 不得進入瀏覽�
 
 資料庫設定與本機啟動方式請見 [`apps/api/README.md`](apps/api/README.md)。正式架構與
 核心詞彙分別記錄於 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 和
-[`CONTEXT.md`](CONTEXT.md)。
+[`CONTEXT.md`](CONTEXT.md)；M2 的 Email OTP／Google OAuth 外部設定與驗收流程見
+[`docs/AUTH_CONFIGURATION.md`](docs/AUTH_CONFIGURATION.md)。
 
 ## 工程接手
 

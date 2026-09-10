@@ -41,9 +41,11 @@ application module.
 
 ## Backend shape
 
-V1 is one deployable API process. Modules expose complete operations rather than table CRUD. A
-background worker may later run from the same codebase when notifications or retries exist; it is
-not part of the initial runtime.
+V1 is one deployable API process plus one small Supabase Edge Function for daily account lifecycle
+deletion. Modules expose complete operations rather than table CRUD. The browser never receives
+Auth-administration authority: the Edge Function uses only platform-provided server secrets, and
+`pg_cron` invokes it through `pg_net` with a Vault-held function-specific token. Other notification workers are not
+part of the initial runtime.
 
 ```text
 HTTP adapter -> application modules -> repository interface -> PostgreSQL adapter
@@ -76,9 +78,18 @@ verified subject is the owning `auth.users.id`; user-editable metadata is never 
 Tests have an explicit development identity verifier, but the running API always verifies a real
 Supabase access token.
 
-The initial account policy is provisioned coaches only. Self-service registration, invitations,
-recovery, and organization membership are not implied by adding Auth and remain separate product
-decisions.
+V1 uses public Coach self-service registration: a Coach creates a unique Email/password account and
+must verify the Email with a six-digit OTP. Google OAuth is an equal sign-in method. Supabase links
+verified Email identities with the same address to one `auth.users` subject, so an existing
+Email/password Coach can sign in with Google using that Email. A Google-only Coach sets a password
+only after signing in. The approved public registration check explicitly reports an existing Email;
+this accepted exception exposes account existence. Administrative
+provisioning is limited to development and test accounts. Recovery, global sign-out, deletion, and
+the account-data lifecycle remain explicit M2 operations; none of these flows grants a browser
+authority over a Workspace. A deletion request is reversible for 14 days, but immediate, scheduled,
+and inactivity deletion permanently remove the Auth user and all Workspace-owned data through the
+server-only boundary. Successful authenticated product operations update the server-side activity
+timestamp; token refreshes, heartbeats, and deletion-status reads do not.
 
 ## Supabase database access
 

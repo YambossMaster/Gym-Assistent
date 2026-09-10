@@ -124,7 +124,9 @@ Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼�
 - 無 token、過期 token、錯誤 audience 皆為 401；前端傳入 `workspaceId` 被拒絕。
 - 兩個 Coach 的資料不可互讀；自動測試與一次真實遠端測試均留下證據。
 - Security Advisor 0 errors／0 warnings；Performance Advisor 無需立即處理的 error／warning。
-- 所有 secrets 只存在 Git 忽略的本機或部署環境 secret store。
+- 所有 secrets 只存在 Git 忽略的本機或部署環境 secret store。**已核准的 M1 例外**：2026-09-09 曾在
+  對話中暴露的 development database password 與 Auth secret key，使用者明確接受不輪替；值不在 Git
+  或公開 payload，風險必須持續記在 `PROJECT_STATUS.md`，且不得以此例外放寬 M8 的全量輪替門檻。
 
 ### M2 — Coach account operations
 
@@ -134,17 +136,32 @@ Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼�
 
 **內容**
 
-- 決定邀請制或自助註冊；在決定前維持 provisioned-only。
-- Email 驗證、密碼重設、登出所有裝置及帳號刪除流程。
+- V1 採公開自助註冊：Coach 以唯一 Email 與自訂密碼建立帳號，Email 必須使用六位 OTP 驗證；管理端
+  建立帳號只限 development／test。
+- Google OAuth 納入正式登入方式。已驗證的相同 Email 會連結為同一個 Coach identity；若帳號僅有
+  Google identity，Coach 應先以 Google 登入後從帳號安全設定密碼。已核准例外：公開註冊會先查詢
+  既有 Email，並明示「此帳號已經註冊過。」；使用者接受這會揭露帳號是否存在的 enumeration risk。
+- Email 驗證、密碼重設、登出所有裝置及帳號刪除流程。Coach 要求刪除後進入 14 日倒數，可取消；
+  倒數期間可明確選擇立即刪除，期限屆滿則自動刪除。連續 365 天未有活動的帳號不寄提醒、直接
+  自動刪除。三條刪除路徑都永久移除 Coach 的 Supabase Auth user 與該 Coach Workspace
+  擁有的全部資料，不提供保留、匯出或復原副本。活動定義為成功完成的已驗證產品 API operation；
+  token refresh、背景心跳與只讀取帳號刪除狀態均不計入活動。
+- 在 SMTP 每日 300 封限制下，只允許註冊 Email 驗證碼與密碼重設兩種郵件；不得啟用
+  Supabase password／identity 等 security-notification emails，或新增未經核准的應用寄信種類。
+- 以上倒數與閒置處理需要每日排程；以 Supabase `pg_cron`／`pg_net` 呼叫受專用高熵 token 保護的 Edge
+  Function。刪除 Auth user 前必須先撤銷所有 session，並由 server-only credential 執行，瀏覽器不得取得
+  管理權限。
 - Workspace settings：顯示名稱、時區與必要偏好；授權仍以不可編輯的 user ID 為準。
 - Auth redirect allowlist、rate limit、CAPTCHA／自訂 SMTP 的啟用門檻。
 - Session 與安全事件處理；敏感操作需要時檢查 `session_id`。
 
 **完成條件**
 
-- 註冊／邀請、登入、refresh、reset、logout、delete 的成功與失敗路徑都有測試。
+- 自助註冊、Email OTP 驗證、Email／密碼登入、Google 登入與同 Email identity linking、refresh、reset、
+  logout、delete 的成功與失敗路徑都有測試；Google provider 啟用後須完成真實 E2E。
 - 使用者可編輯 metadata 不參與授權。
 - 帳號刪除的資料後果、保留期及恢復限制有文件與確認畫面。
+- 每日閒置刪除排程以隔離帳號驗證：365 天門檻、14 日期滿、取消、失敗回報與不重複執行。
 - 桌面與 390px 實際驗證完成。
 
 ### M3 — Student & Lesson entitlement
@@ -297,6 +314,9 @@ Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼�
 - 自動備份、恢復文件及至少一次 staging restore drill。
 - Privacy policy、資料匯出、帳號刪除、保留期與事件處理流程。
 - 公開端點 rate limits；Security/Performance Advisor 與 dependency audit 納入 release gate。
+- 公開註冊的 Email canonicalization／normalization：只對有明確、已驗證語意的 provider 規則處理別名，
+  保留原始 Email 作為通知地址；不得以全域移除 `+`、`.` 等猜測規則誤合併不同收件者。與 rate limit、CAPTCHA、
+  device／network abuse signals 一起驗證，避免子位置指定被用於重複優惠、免費額度或假帳號濫用。
 - 建立最小 audit events；避免把學生內容與 token 寫入 logs。
 
 **完成條件**
@@ -320,14 +340,14 @@ Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼�
 
 以下問題到達指定里程碑前才需要決定；在此之前使用保守預設：
 
-| 最晚時間    | 決策                               | 未決時預設                 |
-| ----------- | ---------------------------------- | -------------------------- |
-| M2 開始     | 邀請制或自助註冊                   | provisioned-only           |
-| M2 完成     | 自訂 SMTP、CAPTCHA 與 session 限制 | 不開放外部註冊             |
-| M3 刪除功能 | 資料保留、復原與匯出政策           | 不提供不可逆批次刪除       |
-| M7 開始     | 舊 Demo 資料的匯入 UX              | preview + explicit confirm |
-| M8 開始     | Web/API hosting 與網域             | 不建立 production 環境     |
-| Beta 前     | 錯誤追蹤、監控、隱私文件與試用條款 | 不邀請外部 Coach           |
+| 最晚時間    | 決策                               | 未決時預設                         |
+| ----------- | ---------------------------------- | ---------------------------------- |
+| M2 開始     | 教練帳號取得方式                   | 已定案：公開自助註冊＋Google OAuth |
+| M2 完成     | 自訂 SMTP、CAPTCHA 與 session 限制 | 僅 development 環境可開放註冊      |
+| M3 刪除功能 | 資料保留、復原與匯出政策           | 不提供不可逆批次刪除               |
+| M7 開始     | 舊 Demo 資料的匯入 UX              | preview + explicit confirm         |
+| M8 開始     | Web/API hosting 與網域             | 不建立 production 環境             |
+| Beta 前     | 錯誤追蹤、監控、隱私文件與試用條款 | 不邀請外部 Coach                   |
 
 ## 6. 可並行與必須序列化
 
