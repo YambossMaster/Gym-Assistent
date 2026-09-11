@@ -21,7 +21,7 @@
 | Field                  | Current value                                                                                       |
 | ---------------------- | --------------------------------------------------------------------------------------------------- |
 | Active milestone       | **M3 — Student & Lesson entitlement**                                                               |
-| Milestone state        | **Ready for delivery CI**                                                                           |
+| Milestone state        | **Done**                                                                                            |
 | Current branch         | `main`，M2 commit `cdfee3f` 已推送至 `origin/main`，CI #2／#3 成功                                  |
 | Development database   | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17                            |
 | Remote migration       | `20260910103000_student_lesson_entitlement`、`20260910125414_lesson_purchase_manual_income` applied |
@@ -31,24 +31,24 @@
 
 ## Next handoff
 
-**M3 Student／Lesson entitlement 的本機與實機驗收已完成。**
+**M3 Student／Lesson entitlement 已完成。**
 
-1. 推送 M3 delivery commit，確認 GitHub Actions verify 與 migration dry-run 成功；成功後將 M3 標記為 Done。
+1. 開始 M4 前讀取 Demo 排程不變量與 M3 的 `course_session` 最小 seam；不得提前建立 M5／M6 資料模型。
 
 ## Milestone status
 
-| Milestone                        | State                 | Evidence / remaining work                                                                                                                                                                                         |
-| -------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0 Repository & product contract | Done                  | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline                                                                                                       |
-| M1 Cloud foundation tracer       | Done                  | migration、API、Web/Auth、runtime login、雙 Coach live E2E、remote dry-run 與 CI 已完成；有使用者接受的 development credential exposure 例外（M8 前仍須輪替）                                                     |
-| M2 Coach account operations      | Done                  | 公開註冊／六位 OTP、Google same-email linking、recovery 完整重設與重新登入、local/global logout、settings、14 日排程/取消／立即刪除與 365 天直接刪除均已完成；daily cron／Vault／Edge Function 以隔離資料真實驗收 |
-| M3 Student & Lesson entitlement  | Ready for delivery CI | private Student detail/edit/archive/delete、Lesson Purchase／derived balance、manual-income record/summary、two-Coach live E2E、Demo preview/checksum、desktop 與 390px 實測均完成；尚缺遠端 CI evidence          |
-| M4 Scheduling                    | Not started           | 以 Demo 不變量為規格來源                                                                                                                                                                                          |
-| M5 Training                      | Not started           | 以 completed-set gate 與 autosave 規則為規格來源                                                                                                                                                                  |
-| M6 Public capability links       | Not started           | 後端 token/hash/redemption 尚未建立                                                                                                                                                                               |
-| M7 Local resilience & migration  | Not started           | 正式 IndexedDB 與 Demo import 尚未建立                                                                                                                                                                            |
-| M8 Deployment & Beta readiness   | Not started           | staging/production、hosting、CI、observability、restore drill 尚未建立                                                                                                                                            |
-| M9 Post-V1 options               | Deferred              | 不得提前侵入 V1 核心                                                                                                                                                                                              |
+| Milestone                        | State       | Evidence / remaining work                                                                                                                                                                                         |
+| -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0 Repository & product contract | Done        | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline                                                                                                       |
+| M1 Cloud foundation tracer       | Done        | migration、API、Web/Auth、runtime login、雙 Coach live E2E、remote dry-run 與 CI 已完成；有使用者接受的 development credential exposure 例外（M8 前仍須輪替）                                                     |
+| M2 Coach account operations      | Done        | 公開註冊／六位 OTP、Google same-email linking、recovery 完整重設與重新登入、local/global logout、settings、14 日排程/取消／立即刪除與 365 天直接刪除均已完成；daily cron／Vault／Edge Function 以隔離資料真實驗收 |
+| M3 Student & Lesson entitlement  | Done        | private Student detail/edit/archive/delete、Lesson Purchase／derived balance、manual-income record/summary、two-Coach live E2E、Demo preview/checksum、desktop 與 390px 實測、remote CI #5 均完成                 |
+| M4 Scheduling                    | Not started | 以 Demo 不變量為規格來源                                                                                                                                                                                          |
+| M5 Training                      | Not started | 以 completed-set gate 與 autosave 規則為規格來源                                                                                                                                                                  |
+| M6 Public capability links       | Not started | 後端 token/hash/redemption 尚未建立                                                                                                                                                                               |
+| M7 Local resilience & migration  | Not started | 正式 IndexedDB 與 Demo import 尚未建立                                                                                                                                                                            |
+| M8 Deployment & Beta readiness   | Not started | staging/production、hosting、CI、observability、restore drill 尚未建立                                                                                                                                            |
+| M9 Post-V1 options               | Deferred    | 不得提前侵入 V1 核心                                                                                                                                                                                              |
 
 ## Verified baseline
 
@@ -126,6 +126,14 @@ npm run build
 並行分支各自保留日誌變更；整合者合併時按日期保留每筆記錄並重新計算 Current snapshot。
 
 ## Engineering log
+
+### 2026-09-11 — LOG-036 — M3 delivery CI completion
+
+- **Scope**：推送完整 M3 delivery commit 並確認 GitHub Actions remote gate；不改變 M4 範圍。
+- **Outcome**：commit `c55a95d` 已推送至 `origin/main`；M3 正式標記為 Done。
+- **Verification**：GitHub Actions CI #5（run `34565338417`）對 `c55a95d` completed successfully，verify 與 migration dry-run 均成功，耗時 55 秒。
+- **Known issue**：None for M3. M8 前仍維持既有 development-only、leaked-password protection 與 credential-rotation risks。
+- **Next**：開始 M4 前讀取 Demo 排程不變量，依 Roadmap 建立 Scheduling 的 transaction／concurrency contract。
 
 ### 2026-09-11 — LOG-035 — M3 390px UI acceptance
 
