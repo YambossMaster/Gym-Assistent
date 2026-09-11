@@ -13,7 +13,7 @@
 - V1 不支援工作室多人共同管理，若未來改變須新增 ADR 並重做授權模型評估。
 - Student 沒有帳號，只能用限時、限資源、限動作的 Capability Link。
 - V1 不收集傷病史、醫療資訊、體脂或體重等健康資料。
-- V1 不處理線上付款；Lesson Purchase 是教練登錄的堂數權益，不是金流交易。
+- V1 不處理線上付款；Lesson Purchase 是教練登錄的堂數權益，可附帶已實收金額與幣別作為教練收入紀錄，但不是金流交易。
 - Web/PWA 先上線，台灣市場先行；預設時區為 `Asia/Taipei`，資料庫時間存 UTC。
 - 採 online-first：保護草稿與尚未送出的訓練內容，不做任意資料的完整離線同步。
 - Supabase 提供 Managed PostgreSQL 與 Auth；Fastify 模組化單體是正式資料唯一入口。

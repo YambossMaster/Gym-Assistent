@@ -45,4 +45,59 @@ describe('StudentModule', () => {
       updatedAt: '2026-09-07T10:00:00.000Z',
     })
   })
+
+  it('derives remaining lessons from purchases and completed sessions without repairing a negative balance', async () => {
+    const repository = new MemoryStudentRepository()
+    const students = new StudentModule({
+      repository,
+      createId: (() => {
+        let next = 0
+        return () => `id-${++next}`
+      })(),
+      now: () => new Date('2026-09-10T10:00:00.000Z'),
+    })
+    const student = await students.create(coachA, { name: 'Alice' })
+    await students.createLessonPurchase(coachA, student.id, {
+      purchasedAt: '2026-09-01T00:00:00.000Z',
+      lessonCount: 2,
+      amountMinor: 4000,
+      currency: 'TWD',
+      privateNote: 'Coach only',
+    })
+    const workspaceId = await repository.resolveWorkspace(coachA)
+    repository.recordCompletedSessionForTest(workspaceId, student.id)
+    repository.recordCompletedSessionForTest(workspaceId, student.id)
+    repository.recordCompletedSessionForTest(workspaceId, student.id)
+
+    await expect(students.detail(coachA, student.id)).resolves.toMatchObject({
+      student: { id: student.id },
+      purchases: [
+        { lessonCount: 2, amountMinor: 4000, currency: 'TWD', privateNote: 'Coach only' },
+      ],
+      lessonSummary: { purchased: 2, completed: 3, remaining: -1 },
+    })
+    await expect(students.incomeSummary(coachA)).resolves.toEqual([
+      { currency: 'TWD', amountMinor: 4000 },
+    ])
+    await expect(students.detail(coachB, student.id)).resolves.toBeNull()
+  })
+
+  it('requires the current version to edit or permanently delete a student', async () => {
+    const students = new StudentModule({
+      repository: new MemoryStudentRepository(),
+      createId: () => 'student-a',
+      now: () => new Date('2026-09-10T10:00:00.000Z'),
+    })
+    const created = await students.create(coachA, { name: 'Alice' })
+    const updated = await students.update(coachA, created.id, {
+      name: 'Alice',
+      active: false,
+      version: 1,
+    })
+    expect(updated).toMatchObject({ active: false, version: 2 })
+    await expect(students.delete(coachA, created.id, 1)).rejects.toMatchObject({
+      name: 'StudentVersionConflictError',
+    })
+    await expect(students.delete(coachA, created.id, 2)).resolves.toBe(true)
+  })
 })

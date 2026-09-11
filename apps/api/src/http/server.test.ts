@@ -106,6 +106,61 @@ describe('student HTTP interface', () => {
     expect(response.statusCode).toBe(400)
     expect(response.json()).toMatchObject({ error: 'invalid_request' })
   })
+
+  it('returns a coach-only student detail with a derived lesson balance and versioned deletion', async () => {
+    const server = createServer()
+    const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+    const created = await server.inject({
+      method: 'POST',
+      url: '/v1/students',
+      headers,
+      payload: { name: 'Alice' },
+    })
+    const student = created.json().student as { id: string; version: number }
+    const purchase = await server.inject({
+      method: 'POST',
+      url: `/v1/students/${student.id}/lesson-purchases`,
+      headers,
+      payload: {
+        purchasedAt: '2026-09-01T00:00:00.000Z',
+        lessonCount: 3,
+        amountMinor: 6000,
+        currency: 'TWD',
+        privateNote: 'Coach only',
+      },
+    })
+    expect(purchase.statusCode).toBe(201)
+    const detail = await server.inject({
+      method: 'GET',
+      url: `/v1/students/${student.id}`,
+      headers,
+    })
+    expect(detail.statusCode).toBe(200)
+    expect(detail.json().detail).toMatchObject({
+      lessonSummary: { purchased: 3, completed: 0, remaining: 3 },
+      purchases: [{ privateNote: 'Coach only', amountMinor: 6000, currency: 'TWD' }],
+    })
+    const income = await server.inject({
+      method: 'GET',
+      url: '/v1/lesson-purchase-income',
+      headers,
+    })
+    expect(income.statusCode).toBe(200)
+    expect(income.json()).toEqual({ income: [{ currency: 'TWD', amountMinor: 6000 }] })
+    const otherCoach = await server.inject({
+      method: 'GET',
+      url: `/v1/students/${student.id}`,
+      headers: { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000002' },
+    })
+    expect(otherCoach.statusCode).toBe(404)
+    const deleted = await server.inject({
+      method: 'DELETE',
+      url: `/v1/students/${student.id}`,
+      headers,
+      payload: { confirmation: 'DELETE', version: student.version },
+    })
+    expect(deleted.statusCode).toBe(204)
+  })
 })
 
 describe('workspace settings HTTP interface', () => {

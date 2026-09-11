@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-10 (Asia/Taipei)
+> Last verified: 2026-09-11 (Asia/Taipei)
 
 本文件是跨對話的精簡工程交接紀錄。它只回答四個問題：目前在哪裡、已完成什麼、卡在哪裡、
 下一個人先做什麼。工程順序與完成條件完全依照 [`ROADMAP.md`](ROADMAP.md)；本文件不得建立
@@ -18,38 +18,37 @@
 
 ## Current snapshot
 
-| Field                  | Current value                                                            |
-| ---------------------- | ------------------------------------------------------------------------ |
-| Active milestone       | **M3 — Student & Lesson entitlement**                                    |
-| Milestone state        | **Not started**                                                          |
-| Current branch         | `main`，M2 commit `cdfee3f` 已推送至 `origin/main`，CI #2／#3 成功       |
-| Development database   | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17 |
-| Remote migration       | `20260910073809_schedule_direct_inactivity_deletion` applied             |
-| Formal applications    | `apps/api`, `apps/web`                                                   |
-| Archived prototype     | independent `demo/`, storage key `form-coach-mvp-v1`                     |
-| Production data status | **No production environment; do not store real customer data**           |
+| Field                  | Current value                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| Active milestone       | **M3 — Student & Lesson entitlement**                                                               |
+| Milestone state        | **Ready for delivery CI**                                                                           |
+| Current branch         | `main`，M2 commit `cdfee3f` 已推送至 `origin/main`，CI #2／#3 成功                                  |
+| Development database   | Supabase project `Gym Assistant`, region `ap-northeast-2`, PostgreSQL 17                            |
+| Remote migration       | `20260910103000_student_lesson_entitlement`、`20260910125414_lesson_purchase_manual_income` applied |
+| Formal applications    | `apps/api`, `apps/web`                                                                              |
+| Archived prototype     | independent `demo/`, storage key `form-coach-mvp-v1`                                                |
+| Production data status | **No production environment; do not store real customer data**                                      |
 
 ## Next handoff
 
-**M2 已完成；從 M3 的 Student 與 Lesson entitlement vertical slice 開始。**
+**M3 Student／Lesson entitlement 的本機與實機驗收已完成。**
 
-1. 依 `docs/ROADMAP.md` 與 `CONTEXT.md` 定義 `student`／`lesson_purchase` 的 M3 後端 operation、資料不變量與
-   隔離測試；不得把現有 M1 Student tracer 誤當作完成的 entitlement model。
+1. 推送 M3 delivery commit，確認 GitHub Actions verify 與 migration dry-run 成功；成功後將 M3 標記為 Done。
 
 ## Milestone status
 
-| Milestone                        | State       | Evidence / remaining work                                                                                                                                                                                         |
-| -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0 Repository & product contract | Done        | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline                                                                                                       |
-| M1 Cloud foundation tracer       | Done        | migration、API、Web/Auth、runtime login、雙 Coach live E2E、remote dry-run 與 CI 已完成；有使用者接受的 development credential exposure 例外（M8 前仍須輪替）                                                     |
-| M2 Coach account operations      | Done        | 公開註冊／六位 OTP、Google same-email linking、recovery 完整重設與重新登入、local/global logout、settings、14 日排程/取消／立即刪除與 365 天直接刪除均已完成；daily cron／Vault／Edge Function 以隔離資料真實驗收 |
-| M3 Student & Lesson entitlement  | Not started | 現有 Student 只是 tracer，Lesson Purchase 尚未建模                                                                                                                                                                |
-| M4 Scheduling                    | Not started | 以 Demo 不變量為規格來源                                                                                                                                                                                          |
-| M5 Training                      | Not started | 以 completed-set gate 與 autosave 規則為規格來源                                                                                                                                                                  |
-| M6 Public capability links       | Not started | 後端 token/hash/redemption 尚未建立                                                                                                                                                                               |
-| M7 Local resilience & migration  | Not started | 正式 IndexedDB 與 Demo import 尚未建立                                                                                                                                                                            |
-| M8 Deployment & Beta readiness   | Not started | staging/production、hosting、CI、observability、restore drill 尚未建立                                                                                                                                            |
-| M9 Post-V1 options               | Deferred    | 不得提前侵入 V1 核心                                                                                                                                                                                              |
+| Milestone                        | State                 | Evidence / remaining work                                                                                                                                                                                         |
+| -------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0 Repository & product contract | Done                  | Demo 已獨立歸檔，CONTEXT/Architecture/ADR/Roadmap 已建立；root 與 Demo checks/build 通過並形成乾淨 baseline                                                                                                       |
+| M1 Cloud foundation tracer       | Done                  | migration、API、Web/Auth、runtime login、雙 Coach live E2E、remote dry-run 與 CI 已完成；有使用者接受的 development credential exposure 例外（M8 前仍須輪替）                                                     |
+| M2 Coach account operations      | Done                  | 公開註冊／六位 OTP、Google same-email linking、recovery 完整重設與重新登入、local/global logout、settings、14 日排程/取消／立即刪除與 365 天直接刪除均已完成；daily cron／Vault／Edge Function 以隔離資料真實驗收 |
+| M3 Student & Lesson entitlement  | Ready for delivery CI | private Student detail/edit/archive/delete、Lesson Purchase／derived balance、manual-income record/summary、two-Coach live E2E、Demo preview/checksum、desktop 與 390px 實測均完成；尚缺遠端 CI evidence          |
+| M4 Scheduling                    | Not started           | 以 Demo 不變量為規格來源                                                                                                                                                                                          |
+| M5 Training                      | Not started           | 以 completed-set gate 與 autosave 規則為規格來源                                                                                                                                                                  |
+| M6 Public capability links       | Not started           | 後端 token/hash/redemption 尚未建立                                                                                                                                                                               |
+| M7 Local resilience & migration  | Not started           | 正式 IndexedDB 與 Demo import 尚未建立                                                                                                                                                                            |
+| M8 Deployment & Beta readiness   | Not started           | staging/production、hosting、CI、observability、restore drill 尚未建立                                                                                                                                            |
+| M9 Post-V1 options               | Deferred              | 不得提前侵入 V1 核心                                                                                                                                                                                              |
 
 ## Verified baseline
 
@@ -127,6 +126,46 @@ npm run build
 並行分支各自保留日誌變更；整合者合併時按日期保留每筆記錄並重新計算 Current snapshot。
 
 ## Engineering log
+
+### 2026-09-11 — LOG-035 — M3 390px UI acceptance
+
+- **Scope**：完成 M3 Student detail、Lesson Purchase 與 manual-income summary 的精確 390px 實機驗收；不擴充 M4 排程或線上金流。
+- **Outcome**：已登入 Chrome session 以 390×844 viewport 建立 temporary Student、登錄 3 堂／TWD 6,000，購課歷史、remaining 3／purchased 3／completed 0 與累計實收同步更新。頁面 `innerWidth` 為 390，document/body scroll width 為 375，無水平溢位；temporary fixture 已刪除並還原 viewport。
+- **Verification**：精確 390px DOM／responsive 實測通過；LOG-034 的 root check、build、migration dry-run、真實 two-Coach E2E 與 desktop UI evidence 仍有效。
+- **Known issue**：尚缺 M3 delivery commit 的 GitHub Actions remote CI evidence。
+- **Next**：推送 M3 delivery commit，確認 GitHub Actions verify 與 migration dry-run 成功後標記 M3 Done。
+
+### 2026-09-11 — LOG-034 — M3 manual income record and summary
+
+- **Scope**：依使用者明確決定，將 Demo 的教練手動購課實收與收入統計納入 M3；不建立線上付款、金流或退款流程。
+- **Outcome**：`lesson_purchase` 新增 `amount_minor` 與 ISO 幣別；API、repository、live E2E 與 Demo preview 皆保留該收入資料。Web 以 TWD 輸入，顯示每筆收款與按幣別分組的累計實收。修正 PostgreSQL `bigint` 在 Node adapter 的數字轉換；temporary UI fixture 已刪除。
+- **Verification**：root `npm run check`（API 8 files／22 tests；Web 3 files／17 tests）、root `npm run build`、`npm run db:push:dry`、`git diff --check` 均通過；真實雙 Coach `npm run e2e:m3 --workspace @gym-assistant/api` 通過 owner receipt/detail、tenant isolation、archive 與 cleanup。Chrome desktop 實測 3 堂／TWD 6,000 會同步更新剩餘堂數、購課歷史與累計實收。Migration 已套用，Security Advisor 維持 1 個既有 leaked-password-protection warning，Performance Advisor 僅 2 個既有 lifecycle unused-index INFO。
+- **Known issue**：M3 尚缺 390px Student detail／purchase layout 實測及推送交付 commit 後 GitHub CI 的遠端完成證據。現有 Chrome automation 無法讀取 device-toolbar 精確 viewport，故未將其宣告為 390px 通過。
+- **Next**：以可設定 390px viewport 的已登入 browser session 實測 Student detail／purchase layout；通過後取得使用者授權推送 M3 delivery commit 並確認 GitHub CI。
+
+### 2026-09-10 — LOG-033 — M3 Chrome desktop UI validation and form reset fix
+
+- **Scope**：使用授權 Chrome／Google test session 驗證 M3 Student detail／Lesson Purchase desktop flow，並處理實測發現的 UI error；不推送 shared history。
+- **Outcome**：Google session 下完成「建立暫時 Student → 開啟 detail → 登錄 3 堂 → 顯示 remaining 3／purchased 3／completed 0」實測。發現購課成功後非同步 React event 已釋放、導致 `form.reset()` error；現在先保留 form reference 再 await。以 Supabase connector 確認只有 1 筆精確 temporary fixture，並刪除後由 cascade 清理購課。Security Advisor 維持 1 個已知 leaked-password-protection warning；Performance Advisor 僅 2 個既有 lifecycle unused-index INFO。
+- **Verification**：Chrome live desktop UI，修正後完整 re-test 無 form reset error；Supabase project healthy（PostgreSQL 17.6）與兩輪 fixture count/delete read-back。390px UI 未執行，不能宣告完成。
+- **Known issue**：M3 尚缺 390px 實測及推送交付 commit 後 GitHub CI 的遠端完成證據。
+- **Next**：以已登入 Chrome session 完成 390px Student detail／purchase layout 驗收，然後請使用者授權推送 M3 delivery commit 並確認 CI。
+
+### 2026-09-10 — LOG-032 — M3 live isolation and Demo entitlement preview
+
+- **Scope**：補齊 M3 private HTTP 的真實 two-Coach E2E，以及不寫入資料庫的 Demo Student／Lesson Purchase preview/checksum；不提前匯入 Demo、建立 M4 排程或推送 shared history。
+- **Outcome**：`npm run e2e:m3 --workspace @gym-assistant/api` 已以兩個真實 Supabase Coach 驗證 owner 購課/detail、第二 Coach 404 隔離、versioned archive；測試 Student 在 finally cleanup 中永久刪除。`migration:preview:m3` 會穩定 UUID mapping、驗證來源、報告 duplicate/orphan rows 與 checksum；legacy amount 被明確 warning 排除，因 M3 是 entitlement 非 payment，且不會改寫 Demo storage 或正式 DB。
+- **Verification**：live E2E 五項檢查通過；API typecheck＋22 tests、API build 通過。前一工作包的 root check（API 20、Web 17 tests）、root build 與 remote migration dry-run 仍有效。
+- **Known issue**：M3 尚缺 Student detail 的 desktop／390px 實測，以及推送交付 commit 後 GitHub CI 的遠端完成證據；正式 Demo import 仍依 M7 的 explicit-confirm flow。
+- **Next**：以真實 Web session 檢查 Student detail／purchase flow 的 desktop 與 390px，然後請使用者授權推送 M3 delivery commit 並確認 CI。
+
+### 2026-09-10 — LOG-031 — M3 Student and Lesson entitlement vertical slice
+
+- **Scope**：建立 M3 Student detail、版本化編輯／封存／明確刪除、Lesson Purchase 與推導式堂數餘額的 Web／HTTP／module／PostgreSQL 切片；不實作 M4 排程操作或 Demo 匯入。
+- **Outcome**：migration `20260910103000_student_lesson_entitlement` 已在 development 套用；`lesson_purchase` 保留 Coach private note，`course_session` 只新增 completed entitlement state。餘額一律是購課總數減已完成 session，不儲存或直接調整 balance；低／負數顯示為警告。Student edit/delete 使用 version，刪除要求明確的 `DELETE` request 並由外鍵清除相關 entitlement/session data。
+- **Verification**：API typecheck＋20 tests、Web format/typecheck＋16 tests、root production build、migration dry-run 與 remote apply 成功；`git diff --check` 通過。首次 sandbox 測試／Vite／Supabase telemetry 的 `spawn EPERM` 已以核准系統環境重跑。
+- **Known issue**：M3 尚未完成：缺 PostgreSQL live two-Coach E2E、Demo Student/Purchase mapping preview/checksum/re-run、desktop/390px 實測，以及交付 commit 的 GitHub CI。
+- **Next**：為 M3 private HTTP contract 建立並執行隔離 live E2E，接著實作 Demo Student／Lesson Purchase migration preview/checksum。
 
 ### 2026-09-10 — LOG-030 — Milestone remote-CI completion gate
 

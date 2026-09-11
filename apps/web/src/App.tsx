@@ -19,14 +19,21 @@ import {
   ApiError,
   cancelAccountDeletion,
   createStudent,
+  createLessonPurchase,
+  deleteStudent,
   deleteAccountImmediately,
   getAccountLifecycle,
+  getLessonPurchaseIncome,
   getWorkspaceSettings,
+  getStudentDetail,
   isRegistrationEmailTaken,
   listStudents,
   requestAccountDeletion,
   updateWorkspaceSettings,
+  updateStudent,
   type Student,
+  type StudentDetail,
+  type LessonIncomeSummary,
   type WorkspaceSettings
 } from './api'
 import {
@@ -342,18 +349,25 @@ function SignIn() {
 
 function StudentWorkspace({ session }: { session: Session }) {
   const [students, setStudents] = useState<Student[]>([])
+  const [income, setIncome] = useState<LessonIncomeSummary[]>([])
   const [state, setState] = useState<LoadState>('idle')
   const [message, setMessage] = useState('')
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [securityOpen, setSecurityOpen] = useState(false)
   const [workspaceSettingsOpen, setWorkspaceSettingsOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setState('loading')
     setMessage('')
     try {
-      setStudents(await listStudents(session.access_token))
+      const [listedStudents, incomeSummary] = await Promise.all([
+        listStudents(session.access_token),
+        getLessonPurchaseIncome(session.access_token)
+      ])
+      setStudents(listedStudents)
+      setIncome(incomeSummary)
       setState('ready')
     } catch (error) {
       setState('error')
@@ -440,6 +454,24 @@ function StudentWorkspace({ session }: { session: Session }) {
           </div>
         </div>
 
+        {state === 'ready' && (
+          <section className="income-summary reveal delay-1" aria-label="累計實收">
+            <span>累計實收</span>
+            {income.length ? (
+              <div>
+                {income.map((item) => (
+                  <strong key={item.currency}>
+                    {formatMoney(item.amountMinor, item.currency)}
+                  </strong>
+                ))}
+              </div>
+            ) : (
+              <strong>尚無收款紀錄</strong>
+            )}
+            <small>依教練手動登錄的購課實收統計，不包含線上付款。</small>
+          </section>
+        )}
+
         {message && (
           <div className="notice error" role="alert">
             <span>{message}</span>
@@ -469,6 +501,12 @@ function StudentWorkspace({ session }: { session: Session }) {
                   <span>{student.active ? '進行中' : '已封存'}</span>
                   <small>v{student.version}</small>
                 </div>
+                <button
+                  className="student-card-action"
+                  onClick={() => setSelectedStudentId(student.id)}
+                >
+                  查看學生與堂數 <ArrowRight />
+                </button>
               </article>
             ))}
           </section>
@@ -494,6 +532,266 @@ function StudentWorkspace({ session }: { session: Session }) {
           onClose={() => setWorkspaceSettingsOpen(false)}
         />
       )}
+      {selectedStudentId && (
+        <StudentDetailDialog
+          accessToken={session.access_token}
+          studentId={selectedStudentId}
+          onClose={() => setSelectedStudentId(null)}
+          onChanged={() => void load()}
+        />
+      )}
+    </div>
+  )
+}
+
+function StudentDetailDialog({
+  accessToken,
+  studentId,
+  onClose,
+  onChanged
+}: {
+  accessToken: string
+  studentId: string
+  onClose: () => void
+  onChanged: () => void
+}) {
+  const [detail, setDetail] = useState<StudentDetail | null>(null)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const loadDetail = useCallback(async () => {
+    setError('')
+    try {
+      setDetail(await getStudentDetail(accessToken, studentId))
+    } catch (loadError) {
+      setError(readError(loadError))
+    }
+  }, [accessToken, studentId])
+  useEffect(() => {
+    void loadDetail()
+  }, [loadDetail])
+  const saveStudent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!detail) return
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+    const values = new FormData(event.currentTarget)
+    try {
+      const student = await updateStudent(accessToken, detail.student.id, {
+        name: String(values.get('name') || '').trim(),
+        phone: String(values.get('phone') || '').trim(),
+        goal: String(values.get('goal') || '').trim(),
+        privateNote: String(values.get('privateNote') || '').trim(),
+        active: values.get('active') === 'on',
+        lineLinked: detail.student.lineLinked,
+        version: detail.student.version
+      })
+      setDetail((current) => (current ? { ...current, student } : current))
+      setMessage('學生資料已儲存。')
+      onChanged()
+    } catch (saveError) {
+      setError(readError(saveError))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  const addPurchase = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!detail) return
+    const form = event.currentTarget
+    setSubmitting(true)
+    setError('')
+    setMessage('')
+    const values = new FormData(event.currentTarget)
+    try {
+      await createLessonPurchase(accessToken, detail.student.id, {
+        purchasedAt: new Date(String(values.get('purchasedAt'))).toISOString(),
+        lessonCount: Number(values.get('lessonCount')),
+        amountMinor: Number(values.get('amountMinor')),
+        currency: 'TWD',
+        privateNote: String(values.get('purchaseNote') || '').trim()
+      })
+      await loadDetail()
+      setMessage('購課堂數已登錄；餘額會由已完成課堂自動推導。')
+      onChanged()
+      form.reset()
+    } catch (purchaseError) {
+      setError(readError(purchaseError))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  const remove = async () => {
+    if (!detail) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await deleteStudent(accessToken, detail.student.id, detail.student.version)
+      onChanged()
+      onClose()
+    } catch (deleteError) {
+      setError(readError(deleteError))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  const localToday = new Date().toISOString().slice(0, 10)
+  return (
+    <div className="modal-backdrop" role="presentation" onPointerDown={onClose}>
+      <section
+        className="modal student-detail-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-detail-title"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <span className="eyebrow dark">STUDENT / PRIVATE</span>
+            <h2 id="student-detail-title">{detail?.student.name || '學生資料'}</h2>
+          </div>
+          <button className="icon-button" aria-label="關閉" onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        {!detail && !error ? (
+          <p className="security-footnote">正在讀取學生資料…</p>
+        ) : (
+          detail && (
+            <>
+              <div className="lesson-balance">
+                <span>剩餘堂數</span>
+                <strong className={detail.lessonSummary.remaining <= 2 ? 'low-balance' : ''}>
+                  {detail.lessonSummary.remaining}
+                </strong>
+                <small>
+                  已購 {detail.lessonSummary.purchased} · 已完成 {detail.lessonSummary.completed}
+                </small>
+              </div>
+              <p className="security-footnote">
+                餘額只由購課與已完成課堂推導；低堂數或負數只會提示，不會自動修改。
+              </p>
+              <form onSubmit={saveStudent}>
+                <h3>學生資料</h3>
+                <label>
+                  姓名
+                  <input name="name" defaultValue={detail.student.name} required maxLength={120} />
+                </label>
+                <div className="field-row">
+                  <label>
+                    電話
+                    <input name="phone" defaultValue={detail.student.phone} maxLength={40} />
+                  </label>
+                  <label>
+                    訓練目標
+                    <input name="goal" defaultValue={detail.student.goal} maxLength={1000} />
+                  </label>
+                </div>
+                <label>
+                  私人備註
+                  <textarea
+                    name="privateNote"
+                    defaultValue={detail.student.privateNote}
+                    maxLength={4000}
+                  />
+                </label>
+                <label className="checkbox-label">
+                  <input name="active" type="checkbox" defaultChecked={detail.student.active} />
+                  進行中的學生（取消勾選為封存，不會刪除資料）
+                </label>
+                <button className="secondary-button" disabled={submitting}>
+                  儲存學生資料
+                </button>
+              </form>
+              <form className="purchase-form" onSubmit={addPurchase}>
+                <h3>登錄購課</h3>
+                <div className="field-row">
+                  <label>
+                    購買日期
+                    <input name="purchasedAt" type="date" defaultValue={localToday} required />
+                  </label>
+                  <label>
+                    堂數
+                    <input name="lessonCount" type="number" min="1" max="10000" required />
+                  </label>
+                  <label>
+                    實收金額（TWD）
+                    <input name="amountMinor" type="number" min="0" step="1" required />
+                  </label>
+                </div>
+                <label>
+                  教練備註
+                  <textarea name="purchaseNote" maxLength={4000} placeholder="僅供教練查看" />
+                </label>
+                <button className="primary-button compact" disabled={submitting}>
+                  登錄堂數 <ArrowRight />
+                </button>
+              </form>
+              <section className="purchase-history">
+                <h3>購課紀錄</h3>
+                {detail.purchases.length ? (
+                  detail.purchases.map((purchase) => (
+                    <div key={purchase.id}>
+                      <strong>{purchase.lessonCount} 堂</strong>
+                      <span>
+                        {new Date(purchase.purchasedAt).toLocaleDateString('zh-TW')} ·{' '}
+                        {formatMoney(purchase.amountMinor, purchase.currency)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p>尚無購課紀錄。</p>
+                )}
+              </section>
+              <section className="student-delete">
+                <h3>永久刪除學生</h3>
+                <p>這會刪除學生、購課與之後建立的課堂相關資料，無法復原。</p>
+                <button
+                  className="text-button danger-button"
+                  disabled={submitting}
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  永久刪除
+                </button>
+              </section>
+              {message && <p className="form-notice">{message}</p>}
+              {error && <p className="form-error">{error}</p>}
+              {deleteOpen && (
+                <div className="danger-confirmation" role="presentation">
+                  <section
+                    className="danger-confirmation-card"
+                    role="alertdialog"
+                    aria-modal="true"
+                  >
+                    <span className="eyebrow danger">IRREVERSIBLE ACTION</span>
+                    <h3>永久刪除 {detail.student.name}？</h3>
+                    <p>所有購課與課堂相關資料會一併刪除，無法復原。</p>
+                    <div className="danger-confirmation-actions">
+                      <button
+                        className="secondary-button"
+                        disabled={submitting}
+                        onClick={() => setDeleteOpen(false)}
+                      >
+                        保留學生
+                      </button>
+                      <button
+                        className="danger-confirm-button"
+                        disabled={submitting}
+                        onClick={() => void remove()}
+                      >
+                        永久刪除
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              )}
+            </>
+          )
+        )}
+        {error && !detail && <p className="form-error">{error}</p>}
+      </section>
     </div>
   )
 }
@@ -1008,6 +1306,14 @@ function AppLoading() {
 
 function initials(email: string | undefined) {
   return (email?.slice(0, 2) || 'CO').toUpperCase()
+}
+
+function formatMoney(amountMinor: number, currency: string) {
+  return new Intl.NumberFormat('zh-TW', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: currency === 'TWD' ? 0 : undefined
+  }).format(amountMinor)
 }
 
 function readError(error: unknown) {

@@ -1,9 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
-import type { Student } from '../students/student.js'
+import type {
+  LessonIncomeSummary,
+  LessonPurchase,
+  LessonSummary,
+  Student,
+  StudentDetail,
+} from '../students/student.js'
 import {
   type NewStudent,
+  type NewLessonPurchase,
   type StudentRepository,
+  StudentVersionConflictError,
+  type UpdatedStudent,
   type WorkspaceId,
 } from '../students/student-repository.js'
 import {
@@ -20,6 +29,8 @@ export class MemoryStudentRepository
 {
   readonly #workspaceByIdentity = new Map<string, WorkspaceId>()
   readonly #studentsByWorkspace = new Map<WorkspaceId, Student[]>()
+  readonly #purchasesByWorkspace = new Map<WorkspaceId, Map<string, LessonPurchase[]>>()
+  readonly #completedSessionsByWorkspace = new Map<WorkspaceId, Map<string, number>>()
   readonly #settingsByWorkspace = new Map<WorkspaceId, WorkspaceSettings>()
   readonly #lifecycleByWorkspace = new Map<WorkspaceId, AccountLifecycleStatus>()
 
@@ -31,6 +42,8 @@ export class MemoryStudentRepository
     const workspaceId = randomUUID()
     this.#workspaceByIdentity.set(key, workspaceId)
     this.#studentsByWorkspace.set(workspaceId, [])
+    this.#purchasesByWorkspace.set(workspaceId, new Map())
+    this.#completedSessionsByWorkspace.set(workspaceId, new Map())
     this.#settingsByWorkspace.set(workspaceId, {
       displayName: '我的工作台',
       timeZone: 'Asia/Taipei',
@@ -117,4 +130,122 @@ export class MemoryStudentRepository
     students.push(student)
     return { ...student }
   }
+
+  async getStudentDetail(
+    workspaceId: WorkspaceId,
+    studentId: string,
+  ): Promise<StudentDetail | null> {
+    const student = this.#studentsByWorkspace
+      .get(workspaceId)
+      ?.find((item) => item.id === studentId)
+    if (!student) return null
+    const purchases = this.#purchasesByWorkspace.get(workspaceId)?.get(studentId) ?? []
+    const lessonSummary = await this.lessonSummary(workspaceId, studentId)
+    if (!lessonSummary) return null
+    return { student: { ...student }, purchases: purchases.map(copyPurchase), lessonSummary }
+  }
+
+  async updateStudent(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    input: UpdatedStudent,
+  ): Promise<Student | null> {
+    const students = this.#studentsByWorkspace.get(workspaceId)
+    const index = students?.findIndex((item) => item.id === studentId) ?? -1
+    if (index < 0 || !students) return null
+    const current = students[index]
+    if (!current) return null
+    if (current.version !== input.expectedVersion) throw new StudentVersionConflictError()
+    const next: Student = {
+      id: current.id,
+      name: input.name,
+      phone: input.phone,
+      goal: input.goal,
+      privateNote: input.privateNote,
+      active: input.active,
+      lineLinked: input.lineLinked,
+      version: current.version + 1,
+      createdAt: current.createdAt,
+      updatedAt: input.now.toISOString(),
+    }
+    students[index] = next
+    return { ...next }
+  }
+
+  async deleteStudent(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    expectedVersion: number,
+  ): Promise<boolean> {
+    const students = this.#studentsByWorkspace.get(workspaceId)
+    const index = students?.findIndex((item) => item.id === studentId) ?? -1
+    if (index < 0 || !students) return false
+    const current = students[index]
+    if (!current) return false
+    if (current.version !== expectedVersion) throw new StudentVersionConflictError()
+    students.splice(index, 1)
+    this.#purchasesByWorkspace.get(workspaceId)?.delete(studentId)
+    this.#completedSessionsByWorkspace.get(workspaceId)?.delete(studentId)
+    return true
+  }
+
+  async createLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    input: NewLessonPurchase,
+  ): Promise<LessonPurchase | null> {
+    if (!this.#studentsByWorkspace.get(workspaceId)?.some((student) => student.id === studentId))
+      return null
+    const timestamp = input.now.toISOString()
+    const purchase: LessonPurchase = {
+      id: input.id,
+      purchasedAt: input.purchasedAt.toISOString(),
+      lessonCount: input.lessonCount,
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      privateNote: input.privateNote,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }
+    const byStudent = this.#purchasesByWorkspace.get(workspaceId)
+    if (!byStudent) throw new Error('Workspace does not exist')
+    byStudent.set(studentId, [...(byStudent.get(studentId) ?? []), purchase])
+    return copyPurchase(purchase)
+  }
+
+  async lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null> {
+    if (!this.#studentsByWorkspace.get(workspaceId)?.some((student) => student.id === studentId))
+      return null
+    const purchased = (this.#purchasesByWorkspace.get(workspaceId)?.get(studentId) ?? []).reduce(
+      (total, purchase) => total + purchase.lessonCount,
+      0,
+    )
+    const completed = this.#completedSessionsByWorkspace.get(workspaceId)?.get(studentId) ?? 0
+    return { purchased, completed, remaining: purchased - completed }
+  }
+
+  async incomeSummary(workspaceId: WorkspaceId): Promise<LessonIncomeSummary[]> {
+    const grouped = new Map<string, number>()
+    for (const purchases of this.#purchasesByWorkspace.get(workspaceId)?.values() ?? []) {
+      for (const purchase of purchases)
+        grouped.set(purchase.currency, (grouped.get(purchase.currency) ?? 0) + purchase.amountMinor)
+    }
+    return [...grouped]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([currency, amountMinor]) => ({
+        currency,
+        amountMinor,
+      }))
+  }
+
+  // Test seam for M3's derived entitlement. M4 owns session creation and transitions.
+  recordCompletedSessionForTest(workspaceId: WorkspaceId, studentId: string): void {
+    const sessions = this.#completedSessionsByWorkspace.get(workspaceId)
+    if (!sessions) throw new Error('Workspace does not exist')
+    sessions.set(studentId, (sessions.get(studentId) ?? 0) + 1)
+  }
+}
+
+function copyPurchase(purchase: LessonPurchase): LessonPurchase {
+  return { ...purchase }
 }

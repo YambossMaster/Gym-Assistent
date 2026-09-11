@@ -54,12 +54,27 @@ HTTP adapter -> application modules -> repository interface -> PostgreSQL adapte
 identity verifier ------+                 in-memory test adapter
 ```
 
-The initial seam is deliberately small:
+The current M3 seam is deliberately small:
 
 - verify an external identity;
 - resolve or bootstrap its one Workspace;
-- list the Workspace's Students;
-- create a Student inside that Workspace.
+- list, detail, create, edit, archive, and explicitly delete the Workspace's Students;
+- record a Lesson Purchase and return the Student detail projection with a derived lesson balance.
+
+`lesson_purchase` is an entitlement grant, not a mutable balance. It also records a Coach-entered
+manual receipt in integer minor currency units plus its ISO currency, but does not initiate or
+represent an online payment. The API derives remaining lessons as all purchased lesson counts minus
+`course_session.status = 'completed'`; low or negative results stay visible and are never silently
+corrected. `course_session` contains only
+this M3 entitlement state until Scheduling (M4) owns its calendar fields and transitions.
+Student detail, purchase notes, and private notes are coach-only API projections; a future public
+capability projection must opt into each safe field rather than reusing this response.
+
+For the later Demo import, `npm run migration:preview:m3 --workspace @gym-assistant/api -- <demo-export.json>`
+creates a deterministic Student/Lesson Purchase preview. It validates the source shape, assigns
+stable target UUIDs, reports orphan/duplicate rows, maps legacy `Purchase.amount` to the integer
+TWD manual-receipt amount, and produces a checksum. The preview never writes to the database or
+changes `form-coach-mvp-v1`.
 
 `apps/web` is the first production-facing client for this seam. It holds the Supabase browser
 session, sends the short-lived access token to `/api`, and never calls the private application

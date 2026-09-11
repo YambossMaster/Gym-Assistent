@@ -11,6 +11,28 @@ export interface Student {
   updatedAt: string
 }
 
+export interface LessonPurchase {
+  id: string
+  purchasedAt: string
+  lessonCount: number
+  amountMinor: number
+  currency: string
+  privateNote: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface StudentDetail {
+  student: Student
+  purchases: LessonPurchase[]
+  lessonSummary: { purchased: number; completed: number; remaining: number }
+}
+
+export interface LessonIncomeSummary {
+  currency: string
+  amountMinor: number
+}
+
 export interface CreateStudentInput {
   name: string
   phone?: string
@@ -52,6 +74,13 @@ interface StudentResponse {
   student: Student
 }
 
+interface StudentDetailResponse {
+  detail: StudentDetail
+}
+interface LessonPurchaseResponse {
+  purchase: LessonPurchase
+}
+
 interface WorkspaceSettingsResponse {
   settings: WorkspaceSettings
 }
@@ -89,6 +118,69 @@ export async function createStudent(
     body: JSON.stringify(input)
   })
   return response.student
+}
+
+export async function getStudentDetail(
+  accessToken: string,
+  studentId: string
+): Promise<StudentDetail> {
+  const response = await request<StudentDetailResponse>(
+    `/api/v1/students/${studentId}`,
+    accessToken
+  )
+  return response.detail
+}
+
+export async function updateStudent(
+  accessToken: string,
+  studentId: string,
+  input: CreateStudentInput & { active: boolean; lineLinked: boolean; version: number }
+): Promise<Student> {
+  const response = await request<StudentResponse>(`/api/v1/students/${studentId}`, accessToken, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input)
+  })
+  return response.student
+}
+
+export async function createLessonPurchase(
+  accessToken: string,
+  studentId: string,
+  input: {
+    purchasedAt: string
+    lessonCount: number
+    amountMinor: number
+    currency: string
+    privateNote?: string
+  }
+): Promise<LessonPurchase> {
+  const response = await request<LessonPurchaseResponse>(
+    `/api/v1/students/${studentId}/lesson-purchases`,
+    accessToken,
+    { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) }
+  )
+  return response.purchase
+}
+
+export async function getLessonPurchaseIncome(accessToken: string): Promise<LessonIncomeSummary[]> {
+  const response = await request<{ income: LessonIncomeSummary[] }>(
+    '/api/v1/lesson-purchase-income',
+    accessToken
+  )
+  return response.income
+}
+
+export async function deleteStudent(
+  accessToken: string,
+  studentId: string,
+  version: number
+): Promise<void> {
+  await request<undefined>(`/api/v1/students/${studentId}`, accessToken, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ confirmation: 'DELETE', version })
+  })
 }
 
 export async function getWorkspaceSettings(accessToken: string): Promise<WorkspaceSettings> {

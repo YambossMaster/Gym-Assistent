@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createStudent,
+  createLessonPurchase,
   deleteAccountImmediately,
   getWorkspaceSettings,
   isRegistrationEmailTaken,
@@ -65,6 +66,36 @@ describe('student API client', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ name: '品妤', privateNote: '教練備註' })
+      })
+    )
+  })
+
+  it('records a lesson purchase through the authenticated student route without a workspace id', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ purchase: { id: 'purchase-1', lessonCount: 10 } }), {
+        status: 201,
+        headers: { 'content-type': 'application/json' }
+      })
+    )
+
+    await createLessonPurchase('verified-token', 'student-1', {
+      purchasedAt: '2026-09-10T00:00:00.000Z',
+      lessonCount: 10,
+      amountMinor: 16000,
+      currency: 'TWD'
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/students/student-1/lesson-purchases',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          purchasedAt: '2026-09-10T00:00:00.000Z',
+          lessonCount: 10,
+          amountMinor: 16000,
+          currency: 'TWD'
+        }),
+        headers: expect.objectContaining({ authorization: 'Bearer verified-token' })
       })
     )
   })

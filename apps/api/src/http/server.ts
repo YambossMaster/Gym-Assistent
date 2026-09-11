@@ -1,8 +1,13 @@
 import Fastify, { type FastifyInstance } from 'fastify'
 import { z, ZodError } from 'zod'
 import { type IdentityVerifier, IdentityVerificationError } from '../identity/identity.js'
-import { type CreateStudentInput } from '../students/student.js'
+import {
+  type CreateLessonPurchaseInput,
+  type CreateStudentInput,
+  type UpdateStudentInput,
+} from '../students/student.js'
 import { StudentModule } from '../students/student-module.js'
+import { StudentVersionConflictError } from '../students/student-repository.js'
 import { WorkspaceVersionConflictError } from '../workspace/workspace-repository.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { type UpdateWorkspaceSettingsInput } from '../workspace/workspace.js'
@@ -33,6 +38,41 @@ const createStudentBodySchema = {
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
   },
+} as const
+
+const updateStudentBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['name', 'version'],
+  properties: {
+    name: { type: 'string', minLength: 1, maxLength: 120 },
+    phone: { type: 'string', maxLength: 40 },
+    goal: { type: 'string', maxLength: 1000 },
+    privateNote: { type: 'string', maxLength: 4000 },
+    active: { type: 'boolean' },
+    lineLinked: { type: 'boolean' },
+    version: { type: 'integer', minimum: 1 },
+  },
+} as const
+
+const createLessonPurchaseBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['purchasedAt', 'lessonCount', 'amountMinor', 'currency'],
+  properties: {
+    purchasedAt: { type: 'string', format: 'date-time' },
+    lessonCount: { type: 'integer', minimum: 1, maximum: 10000 },
+    amountMinor: { type: 'integer', minimum: 0, maximum: 999999999999 },
+    currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+    privateNote: { type: 'string', maxLength: 4000 },
+  },
+} as const
+
+const studentDeleteBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['confirmation', 'version'],
+  properties: { confirmation: { const: 'DELETE' }, version: { type: 'integer', minimum: 1 } },
 } as const
 
 const deletionConfirmationBodySchema = {
@@ -85,6 +125,9 @@ export function buildServer({
     if (error instanceof WorkspaceVersionConflictError) {
       return reply.status(409).send({ error: 'version_conflict', message: error.message })
     }
+    if (error instanceof StudentVersionConflictError) {
+      return reply.status(409).send({ error: 'version_conflict', message: error.message })
+    }
     if (error instanceof AccountDeletionUnavailableError) {
       return reply
         .status(503)
@@ -118,6 +161,13 @@ export function buildServer({
     return { students: listed }
   })
 
+  server.get('/v1/lesson-purchase-income', async (request) => {
+    const identity = await identityVerifier.verify(request.headers.authorization)
+    const income = await students.incomeSummary(identity)
+    await accountLifecycle.recordActivity(identity)
+    return { income }
+  })
+
   server.get('/v1/workspace-settings', async (request) => {
     const identity = await identityVerifier.verify(request.headers.authorization)
     const settings = await workspace.getSettings(identity)
@@ -144,6 +194,73 @@ export function buildServer({
       const student = await students.create(identity, request.body)
       await accountLifecycle.recordActivity(identity)
       return reply.status(201).send({ student })
+    },
+  )
+
+  server.get<{ Params: { studentId: string } }>(
+    '/v1/students/:studentId',
+    async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const detail = await students.detail(identity, request.params.studentId)
+      if (!detail)
+        return reply
+          .status(404)
+          .send({ error: 'student_not_found', message: 'Student was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return { detail }
+    },
+  )
+
+  server.patch<{ Params: { studentId: string }; Body: UpdateStudentInput }>(
+    '/v1/students/:studentId',
+    { schema: { body: updateStudentBodySchema } },
+    async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const student = await students.update(identity, request.params.studentId, request.body)
+      if (!student)
+        return reply
+          .status(404)
+          .send({ error: 'student_not_found', message: 'Student was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return { student }
+    },
+  )
+
+  server.post<{ Params: { studentId: string }; Body: CreateLessonPurchaseInput }>(
+    '/v1/students/:studentId/lesson-purchases',
+    { schema: { body: createLessonPurchaseBodySchema } },
+    async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const purchase = await students.createLessonPurchase(
+        identity,
+        request.params.studentId,
+        request.body,
+      )
+      if (!purchase)
+        return reply
+          .status(404)
+          .send({ error: 'student_not_found', message: 'Student was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(201).send({ purchase })
+    },
+  )
+
+  server.delete<{ Params: { studentId: string }; Body: { confirmation: string; version: number } }>(
+    '/v1/students/:studentId',
+    { schema: { body: studentDeleteBodySchema } },
+    async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const deleted = await students.delete(
+        identity,
+        request.params.studentId,
+        request.body.version,
+      )
+      if (!deleted)
+        return reply
+          .status(404)
+          .send({ error: 'student_not_found', message: 'Student was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(204).send()
     },
   )
 

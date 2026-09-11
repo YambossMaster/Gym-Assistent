@@ -718,6 +718,24 @@ textarea:focus {
   font-family: 'DM Mono', monospace;
 }
 
+.student-card-action {
+  min-height: 38px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  color: #59631e;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-card-action svg {
+  width: 15px;
+}
+
 .modal-backdrop {
   position: fixed;
   z-index: 50;
@@ -767,6 +785,91 @@ textarea:focus {
 
 .security-modal {
   width: min(520px, 100%);
+}
+
+.student-detail-modal {
+  width: min(720px, 100%);
+}
+
+.student-detail-modal form,
+.purchase-history,
+.student-delete {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.student-detail-modal h3,
+.purchase-history p,
+.student-delete p {
+  margin: 0;
+}
+
+.lesson-balance {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 2px 16px;
+  border-radius: 12px;
+  color: var(--white);
+  background: var(--ink);
+}
+
+.lesson-balance span,
+.lesson-balance small {
+  color: #a9ad9c;
+  font-size: 12px;
+}
+
+.lesson-balance strong {
+  color: var(--lime);
+  font-size: 44px;
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+}
+
+.lesson-balance strong.low-balance {
+  color: #ffb199;
+}
+
+.lesson-balance small {
+  grid-column: 1 / -1;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.checkbox-label input {
+  width: 17px;
+  min-height: 17px;
+}
+
+.purchase-history {
+  display: grid;
+  gap: 10px;
+}
+
+.purchase-history div {
+  padding: 11px 0;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.purchase-history span,
+.student-delete p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.student-delete {
+  display: grid;
+  gap: 10px;
 }
 
 .danger-confirmation {
@@ -897,6 +1000,33 @@ textarea:focus {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;
   gap: 14px;
+}
+
+.income-summary {
+  display: grid;
+  gap: 7px;
+  margin: 20px 0 28px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--lime-deep);
+  background: rgba(251, 250, 245, 0.62);
+}
+
+.income-summary > span,
+.income-summary small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.income-summary > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.income-summary strong {
+  font-size: 22px;
+  letter-spacing: -0.04em;
 }
 
 .modal footer {

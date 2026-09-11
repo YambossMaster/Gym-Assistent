@@ -1,10 +1,19 @@
 import { randomUUID } from 'node:crypto'
 import type { Pool } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
-import type { Student } from '../students/student.js'
+import type {
+  LessonIncomeSummary,
+  LessonPurchase,
+  LessonSummary,
+  Student,
+  StudentDetail,
+} from '../students/student.js'
 import {
   type NewStudent,
+  type NewLessonPurchase,
   type StudentRepository,
+  StudentVersionConflictError,
+  type UpdatedStudent,
   type WorkspaceId,
 } from '../students/student-repository.js'
 import {
@@ -25,6 +34,17 @@ interface StudentRow {
   active: boolean
   line_linked: boolean
   version: number
+  created_at: Date
+  updated_at: Date
+}
+
+interface LessonPurchaseRow {
+  id: string
+  purchased_at: Date
+  lesson_count: number
+  amount_minor: string | number
+  currency: string
+  private_note: string
   created_at: Date
   updated_at: Date
 }
@@ -198,6 +218,140 @@ export class PostgresStudentRepository
     if (!student) throw new Error('Failed to create student')
     return mapStudent(student)
   }
+
+  async getStudentDetail(
+    workspaceId: WorkspaceId,
+    studentId: string,
+  ): Promise<StudentDetail | null> {
+    const [studentResult, purchasesResult, summary] = await Promise.all([
+      this.#pool.query<StudentRow>(
+        `SELECT id, name, phone, goal, private_note, active, line_linked, version, created_at, updated_at
+         FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
+        [workspaceId, studentId],
+      ),
+      this.#pool.query<LessonPurchaseRow>(
+        `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at
+         FROM app_private.lesson_purchase
+         WHERE workspace_id = $1 AND student_id = $2 ORDER BY purchased_at, id`,
+        [workspaceId, studentId],
+      ),
+      this.lessonSummary(workspaceId, studentId),
+    ])
+    const student = studentResult.rows[0]
+    if (!student || !summary) return null
+    return {
+      student: mapStudent(student),
+      purchases: purchasesResult.rows.map(mapLessonPurchase),
+      lessonSummary: summary,
+    }
+  }
+
+  async updateStudent(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    input: UpdatedStudent,
+  ): Promise<Student | null> {
+    const result = await this.#pool.query<StudentRow>(
+      `UPDATE app_private.student
+       SET name = $3, phone = $4, goal = $5, private_note = $6, active = $7, line_linked = $8,
+           version = version + 1, updated_at = $9
+       WHERE workspace_id = $1 AND id = $2 AND version = $10
+       RETURNING id, name, phone, goal, private_note, active, line_linked, version, created_at, updated_at`,
+      [
+        workspaceId,
+        studentId,
+        input.name,
+        input.phone,
+        input.goal,
+        input.privateNote,
+        input.active,
+        input.lineLinked,
+        input.now,
+        input.expectedVersion,
+      ],
+    )
+    const student = result.rows[0]
+    if (student) return mapStudent(student)
+    const exists = await this.#pool.query(
+      'SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2',
+      [workspaceId, studentId],
+    )
+    if (exists.rowCount) throw new StudentVersionConflictError()
+    return null
+  }
+
+  async deleteStudent(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    expectedVersion: number,
+  ): Promise<boolean> {
+    const result = await this.#pool.query(
+      'DELETE FROM app_private.student WHERE workspace_id = $1 AND id = $2 AND version = $3',
+      [workspaceId, studentId, expectedVersion],
+    )
+    if (result.rowCount) return true
+    const exists = await this.#pool.query(
+      'SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2',
+      [workspaceId, studentId],
+    )
+    if (exists.rowCount) throw new StudentVersionConflictError()
+    return false
+  }
+
+  async createLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    input: NewLessonPurchase,
+  ): Promise<LessonPurchase | null> {
+    const result = await this.#pool.query<LessonPurchaseRow>(
+      `INSERT INTO app_private.lesson_purchase (id, workspace_id, student_id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at)
+       SELECT $3, $1, student.id, $4, $5, $6, $7, $8, $9, $9
+       FROM app_private.student AS student WHERE student.workspace_id = $1 AND student.id = $2
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at`,
+      [
+        workspaceId,
+        studentId,
+        input.id,
+        input.purchasedAt,
+        input.lessonCount,
+        input.amountMinor,
+        input.currency,
+        input.privateNote,
+        input.now,
+      ],
+    )
+    const purchase = result.rows[0]
+    return purchase ? mapLessonPurchase(purchase) : null
+  }
+
+  async lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null> {
+    const result = await this.#pool.query<LessonSummary & { student_exists: boolean }>(
+      `SELECT EXISTS(SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2) AS student_exists,
+              COALESCE((SELECT SUM(lesson_count)::integer FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2), 0) AS purchased,
+              COALESCE((SELECT COUNT(*)::integer FROM app_private.course_session WHERE workspace_id = $1 AND student_id = $2 AND status = 'completed'), 0) AS completed`,
+      [workspaceId, studentId],
+    )
+    const row = result.rows[0]
+    return row?.student_exists
+      ? {
+          purchased: row.purchased,
+          completed: row.completed,
+          remaining: row.purchased - row.completed,
+        }
+      : null
+  }
+
+  async incomeSummary(workspaceId: WorkspaceId): Promise<LessonIncomeSummary[]> {
+    const result = await this.#pool.query<LessonIncomeSummary>(
+      `SELECT currency, COALESCE(SUM(amount_minor), 0)::bigint AS "amountMinor"
+       FROM app_private.lesson_purchase
+       WHERE workspace_id = $1
+       GROUP BY currency
+       ORDER BY currency`,
+      [workspaceId],
+    )
+    return result.rows.map((row) => ({ ...row, amountMinor: Number(row.amountMinor) }))
+  }
 }
 
 function mapStudent(row: StudentRow): Student {
@@ -210,6 +364,19 @@ function mapStudent(row: StudentRow): Student {
     active: row.active,
     lineLinked: row.line_linked,
     version: row.version,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  }
+}
+
+function mapLessonPurchase(row: LessonPurchaseRow): LessonPurchase {
+  return {
+    id: row.id,
+    purchasedAt: row.purchased_at.toISOString(),
+    lessonCount: row.lesson_count,
+    amountMinor: Number(row.amount_minor),
+    currency: row.currency,
+    privateNote: row.private_note,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   }
