@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  changePassword,
   requestPasswordReset,
   resendEmailVerification,
   signInWithGoogle,
@@ -13,6 +14,9 @@ import {
 
 function createAuth(overrides: Partial<CoachAuthClient> = {}): CoachAuthClient {
   return {
+    signInWithPassword: vi
+      .fn()
+      .mockResolvedValue({ data: { session: null, user: null }, error: null }),
     signUp: vi.fn().mockResolvedValue({ data: { session: null, user: null }, error: null }),
     verifyOtp: vi.fn().mockResolvedValue({ data: { session: null, user: null }, error: null }),
     signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
@@ -92,7 +96,7 @@ describe('Coach account auth actions', () => {
     })
   })
 
-  it('uses local sign-out for the ordinary device logout and global for explicit all-device logout', async () => {
+  it('uses local sign-out for ordinary device logout and global only when explicitly requested', async () => {
     const auth = createAuth()
 
     await signOutCurrentDevice(auth)
@@ -107,5 +111,17 @@ describe('Coach account auth actions', () => {
 
     await expect(updatePassword(auth, 'short')).rejects.toThrow('至少需要 12 個字元')
     expect(auth.updateUser).not.toHaveBeenCalled()
+  })
+
+  it('verifies an existing email password immediately before updating it', async () => {
+    const auth = createAuth()
+
+    await changePassword(auth, ' coach@example.com ', 'existing-password', 'new-long-password')
+
+    expect(auth.signInWithPassword).toHaveBeenCalledWith({
+      email: 'coach@example.com',
+      password: 'existing-password'
+    })
+    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'new-long-password' })
   })
 })

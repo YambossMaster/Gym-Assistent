@@ -9,6 +9,7 @@ interface AuthSessionResponse extends AuthResponse {
 }
 
 export interface CoachAuthClient {
+  signInWithPassword(params: { email: string; password: string }): Promise<AuthSessionResponse>
   signUp(params: {
     email: string
     password: string
@@ -89,6 +90,20 @@ export async function resendEmailVerification(
 export async function updatePassword(auth: CoachAuthClient, password: string): Promise<void> {
   assertPassword(password)
   await requireSuccess(auth.updateUser({ password }))
+}
+
+export async function changePassword(
+  auth: CoachAuthClient,
+  email: string,
+  currentPassword: string,
+  nextPassword: string
+): Promise<void> {
+  if (!currentPassword) throw new Error('請先輸入目前密碼。')
+  assertPassword(nextPassword)
+  await requireSuccess(
+    auth.signInWithPassword({ email: normalizeEmail(email), password: currentPassword })
+  )
+  await requireSuccess(auth.updateUser({ password: nextPassword }))
 }
 
 export async function signOutCurrentDevice(auth: CoachAuthClient): Promise<void> {

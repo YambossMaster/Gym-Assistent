@@ -8,8 +8,9 @@ Supabase secret key、Google client secret 或任何可登入的帳號資料；�
 - Coach 可公開以 Email 與至少 12 字元的自訂密碼建立帳號。
 - Email 必須以六位 OTP 驗證後才能使用。
 - Google OAuth 是同等登入方式；同一個已驗證 Email 的 identity 必須連結到同一個 `auth.users` subject。
-- 若 Coach 只有 Google identity，應先 Google 登入，再在帳號安全頁設定密碼；公開註冊會先檢查既有
-  Email，並明示「此帳號已經註冊過。」。這是使用者接受的 account-enumeration risk 例外。
+- 若 Coach 只有 Google identity，應先 Google 登入，再在帳號安全頁設定第一組密碼；既有 Email/password
+  identity 修改密碼前必須先驗證目前密碼。公開註冊會先檢查既有 Email，並明示「此帳號已經註冊過。」。
+  這是使用者接受的 account-enumeration risk 例外。
 - 重新寄送註冊 OTP 只在尚未驗證的註冊流程中提供；已登入的 Coach 代表 Email 已驗證，帳號安全頁不提供
   重複驗證入口。
 - Browser 僅持有 Supabase URL 和 publishable key，絕不持有 service-role、database 或 OAuth client secret。
@@ -43,7 +44,9 @@ Supabase secret key、Google client secret 或任何可登入的帳號資料；�
   信件記錄為 sent、delivered、opened。Dashboard 的 Email provider 現已讀回 Email OTP length 為 **6 digits**，與產品和
   `supabase/config.toml` 一致；新的隔離帳號已完成 signup、OTP、Workspace bootstrap、Email/password re-login、recovery
   delivery 與 global logout 的 live acceptance。密碼重設只保留在
-  登入畫面的「忘記密碼」流程；已登入帳號安全頁改以直接設定/變更密碼處理。
+  登入畫面的「忘記密碼」流程；已登入帳號安全頁對 Google-only identity 提供首次設定密碼，對既有
+  Email/password identity 先驗證目前密碼後才變更。帳號安全頁只提供目前帳號的登出，不提供額外的
+  裝置工作階段控制。
 
 ## Account lifecycle email budget
 
@@ -82,16 +85,17 @@ Supabase secret API key。
 
 所有情境都在 development project 先完成，輸出不得包含 password、OTP、access token 或 secret。
 
-| Scenario                                    | Expected result                                                                 |
-| ------------------------------------------- | ------------------------------------------------------------------------------- |
-| New Email/password sign-up                  | 未註冊 Email 取得六位 OTP；驗證後可登入並 bootstrap 一個 Workspace。            |
-| Unverified account password login           | 被拒絕；resend OTP 不洩漏身份存在與否。                                         |
-| Existing Email/password + same-email Google | Google 登入回到既有 `auth.users`／Workspace，不建立第二個 Workspace。           |
-| Google-only + direct Email sign-up          | 明示「此帳號已經註冊過。」；這是已核准的 enumeration-risk 例外。                |
-| Google-only + set password                  | Google 登入後從帳號安全設定密碼；登出後同 Email/password 可登入同一 Workspace。 |
-| Password recovery                           | Email 收到 recovery entry，設定新密碼後目前裝置登出，使用新密碼可登入。         |
-| Global logout                               | 所有裝置 session 失效；重新登入後才可呼叫 API。                                 |
-| Workspace settings stale write              | 第二裝置先儲存後，第一裝置收到 409 並自行重新讀取／決定。                       |
+| Scenario                                    | Expected result                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- |
+| New Email/password sign-up                  | 未註冊 Email 取得六位 OTP；驗證後可登入並 bootstrap 一個 Workspace。                  |
+| Unverified account password login           | 被拒絕；resend OTP 不洩漏身份存在與否。                                               |
+| Existing Email/password + same-email Google | Google 登入回到既有 `auth.users`／Workspace，不建立第二個 Workspace。                 |
+| Google-only + direct Email sign-up          | 明示「此帳號已經註冊過。」；這是已核准的 enumeration-risk 例外。                      |
+| Google-only + set password                  | Google 登入後從帳號安全設定第一組密碼；登出後同 Email/password 可登入同一 Workspace。 |
+| Existing Email/password + change password   | 必須先驗證目前密碼；驗證成功才可設定新密碼。                                          |
+| Password recovery                           | Email 收到 recovery entry，設定新密碼後目前裝置登出，使用新密碼可登入。               |
+| Global logout                               | 所有裝置 session 失效；重新登入後才可呼叫 API。                                       |
+| Workspace settings stale write              | 第二裝置先儲存後，第一裝置收到 409 並自行重新讀取／決定。                             |
 
 已實測：既有 Email identity 以同 Email Google OAuth 登入後仍為一個 Auth user／一個 Workspace；未建立第二個
 Workspace。SMTP transport 已通過 Auth 與 provider dispatch；新的隔離帳號完成六位 OTP 的全新 Email/password signup、

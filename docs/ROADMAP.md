@@ -1,396 +1,469 @@
 # Gym Assistant engineering roadmap
 
-> Baseline: v1 — established 2026-09-08. Changes require explicit user approval.
+> Baseline: v2 — approved 2026-09-12. M0–M3 remain complete; corrective work belongs to M3.5.
 
-本文件是正式產品工程順序與完成條件的唯一來源。日常進度、已知問題與下一個接手點
-記錄在 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)；兩者不可用對話記憶取代。
+This document is the sole source of truth for product scope, delivery order, Module interfaces, and
+completion criteria. Live progress and evidence belong in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-## 1. 產品與工程基線
+## 1. Product direction
 
-### 已定案
+Gym Assistant gives an independent private Coach a calm, complete operating surface for students,
+lesson entitlement, scheduling, training records, and narrowly scoped Student access.
 
-- 主要使用者是獨立私人教練；一個 Coach 擁有一個 Workspace。
-- V1 不支援工作室多人共同管理，若未來改變須新增 ADR 並重做授權模型評估。
-- Student 沒有帳號，只能用限時、限資源、限動作的 Capability Link。
-- V1 不收集傷病史、醫療資訊、體脂或體重等健康資料。
-- V1 不處理線上付款；Lesson Purchase 是教練登錄的堂數權益，可附帶已實收金額與幣別作為教練收入紀錄，但不是金流交易。
-- Web/PWA 先上線，台灣市場先行；預設時區為 `Asia/Taipei`，資料庫時間存 UTC。
-- 採 online-first：保護草稿與尚未送出的訓練內容，不做任意資料的完整離線同步。
-- Supabase 提供 Managed PostgreSQL 與 Auth；Fastify 模組化單體是正式資料唯一入口。
-- PostgreSQL 是 System of Record；瀏覽器 localStorage／IndexedDB 只放 session、快取、草稿與待送內容。
-- 單一雲端區域起步；微服務、Kubernetes、Kafka、CQRS、Event Sourcing 與多區部署不在 V1。
+The archived [`demo/`](../demo/) is the validated product reference for information architecture,
+interaction behaviour, visual hierarchy, responsive composition, and product tone. It is not the
+production persistence implementation. Formal data remains server-authoritative.
 
-### 優先順序
+Priorities, in order:
 
-1. 租戶隔離、學生隱私與公開投影安全。
-2. 課堂、堂數、排程及訓練歷史的正確性。
-3. 可驗證、可維護、可交接的模組化單體。
-4. 低營運成本與可恢復性。
-5. 未來的整合與 App 包裝能力。
+1. Preserve completed Auth, API, Edge Function, database, authorization, App Shell, and query-cache
+   assets.
+2. Make each Coach workflow complete and understandable at its route before expanding infrastructure.
+3. Derive official data and transitions in backend Modules; expose screen-shaped projections instead
+   of table-shaped CRUD.
+4. Preserve tenant isolation, private-note safety, concurrency correctness, and recoverability.
+5. Finish visual and language quality before declaring a feature complete.
 
-### 規格來源
+## 2. Non-negotiable decisions
 
-- [`CONTEXT.md`](../CONTEXT.md)：正式領域詞彙。
-- [`ARCHITECTURE.md`](ARCHITECTURE.md)：前後端權責、信任邊界與部署形狀。
-- [`adr/`](adr/)：已接受且不應在局部工作中推翻的架構決策。
-- [`../demo/docs/DATA_MODEL.md`](../demo/docs/DATA_MODEL.md)：已驗證的產品規則與資料不變量。
-- `demo/src/domain.ts` 與現有測試：正式後端規則的行為規格來源，不直接當 production implementation。
+- One authenticated Coach owns one private Workspace. V1 has no multi-Coach Workspace.
+- A Student has no account. Public access uses an expiring, resource-scoped Capability Link.
+- V1 excludes injury history, medical information, body fat, and body weight.
+- Lesson Purchase grants entitlement and may record Coach-entered received income. It is not online
+  payment. Amounts use integer minor units plus ISO currency.
+- Remaining lessons are `purchased lessons - completed Course Sessions`. Low and negative balances
+  remain visible and are never silently repaired.
+- Schedule conflicts are warnings. The system does not silently block, move, cancel, or repair a
+  Coach decision unless a later approved rule explicitly requires it.
+- PostgreSQL is the system of record. Browser storage is limited to Auth session, in-memory query
+  cache, recoverable drafts, pending operations, and UI preferences.
+- The browser never supplies `workspaceId` and never receives database, service-role, or Auth-admin
+  credentials.
+- Private Coach notes never enter a public projection. A Training Result link may include one
+  session note only through an explicit per-link opt-in.
+- Web/PWA ships first for Taiwan. Default time zone is `Asia/Taipei`; stored instants are UTC.
+- Microservices, Kubernetes, Kafka, CQRS, Event Sourcing, multi-region deployment, native packaging,
+  and online payments are outside V1.
 
-## 2. 目標系統
+## 3. Delivery model: four gates
+
+Every M3.5–M8 work package passes four gates in order. A later gate may return the package to an
+earlier gate; no gate may be skipped.
+
+### Gate 1 — Contract
+
+**Owners:** Product Owner + Sol.
+
+Before implementation, freeze:
+
+- the Coach or Student job-to-be-done and owning route;
+- Demo behaviours to preserve and deliberate deviations;
+- data model, Module interface, HTTP operation, authorization, and concurrency rules;
+- Loading, Error, Empty, Ready, Refreshing, Mutating, and Conflict states where applicable;
+- approved product-copy intent and the UI slots that must display it;
+- desktop and 390px acceptance path;
+- automated, database, migration, and E2E evidence required for completion.
+
+**Exit criterion:** a Terra agent can implement data flow without making a product, visual, or copy
+decision.
+
+### Gate 2 — Terra engineering
+
+**Owner:** Terra.
+
+Terra implements only the frozen contract:
+
+- schema, migration, Module implementation, adapters, HTTP operations, Edge Functions, and tests;
+- query keys, typed route loaders, mutations, cache invalidation, and authorization-safe prefetch;
+- semantic, unstyled route skeletons that expose every contracted state and data slot;
+- deterministic test fixtures and acceptance hooks.
+
+**Hard limit:** Terra does not choose layout, spacing, color, typography, motion, responsive
+composition, interaction styling, or end-user wording. Terra inserts only copy explicitly supplied
+by the Contract gate. If a required decision is missing, Terra stops that affected surface and
+reports the missing contract instead of inventing one.
+
+**Exit criterion:** all data reaches the correct route state through typed interfaces; domain,
+adapter, HTTP, authorization, and focused Web tests pass.
+
+### Gate 3 — Sol product convergence
+
+**Owners:** Product Owner + Sol.
+
+Sol compares the working feature with the Demo and completes:
+
+- visual hierarchy, layout, responsive composition, Tailwind/CSS implementation, and shared UI
+  primitives;
+- keyboard, pointer, touch, focus, modal, scroll, and transition details;
+- exact Coach-facing or Student-facing copy;
+- accessible names, announcements, reduced-motion behaviour, and destructive-action emphasis;
+- desktop and exact 390×844 manual acceptance.
+
+Sol may request a Contract correction when the intended experience exposes a missing projection or
+operation. Sol does not move official business rules into the browser to work around a backend gap.
+
+**Exit criterion:** the complete route is product-ready, not merely wired.
+
+### Gate 4 — CI delivery
+
+**Owner:** integrating engineering agent.
+
+- Run root `npm run check` and `npm run build`.
+- Run milestone-specific live E2E and migration preview/dry-run.
+- Run `git diff --check` and relevant Supabase advisors.
+- Update `PROJECT_STATUS.md` and prepend an Engineering log entry.
+- Create a cohesive milestone or work-package commit, push it to the shared branch, and confirm the
+  GitHub Actions verify and migration-dry-run jobs for that commit.
+
+**Exit criterion:** local evidence, remote evidence, documentation, and next handoff all agree.
+
+### How the gates map to the three development stages
+
+- **Stage A — Gap Filling:** M3.5 repairs the audited M0–M3 product-surface gaps while preserving
+  the completed foundation. Its individual packages still pass Contract, Terra, Sol, and CI.
+- **Stage B — Future Features:** M4–M8 begin only from a frozen Contract. Terra builds the required
+  backend, Edge Function, migration, tests, query binding, and semantic unstyled frontend skeleton.
+- **Stage C — Visual and experience convergence:** Product Owner and Sol take each Stage B skeleton
+  through final Tailwind/CSS, interaction detail, responsive behaviour, accessibility, and exact
+  end-user wording. This happens per feature before its CI gate, not as one risky redesign at the end
+  of the project.
+
+Stage labels describe responsibility and intent; the four gates are the mandatory delivery order.
+
+## 4. Frontend route contract
+
+Authenticated Coach routes retain the Demo's separation:
+
+| Route           | Product responsibility                                                                        | Required primary states                                                         |
+| --------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `/today`        | Daily overview, session flow, lesson/income signals, actionable attention                     | Loading, partial Error, no-sessions Empty, Ready, Refreshing                    |
+| `/calendar`     | Agenda/day/week/month scheduling, availability, blocks, conflicts                             | Loading, Error, no-items Empty, Ready, Mutating, Conflict                       |
+| `/students`     | Active/archive roster, search, entitlement and next-session summary                           | Loading, Error, first-student Empty, filter Empty, search Empty, Ready          |
+| `/students/:id` | Student identity, entitlement, private context, fixed rhythm, history, performance, purchases | Loading, Not Found, Error, section Empty, Ready, Mutating, Conflict             |
+| `/sessions/:id` | One Course Session and its Training Record                                                    | Loading, Not Found, Error, no-exercises Empty, Ready, Saving, Offline, Conflict |
+| `/exercises`    | Exercise library, filters, favourites, custom definitions                                     | Loading, Error, library Empty, filter Empty, Ready, Mutating                    |
+| `/settings`     | Coach profile, workflow defaults, account security, data lifecycle                            | Panel Loading, panel Error, Ready, Mutating, destructive confirmation           |
+
+Unauthenticated public routes live outside the Coach Auth gate:
+
+| Route       | Product responsibility                          | Required primary states                                                                                  |
+| ----------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `/t/:token` | Read one allowlisted Training Result projection | Loading, network Error, invalid/expired/revoked, Ready                                                   |
+| `/r/:token` | Select and redeem one reschedule capability     | Loading, network Error, invalid/expired/revoked/used, no-slots Empty, Ready, Mutating, Conflict, Success |
+
+Every server-data route uses Coach-scoped TanStack Query keys. A first load may use a skeleton;
+background refresh keeps readable cached data visible. A section with no records is Empty, not Error.
+Not Found/unauthorized terminal states are distinct from recoverable transport failures. Mutations
+expose pending, success, validation failure, and version conflict without discarding recoverable
+form state.
+
+## 5. Milestone plan
+
+### M0 — Repository and product contract — Done
+
+Preserved the complete Demo in `demo/`, established formal workspaces and vocabulary, froze
+`form-coach-mvp-v1`, and created Roadmap/Status/ADR handoff discipline.
+
+### M1 — Cloud foundation tracer — Done
+
+Established Supabase Auth/PostgreSQL, private-schema access, verified identity-to-Workspace
+derivation, tenant-isolated Student tracer operations, real two-Coach E2E, migration workflow, and
+remote CI.
+
+### M2 — Coach account operations — Done
+
+Delivered public self-registration, six-digit Email OTP, Email/password and Google Auth, recovery,
+Workspace settings, session handling, reversible 14-day deletion, immediate deletion, 365-day
+inactivity deletion, Edge Function/cron execution, and live acceptance.
+
+### M3 — Student and Lesson entitlement — Done
+
+Delivered versioned Student create/update/archive/delete, Lesson Purchase creation, derived lesson
+balance, manual-income summary, Demo migration preview/checksum, tenant isolation, responsive
+acceptance, and remote CI.
+
+M0–M3 remain closed. Product-surface corrections discovered after delivery belong to M3.5; their
+completed implementation and evidence are not discarded or rerun without cause.
+
+### M3.5 — Stage A: frontend gap filling — In progress
+
+**Purpose:** make all currently supported M0–M3 capabilities feel like one intentional product and
+establish the frontend contracts that M4+ must follow.
+
+**Preserved inputs:** existing Auth and account lifecycle, Student/Lesson Modules, App Shell routes,
+TanStack Query cache, PWA shell, and completed tests. M4 Scheduling begins only from a future frozen
+Contract; no Scheduling starter is retained.
+
+#### M3.5-A0 — Audit and contract calibration — Done
+
+- Audited every Demo route against the formal Web at desktop and 390px.
+- Classified gaps by M3.5 versus M4–M7 ownership.
+- Approved this Roadmap, Architecture, Status, and Agent-rule reset.
+
+#### M3.5-A1 — Route modules and state foundation
+
+- Split formal `coach-workspace.tsx` route implementations into route-owned modules without changing
+  current HTTP behaviour or query semantics.
+- Keep shared App Shell, route-state primitives, modal primitives, formatters, and query-key factory
+  behind small interfaces.
+- Preserve Coach-scoped in-memory cache, 30-second fresh window, background revalidation,
+  authorized detail prefetch, mutation invalidation, and Auth-session cache clearing.
+- Add focused tests for each route's first-load, cached-refresh, Error, Empty/Not Found, and Ready
+  selection logic.
+
+**Acceptance:** no `useEffect`-managed server request state; no private response persistence; current
+M0–M3 operations behave identically after the split.
+
+#### M3.5-A2 — App Shell, Auth, and Settings correction
+
+- Remove the duplicated mobile masthead and keep Settings reachable from the mobile header while the
+  bottom navigation remains focused on primary Coach workflows.
+- Derive Coach name and avatar consistently from Workspace settings with an Email fallback.
+- Replace static connection/sync claims with truthful query/network state or omit them.
+- Keep existing Auth and account-lifecycle operations; give Workspace settings and account lifecycle
+  independent panel Loading/Error/Ready states so one failure does not blank the whole route.
+- Keep M4/M5/notification settings out until their owning data contracts exist.
+
+**Acceptance:** Auth remains six-digit and functional; Settings and App Shell pass desktop and
+390×844 navigation, focus, destructive-confirmation, and no-overflow checks.
+
+#### M3.5-A3 — Student roster and detail parity for existing data
+
+**Data additions**
+
+- Extend `GET /v1/students` additively with `lessonSummary` and nearest future `nextSession` for
+  each Student; retain existing Student fields and tenant derivation.
+- Extend `GET /v1/students/:studentId` with nearest future and completed Course Session history
+  available from the existing schema. Do not add Training performance or Schedule Series here.
+- Add versioned Lesson Purchase correction operations:
+  - `PATCH /v1/students/:studentId/lesson-purchases/:purchaseId`
+  - `DELETE /v1/students/:studentId/lesson-purchases/:purchaseId`
+- Add Lesson Purchase `version` only through an explicit migration and optimistic-concurrency error
+  contract. Preserve historical rows and derived balances.
+
+**Route behaviour**
+
+- Restore active/archive views, search-specific Empty state, lesson progress, low/negative warning,
+  and next-session summary on `/students`.
+- Recompose `/students/:id` around Student identity, entitlement, private context, Course Session
+  history, and editable Purchase ledger.
+- Preserve the existing create-Student operation. Initial Purchase may be offered after Student
+  creation; fixed-rhythm onboarding waits for M4 rather than faking a cross-Module operation.
+- Keep private notes Coach-only and retain explicit destructive confirmation.
+
+**Acceptance:** two-Coach list/detail/purchase isolation, stale-version rejection, balance
+recalculation, archive visibility, cache invalidation, first/filter/search Empty states, desktop, and
+390×844 all pass.
+
+#### M3.5-A4 — Today projection
+
+Add `GET /v1/today?date=YYYY-MM-DD` returning one screen projection:
 
 ```text
-Coach Web/PWA ─┐
-               ├─ HTTPS / JSON ─> Fastify modular monolith ─> Supabase PostgreSQL
-Public pages ──┘                         │
-                                        ├─ Supabase Auth / JWKS
-                                        └─ Worker（通知需求出現後才啟用）
+date, timeZone
+summary: scheduled, completed, activeStudents, incomeByCurrency, attentionCount
+sessions: id, startsAt, endsAt, status, location, student summary, trainingPlanState
+attention: lowLessonBalance and scheduleConflict items with target routes
 ```
 
-### 模組與 Interface
+- The backend derives Workspace and local-day boundaries from verified identity and Workspace time
+  zone.
+- `trainingPlanState` remains `unavailable` until M5; the client does not invent Training data.
+- Income is explicitly period-scoped; no Demo seed count or amount becomes production data.
+- `/today` restores the Demo's information hierarchy, daily flow, no-sessions Empty state, and
+  actionable attention without copying static seed text as fact.
 
-| Module               | 對外 Interface             | 隱藏的實作責任                                             |
-| -------------------- | -------------------------- | ---------------------------------------------------------- |
-| Identity & Workspace | 驗證 Coach、解析 Workspace | Supabase JWT、workspace bootstrap、租戶隔離                |
-| Student & Lesson     | 學生與堂數的完整操作       | Student、Lesson Purchase、餘額推導、刪除後果               |
-| Scheduling           | 建立／移動／完成／取消課堂 | 衝突、固定排程、可用時間、交易與並行控制                   |
-| Training             | 保存一堂課的訓練成果       | 動作快照、組別結果、歷史與最佳表現推導                     |
-| Public Access        | 發行與兌換 Capability Link | token hash、到期、撤銷、單次使用、公開投影                 |
-| Notification         | 排程與追蹤通知             | outbox、重試、LINE／Email adapter；需求出現前不啟用 Worker |
+**Acceptance:** time-zone day edges, completed counts, multi-currency income, low/negative balances,
+conflicts, tenant isolation, cached refresh, desktop, and 390×844 pass.
 
-每個 Module 應提供完整業務操作，而不是把資料表 CRUD 直接暴露給前端。HTTP、PostgreSQL、
-Supabase Auth 與記憶體測試版本是位於 seam 的 Adapter；測試與呼叫端共用同一個 Interface。
+#### M3.5-A5 — Product convergence and delivery
 
-### 全域資料與並行規則
+- Sol performs the complete Demo comparison for Auth, Shell, Today, Students, Student Detail, and
+  Settings.
+- Remove developer/roadmap language from rendered UI.
+- Verify keyboard, focus, modal dismissal, reduced motion, destructive actions, cached navigation,
+  and exact 390×844 width.
+- Run the complete Gate 4 delivery and remote CI.
 
-- 所有正式 ID 使用 UUID；每個業務資料列都能追溯到 Workspace。
-- Browser 不可指定或覆寫 `workspaceId`；後端由已驗證的 `auth.users.id` 推導。
-- 金額若加入，一律使用整數最小貨幣單位並記錄幣別，不使用浮點數。
-- 交易敏感操作在單一資料庫 transaction 內完成。
-- 可被多裝置同時修改的 aggregate 使用 `version` 做 optimistic concurrency；衝突回傳給教練決定。
-- 排程衝突與堂數不足是可見警告，除非產品規則另有明文，不自動阻擋、搬移、取消或補救。
-- 私人備註預設不進入公開 projection；只有明確 opt-in 的課堂分享備註可以公開。
-- Capability token 只保存不可逆 hash；原始 token 僅在發行當下回傳一次。
-- 資料刪除、保留期與匯出在 Beta 前定案；正式資料不以無文件的 cascade 行為處理。
-
-## 3. 交付策略
-
-採垂直切片：每個里程碑必須從 UI／HTTP Interface 穿過 Module 到資料庫，並以測試和可操作
-的驗收流程證明。先搬低並行風險資料，再搬排程與公開連結；Demo 在完成資料遷移驗收前保持
-獨立可執行。
-
-狀態只記在 [`PROJECT_STATUS.md`](PROJECT_STATUS.md)。本文件只在範圍、順序、依賴或完成
-條件改變時更新。
-
-## 4. 里程碑
-
-### M0 — Repository 與產品契約
-
-**目的**：保存已驗證 Demo，建立正式產品的邊界與詞彙。
-
-**內容**
-
-- 將現有 React 原型保留為獨立 `demo/`。
-- 建立根目錄 workspace、`CONTEXT.md`、Architecture 與 ADR。
-- 凍結 `form-coach-mvp-v1`，所有舊資料變更維持顯式 migration。
-- 建立 Roadmap、Project Status 與跨對話接手流程。
-
-**完成條件**
-
-- Demo 可獨立安裝、檢查、建置及啟動。
-- 根目錄與 Demo 的責任清楚，正式產品不直接修改 Demo store 作為後端替代品。
-- 新對話只讀 repository 文件即可指出當前里程碑、下一動作與已知 blocker。
-- 形成可供後續 worktree 分支的乾淨 Git baseline。
-
-### M1 — Cloud foundation tracer
-
-**依賴**：M0。
-
-**目的**：證明真實 Coach 身分可以安全穿過 Web、API 與 PostgreSQL，且無法越過 Workspace。
-
-**內容**
-
-- Supabase development project、Auth、PostgreSQL 17 與 CLI migration workflow。
-- `app_private` schema、最小權限 group role 與專用 runtime login。
-- Supabase JWKS 驗證；驗證 signature、issuer、audience、expiry 與 subject。
-- Workspace bootstrap、Student list/create 的深模組與 memory/PostgreSQL adapters。
-- React Web/PWA 登入、學生清單、新增學生與同源 `/api` proxy。
-- 建立 development Coach，完成真實端到端驗證及第二 Coach 的租戶隔離測試。
-- CI 至少執行 formatting、typecheck、tests、production build 與 migration dry-run。
-
-**完成條件**
-
-- 專用 runtime role 可連線，但無法讀取其他 schema 或取得 migration 權限。
-- 真實 Supabase access token 可完成「登入 → bootstrap Workspace → 新增 → 重讀 Student」。
-- 無 token、過期 token、錯誤 audience 皆為 401；前端傳入 `workspaceId` 被拒絕。
-- 兩個 Coach 的資料不可互讀；自動測試與一次真實遠端測試均留下證據。
-- Security Advisor 0 errors／0 warnings；Performance Advisor 無需立即處理的 error／warning。
-- 所有 secrets 只存在 Git 忽略的本機或部署環境 secret store。**已核准的 M1 例外**：2026-09-09 曾在
-  對話中暴露的 development database password 與 Auth secret key，使用者明確接受不輪替；值不在 Git
-  或公開 payload，風險必須持續記在 `PROJECT_STATUS.md`，且不得以此例外放寬 M8 的全量輪替門檻。
-
-### M2 — Coach account operations
-
-**依賴**：M1。
-
-**目的**：把測試登入提升為可供真實教練安全使用的帳號生命週期。
-
-**內容**
-
-- V1 採公開自助註冊：Coach 以唯一 Email 與自訂密碼建立帳號，Email 必須使用六位 OTP 驗證；管理端
-  建立帳號只限 development／test。
-- Google OAuth 納入正式登入方式。已驗證的相同 Email 會連結為同一個 Coach identity；若帳號僅有
-  Google identity，Coach 應先以 Google 登入後從帳號安全設定密碼。已核准例外：公開註冊會先查詢
-  既有 Email，並明示「此帳號已經註冊過。」；使用者接受這會揭露帳號是否存在的 enumeration risk。
-- Email 驗證、密碼重設、登出所有裝置及帳號刪除流程。Coach 要求刪除後進入 14 日倒數，可取消；
-  倒數期間可明確選擇立即刪除，期限屆滿則自動刪除。連續 365 天未有活動的帳號不寄提醒、直接
-  自動刪除。三條刪除路徑都永久移除 Coach 的 Supabase Auth user 與該 Coach Workspace
-  擁有的全部資料，不提供保留、匯出或復原副本。活動定義為成功完成的已驗證產品 API operation；
-  token refresh、背景心跳與只讀取帳號刪除狀態均不計入活動。
-- 在 SMTP 每日 300 封限制下，只允許註冊 Email 驗證碼與密碼重設兩種郵件；不得啟用
-  Supabase password／identity 等 security-notification emails，或新增未經核准的應用寄信種類。
-- 以上倒數與閒置處理需要每日排程；以 Supabase `pg_cron`／`pg_net` 呼叫受專用高熵 token 保護的 Edge
-  Function。刪除 Auth user 前必須先撤銷所有 session，並由 server-only credential 執行，瀏覽器不得取得
-  管理權限。
-- Workspace settings：顯示名稱、時區與必要偏好；授權仍以不可編輯的 user ID 為準。
-- Auth redirect allowlist、rate limit、CAPTCHA／自訂 SMTP 的啟用門檻。
-- Session 與安全事件處理；敏感操作需要時檢查 `session_id`。
-
-**完成條件**
-
-- 自助註冊、Email OTP 驗證、Email／密碼登入、Google 登入與同 Email identity linking、refresh、reset、
-  logout、delete 的成功與失敗路徑都有測試；Google provider 啟用後須完成真實 E2E。
-- 使用者可編輯 metadata 不參與授權。
-- 帳號刪除的資料後果、保留期及恢復限制有文件與確認畫面。
-- 每日閒置刪除排程以隔離帳號驗證：365 天門檻、14 日期滿、取消、失敗回報與不重複執行。
-- 桌面與 390px 實際驗證完成。
-
-### M3 — Student & Lesson entitlement
-
-**依賴**：M1；可與 M2 的 UI 工作部分並行，但共用 schema migration 必須序列化。
-
-**目的**：正式搬移學生資料、購課與剩餘堂數。
-
-**資料模型**
-
-- `student`
-- `lesson_purchase`
-- Course Session 的最小狀態欄位，以便正確推導已使用堂數
-
-**業務操作**
-
-- 建立、編輯、封存、刪除 Student，明確顯示刪除後果。
-- 登錄 Lesson Purchase；餘額由 purchase 與 completed session 推導，不直接改 balance。
-- 學生詳情回傳畫面所需 projection，不由前端拼湊多張資料表。
-- 保留私人備註不可公開的不變量。
-
-**完成條件**
-
-- 「剩餘堂數 = 購買堂數 − 已完成課堂」在 domain、repository 與 HTTP 層都有測試。
-- 負數／低堂數可見但不自動修正。
-- 兩個 Coach 的 list、detail、update、delete 均驗證隔離。
-- Demo Student 與 Lesson Purchase 有可重跑、可預覽、具 checksum 的 migration mapping。
-- UI 與 Demo 已驗證流程一致，桌面與 390px 通過。
+**M3.5 completion criterion:** all supported M0–M3 surfaces pass the four gates; deferred M4–M7
+features are absent or honestly unavailable, never represented by fake controls or fake data.
 
 ### M4 — Scheduling
 
-**依賴**：M3。
+**Dependency:** M3.5 complete.
 
-**目的**：以交易與並行控制搬移排程，是第一個高風險資料切片。
+**Preserve:** the existing `course_session`, `schedule_series`, `availability_rule`,
+`availability_override`, and `calendar_block` schema plus Course Session
+create/move/complete/cancel, transactional conflict projection, and optimistic concurrency. Resume
+from that seam; do not rebuild it.
 
-**資料模型**
+#### Contract gate
 
-- `course_session`
-- `schedule_series`
-- `availability_rule`
-- `availability_override`
-- `calendar_block`
+- Freeze Calendar agenda/day/week/month behaviours, visible time range, click/drag thresholds,
+  mobile alternatives, session status language, conflict presentation, and header-scroll behaviour.
+- Freeze Schedule Series reconciliation: generate only future scheduled sessions needed to cover
+  remaining entitlement, never backfill the past, preserve a calendar-drawn first occurrence, and
+  remain idempotent.
+- Freeze availability add/remove semantics, date override, recurring Calendar Block edit scope, and
+  version-conflict recovery choices.
 
-**業務操作**
+#### Terra gate
 
-- 建立、移動、完成、取消 Course Session。
-- 固定排程只向未來補足剩餘堂數，不回填過去。
-- 可用時間加減、單日 override、私人封鎖與衝突 projection。
-- 寫入時以 transaction 重新檢查版本、堂數與衝突；衝突結果交由 Coach 決定。
+- Complete read projections and CRUD/transition operations for Calendar, Schedule Series,
+  Availability Rule/Override, and Calendar Block.
+- Implement reconciliation and recurring-block scope transactionally.
+- Bind `/calendar` and fixed-rhythm sections to typed state skeletons with no visual or copy choices.
+- Provide Demo migration preview with counts, conflicts, rejected items, and checksum.
 
-**完成條件**
+#### Sol gate
 
-- Demo DATA_MODEL 中所有排程不變量都有後端測試。
-- 兩裝置同時移動／完成同一課堂時，一方成功，另一方收到可理解的 conflict。
-- 固定排程 reconciliation 可重跑且不產生重複課堂。
-- Calendar day/week/month、拖曳與手機流程通過實際驗證。
-- 資料 migration dry-run 顯示筆數、衝突與拒絕原因，不靜默丟棄資料。
+- Reproduce and refine the Demo calendar interaction, density, statuses, warnings, responsive
+  behaviour, and fixed-rhythm experience.
+- Validate pointer, touch, keyboard, scrolling, direct manipulation, modal, and conflict recovery.
 
-### M5 — Training
+#### CI gate
 
-**依賴**：M3；與 M4 的 UI 可並行，涉及 Course Session 外鍵的 migration 需協調。
+- Prove all Demo scheduling invariants, two-device conflicts, tenant isolation, idempotent
+  reconciliation, migration dry-run, desktop, 390×844, and remote CI.
 
-**目的**：搬移訓練紀錄並保留即時輸入與離頁不遺失體驗。
+### M5 — Training and Exercise Library
 
-**資料模型**
+**Dependency:** M4 Course Session read contract; schema changes remain serialized with M4.
 
-- `exercise_definition`
-- `training_record`
-- `training_exercise`
-- `training_set`
+#### Contract gate
 
-**業務操作**
+- Freeze `exercise_definition`, `training_record`, `training_exercise`, and `training_set`
+  contracts.
+- Preserve stable definition identity plus exercise snapshots, weight/reps metric, kg/lb conversion,
+  completed-set qualification, previous/personal-best semantics, and no-history defaults.
+- Freeze Session autosave, offline draft, leave-page flush, completion/reopen, performance trend,
+  exercise picker, and Exercise Library interactions.
 
-- 動作庫建立、編輯、封存與篩選。
-- Training Exercise 保存名稱、metric 與 definition identity 快照。
-- Training Record draft autosave、離頁 flush、server version conflict。
-- 只有 `completed` set 進入 previous、personal best、趨勢與動作統計。
+#### Terra gate
 
-**完成條件**
+- Implement versioned Training operations, Exercise Library operations, history/performance
+  projections, and conflict contracts.
+- Bind `/sessions/:id`, `/exercises`, and the Student performance section to semantic state
+  skeletons.
+- Preserve recoverable drafts without making them official until the server accepts them.
 
-- kg/lb 換算、weight/reps metric、歷史匹配與 completed gate 測試完整。
-- 網路中斷時草稿留在 IndexedDB；恢復後由 Coach 可見地重送。
-- 多裝置衝突不做 last-write-wins 靜默覆蓋。
-- 私人 note 不出現在預設分享 projection。
-- 課堂頁與學生表現頁在桌面及 390px 通過。
+#### Sol gate
 
-### M6 — Public capability links
+- Complete Session Workspace, set-entry ergonomics, result controls, autosave feedback, performance
+  charts, picker/filter experience, and responsive layout from the Demo.
 
-**依賴**：M4；Training result link 另依賴 M5。
+#### CI gate
 
-**目的**：讓無帳號 Student 安全讀取一項 projection 或執行一項操作。
+- Prove completed-set gating, unit conversion, identity matching, autosave/flush, offline recovery,
+  multi-device conflict, private-note safety, desktop, 390×844, and remote CI.
 
-**資料模型與安全**
+### M6 — Public Capability Links
 
-- `capability_link`：purpose、resource、token hash、expires/revoked/used timestamps。
-- 原始 token 不寫 logs、analytics、資料庫或 browser storage。
-- 每一 purpose 使用獨立 projection 與 redemption operation。
+**Dependencies:** M4 for rescheduling; M5 for Training Result.
 
-**業務操作**
+#### Contract gate
 
-- 發行、撤銷、到期與重新發行連結。
-- 公開訓練結果讀取；note 僅在該連結 `includeNote` 明確開啟時加入。
-- 改期候選時段與單次兌換；transaction 內重新驗證 availability、block 與 conflict。
-- 公開入口 rate limit、濫用監控與安全回應。
+- Freeze `capability_link`: purpose, resource, token hash, expiry, revocation, use, and optional
+  Training Note consent.
+- Freeze allowlisted public projections and valid, invalid, expired, revoked, used, no-slot,
+  conflict, and success experiences.
 
-**完成條件**
+#### Terra gate
 
-- valid、expired、revoked、used、tampered 與競爭兌換都有測試。
-- 同一單次 token 的並行 redemption 最多一個成功。
-- 公開 payload 有欄位 allowlist 測試，Student private note 永遠缺席。
-- Coach 已開啟畫面能收到或重新抓取公開操作結果。
+- Implement issuance, revocation, reissue, read projection, slot projection, and single-use
+  redemption with rate limiting and transactional revalidation.
+- Mount `/t/:token` and `/r/:token` outside Coach Auth with semantic state skeletons.
+- Keep raw tokens out of storage, logs, analytics, and error reports.
 
-### M7 — Local resilience and migration
+#### Sol gate
 
-**依賴**：M3–M6 的目標 schema 穩定。
+- Complete the standalone Student-facing Training Result, image download, reschedule picker, terminal
+  states, responsive layout, and final copy.
 
-**目的**：安全接管現有 `form-coach-mvp-v1`，並提供有限、可理解的斷線保護。
+#### CI gate
 
-**內容**
+- Prove valid/expired/revoked/used/tampered cases, parallel redemption, payload allowlists,
+  private-note exclusion, Coach refresh after public mutation, mobile acceptance, and remote CI.
 
-- IndexedDB 僅保存草稿、快取、待送 operation 與 UI preference。
-- 每種待送 operation 明定 idempotency key、重試、取消與衝突處理。
-- 建立 Demo export → validate → preview → import 流程；保留來源備份與 migration report。
-- migration 順序：settings/exercises/students → purchases → training → scheduling → capability links。
-- 切換前不更名或清除 `form-coach-mvp-v1`；清除需使用者明確確認。
+### M7 — Local resilience and Demo migration
 
-**完成條件**
+**Dependency:** target schemas for M3–M6 are stable.
 
-- 中斷／重連／重複送出／部分成功／版本衝突有自動化與實際測試。
-- 匯入可重跑，不重複建立；每個拒絕項目有原因。
-- 原始 localStorage 備份在使用者確認前可恢復。
-- 正式畫面不再把 localStorage 當 System of Record。
+#### Contract gate
+
+- Freeze which drafts, pending operations, query cache, and UI preferences may persist locally.
+- Freeze idempotency, retry, cancel, partial-success, conflict, backup, preview, import, and rollback
+  experiences.
+
+#### Terra gate
+
+- Implement IndexedDB adapters and operation queues without changing official server authority.
+- Implement Demo export → validate → preview → import in this order: settings/exercises/students,
+  purchases, training, scheduling, capability links.
+- Preserve `form-coach-mvp-v1` and its backup until explicit user confirmation permits cleanup.
+
+#### Sol gate
+
+- Complete offline, retry, conflict, import-preview, progress, rejection, and recovery experiences.
+
+#### CI gate
+
+- Prove interruption/reconnection, duplicate submission, partial success, stale version, rerunnable
+  import, backup recovery, desktop/mobile operation, and remote CI.
 
 ### M8 — Deployment and Beta readiness
 
-**依賴**：至少 M1–M7 的 Beta 範圍完成。
+**Dependency:** the approved Beta scope from M1–M7 is complete.
 
-**目的**：從可開發系統提升為可供外部教練試用且可營運的服務。
+#### Contract gate
 
-**環境與交付**
+- Select hosting, domains, environments, observability, support, privacy, export, retention, incident,
+  rollback, restore, and Beta exit policies.
 
-- Local、Staging、Production 使用不同 Supabase projects、Auth 設定與 secrets。
-- 選定 Web/API hosting；同網域 `/api` 路由、TLS、custom domain 與 deployment rollback。
-- CI：format、typecheck、tests、build、migration lint/dry-run、依賴與 secret scan。
-- migration 與應用部署分離；向後相容後再移除舊欄位。
+#### Terra gate
 
-**營運與安全**
+- Separate local/staging/production Supabase projects and secrets.
+- Implement same-origin `/api`, TLS, deployment/rollback automation, migration release steps,
+  structured logs, request IDs, metrics, alerts, backups, and security gates.
 
-- 結構化 logs、request ID、error tracking、uptime、DB/pool 指標與告警。
-- 自動備份、恢復文件及至少一次 staging restore drill。
-- Privacy policy、資料匯出、帳號刪除、保留期與事件處理流程。
-- 公開端點 rate limits；Security/Performance Advisor 與 dependency audit 納入 release gate。
-- 公開註冊的 Email canonicalization／normalization：只對有明確、已驗證語意的 provider 規則處理別名，
-  保留原始 Email 作為通知地址；不得以全域移除 `+`、`.` 等猜測規則誤合併不同收件者。與 rate limit、CAPTCHA、
-  device／network abuse signals 一起驗證，避免子位置指定被用於重複優惠、免費額度或假帳號濫用。
-- 建立最小 audit events；避免把學生內容與 token 寫入 logs。
+#### Sol gate
 
-**完成條件**
+- Complete production onboarding, error surfaces, privacy/data controls, and one real-Coach Beta
+  journey.
 
-- 全新環境可由文件與 automation 重建。
-- staging smoke、production smoke、rollback 與 restore drill 都有日期及證據。
-- 至少一位真實試用 Coach 完成核心流程；問題分級並有退出 Beta 的標準。
-- 無 P0/P1 問題、無未處理 Security Advisor error/warning、所有 secrets 已輪替。
+#### CI gate
 
-### M9 — Post-V1 options
+- Prove clean-environment rebuild, staging/production smoke, rollback, restore drill, dependency and
+  secret scan, zero unresolved Security Advisor errors/warnings, full secret rotation, and remote CI.
 
-完成 Beta 後才評估，不能提前侵入核心里程碑：
+### M9 — Post-V1 options — Deferred
 
-- LINE／Email／Push 通知與 Worker/outbox。
-- Capacitor、App Store、Google Play。
-- 商業訂閱與線上付款。
-- 工作室、多 Coach membership 與角色。
-- 健康或醫療資料；如要加入，必須另做隱私、合規與資料最小化評估。
+Evaluate only after Beta:
 
-## 5. 決策門
+- LINE, Email, or Push notification worker/outbox;
+- Capacitor, App Store, and Google Play packaging;
+- subscriptions and online payment;
+- studio membership, multiple Coaches, and roles;
+- health or medical data after a separate privacy/compliance review.
 
-以下問題到達指定里程碑前才需要決定；在此之前使用保守預設：
+## 6. Sequencing and concurrency
 
-| 最晚時間    | 決策                               | 未決時預設                         |
-| ----------- | ---------------------------------- | ---------------------------------- |
-| M2 開始     | 教練帳號取得方式                   | 已定案：公開自助註冊＋Google OAuth |
-| M2 完成     | 自訂 SMTP、CAPTCHA 與 session 限制 | 僅 development 環境可開放註冊      |
-| M3 刪除功能 | 資料保留、復原與匯出政策           | 不提供不可逆批次刪除               |
-| M7 開始     | 舊 Demo 資料的匯入 UX              | preview + explicit confirm         |
-| M8 開始     | Web/API hosting 與網域             | 不建立 production 環境             |
-| Beta 前     | 錯誤追蹤、監控、隱私文件與試用條款 | 不邀請外部 Coach                   |
+Work may proceed in parallel only after its Contract gate freezes shared interfaces. Separate
+worktrees/branches are required for parallel work.
 
-## 6. 可並行與必須序列化
+Always serialize:
 
-### 可並行
+- Supabase migrations and migration history;
+- shared aggregate and Module interface changes;
+- Demo import mappings with their target schema;
+- `PROJECT_STATUS.md` integration;
+- production deployments, backfills, destructive data operations, and secret rotation.
 
-- 已凍結 HTTP contract 後的 Web UI 與對應 Module implementation。
-- 不同 Module 的純 domain tests 與 adapter tests。
-- 文件、監控設計與不改 schema 的部署 automation。
-- Demo 的獨立 bug fix，前提是不改正式資料契約。
+M4–M6 may overlap only where frozen interfaces do not share a migration or Course Session contract.
+A UI skeleton is not authority to invent an adjacent milestone's model.
 
-### 必須序列化
+## 7. Roadmap change control
 
-- Supabase migrations 與 migration history。
-- 共用 aggregate／Interface 的變更。
-- Demo import mapping 與正式 schema 的同步修改。
-- production deployment、資料 backfill、欄位移除與 secret rotation。
-- `PROJECT_STATUS.md` 合併；整合者必須解決而不是丟棄各分支日誌。
-
-並行工作使用不同 Git worktree／branch；每個分支只負責一個清楚的 Module 或交付物。
-
-## 7. 每個里程碑的共同完成門檻
-
-一個里程碑只有在以下條件全部滿足時才能標為完成：
-
-1. Interface、資料不變量、錯誤模式及授權規則有文件。
-2. migration 可重跑或具明確一次性語意，且本機／遠端 history 一致。
-3. domain、adapter、HTTP 的成功、拒絕、租戶隔離與並行風險有相稱測試。
-4. 根目錄 `npm run check` 與 `npm run build` 通過。
-5. 變更畫面在桌面與 390px 實際操作，沒有水平溢出或不可達功能。
-6. Supabase schema 變更通過 lint 與 Security/Performance Advisors。
-7. secrets、private note、capability token 與個資未出現在 Git、logs 或公開 payload。
-8. `PROJECT_STATUS.md` 已更新：狀態、驗證證據、問題、下一個接手點與工程日誌。
-9. 使用者可感知或架構行為改變時，對應文件與 ADR 已同步。
-10. milestone 的交付 commit 已推送至 shared branch，且該 commit 觸發的 GitHub Actions CI
-    （至少 verify 與 migration dry-run）已完成成功；本機檢查不能取代遠端 CI 證據。
-
-## 8. Roadmap 變更規則
-
-- 日常完成項目只更新 `PROJECT_STATUS.md`，不要在本文件堆積日誌。
-- 工程對話不得自行修改本 Roadmap 的範圍、順序、依賴、產品基線或完成門檻。
-- 發現 Roadmap 必須改動時，先停止受影響的工程，向使用者提出現況、建議差異、理由、影響
-  與替代方案；只有取得使用者明確同意後，才能先修改本文件，再依新版本繼續工程。
-- 推翻「已定案」內容除使用者明確同意外，必須同時新增 ADR，說明原因、替代方案與
-  migration 後果。
-- 新里程碑使用穩定 ID；已被日誌引用的 ID 不重新編號。
-- 每次變更檢查 README、Architecture、CONTEXT 與 ADR 是否出現矛盾。
+Changes to scope, sequence, dependency, product baseline, role ownership, gate criteria, or a domain
+invariant require explicit Product Owner approval before editing this file. Ordinary progress,
+evidence, blockers, and next actions update only `PROJECT_STATUS.md`.

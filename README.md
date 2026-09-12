@@ -27,6 +27,13 @@ npm run build
 開發時分別執行 `npm run dev:api` 與 `npm run dev:web`。Web 端只使用 Supabase 的
 publishable key；資料庫密碼與 secret/service-role key 不得進入瀏覽器。
 
+### Windows 一鍵入口
+
+若只想直接進入現有正式應用，不必使用命令列：在根目錄雙擊
+[`start-gym-assistant.cmd`](start-gym-assistant.cmd)。它會在首次需要時安裝依賴、開啟
+API 視窗，並自動在瀏覽器開啟 `http://127.0.0.1:5173`。使用期間請保留兩個視窗開啟。
+這是 development Supabase 環境，請勿輸入真實客戶資料。
+
 資料庫設定與本機啟動方式請見 [`apps/api/README.md`](apps/api/README.md)。正式架構與
 核心詞彙分別記錄於 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 和
 [`CONTEXT.md`](CONTEXT.md)；M2 的 Email OTP／Google OAuth 外部設定與驗收流程見
