@@ -5,26 +5,27 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                     |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M3.5 — Stage A: frontend gap filling**                                                                          |
-| Current package    | **M3.5-A1 — Route modules and state foundation**                                                                  |
-| Package state      | Terra implementation and local verification complete; Git delivery remains blocked by mixed pre-existing worktree |
-| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful                             |
-| Branch baseline    | `main`; `origin/main` at documentation commit `a97d2e5` when this rewrite began                                   |
-| Worktree           | Contains approved M0–M3/M3.5 App Shell/query baseline plus A1; abandoned M4 starter removed                       |
-| Linked database    | Development only; abandoned M4 migration reverted and rollback `20260912103452` applied                           |
-| Production         | Not configured; no real customer data                                                                             |
+| Field              | Current value                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| Active phase       | **M3.5 — Stage A: frontend gap filling**                                                    |
+| Current package    | **M3.5-A1 — Route modules and state foundation**                                            |
+| Package state      | **Done** — commit `4fce971`, GitHub Actions CI #7 / run `34689160129` successful            |
+| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful       |
+| Branch baseline    | `main`; `origin/main` at documentation commit `a97d2e5` when this rewrite began             |
+| Worktree           | Contains approved M0–M3/M3.5 App Shell/query baseline plus A1; abandoned M4 starter removed |
+| Linked database    | Development only; abandoned M4 migration reverted and rollback `20260912103452` applied     |
+| Production         | Not configured; no real customer data                                                       |
 
 ## Next handoff
 
-Complete the **M3.5-A1 Git delivery** only after reconciling the pre-existing mixed worktree:
+Start **M3.5-A2 — App Shell, Auth, and Settings correction**:
 
-1. Retain every pre-existing M4 Scheduling seam and M0–M3 baseline change; do not reset or fold it
-   into the A1 commit.
-2. Establish an integration boundary that permits one cohesive A1 commit without staging unrelated
-   files; then push and confirm both required GitHub Actions jobs for that commit.
-3. Only after remote CI succeeds, mark A1 complete and advance the handoff to M3.5-A2.
+1. Freeze the A2 Contract against the archived Demo for desktop and exact 390×844 behaviour.
+2. Remove the duplicated mobile masthead, keep Settings in the mobile header, and retain primary
+   Coach workflows in bottom navigation.
+3. Make Coach name/avatar and connection state truthful; independently recover Settings panels
+   without adding M4/M5/notification controls.
+4. Complete focused Web/browser acceptance, then one cohesive commit, push, and remote CI.
 
 Terra owns data flow and semantic skeletons only. No visual, responsive, interaction-styling, or
 end-user-copy decisions are authorized in this package. Do not continue general M4 feature work.
@@ -142,9 +143,9 @@ local pass or successful push is not a remote CI completion claim.
   query/mutation invalidation and recoverable input behaviour.
 - **Verification:** root format/API check, focused Web check (31 tests), Web production build, and
   `git diff --check` passed. Vite emitted its existing over-500-kB single-chunk advisory only.
-- **Known issue:** none; the Product Owner authorized removal of the abandoned M4 starter so the
-  remaining worktree is the approved M0–M3/M3.5 baseline plus A1.
-- **Next:** complete A1 integration commit, push, and remote CI.
+- **Delivery:** commit `4fce971` pushed to `origin/main`; GitHub Actions CI #7 / run `34689160129`
+  completed successfully. M3.5-A1 is Done.
+- **Next:** freeze and execute M3.5-A2.
 
 ### 2026-09-12 — LOG-046 — Abandoned M4 starter removed
 
