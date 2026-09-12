@@ -11,6 +11,8 @@ import type {
 import {
   type NewStudent,
   type NewLessonPurchase,
+  type UpdatedLessonPurchase,
+  LessonPurchaseVersionConflictError,
   type StudentRepository,
   StudentVersionConflictError,
   type UpdatedStudent,
@@ -45,6 +47,7 @@ interface LessonPurchaseRow {
   amount_minor: string | number
   currency: string
   private_note: string
+  version: number
   created_at: Date
   updated_at: Date
 }
@@ -108,7 +111,7 @@ export class PostgresStudentRepository
     }
   }
 
-  async listStudents(workspaceId: WorkspaceId): Promise<Student[]> {
+  async listStudents(workspaceId: WorkspaceId) {
     const result = await this.#pool.query<StudentRow>(
       `SELECT id, name, phone, goal, private_note, active, line_linked, version,
               created_at, updated_at
@@ -117,7 +120,12 @@ export class PostgresStudentRepository
        ORDER BY created_at, id`,
       [workspaceId],
     )
-    return result.rows.map(mapStudent)
+    return Promise.all(
+      result.rows.map(async (student) => ({
+        ...mapStudent(student),
+        lessonSummary: (await this.lessonSummary(workspaceId, student.id))!,
+      })),
+    )
   }
 
   async getWorkspaceSettings(workspaceId: WorkspaceId): Promise<WorkspaceSettings> {
@@ -230,7 +238,7 @@ export class PostgresStudentRepository
         [workspaceId, studentId],
       ),
       this.#pool.query<LessonPurchaseRow>(
-        `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at
+        `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at
          FROM app_private.lesson_purchase
          WHERE workspace_id = $1 AND student_id = $2 ORDER BY purchased_at, id`,
         [workspaceId, studentId],
@@ -307,7 +315,7 @@ export class PostgresStudentRepository
       `INSERT INTO app_private.lesson_purchase (id, workspace_id, student_id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at)
        SELECT $3, $1, student.id, $4, $5, $6, $7, $8, $9, $9
        FROM app_private.student AS student WHERE student.workspace_id = $1 AND student.id = $2
-       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at`,
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at`,
       [
         workspaceId,
         studentId,
@@ -322,6 +330,63 @@ export class PostgresStudentRepository
     )
     const purchase = result.rows[0]
     return purchase ? mapLessonPurchase(purchase) : null
+  }
+
+  async updateLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    purchaseId: string,
+    input: UpdatedLessonPurchase,
+  ): Promise<LessonPurchase | null> {
+    const result = await this.#pool.query<LessonPurchaseRow>(
+      `UPDATE app_private.lesson_purchase
+       SET purchased_at = $4, lesson_count = $5, amount_minor = $6, currency = $7, private_note = $8,
+           version = version + 1, updated_at = $9
+       WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $10
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at`,
+      [
+        workspaceId,
+        studentId,
+        purchaseId,
+        input.purchasedAt,
+        input.lessonCount,
+        input.amountMinor,
+        input.currency,
+        input.privateNote,
+        input.now,
+        input.expectedVersion,
+      ],
+    )
+    if (result.rows[0]) return mapLessonPurchase(result.rows[0])
+    const current = await this.#pool.query<LessonPurchaseRow>(
+      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at
+       FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3`,
+      [workspaceId, studentId, purchaseId],
+    )
+    if (current.rows[0])
+      throw new LessonPurchaseVersionConflictError(mapLessonPurchase(current.rows[0]))
+    return null
+  }
+
+  async deleteLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    purchaseId: string,
+    expectedVersion: number,
+  ): Promise<boolean> {
+    const result = await this.#pool.query(
+      'DELETE FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $4',
+      [workspaceId, studentId, purchaseId, expectedVersion],
+    )
+    if (result.rowCount) return true
+    const current = await this.#pool.query<LessonPurchaseRow>(
+      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at
+       FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3`,
+      [workspaceId, studentId, purchaseId],
+    )
+    if (current.rows[0])
+      throw new LessonPurchaseVersionConflictError(mapLessonPurchase(current.rows[0]))
+    return false
   }
 
   async lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null> {
@@ -377,6 +442,7 @@ function mapLessonPurchase(row: LessonPurchaseRow): LessonPurchase {
     amountMinor: Number(row.amount_minor),
     currency: row.currency,
     privateNote: row.private_note,
+    version: row.version,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   }

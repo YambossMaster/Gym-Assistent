@@ -20,10 +20,14 @@ export const createLessonPurchaseSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/),
   privateNote: z.string().trim().max(4000).default(''),
 })
+export const updateLessonPurchaseSchema = createLessonPurchaseSchema.extend({
+  version: z.number().int().positive(),
+})
 
 export type CreateStudentInput = z.input<typeof createStudentSchema>
 export type UpdateStudentInput = z.input<typeof updateStudentSchema>
 export type CreateLessonPurchaseInput = z.input<typeof createLessonPurchaseSchema>
+export type UpdateLessonPurchaseInput = z.input<typeof updateLessonPurchaseSchema>
 
 export interface Student {
   id: string
@@ -45,6 +49,7 @@ export interface LessonPurchase {
   amountMinor: number
   currency: string
   privateNote: string
+  version: number
   createdAt: string
   updatedAt: string
 }
@@ -63,5 +68,9 @@ export interface LessonIncomeSummary {
 export interface StudentDetail {
   student: Student
   purchases: LessonPurchase[]
+  lessonSummary: LessonSummary
+}
+
+export interface StudentRosterItem extends Student {
   lessonSummary: LessonSummary
 }

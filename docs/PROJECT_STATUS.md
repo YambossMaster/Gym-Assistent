@@ -5,30 +5,29 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| Active phase       | **M3.5 — Stage A: frontend gap filling**                                                    |
-| Current package    | **M3.5-A2 — App Shell, Auth, and Settings correction**                                      |
-| Package state      | **Done** — commit `60a85c0`, GitHub Actions CI #9 / run `34690180698` successful            |
-| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful       |
-| Branch baseline    | `main`; `origin/main` at documentation commit `a97d2e5` when this rewrite began             |
-| Worktree           | Contains approved M0–M3/M3.5 App Shell/query baseline plus A1; abandoned M4 starter removed |
-| Linked database    | Development only; abandoned M4 migration reverted and rollback `20260912103452` applied     |
-| Production         | Not configured; no real customer data                                                       |
+| Field              | Current value                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
+| Current package    | **M3.5-A3 — Student roster and detail parity for existing data**                      |
+| Package state      | **CI in progress** — Contract, Terra, and Sol complete; remote delivery remains       |
+| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
+| Branch baseline    | `main`; `origin/main` at A2 evidence commit `78407d3` before this A3 package          |
+| Worktree           | Contains the approved M0–M3 baseline plus delivered M3.5 A1/A2 foundations            |
+| Linked database    | Development only; A3 Purchase version migration `20260912161049` applied              |
+| Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Start the **M3.5-A3 Contract gate**:
+Complete the **M3.5-A3 CI gate** for the frozen
+[`M3.5-A3-CONTRACT.md`](M3.5-A3-CONTRACT.md):
 
-1. Freeze the existing-data Student roster/detail projection and Lesson Purchase correction contract
-   against the archived Demo for desktop and exact 390×844 behaviour.
-2. Define additive API projection fields, versioned Purchase correction operations, tenant and stale
-   version behaviour, state boundaries, copy slots, and required live/browser evidence.
-3. Do not begin A3 Terra implementation until that Contract is frozen; do not add Scheduling or
-   Training rules as a browser workaround.
+1. Commit and push the cohesive A3 package after reviewing the exact diff.
+2. Confirm GitHub Actions Verify and migration dry-run jobs for that commit.
+3. After A3 delivery is confirmed, freeze the M3.5-A4 Today projection Contract before any A4
+   schema, API, route, copy, or visual implementation.
 
-Terra owns data flow and semantic skeletons only. No visual, responsive, interaction-styling, or
-end-user-copy decisions are authorized in this package. Do not continue general M4 feature work.
+Do not begin general M4 work. Nearest future session and dated Course Session history remain
+explicitly deferred to M4 because the preserved M3 schema has no schedule date/time fields.
 
 ## Milestone status
 
@@ -38,7 +37,7 @@ end-user-copy decisions are authorized in this package. Do not continue general 
 | M1 Cloud foundation tracer             | Done        | Supabase private schema, verified identity/Workspace derivation, two-Coach isolation, migration workflow, remote CI             |
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
-| M3.5 Frontend gap filling              | In progress | A0 audit/contract complete; A1–A5 remain                                                                                        |
+| M3.5 Frontend gap filling              | In progress | A0–A2 delivered; A3 awaits remote CI; A4–A5 remain                                                                              |
 | M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
@@ -81,31 +80,24 @@ end-user-copy decisions are authorized in this package. Do not continue general 
 
 ## Confirmed M3.5 gaps
 
-- Mobile 390px App Shell duplicates the masthead/top-row hierarchy.
 - `/today` is a static empty placeholder without its route projection or query.
 - `/calendar`, `/sessions/:id`, and `/exercises` are placeholders; they belong to M4/M5.
-- `/students` lacks active/archive parity, entitlement/next-session summaries, and distinct
-  first/filter/search Empty states.
-- `/students/:id` lacks the complete identity/private-context composition, Course Session history,
-  performance surface, and Purchase correction operations. Training performance belongs to M5;
-  fixed rhythm belongs to M4.
-- `/settings` has working account-security operations, but one query failure can currently blank the
-  whole route; unsupported future settings must remain absent.
+- `/students` and `/students/:id` now cover all existing M3 data. Nearest-session and dated-session
+  history remain absent until M4; Training performance remains absent until M5.
 - `/t/:token` and `/r/:token` are absent and currently fall through the authenticated route path;
   they belong to M6 and must eventually mount outside Auth.
 - Some rendered copy describes implementation state rather than helping a Coach complete a task.
 
 ## Open risks and constraints
 
-| Risk/constraint                                                   | Current handling                                                                                 |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| M4 starter had been applied to development schema                 | Approved rollback migration restored M3 entitlement schema; local/remote migration list aligned  |
-| Linked Scheduling migration is ahead of `origin/main`             | Treat it as a protected development seam; serialize future migrations and document exact history |
-| Frontend monolith increases accidental cross-route regressions    | M3.5-A1 decomposes by route while freezing behaviour                                             |
-| Product UI can drift when engineering invents presentation/copy   | Four mandatory gates; Terra hard limit; Sol owns product convergence                             |
-| Auth leaked-password-protection warning remains                   | Accepted development warning; resolve in M8 production security gate                             |
-| Previously exposed development credentials require final rotation | No production use; rotate all deployment secrets during M8 before Beta                           |
-| Demo seed/local data can be mistaken for production truth         | Use Demo only for behaviour/presentation; all official data comes from route projections         |
+| Risk/constraint                                                   | Current handling                                                                                |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| M4 starter had been applied to development schema                 | Approved rollback migration restored M3 entitlement schema; local/remote migration list aligned |
+| Frontend monolith increases accidental cross-route regressions    | M3.5-A1 decomposes by route while freezing behaviour                                            |
+| Product UI can drift when engineering invents presentation/copy   | Four mandatory gates; Terra hard limit; Sol owns product convergence                            |
+| Auth leaked-password-protection warning remains                   | Accepted development warning; resolve in M8 production security gate                            |
+| Previously exposed development credentials require final rotation | No production use; rotate all deployment secrets during M8 before Beta                          |
+| Demo seed/local data can be mistaken for production truth         | Use Demo only for behaviour/presentation; all official data comes from route projections        |
 
 ## Verification baseline
 
@@ -132,6 +124,55 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-13 — LOG-051 — M3.5-A3 Contract, Terra, and Sol locally complete
+
+- **Scope:** delivered the approved existing-data Student roster/detail parity contract without
+  adding Scheduling or Training data. Added server-owned roster entitlement summaries, versioned
+  Purchase correction, active/archive/search states, and Demo-led Student detail composition.
+- **Outcome:** desktop uses a restrained Coach workbench; exact 390×844 uses PWA-style sticky tools,
+  compact tap-first Student rows, fixed safe-area bottom navigation, route scroll reset, and mobile
+  bottom sheets. Dialogs lock background scroll, close with Escape, and return focus to their
+  opener. Purchase corrections preserve recoverable conflict state and refresh affected
+  projections.
+- **Verification:** root check passed (API 24 tests; Web 45 tests), root build passed with only the
+  existing over-500-kB Vite advisory, linked migration dry-run is up to date, M3 two-Coach live E2E
+  passed and removed its isolated Student, database lint found no schema errors, and the Git
+  whitespace check passed. Supabase advisors show the accepted leaked-password warning plus two existing
+  development-only unused Workspace indexes. Fresh desktop and exact 390×844 browser acceptance
+  passed with no horizontal overflow or console errors; Purchase editor focus/Escape restoration
+  also passed.
+- **Delivery:** cohesive commit, push, and remote GitHub Actions confirmation remain in progress.
+- **Next:** finish this CI gate, then freeze M3.5-A4 before implementation.
+
+### 2026-09-13 — LOG-050 — M3.5-A3 Terra data boundary in progress
+
+- **Scope:** implemented the frozen A3 Purchase version migration, server-owned roster entitlement
+  projection, versioned Purchase update/delete Module, repository, HTTP, and typed query bindings.
+- **Outcome:** `lesson_purchase.version` initializes historical rows to `1`; successful corrections
+  increment only that Purchase; stale corrections return an authorized current Purchase under `409`.
+  The roster derives each Student's lesson summary server-side. No scheduling fields or projections
+  were added.
+- **Verification:** elevated API check passed (22 tests), Web check passed (38 tests), and focused
+  Student Module correction/summary test passed (5 tests). `git diff --check` passed.
+- **Next:** finish the frozen semantic roster/detail state bindings and focused HTTP/Web evidence;
+  do not begin Sol convergence or declare A3 Terra complete.
+
+### 2026-09-13 — LOG-049 — M3.5-A3 Contract gate frozen
+
+- **Scope:** froze the existing-data Student roster/detail and Lesson Purchase correction contract
+  against the archived Demo, with explicit Product Owner approval to defer nearest future session
+  and dated Course Session history to M4.
+- **Outcome:** A3 adds only a roster entitlement summary, editable versioned Purchase ledger, and
+  the corresponding tenant-safe route states. The preserved M3 `course_session` schema has only a
+  Student reference and status, so no date/time-based session projection is invented or represented
+  as available. No Scheduling, Training, schema, API, or product implementation changed at this
+  gate.
+- **Verification:** documentation consistency review and `git diff --check` remain required before
+  the Contract documentation delivery is recorded. No Terra, Sol, browser, live, migration, commit,
+  push, or CI evidence is claimed.
+- **Next:** Terra implements only [`M3.5-A3-CONTRACT.md`](M3.5-A3-CONTRACT.md); Sol then performs
+  the specified product convergence.
 
 ### 2026-09-12 — LOG-048 — M3.5-A2 App Shell, Auth, and Settings correction locally complete
 

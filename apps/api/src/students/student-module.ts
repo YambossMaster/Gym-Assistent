@@ -7,9 +7,12 @@ import {
   type CreateLessonPurchaseInput,
   type CreateStudentInput,
   type LessonIncomeSummary,
+  type StudentRosterItem,
   type Student,
   type StudentDetail,
   type UpdateStudentInput,
+  type UpdateLessonPurchaseInput,
+  updateLessonPurchaseSchema,
 } from './student.js'
 import type { StudentRepository } from './student-repository.js'
 
@@ -34,7 +37,7 @@ export class StudentModule {
     this.#now = now
   }
 
-  async list(identity: AuthenticatedIdentity): Promise<Student[]> {
+  async list(identity: AuthenticatedIdentity): Promise<StudentRosterItem[]> {
     const workspaceId = await this.#repository.resolveWorkspace(identity)
     return this.#repository.listStudents(workspaceId)
   }
@@ -99,5 +102,34 @@ export class StudentModule {
       privateNote: input.privateNote,
       now: this.#now(),
     })
+  }
+
+  async updateLessonPurchase(
+    identity: AuthenticatedIdentity,
+    studentId: string,
+    purchaseId: string,
+    rawInput: UpdateLessonPurchaseInput,
+  ) {
+    const input = updateLessonPurchaseSchema.parse(rawInput)
+    const workspaceId = await this.#repository.resolveWorkspace(identity)
+    return this.#repository.updateLessonPurchase(workspaceId, studentId, purchaseId, {
+      purchasedAt: new Date(input.purchasedAt),
+      lessonCount: input.lessonCount,
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      privateNote: input.privateNote,
+      expectedVersion: input.version,
+      now: this.#now(),
+    })
+  }
+
+  async deleteLessonPurchase(
+    identity: AuthenticatedIdentity,
+    studentId: string,
+    purchaseId: string,
+    version: number,
+  ): Promise<boolean> {
+    const workspaceId = await this.#repository.resolveWorkspace(identity)
+    return this.#repository.deleteLessonPurchase(workspaceId, studentId, purchaseId, version)
   }
 }

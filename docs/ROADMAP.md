@@ -231,10 +231,12 @@ M0–M3 operations behave identically after the split.
 
 **Data additions**
 
-- Extend `GET /v1/students` additively with `lessonSummary` and nearest future `nextSession` for
-  each Student; retain existing Student fields and tenant derivation.
-- Extend `GET /v1/students/:studentId` with nearest future and completed Course Session history
-  available from the existing schema. Do not add Training performance or Schedule Series here.
+- Extend `GET /v1/students` additively with `lessonSummary` for each Student; retain existing
+  Student fields and tenant derivation. Nearest future `nextSession` is deferred to M4: the M3
+  Course Session schema intentionally has no date/time fields.
+- Keep `GET /v1/students/:studentId` to Student identity/private context, entitlement, and Purchase
+  ledger. Dated Course Session history and nearest future session are deferred to M4 with its
+  scheduling projection; do not add Training performance or Schedule Series here.
 - Add versioned Lesson Purchase correction operations:
   - `PATCH /v1/students/:studentId/lesson-purchases/:purchaseId`
   - `DELETE /v1/students/:studentId/lesson-purchases/:purchaseId`
@@ -243,10 +245,10 @@ M0–M3 operations behave identically after the split.
 
 **Route behaviour**
 
-- Restore active/archive views, search-specific Empty state, lesson progress, low/negative warning,
-  and next-session summary on `/students`.
-- Recompose `/students/:id` around Student identity, entitlement, private context, Course Session
-  history, and editable Purchase ledger.
+- Restore active/archive views, search-specific Empty state, lesson progress, and low/negative
+  warning on `/students`; M4 will add the next-session summary.
+- Recompose `/students/:id` around Student identity, entitlement, private context, and an editable
+  Purchase ledger; M4 will add dated Course Session history.
 - Preserve the existing create-Student operation. Initial Purchase may be offered after Student
   creation; fixed-rhythm onboarding waits for M4 rather than faking a cross-Module operation.
 - Keep private notes Coach-only and retain explicit destructive confirmation.

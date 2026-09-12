@@ -161,6 +161,63 @@ describe('student HTTP interface', () => {
     })
     expect(deleted.statusCode).toBe(204)
   })
+
+  it('corrects a lesson purchase with its version and returns the current purchase on a stale correction', async () => {
+    const server = createServer()
+    const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+    const student = (
+      await server.inject({
+        method: 'POST',
+        url: '/v1/students',
+        headers,
+        payload: { name: 'Alice' },
+      })
+    ).json().student as { id: string }
+    const created = await server.inject({
+      method: 'POST',
+      url: `/v1/students/${student.id}/lesson-purchases`,
+      headers,
+      payload: {
+        purchasedAt: '2026-09-01T00:00:00.000Z',
+        lessonCount: 2,
+        amountMinor: 4000,
+        currency: 'TWD',
+      },
+    })
+    const purchase = created.json().purchase as { id: string; version: number }
+    const updated = await server.inject({
+      method: 'PATCH',
+      url: `/v1/students/${student.id}/lesson-purchases/${purchase.id}`,
+      headers,
+      payload: {
+        purchasedAt: '2026-09-02T00:00:00.000Z',
+        lessonCount: 3,
+        amountMinor: 6000,
+        currency: 'TWD',
+        version: purchase.version,
+      },
+    })
+    expect(updated.statusCode).toBe(200)
+    expect(updated.json().purchase).toMatchObject({ lessonCount: 3, version: 2 })
+    const stale = await server.inject({
+      method: 'PATCH',
+      url: `/v1/students/${student.id}/lesson-purchases/${purchase.id}`,
+      headers,
+      payload: {
+        purchasedAt: '2026-09-02T00:00:00.000Z',
+        lessonCount: 4,
+        amountMinor: 8000,
+        currency: 'TWD',
+        version: 1,
+      },
+    })
+    expect(stale.statusCode).toBe(409)
+    expect(stale.json()).toMatchObject({
+      error: 'version_conflict',
+      reason: 'lesson_purchase_version_conflict',
+      currentPurchase: { lessonCount: 3, version: 2 },
+    })
+  })
 })
 
 describe('workspace settings HTTP interface', () => {

@@ -4,10 +4,14 @@ import { type IdentityVerifier, IdentityVerificationError } from '../identity/id
 import {
   type CreateLessonPurchaseInput,
   type CreateStudentInput,
+  type UpdateLessonPurchaseInput,
   type UpdateStudentInput,
 } from '../students/student.js'
 import { StudentModule } from '../students/student-module.js'
-import { StudentVersionConflictError } from '../students/student-repository.js'
+import {
+  LessonPurchaseVersionConflictError,
+  StudentVersionConflictError,
+} from '../students/student-repository.js'
 import { WorkspaceVersionConflictError } from '../workspace/workspace-repository.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { type UpdateWorkspaceSettingsInput } from '../workspace/workspace.js'
@@ -66,6 +70,20 @@ const createLessonPurchaseBodySchema = {
     currency: { type: 'string', pattern: '^[A-Z]{3}$' },
     privateNote: { type: 'string', maxLength: 4000 },
   },
+} as const
+const updateLessonPurchaseBodySchema = {
+  ...createLessonPurchaseBodySchema,
+  required: ['purchasedAt', 'lessonCount', 'amountMinor', 'currency', 'version'],
+  properties: {
+    ...createLessonPurchaseBodySchema.properties,
+    version: { type: 'integer', minimum: 1 },
+  },
+} as const
+const lessonPurchaseDeleteBodySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['confirmation', 'version'],
+  properties: { confirmation: { const: 'DELETE' }, version: { type: 'integer', minimum: 1 } },
 } as const
 
 const studentDeleteBodySchema = {
@@ -127,6 +145,14 @@ export function buildServer({
     }
     if (error instanceof StudentVersionConflictError) {
       return reply.status(409).send({ error: 'version_conflict', message: error.message })
+    }
+    if (error instanceof LessonPurchaseVersionConflictError) {
+      return reply.status(409).send({
+        error: 'version_conflict',
+        reason: 'lesson_purchase_version_conflict',
+        message: error.message,
+        currentPurchase: error.currentPurchase,
+      })
     }
     if (error instanceof AccountDeletionUnavailableError) {
       return reply
@@ -242,6 +268,52 @@ export function buildServer({
           .send({ error: 'student_not_found', message: 'Student was not found.' })
       await accountLifecycle.recordActivity(identity)
       return reply.status(201).send({ purchase })
+    },
+  )
+
+  server.patch<{
+    Params: { studentId: string; purchaseId: string }
+    Body: UpdateLessonPurchaseInput
+  }>(
+    '/v1/students/:studentId/lesson-purchases/:purchaseId',
+    { schema: { body: updateLessonPurchaseBodySchema } },
+    async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const purchase = await students.updateLessonPurchase(
+        identity,
+        request.params.studentId,
+        request.params.purchaseId,
+        request.body,
+      )
+      if (!purchase)
+        return reply
+          .status(404)
+          .send({ error: 'purchase_not_found', message: 'Lesson Purchase was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return { purchase }
+    },
+  )
+
+  server.delete<{
+    Params: { studentId: string; purchaseId: string }
+    Body: { confirmation: string; version: number }
+  }>(
+    '/v1/students/:studentId/lesson-purchases/:purchaseId',
+    { schema: { body: lessonPurchaseDeleteBodySchema } },
+    async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const deleted = await students.deleteLessonPurchase(
+        identity,
+        request.params.studentId,
+        request.params.purchaseId,
+        request.body.version,
+      )
+      if (!deleted)
+        return reply
+          .status(404)
+          .send({ error: 'purchase_not_found', message: 'Lesson Purchase was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(204).send()
     },
   )
 

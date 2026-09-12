@@ -10,6 +10,8 @@ import type {
 import {
   type NewStudent,
   type NewLessonPurchase,
+  type UpdatedLessonPurchase,
+  LessonPurchaseVersionConflictError,
   type StudentRepository,
   StudentVersionConflictError,
   type UpdatedStudent,
@@ -106,8 +108,13 @@ export class MemoryStudentRepository
     return { ...settings }
   }
 
-  async listStudents(workspaceId: WorkspaceId): Promise<Student[]> {
-    return (this.#studentsByWorkspace.get(workspaceId) ?? []).map((student) => ({ ...student }))
+  async listStudents(workspaceId: WorkspaceId) {
+    return Promise.all(
+      (this.#studentsByWorkspace.get(workspaceId) ?? []).map(async (student) => ({
+        ...student,
+        lessonSummary: (await this.lessonSummary(workspaceId, student.id))!,
+      })),
+    )
   }
 
   async createStudent(workspaceId: WorkspaceId, input: NewStudent): Promise<Student> {
@@ -129,6 +136,50 @@ export class MemoryStudentRepository
     }
     students.push(student)
     return { ...student }
+  }
+
+  async updateLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    purchaseId: string,
+    input: UpdatedLessonPurchase,
+  ): Promise<LessonPurchase | null> {
+    const purchases = this.#purchasesByWorkspace.get(workspaceId)?.get(studentId)
+    const index = purchases?.findIndex((purchase) => purchase.id === purchaseId) ?? -1
+    if (index < 0 || !purchases) return null
+    const current = purchases[index]
+    if (!current) return null
+    if (current.version !== input.expectedVersion)
+      throw new LessonPurchaseVersionConflictError(copyPurchase(current))
+    const next: LessonPurchase = {
+      ...current,
+      purchasedAt: input.purchasedAt.toISOString(),
+      lessonCount: input.lessonCount,
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      privateNote: input.privateNote,
+      version: current.version + 1,
+      updatedAt: input.now.toISOString(),
+    }
+    purchases[index] = next
+    return copyPurchase(next)
+  }
+
+  async deleteLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    purchaseId: string,
+    expectedVersion: number,
+  ): Promise<boolean> {
+    const purchases = this.#purchasesByWorkspace.get(workspaceId)?.get(studentId)
+    const index = purchases?.findIndex((purchase) => purchase.id === purchaseId) ?? -1
+    if (index < 0 || !purchases) return false
+    const current = purchases[index]
+    if (!current) return false
+    if (current.version !== expectedVersion)
+      throw new LessonPurchaseVersionConflictError(copyPurchase(current))
+    purchases.splice(index, 1)
+    return true
   }
 
   async getStudentDetail(
@@ -204,6 +255,7 @@ export class MemoryStudentRepository
       amountMinor: input.amountMinor,
       currency: input.currency,
       privateNote: input.privateNote,
+      version: 1,
       createdAt: timestamp,
       updatedAt: timestamp,
     }

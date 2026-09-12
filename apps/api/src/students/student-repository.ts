@@ -3,6 +3,7 @@ import type {
   LessonIncomeSummary,
   LessonPurchase,
   LessonSummary,
+  StudentRosterItem,
   Student,
   StudentDetail,
 } from './student.js'
@@ -33,6 +34,9 @@ export interface NewLessonPurchase {
   privateNote: string
   now: Date
 }
+export interface UpdatedLessonPurchase extends Omit<NewLessonPurchase, 'id'> {
+  expectedVersion: number
+}
 
 export class StudentVersionConflictError extends Error {
   constructor() {
@@ -40,10 +44,18 @@ export class StudentVersionConflictError extends Error {
     this.name = 'StudentVersionConflictError'
   }
 }
+export class LessonPurchaseVersionConflictError extends Error {
+  constructor(readonly currentPurchase: LessonPurchase) {
+    super(
+      'Lesson Purchase was changed on another device. Reload it before choosing the next change.',
+    )
+    this.name = 'LessonPurchaseVersionConflictError'
+  }
+}
 
 export interface StudentRepository {
   resolveWorkspace(identity: AuthenticatedIdentity): Promise<WorkspaceId>
-  listStudents(workspaceId: WorkspaceId): Promise<Student[]>
+  listStudents(workspaceId: WorkspaceId): Promise<StudentRosterItem[]>
   createStudent(workspaceId: WorkspaceId, student: NewStudent): Promise<Student>
   getStudentDetail(workspaceId: WorkspaceId, studentId: string): Promise<StudentDetail | null>
   updateStudent(
@@ -61,6 +73,18 @@ export interface StudentRepository {
     studentId: string,
     purchase: NewLessonPurchase,
   ): Promise<LessonPurchase | null>
+  updateLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    purchaseId: string,
+    purchase: UpdatedLessonPurchase,
+  ): Promise<LessonPurchase | null>
+  deleteLessonPurchase(
+    workspaceId: WorkspaceId,
+    studentId: string,
+    purchaseId: string,
+    expectedVersion: number,
+  ): Promise<boolean>
   lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null>
   incomeSummary(workspaceId: WorkspaceId): Promise<LessonIncomeSummary[]>
 }

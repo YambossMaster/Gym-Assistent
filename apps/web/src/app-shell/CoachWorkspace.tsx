@@ -1,7 +1,8 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { getWorkspaceSettings } from '../api'
 import { RoutePlaceholder } from '../pages/RoutePlaceholder'
 import { StudentDetailPage, StudentsPage } from '../pages/students/StudentsPage'
@@ -20,6 +21,10 @@ const navigation = [
 ]
 
 export function CoachWorkspace({ session }: { session: Session }) {
+  const location = useLocation()
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [location.pathname])
   const coachSettingsQuery = useQuery({
     queryKey: queryKeys.settings(session.user.id),
     queryFn: () => getWorkspaceSettings(session.access_token)

@@ -100,4 +100,38 @@ describe('StudentModule', () => {
     })
     await expect(students.delete(coachA, created.id, 2)).resolves.toBe(true)
   })
+
+  it('returns roster summaries and rejects stale lesson-purchase corrections', async () => {
+    const students = new StudentModule({
+      repository: new MemoryStudentRepository(),
+      createId: (() => {
+        let value = 0
+        return () => `id-${++value}`
+      })(),
+      now: () => new Date('2026-09-10T10:00:00.000Z'),
+    })
+    const student = await students.create(coachA, { name: 'Alice' })
+    const purchase = await students.createLessonPurchase(coachA, student.id, {
+      purchasedAt: '2026-09-01T00:00:00.000Z',
+      lessonCount: 2,
+      amountMinor: 4000,
+      currency: 'TWD',
+      privateNote: '',
+    })
+    expect(await students.list(coachA)).toMatchObject([
+      { id: student.id, lessonSummary: { purchased: 2, completed: 0, remaining: 2 } },
+    ])
+    const updated = await students.updateLessonPurchase(coachA, student.id, purchase!.id, {
+      purchasedAt: '2026-09-02T00:00:00.000Z',
+      lessonCount: 3,
+      amountMinor: 6000,
+      currency: 'TWD',
+      privateNote: 'corrected',
+      version: 1,
+    })
+    expect(updated).toMatchObject({ lessonCount: 3, version: 2 })
+    await expect(
+      students.deleteLessonPurchase(coachA, student.id, purchase!.id, 1),
+    ).rejects.toMatchObject({ name: 'LessonPurchaseVersionConflictError' })
+  })
 })

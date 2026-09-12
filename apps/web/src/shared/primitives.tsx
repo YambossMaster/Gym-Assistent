@@ -5,16 +5,18 @@ export function Page({
   eyebrow,
   description,
   actions,
+  className,
   children
 }: {
   title: string
   eyebrow?: string
   description?: string
   actions?: ReactNode
+  className?: string
   children: ReactNode
 }) {
   return (
-    <section className="page">
+    <section className={`page${className ? ` ${className}` : ''}`}>
       <header className="page-header reveal">
         <div>
           {eyebrow && <span className="eyebrow dark">{eyebrow}</span>}
@@ -56,10 +58,12 @@ export function Confirmation({
   onConfirm: () => void
   disabled: boolean
 }) {
-  const openerRef = useRef<HTMLElement | null>(null)
+  const openerRef = useRef<HTMLElement | null>(
+    document.activeElement instanceof HTMLElement ? document.activeElement : null
+  )
   useEffect(() => {
-    openerRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -68,7 +72,10 @@ export function Confirmation({
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [onCancel])
   const cancel = () => {
     onCancel()

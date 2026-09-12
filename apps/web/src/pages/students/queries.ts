@@ -1,15 +1,27 @@
 import type { Session } from '@supabase/supabase-js'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import {
   createLessonPurchase,
+  deleteLessonPurchase,
   deleteStudent,
   getLessonPurchaseIncome,
   getStudentDetail,
   listStudents,
   updateStudent,
+  updateLessonPurchase,
   type StudentDetail
 } from '../../api'
 import { queryKeys } from '../../query-keys'
+
+export function invalidateStudentPurchaseQueries(
+  queryClient: QueryClient,
+  coachId: string,
+  studentId: string
+) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.student(coachId, studentId) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.students(coachId) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.income(coachId) })
+}
 
 export function useStudentsRouteQuery(session: Session) {
   const students = useQuery({
@@ -59,11 +71,7 @@ export function useStudentRouteMutations({
     mutationFn: (input: Parameters<typeof createLessonPurchase>[2]) =>
       createLessonPurchase(session.access_token, studentId, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.student(session.user.id, studentId)
-      })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.income(session.user.id) })
+      invalidateStudentPurchaseQueries(queryClient, session.user.id, studentId)
       onNotice('購課已登錄。')
     },
     onError: (error) => onNotice(readRouteError(error))
@@ -77,7 +85,30 @@ export function useStudentRouteMutations({
     },
     onError: (error) => onNotice(readRouteError(error))
   })
-  return { save, purchase, remove }
+  const updatePurchase = useMutation({
+    mutationFn: ({
+      purchaseId,
+      input
+    }: {
+      purchaseId: string
+      input: Parameters<typeof updateLessonPurchase>[3]
+    }) => updateLessonPurchase(session.access_token, studentId, purchaseId, input),
+    onSuccess: () => {
+      invalidateStudentPurchaseQueries(queryClient, session.user.id, studentId)
+      onNotice('購課已更新。')
+    },
+    onError: (error) => onNotice(readRouteError(error))
+  })
+  const removePurchase = useMutation({
+    mutationFn: ({ purchaseId, version }: { purchaseId: string; version: number }) =>
+      deleteLessonPurchase(session.access_token, studentId, purchaseId, version),
+    onSuccess: () => {
+      invalidateStudentPurchaseQueries(queryClient, session.user.id, studentId)
+      onNotice('購課已刪除。')
+    },
+    onError: (error) => onNotice(readRouteError(error))
+  })
+  return { save, purchase, remove, updatePurchase, removePurchase }
 }
 
 function readRouteError(error: unknown) {

@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
   Cloud,
   KeyRound,
   LogOut,
@@ -15,7 +14,7 @@ import {
   Trash2,
   UserRound
 } from 'lucide-react'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
 import {
   ApiError,
@@ -23,6 +22,7 @@ import {
   deleteAccountImmediately,
   getStudentDetail,
   getWorkspaceSettings,
+  type LessonPurchase,
   type Student
 } from './api'
 import { changePassword, signOutCurrentDevice, updatePassword } from './account-auth'
@@ -31,6 +31,7 @@ import {
   useStudentRouteMutations,
   useStudentsRouteQuery
 } from './pages/students/queries'
+import { selectStudentRosterResult } from './pages/students/state'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './pages/settings/queries'
 import { queryKeys } from './query-keys'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
@@ -40,6 +41,7 @@ import { supabase } from './supabase'
 export function StudentsPage({ session }: { session: Session }) {
   const queryClient = useQueryClient()
   const [query, setQuery] = useState('')
+  const [view, setView] = useState<'active' | 'archived'>('active')
   const [createOpen, setCreateOpen] = useState(false)
   const { students: studentsQuery, income: incomeQuery } = useStudentsRouteQuery(session)
   const students = studentsQuery.data ?? []
@@ -50,17 +52,14 @@ export function StudentsPage({ session }: { session: Session }) {
     isFetching: studentsQuery.isFetching,
     isError: studentsQuery.isError
   })
-  const filtered = useMemo(() => {
-    const keyword = query.trim().toLocaleLowerCase('zh-Hant')
-    return keyword
-      ? students.filter((student) =>
-          `${student.name} ${student.goal}`.toLocaleLowerCase('zh-Hant').includes(keyword)
-        )
-      : students
-  }, [query, students])
+  const rosterResult = useMemo(
+    () => selectStudentRosterResult({ students, view, query }),
+    [query, students, view]
+  )
 
   return (
     <Page
+      className="students-page"
       title="學生"
       eyebrow={`學生名單 · ${students.length}`}
       actions={
@@ -79,10 +78,23 @@ export function StudentsPage({ session }: { session: Session }) {
             placeholder="搜尋姓名或訓練目標"
           />
         </label>
-        <div className={`cloud-state ${studentsQuery.isError ? 'error' : ''}`}>
-          {studentsQuery.isFetching ? <Cloud /> : <Check />}
-          {studentsQuery.isFetching ? '更新中' : '已更新'}
+        <div className="student-view-switch" role="group" aria-label="學生狀態">
+          <button type="button" onClick={() => setView('active')} aria-pressed={view === 'active'}>
+            進行中
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('archived')}
+            aria-pressed={view === 'archived'}
+          >
+            已封存
+          </button>
         </div>
+        {studentsQuery.isFetching && (
+          <div className="cloud-state" role="status">
+            <Cloud /> 更新中
+          </div>
+        )}
       </div>
       {studentsQuery.isError && (
         <div className="notice error" role="alert">
@@ -109,7 +121,7 @@ export function StudentsPage({ session }: { session: Session }) {
         <StudentListSkeleton />
       ) : routeState === 'error' ? (
         <StudentListError onRetry={() => void studentsQuery.refetch()} />
-      ) : routeState === 'empty' ? (
+      ) : rosterResult.state === 'first-empty' ? (
         <section className="empty-state">
           <UserRound />
           <h2>建立第一位學生</h2>
@@ -118,9 +130,19 @@ export function StudentsPage({ session }: { session: Session }) {
             建立學生 <ArrowRight />
           </button>
         </section>
+      ) : rosterResult.state === 'filter-empty' || rosterResult.state === 'search-empty' ? (
+        <section className="empty-state">
+          <UserRound />
+          <h2>{rosterResult.state === 'search-empty' ? '找不到符合的學生' : '這個分類尚無學生'}</h2>
+          {rosterResult.state === 'search-empty' && (
+            <button className="text-button" onClick={() => setQuery('')}>
+              清除搜尋
+            </button>
+          )}
+        </section>
       ) : (
         <section className="student-grid" aria-live="polite">
-          {filtered.map((student, index) => (
+          {rosterResult.students.map((student, index) => (
             <StudentCard
               key={student.id}
               student={student}
@@ -167,23 +189,34 @@ function StudentCard({
       queryFn: () => getStudentDetail(accessToken, student.id)
     })
   return (
-    <article className="student-card">
+    <Link
+      className="student-card"
+      to={`/students/${student.id}`}
+      onMouseEnter={prefetch}
+      onFocus={prefetch}
+    >
       <span className="student-index">{String(index + 1).padStart(2, '0')}</span>
       <div className="large-avatar">{student.name.slice(-2)}</div>
       <h2>{student.name}</h2>
       <p>{student.goal || '尚未設定訓練目標'}</p>
       <div className="student-meta">
         <span>{student.active ? '進行中' : '已封存'}</span>
+        {student.lessonSummary && (
+          <span className={student.lessonSummary.remaining <= 2 ? 'lesson-attention' : undefined}>
+            {student.lessonSummary.remaining < 0
+              ? `尚欠 ${Math.abs(student.lessonSummary.remaining)} 堂`
+              : student.lessonSummary.remaining === 0
+                ? '堂數不足'
+                : student.lessonSummary.remaining <= 2
+                  ? `堂數偏低 · 剩餘 ${student.lessonSummary.remaining}`
+                  : `剩餘 ${student.lessonSummary.remaining} / ${student.lessonSummary.purchased}`}
+          </span>
+        )}
       </div>
-      <Link
-        className="student-card-action"
-        to={`/students/${student.id}`}
-        onMouseEnter={prefetch}
-        onFocus={prefetch}
-      >
+      <span className="student-card-action">
         查看學生資料 <ArrowRight />
-      </Link>
-    </article>
+      </span>
+    </Link>
   )
 }
 
@@ -192,11 +225,20 @@ export function StudentDetailPage({ session }: { session: Session }) {
   const navigate = useNavigate()
   const [notice, setNotice] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [purchaseToDelete, setPurchaseToDelete] = useState<{ id: string; version: number } | null>(
+    null
+  )
+  const [purchaseConfirmation, setPurchaseConfirmation] = useState('')
+  const [studentConfirmation, setStudentConfirmation] = useState('')
+  const [purchaseEditor, setPurchaseEditor] = useState<LessonPurchase | null>(null)
+  const [purchaseConflict, setPurchaseConflict] = useState<LessonPurchase | null>(null)
   const detailQuery = useStudentDetailRouteQuery(session, studentId)
   const {
     save: saveMutation,
     purchase: purchaseMutation,
-    remove: deleteMutation
+    remove: deleteMutation,
+    updatePurchase: updatePurchaseMutation,
+    removePurchase: deletePurchaseMutation
   } = useStudentRouteMutations({
     session,
     studentId,
@@ -215,7 +257,11 @@ export function StudentDetailPage({ session }: { session: Session }) {
     return <StudentDetailError onRetry={() => void detailQuery.refetch()} />
   const detail = detailQuery.data
   const submitting =
-    saveMutation.isPending || purchaseMutation.isPending || deleteMutation.isPending
+    saveMutation.isPending ||
+    purchaseMutation.isPending ||
+    deleteMutation.isPending ||
+    deletePurchaseMutation.isPending ||
+    updatePurchaseMutation.isPending
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -252,6 +298,7 @@ export function StudentDetailPage({ session }: { session: Session }) {
   }
   return (
     <Page
+      className="student-detail-page"
       title={detail.student.name}
       eyebrow="學生資料"
       actions={
@@ -271,7 +318,13 @@ export function StudentDetailPage({ session }: { session: Session }) {
             已購 {detail.lessonSummary.purchased} · 已完成 {detail.lessonSummary.completed}
           </small>
         </div>
-        <p className="security-footnote">堂數會依購課與已完成課堂計算；需要留意時會清楚提示。</p>
+        <p className="security-footnote">
+          {detail.lessonSummary.remaining <= 0
+            ? '堂數不足，請先與學生確認新的購課安排。'
+            : detail.lessonSummary.remaining <= 2
+              ? '堂數偏低，可以提早與學生確認補課。'
+              : '堂數依購課與已完成課堂自動計算。'}
+        </p>
         <form className="detail-section" onSubmit={save}>
           <h2>基本資料</h2>
           <label>
@@ -337,11 +390,33 @@ export function StudentDetailPage({ session }: { session: Session }) {
           <h2>購課紀錄</h2>
           {detail.purchases.length ? (
             detail.purchases.map((item) => (
-              <div key={item.id}>
-                <strong>{item.lessonCount} 堂</strong>
-                <span>
-                  {new Date(item.purchasedAt).toLocaleDateString('zh-TW')} ·{' '}
+              <div className="purchase-ledger-row" key={item.id}>
+                <span className="purchase-ledger-date">
+                  {new Date(item.purchasedAt).toLocaleDateString('zh-TW')}
+                </span>
+                <strong>+{item.lessonCount} 堂</strong>
+                <span className="purchase-ledger-money">
                   {formatMoney(item.amountMinor, item.currency)}
+                </span>
+                <span className="purchase-ledger-actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPurchaseConflict(null)
+                      setPurchaseEditor(item)
+                    }}
+                    disabled={submitting}
+                  >
+                    編輯
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => setPurchaseToDelete({ id: item.id, version: item.version })}
+                    disabled={submitting}
+                  >
+                    刪除
+                  </button>
                 </span>
               </div>
             ))
@@ -366,12 +441,200 @@ export function StudentDetailPage({ session }: { session: Session }) {
         <Confirmation
           title={`永久刪除 ${detail.student.name}？`}
           text="這項操作無法復原。"
-          onCancel={() => setDeleteOpen(false)}
+          confirmation={studentConfirmation}
+          onConfirmationChange={setStudentConfirmation}
+          onCancel={() => {
+            setDeleteOpen(false)
+            setStudentConfirmation('')
+          }}
           onConfirm={() => void remove()}
           disabled={submitting}
         />
       )}
+      {purchaseToDelete && (
+        <Confirmation
+          title="永久刪除購課紀錄？"
+          text={
+            deletePurchaseMutation.error instanceof ApiError &&
+            deletePurchaseMutation.error.details.currentPurchase
+              ? '這筆購課已在其他裝置變更。請確認後重新輸入 DELETE。'
+              : '這項操作會重新計算學生的剩餘堂數。'
+          }
+          confirmation={purchaseConfirmation}
+          onConfirmationChange={setPurchaseConfirmation}
+          onCancel={() => {
+            setPurchaseToDelete(null)
+            setPurchaseConfirmation('')
+          }}
+          onConfirm={() =>
+            deletePurchaseMutation.mutate(
+              { purchaseId: purchaseToDelete.id, version: purchaseToDelete.version },
+              {
+                onSuccess: () => {
+                  setPurchaseToDelete(null)
+                  setPurchaseConfirmation('')
+                },
+                onError: (error) => {
+                  if (error instanceof ApiError && error.details.currentPurchase) {
+                    setPurchaseToDelete({
+                      id: error.details.currentPurchase.id,
+                      version: error.details.currentPurchase.version
+                    })
+                    setPurchaseConfirmation('')
+                  }
+                }
+              }
+            )
+          }
+          disabled={submitting}
+        />
+      )}
+      {purchaseEditor && (
+        <PurchaseEditor
+          purchase={purchaseEditor}
+          conflict={purchaseConflict}
+          error={updatePurchaseMutation.error}
+          disabled={submitting}
+          onCancel={() => {
+            setPurchaseEditor(null)
+            setPurchaseConflict(null)
+          }}
+          onSave={(input) =>
+            updatePurchaseMutation.mutate(
+              { purchaseId: purchaseEditor.id, input },
+              {
+                onSuccess: () => {
+                  setPurchaseEditor(null)
+                  setPurchaseConflict(null)
+                },
+                onError: (error) => {
+                  if (error instanceof ApiError && error.details.currentPurchase) {
+                    setPurchaseConflict(error.details.currentPurchase)
+                    setPurchaseEditor(error.details.currentPurchase)
+                  }
+                }
+              }
+            )
+          }
+        />
+      )}
     </Page>
+  )
+}
+
+function PurchaseEditor({
+  purchase,
+  conflict,
+  error,
+  disabled,
+  onCancel,
+  onSave
+}: {
+  purchase: LessonPurchase
+  conflict: LessonPurchase | null
+  error: unknown
+  disabled: boolean
+  onCancel: () => void
+  onSave: (input: {
+    purchasedAt: string
+    lessonCount: number
+    amountMinor: number
+    currency: string
+    privateNote: string
+    version: number
+  }) => void
+}) {
+  const openerRef = useRef<HTMLElement | null>(
+    document.activeElement instanceof HTMLElement ? document.activeElement : null
+  )
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      onCancel()
+      requestAnimationFrame(() => openerRef.current?.focus())
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onCancel])
+  return (
+    <section className="purchase-editor" role="dialog" aria-modal="true" aria-label="編輯購課紀錄">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          const values = new FormData(event.currentTarget)
+          onSave({
+            purchasedAt: new Date(String(values.get('purchasedAt'))).toISOString(),
+            lessonCount: Number(values.get('lessonCount')),
+            amountMinor: Number(values.get('amountMinor')),
+            currency: purchase.currency,
+            privateNote: String(values.get('privateNote') || '').trim(),
+            version: purchase.version
+          })
+        }}
+      >
+        <h2>編輯購課紀錄</h2>
+        {conflict ? (
+          <p className="form-notice" role="alert">
+            這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
+            {formatMoney(conflict.amountMinor, conflict.currency)}
+            ；你的輸入仍保留，確認後可重新儲存。
+          </p>
+        ) : error instanceof Error ? (
+          <p className="form-notice" role="alert">
+            {error.message}
+          </p>
+        ) : null}
+        <label>
+          購買日期
+          <input
+            name="purchasedAt"
+            type="date"
+            defaultValue={purchase.purchasedAt.slice(0, 10)}
+            required
+            autoFocus
+          />
+        </label>
+        <label>
+          堂數
+          <input
+            name="lessonCount"
+            type="number"
+            min="1"
+            max="10000"
+            defaultValue={purchase.lessonCount}
+            required
+          />
+        </label>
+        <label>
+          實收金額
+          <input
+            name="amountMinor"
+            type="number"
+            min="0"
+            defaultValue={purchase.amountMinor}
+            required
+          />
+        </label>
+        <label>
+          教練備註
+          <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
+        </label>
+        <div className="purchase-editor-actions">
+          <button className="secondary-button" type="button" onClick={onCancel} disabled={disabled}>
+            取消
+          </button>
+          <button className="primary-button compact" disabled={disabled}>
+            儲存購課紀錄
+          </button>
+        </div>
+      </form>
+    </section>
   )
 }
 

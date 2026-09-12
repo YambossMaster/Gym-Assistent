@@ -9,6 +9,7 @@ export interface Student {
   version: number
   createdAt: string
   updatedAt: string
+  lessonSummary?: { purchased: number; completed: number; remaining: number }
 }
 
 export interface LessonPurchase {
@@ -18,6 +19,7 @@ export interface LessonPurchase {
   amountMinor: number
   currency: string
   privateNote: string
+  version: number
   createdAt: string
   updatedAt: string
 }
@@ -91,15 +93,18 @@ interface AccountLifecycleResponse {
 
 interface ErrorResponse {
   message?: string
+  currentPurchase?: LessonPurchase
 }
 
 export class ApiError extends Error {
   readonly status: number
+  readonly details: ErrorResponse
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, details: ErrorResponse = {}) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.details = details
   }
 }
 
@@ -161,6 +166,48 @@ export async function createLessonPurchase(
     { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) }
   )
   return response.purchase
+}
+
+export async function updateLessonPurchase(
+  accessToken: string,
+  studentId: string,
+  purchaseId: string,
+  input: {
+    purchasedAt: string
+    lessonCount: number
+    amountMinor: number
+    currency: string
+    privateNote?: string
+    version: number
+  }
+): Promise<LessonPurchase> {
+  const response = await request<LessonPurchaseResponse>(
+    `/api/v1/students/${studentId}/lesson-purchases/${purchaseId}`,
+    accessToken,
+    {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input)
+    }
+  )
+  return response.purchase
+}
+
+export async function deleteLessonPurchase(
+  accessToken: string,
+  studentId: string,
+  purchaseId: string,
+  version: number
+): Promise<void> {
+  await request<undefined>(
+    `/api/v1/students/${studentId}/lesson-purchases/${purchaseId}`,
+    accessToken,
+    {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ confirmation: 'DELETE', version })
+    }
+  )
 }
 
 export async function getLessonPurchaseIncome(accessToken: string): Promise<LessonIncomeSummary[]> {
@@ -255,7 +302,7 @@ async function request<T>(path: string, accessToken: string, init: RequestInit =
 
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse
-    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求')
+    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', error)
   }
 
   if (response.status === 204) {
@@ -269,7 +316,7 @@ async function requestPublic<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, init)
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse
-    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求')
+    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', error)
   }
   return (await response.json()) as T
 }

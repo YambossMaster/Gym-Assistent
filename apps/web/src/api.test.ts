@@ -3,10 +3,12 @@ import {
   createStudent,
   createLessonPurchase,
   deleteAccountImmediately,
+  deleteLessonPurchase,
   getWorkspaceSettings,
   isRegistrationEmailTaken,
   listStudents,
   requestAccountDeletion,
+  updateLessonPurchase,
   updateWorkspaceSettings
 } from './api'
 
@@ -98,6 +100,62 @@ describe('student API client', () => {
         headers: expect.objectContaining({ authorization: 'Bearer verified-token' })
       })
     )
+  })
+
+  it('updates and deletes a Lesson Purchase with its version token', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ purchase: { id: 'purchase-1', version: 3 } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+    await updateLessonPurchase('verified-token', 'student-1', 'purchase-1', {
+      purchasedAt: '2026-09-10T00:00:00.000Z',
+      lessonCount: 8,
+      amountMinor: 12000,
+      currency: 'TWD',
+      privateNote: '更正',
+      version: 2
+    })
+    await deleteLessonPurchase('verified-token', 'student-1', 'purchase-1', 3)
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/students/student-1/lesson-purchases/purchase-1',
+      expect.objectContaining({ method: 'PATCH', body: expect.stringContaining('"version":2') })
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/students/student-1/lesson-purchases/purchase-1',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ confirmation: 'DELETE', version: 3 })
+      })
+    )
+  })
+
+  it('retains the authorized current Purchase on a version conflict', async () => {
+    const currentPurchase = { id: 'purchase-1', lessonCount: 8, version: 3 }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ message: 'changed', currentPurchase }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' }
+      })
+    )
+
+    await expect(
+      updateLessonPurchase('verified-token', 'student-1', 'purchase-1', {
+        purchasedAt: '2026-09-10T00:00:00.000Z',
+        lessonCount: 10,
+        amountMinor: 16000,
+        currency: 'TWD',
+        version: 2
+      })
+    ).rejects.toMatchObject({ status: 409, details: { currentPurchase } })
   })
 
   it('keeps the server status on API errors', async () => {
