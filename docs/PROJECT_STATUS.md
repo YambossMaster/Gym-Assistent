@@ -9,7 +9,7 @@
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
 | Current package    | **M3.5-A3 — Student roster and detail parity for existing data**                      |
-| Package state      | **CI in progress** — Contract, Terra, and Sol complete; remote delivery remains       |
+| Package state      | **Done** — commit `26bc036`, GitHub Actions CI #11 / run `34706580673` successful     |
 | Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
 | Branch baseline    | `main`; `origin/main` at A2 evidence commit `78407d3` before this A3 package          |
 | Worktree           | Contains the approved M0–M3 baseline plus delivered M3.5 A1/A2 foundations            |
@@ -18,13 +18,14 @@
 
 ## Next handoff
 
-Complete the **M3.5-A3 CI gate** for the frozen
-[`M3.5-A3-CONTRACT.md`](M3.5-A3-CONTRACT.md):
+Start the **M3.5-A4 Today projection Contract gate**:
 
-1. Commit and push the cohesive A3 package after reviewing the exact diff.
-2. Confirm GitHub Actions Verify and migration dry-run jobs for that commit.
-3. After A3 delivery is confirmed, freeze the M3.5-A4 Today projection Contract before any A4
-   schema, API, route, copy, or visual implementation.
+1. Compare the Demo Today route against the formal placeholder and freeze the Coach job, route
+   projection, time-zone day boundaries, multi-currency income, attention items, and route states.
+2. Freeze the additive `GET /v1/today?date=YYYY-MM-DD` Module/HTTP contract, authorization,
+   concurrency, copy slots, and desktop/exact-390×844 acceptance path.
+3. Do not begin A4 Terra implementation until the Contract leaves no product, visual, interaction,
+   or wording decision to Terra.
 
 Do not begin general M4 work. Nearest future session and dated Course Session history remain
 explicitly deferred to M4 because the preserved M3 schema has no schedule date/time fields.
@@ -37,7 +38,7 @@ explicitly deferred to M4 because the preserved M3 schema has no schedule date/t
 | M1 Cloud foundation tracer             | Done        | Supabase private schema, verified identity/Workspace derivation, two-Coach isolation, migration workflow, remote CI             |
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
-| M3.5 Frontend gap filling              | In progress | A0–A2 delivered; A3 awaits remote CI; A4–A5 remain                                                                              |
+| M3.5 Frontend gap filling              | In progress | A0–A3 delivered; A4–A5 remain                                                                                                   |
 | M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
@@ -96,6 +97,7 @@ explicitly deferred to M4 because the preserved M3 schema has no schedule date/t
 | Frontend monolith increases accidental cross-route regressions    | M3.5-A1 decomposes by route while freezing behaviour                                            |
 | Product UI can drift when engineering invents presentation/copy   | Four mandatory gates; Terra hard limit; Sol owns product convergence                            |
 | Auth leaked-password-protection warning remains                   | Accepted development warning; resolve in M8 production security gate                            |
+| GitHub-hosted Node 20 action compatibility warnings               | CI stays green; upgrade checkout/setup-node actions before GitHub removes compatibility         |
 | Previously exposed development credentials require final rotation | No production use; rotate all deployment secrets during M8 before Beta                          |
 | Demo seed/local data can be mistaken for production truth         | Use Demo only for behaviour/presentation; all official data comes from route projections        |
 
@@ -107,6 +109,8 @@ explicitly deferred to M4 because the preserved M3 schema has no schedule date/t
   successful.
 - After M4 reset: linked rollback migration applied, migration dry-run is up-to-date, and Supabase
   advisors report only the pre-existing leaked-password-protection warning.
+- M3.5-A3: commit `26bc036`; GitHub Actions CI #11 / run `34706580673` completed in 52 seconds with
+  Verify and migration-dry-run jobs green (API 24, Web 45).
 - M3.5 documentation reset: targeted Prettier check and repository-wide `git diff --check` passed
   on 2026-09-12; only Git's existing LF-to-CRLF notices were emitted.
 
@@ -125,7 +129,7 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
-### 2026-09-13 — LOG-051 — M3.5-A3 Contract, Terra, and Sol locally complete
+### 2026-09-13 — LOG-051 — M3.5-A3 Student parity delivered
 
 - **Scope:** delivered the approved existing-data Student roster/detail parity contract without
   adding Scheduling or Training data. Added server-owned roster entitlement summaries, versioned
@@ -142,8 +146,10 @@ local pass or successful push is not a remote CI completion claim.
   development-only unused Workspace indexes. Fresh desktop and exact 390×844 browser acceptance
   passed with no horizontal overflow or console errors; Purchase editor focus/Escape restoration
   also passed.
-- **Delivery:** cohesive commit, push, and remote GitHub Actions confirmation remain in progress.
-- **Next:** finish this CI gate, then freeze M3.5-A4 before implementation.
+- **Delivery:** commit `26bc036` pushed to `origin/main`; GitHub Actions CI #11 / run `34706580673`
+  completed successfully with Verify and migration-dry-run jobs green. The run reported only the
+  hosted Node 20 action compatibility warnings already tracked above.
+- **Next:** freeze the M3.5-A4 Today projection Contract before implementation.
 
 ### 2026-09-13 — LOG-050 — M3.5-A3 Terra data boundary in progress
 
