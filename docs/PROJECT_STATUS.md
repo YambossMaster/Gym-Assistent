@@ -9,7 +9,7 @@
 | ------------------ | ------------------------------------------------------------------------------------------- |
 | Active phase       | **M3.5 — Stage A: frontend gap filling**                                                    |
 | Current package    | **M3.5-A2 — App Shell, Auth, and Settings correction**                                      |
-| Package state      | **Local gates passed** — delivery commit and remote CI confirmation remain                  |
+| Package state      | **Done** — commit `60a85c0`, GitHub Actions CI #9 / run `34690180698` successful            |
 | Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful       |
 | Branch baseline    | `main`; `origin/main` at documentation commit `a97d2e5` when this rewrite began             |
 | Worktree           | Contains approved M0–M3/M3.5 App Shell/query baseline plus A1; abandoned M4 starter removed |
@@ -18,13 +18,14 @@
 
 ## Next handoff
 
-Complete the **M3.5-A2 CI gate**:
+Start the **M3.5-A3 Contract gate**:
 
-1. Review and commit the completed Contract, Web implementation, tests, and Status update as one
-   M3.5-A2 package.
-2. Push the commit and confirm GitHub Actions Verify and migration dry-run for that exact revision.
-3. After remote confirmation, record the commit/run identifiers and advance the handoff to the
-   M3.5-A3 Contract gate. Do not start A3 implementation before that Contract freezes.
+1. Freeze the existing-data Student roster/detail projection and Lesson Purchase correction contract
+   against the archived Demo for desktop and exact 390×844 behaviour.
+2. Define additive API projection fields, versioned Purchase correction operations, tenant and stale
+   version behaviour, state boundaries, copy slots, and required live/browser evidence.
+3. Do not begin A3 Terra implementation until that Contract is frozen; do not add Scheduling or
+   Training rules as a browser workaround.
 
 Terra owns data flow and semantic skeletons only. No visual, responsive, interaction-styling, or
 end-user-copy decisions are authorized in this package. Do not continue general M4 feature work.
@@ -149,7 +150,9 @@ local pass or successful push is not a remote CI completion claim.
   and destructive-dialog focus/Escape behaviour.
 - **Known issue:** the initial sandbox Web check/dev-server and advisors command hit the known
   Windows `spawn EPERM`/telemetry restriction; the approved elevated reruns passed.
-- **Next:** create the cohesive A2 commit, push, and confirm remote CI before beginning A3.
+- **Delivery:** commit `60a85c0` pushed to `origin/main`; GitHub Actions CI #9 / run
+  `34690180698` completed successfully with Verify and migration dry-run jobs green.
+- **Next:** freeze M3.5-A3 before implementation.
 
 ### 2026-09-12 — LOG-047 — M3.5-A2 Contract gate frozen
 
