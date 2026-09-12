@@ -8,8 +8,8 @@
 | Field              | Current value                                                                               |
 | ------------------ | ------------------------------------------------------------------------------------------- |
 | Active phase       | **M3.5 — Stage A: frontend gap filling**                                                    |
-| Current package    | **M3.5-A1 — Route modules and state foundation**                                            |
-| Package state      | **Done** — commit `4fce971`, GitHub Actions CI #7 / run `34689160129` successful            |
+| Current package    | **M3.5-A2 — App Shell, Auth, and Settings correction**                                      |
+| Package state      | **Local gates passed** — delivery commit and remote CI confirmation remain                  |
 | Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful       |
 | Branch baseline    | `main`; `origin/main` at documentation commit `a97d2e5` when this rewrite began             |
 | Worktree           | Contains approved M0–M3/M3.5 App Shell/query baseline plus A1; abandoned M4 starter removed |
@@ -18,14 +18,13 @@
 
 ## Next handoff
 
-Start **M3.5-A2 — App Shell, Auth, and Settings correction**:
+Complete the **M3.5-A2 CI gate**:
 
-1. Freeze the A2 Contract against the archived Demo for desktop and exact 390×844 behaviour.
-2. Remove the duplicated mobile masthead, keep Settings in the mobile header, and retain primary
-   Coach workflows in bottom navigation.
-3. Make Coach name/avatar and connection state truthful; independently recover Settings panels
-   without adding M4/M5/notification controls.
-4. Complete focused Web/browser acceptance, then one cohesive commit, push, and remote CI.
+1. Review and commit the completed Contract, Web implementation, tests, and Status update as one
+   M3.5-A2 package.
+2. Push the commit and confirm GitHub Actions Verify and migration dry-run for that exact revision.
+3. After remote confirmation, record the commit/run identifiers and advance the handoff to the
+   M3.5-A3 Contract gate. Do not start A3 implementation before that Contract freezes.
 
 Terra owns data flow and semantic skeletons only. No visual, responsive, interaction-styling, or
 end-user-copy decisions are authorized in this package. Do not continue general M4 feature work.
@@ -132,6 +131,37 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-12 — LOG-048 — M3.5-A2 App Shell, Auth, and Settings correction locally complete
+
+- **Scope:** implemented the frozen A2 Contract without a schema, API, Auth-configuration, or M4+
+  feature change.
+- **Outcome:** mobile now has one masthead, Settings remains reachable from it, and the four primary
+  workflows remain in the bottom navigation. Shell identity consistently uses Workspace display name
+  with Email/Coach fallbacks and no longer claims a connection or sync state. Settings now isolates
+  Workspace profile, account security, and deletion-lifecycle loading/error/retry states; destructive
+  dialogs focus `DELETE`, close with Escape, and return focus to their trigger.
+- **Verification:** focused Web check passed (38 tests); full root check passed (API 22 tests and
+  Web 38 tests); root build passed with the existing over-500-kB Vite advisory; linked migration
+  dry-run was up-to-date; advisors report only the accepted
+  `auth_leaked_password_protection` warning. Live browser acceptance passed on desktop and exact
+  390×844: one header, Settings header access, four-item bottom navigation, no horizontal overflow,
+  and destructive-dialog focus/Escape behaviour.
+- **Known issue:** the initial sandbox Web check/dev-server and advisors command hit the known
+  Windows `spawn EPERM`/telemetry restriction; the approved elevated reruns passed.
+- **Next:** create the cohesive A2 commit, push, and confirm remote CI before beginning A3.
+
+### 2026-09-12 — LOG-047 — M3.5-A2 Contract gate frozen
+
+- **Scope:** froze App Shell, Auth, and Settings correction against the archived Demo without
+  changing the approved Roadmap, API, schema, Auth configuration, or implementation.
+- **Outcome:** the Contract removes the duplicate mobile masthead, fixes identity source/fallback,
+  omits unprovable connection claims, isolates three Settings state boundaries, and preserves
+  six-digit OTP plus account-lifecycle operations.
+- **Verification:** documentation consistency review, targeted Prettier, and `git diff --check`
+  passed; no product code, browser acceptance, commit, push, or CI has been run for A2.
+- **Next:** Terra implements only [`M3.5-A2-CONTRACT.md`](M3.5-A2-CONTRACT.md), then hands the
+  semantic states to Sol.
 
 ### 2026-09-12 — LOG-045 — M3.5-A1 route and state foundation implemented locally
 

@@ -9,6 +9,7 @@ import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
 import { queryKeys } from '../query-keys'
 import { Brand } from '../shared/primitives'
+import { resolveCoachIdentity } from './coach-identity'
 
 const navigation = [
   { to: '/today', label: '今日', icon: LayoutGrid },
@@ -23,8 +24,10 @@ export function CoachWorkspace({ session }: { session: Session }) {
     queryKey: queryKeys.settings(session.user.id),
     queryFn: () => getWorkspaceSettings(session.access_token)
   })
-  const coachName =
-    coachSettingsQuery.data?.displayName || session.user.email?.split('@')[0] || '教練'
+  const coach = resolveCoachIdentity({
+    displayName: coachSettingsQuery.data?.displayName,
+    email: session.user.email
+  })
   const timeZone = coachSettingsQuery.data?.timeZone || 'Asia/Taipei'
   return (
     <div className="app-shell">
@@ -39,15 +42,11 @@ export function CoachWorkspace({ session }: { session: Session }) {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <p className="sync-state">
-            <span />
-            已連線
-          </p>
           <div className="coach-card">
-            <div className="mini-avatar">{initials(session.user.email)}</div>
+            <div className="mini-avatar">{coach.initials}</div>
             <div>
-              <strong>{coachName}</strong>
-              <small>{session.user.email}</small>
+              <strong>{coach.name}</strong>
+              {coach.email && <small>{coach.email}</small>}
             </div>
           </div>
         </div>
@@ -109,8 +108,4 @@ export function CoachWorkspace({ session }: { session: Session }) {
       </nav>
     </div>
   )
-}
-
-function initials(email: string | undefined) {
-  return (email?.slice(0, 2) || 'CO').toUpperCase()
 }

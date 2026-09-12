@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 export function Page({
   title,
@@ -56,6 +56,24 @@ export function Confirmation({
   onConfirm: () => void
   disabled: boolean
 }) {
+  const openerRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    openerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onCancel()
+        requestAnimationFrame(() => openerRef.current?.focus())
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
+  const cancel = () => {
+    onCancel()
+    requestAnimationFrame(() => openerRef.current?.focus())
+  }
   const requiresText = onConfirmationChange !== undefined
   return (
     <div className="danger-confirmation">
@@ -73,7 +91,7 @@ export function Confirmation({
           </label>
         )}
         <div className="danger-confirmation-actions">
-          <button className="secondary-button" disabled={disabled} onClick={onCancel}>
+          <button className="secondary-button" disabled={disabled} onClick={cancel}>
             取消
           </button>
           <button

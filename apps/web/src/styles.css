@@ -1370,19 +1370,6 @@ textarea:focus {
     display: block;
   }
   .sidebar {
-    position: static;
-    width: 100%;
-    height: auto;
-    padding: 18px 20px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .sync-state,
-  .coach-card > div:not(.mini-avatar) {
-    display: none;
-  }
-  .sidebar nav {
     display: none;
   }
   .mobile-header {

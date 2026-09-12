@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  ApiError,
   cancelAccountDeletion,
   getAccountLifecycle,
   getWorkspaceSettings,
@@ -24,11 +25,13 @@ export function useSettingsRouteQueries(session: Session) {
 export function useSettingsRouteMutations({
   session,
   onMessage,
-  onDeletionRequestClosed
+  onDeletionRequestClosed,
+  onSettingsConflict
 }: {
   session: Session
   onMessage: (message: string) => void
   onDeletionRequestClosed: () => void
+  onSettingsConflict?: () => void
 }) {
   const queryClient = useQueryClient()
   const settings = useMutation({
@@ -38,7 +41,15 @@ export function useSettingsRouteMutations({
       queryClient.setQueryData(queryKeys.settings(session.user.id), result)
       onMessage('設定已儲存。')
     },
-    onError: (error) => onMessage(readRouteError(error))
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        if (onSettingsConflict) {
+          onSettingsConflict()
+          return
+        }
+      }
+      onMessage(readRouteError(error))
+    }
   })
   const lifecycle = useMutation({
     mutationFn: (action: 'request' | 'cancel') =>
