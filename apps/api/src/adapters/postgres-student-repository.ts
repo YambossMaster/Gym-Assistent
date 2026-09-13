@@ -417,6 +417,22 @@ export class PostgresStudentRepository
     )
     return result.rows.map((row) => ({ ...row, amountMinor: Number(row.amountMinor) }))
   }
+
+  async incomeSummaryForPeriod(
+    workspaceId: WorkspaceId,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<LessonIncomeSummary[]> {
+    const result = await this.#pool.query<LessonIncomeSummary>(
+      `SELECT currency, COALESCE(SUM(amount_minor), 0)::bigint AS "amountMinor"
+       FROM app_private.lesson_purchase
+       WHERE workspace_id = $1 AND purchased_at >= $2 AND purchased_at < $3
+       GROUP BY currency
+       ORDER BY currency`,
+      [workspaceId, startsAt, endsAt],
+    )
+    return result.rows.map((row) => ({ ...row, amountMinor: Number(row.amountMinor) }))
+  }
 }
 
 function mapStudent(row: StudentRow): Student {

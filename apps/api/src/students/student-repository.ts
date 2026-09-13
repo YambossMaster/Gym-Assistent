@@ -87,4 +87,9 @@ export interface StudentRepository {
   ): Promise<boolean>
   lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null>
   incomeSummary(workspaceId: WorkspaceId): Promise<LessonIncomeSummary[]>
+  incomeSummaryForPeriod(
+    workspaceId: WorkspaceId,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<LessonIncomeSummary[]>
 }

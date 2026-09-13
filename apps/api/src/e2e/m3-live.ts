@@ -21,6 +21,15 @@ interface DetailResponse {
     }>
   }
 }
+interface TodayResponse {
+  today?: {
+    attention?: Array<{
+      student?: { id?: unknown; name?: unknown }
+      privateNote?: unknown
+      purchases?: unknown
+    }>
+  }
+}
 
 export class M3LiveE2eError extends Error {
   constructor(
@@ -86,7 +95,7 @@ export async function runM3LiveE2e(
         headers: headers(coachAToken),
         body: JSON.stringify({
           purchasedAt: '2026-09-10T00:00:00.000Z',
-          lessonCount: 3,
+          lessonCount: 2,
           amountMinor: 6000,
           currency: 'TWD',
           privateNote: marker,
@@ -104,9 +113,9 @@ export async function runM3LiveE2e(
     const detail = (await detailResponse.json()) as DetailResponse
     if (
       detail.detail?.student?.privateNote !== marker ||
-      detail.detail.lessonSummary?.purchased !== 3 ||
+      detail.detail.lessonSummary?.purchased !== 2 ||
       detail.detail.lessonSummary?.completed !== 0 ||
-      detail.detail.lessonSummary?.remaining !== 3 ||
+      detail.detail.lessonSummary?.remaining !== 2 ||
       detail.detail.purchases?.[0]?.privateNote !== marker ||
       detail.detail.purchases?.[0]?.amountMinor !== 6000 ||
       detail.detail.purchases?.[0]?.currency !== 'TWD'
@@ -116,6 +125,36 @@ export async function runM3LiveE2e(
         'owner detail did not retain the private entitlement projection',
       )
     }
+    const ownerTodayResponse = await request(
+      'owner Today projection',
+      `${apiBaseUrl}/v1/today`,
+      fetchImplementation,
+      { headers: headers(coachAToken) },
+    )
+    expectStatus('owner Today projection', ownerTodayResponse, 200)
+    const ownerToday = (await ownerTodayResponse.json()) as TodayResponse
+    const ownerAttention = ownerToday.today?.attention?.find(
+      (item) => item.student?.id === studentId,
+    )
+    if (
+      !ownerAttention ||
+      ownerAttention.privateNote !== undefined ||
+      ownerAttention.purchases !== undefined
+    )
+      throw new M3LiveE2eError(
+        'owner Today projection',
+        'Today did not return the isolated allowlisted entitlement attention item',
+      )
+    const otherTodayResponse = await request(
+      'coach-b Today isolation',
+      `${apiBaseUrl}/v1/today`,
+      fetchImplementation,
+      { headers: headers(coachBToken) },
+    )
+    expectStatus('coach-b Today isolation', otherTodayResponse, 200)
+    const otherToday = (await otherTodayResponse.json()) as TodayResponse
+    if (otherToday.today?.attention?.some((item) => item.student?.id === studentId))
+      throw new M3LiveE2eError('coach-b Today isolation', 'Today leaked another Coach Student')
     const isolated = await request(
       'coach-b detail isolation',
       `${apiBaseUrl}/v1/students/${studentId}`,
@@ -146,6 +185,7 @@ export async function runM3LiveE2e(
         'two real coach tokens accepted',
         'owner purchase/detail projection retained',
         'second coach detail isolated',
+        'Today attention allowlist and two-coach isolation verified',
         'student archive version transition verified',
         'test student deleted after verification',
       ],

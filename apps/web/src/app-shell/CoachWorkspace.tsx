@@ -66,7 +66,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
           </nav>
         </header>
         <Routes>
-          <Route path="/today" element={<TodayPage timeZone={timeZone} />} />
+          <Route path="/today" element={<TodayPage session={session} />} />
           <Route
             path="/calendar"
             element={

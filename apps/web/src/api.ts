@@ -35,6 +35,23 @@ export interface LessonIncomeSummary {
   amountMinor: number
 }
 
+export interface TodayProjection {
+  date: string
+  timeZone: string
+  summary: {
+    activeStudents: number
+    incomePeriod: { startsOn: string; endsOn: string }
+    incomeByCurrency: LessonIncomeSummary[]
+    attentionCount: number
+  }
+  attention: Array<{
+    kind: 'low_lesson_balance'
+    student: { id: string; name: string }
+    lessonSummary: { purchased: number; completed: number; remaining: number }
+    targetRoute: string
+  }>
+}
+
 export interface CreateStudentInput {
   name: string
   phone?: string
@@ -216,6 +233,11 @@ export async function getLessonPurchaseIncome(accessToken: string): Promise<Less
     accessToken
   )
   return response.income
+}
+
+export async function getToday(accessToken: string): Promise<TodayProjection> {
+  const response = await request<{ today: TodayProjection }>('/api/v1/today', accessToken)
+  return response.today
 }
 
 export async function deleteStudent(

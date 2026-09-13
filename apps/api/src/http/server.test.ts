@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { MemoryStudentRepository } from '../adapters/memory-student-repository.js'
 import { DevelopmentIdentityVerifier } from '../identity/development-identity.js'
 import { StudentModule } from '../students/student-module.js'
+import { TodayModule } from '../today/today-module.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { AccountLifecycleModule } from '../account-lifecycle/account-lifecycle-module.js'
 import { buildServer } from './server.js'
@@ -17,6 +18,7 @@ function createServer() {
   const server = buildServer({
     identityVerifier: new DevelopmentIdentityVerifier(),
     students: new StudentModule({ repository }),
+    today: new TodayModule(repository, () => new Date('2026-09-10T00:00:00.000Z')),
     workspace: new WorkspaceModule({ repository }),
     accountLifecycle: new AccountLifecycleModule({
       repository,
@@ -35,6 +37,7 @@ describe('student HTTP interface', () => {
     const server = buildServer({
       identityVerifier: new DevelopmentIdentityVerifier(),
       students: new StudentModule({ repository }),
+      today: new TodayModule(repository, () => new Date('2026-09-10T00:00:00.000Z')),
       workspace: new WorkspaceModule({ repository }),
       accountLifecycle: new AccountLifecycleModule({
         repository,
@@ -59,6 +62,71 @@ describe('student HTTP interface', () => {
 
     expect(response.statusCode).toBe(401)
     expect(response.json()).toMatchObject({ error: 'unauthorized' })
+  })
+
+  it('returns an allowlisted Today projection isolated to the authenticated Coach', async () => {
+    const server = createServer()
+    const ownerHeaders = {
+      authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001',
+    }
+    const student = (
+      await server.inject({
+        method: 'POST',
+        url: '/v1/students',
+        headers: ownerHeaders,
+        payload: { name: 'Alice', phone: 'private', privateNote: 'Coach only' },
+      })
+    ).json().student as { id: string }
+    await server.inject({
+      method: 'POST',
+      url: `/v1/students/${student.id}/lesson-purchases`,
+      headers: ownerHeaders,
+      payload: {
+        purchasedAt: '2026-08-31T16:00:00.000Z',
+        lessonCount: 2,
+        amountMinor: 6000,
+        currency: 'TWD',
+        privateNote: 'Never expose',
+      },
+    })
+
+    const owner = await server.inject({ method: 'GET', url: '/v1/today', headers: ownerHeaders })
+    const other = await server.inject({
+      method: 'GET',
+      url: '/v1/today',
+      headers: { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000002' },
+    })
+    const unauthorized = await server.inject({ method: 'GET', url: '/v1/today' })
+
+    expect(owner.statusCode).toBe(200)
+    expect(owner.json()).toEqual({
+      today: {
+        date: '2026-09-10',
+        timeZone: 'Asia/Taipei',
+        summary: {
+          activeStudents: 1,
+          incomePeriod: { startsOn: '2026-09-01', endsOn: '2026-10-01' },
+          incomeByCurrency: [{ currency: 'TWD', amountMinor: 6000 }],
+          attentionCount: 1,
+        },
+        attention: [
+          {
+            kind: 'low_lesson_balance',
+            student: { id: student.id, name: 'Alice' },
+            lessonSummary: { purchased: 2, completed: 0, remaining: 2 },
+            targetRoute: `/students/${student.id}`,
+          },
+        ],
+      },
+    })
+    expect(Object.keys(owner.json().today.attention[0].student)).toEqual(['id', 'name'])
+    expect(owner.json().today.attention[0]).not.toHaveProperty('purchases')
+    expect(owner.json().today.attention[0]).not.toHaveProperty('privateNote')
+    expect(other.json().today).toMatchObject({
+      summary: { activeStudents: 0, incomeByCurrency: [], attentionCount: 0 },
+      attention: [],
+    })
+    expect(unauthorized.statusCode).toBe(401)
   })
 
   it('creates and lists students without accepting a workspace id', async () => {
@@ -289,6 +357,7 @@ describe('account deletion HTTP interface', () => {
     const server = buildServer({
       identityVerifier: new DevelopmentIdentityVerifier(),
       students: new StudentModule({ repository }),
+      today: new TodayModule(repository, () => new Date('2026-09-10T00:00:00.000Z')),
       workspace: new WorkspaceModule({ repository }),
       accountLifecycle: new AccountLifecycleModule({
         repository,

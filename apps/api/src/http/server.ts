@@ -8,6 +8,7 @@ import {
   type UpdateStudentInput,
 } from '../students/student.js'
 import { StudentModule } from '../students/student-module.js'
+import { TodayModule } from '../today/today-module.js'
 import {
   LessonPurchaseVersionConflictError,
   StudentVersionConflictError,
@@ -24,6 +25,7 @@ import { RegistrationLookupUnavailableError } from '../account-registration/supa
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
   students: StudentModule
+  today: TodayModule
   workspace: WorkspaceModule
   accountLifecycle: AccountLifecycleModule
   registrationEmails: RegistrationEmailLookup
@@ -123,6 +125,7 @@ const updateWorkspaceSettingsBodySchema = {
 export function buildServer({
   identityVerifier,
   students,
+  today,
   workspace,
   accountLifecycle,
   registrationEmails,
@@ -192,6 +195,13 @@ export function buildServer({
     const income = await students.incomeSummary(identity)
     await accountLifecycle.recordActivity(identity)
     return { income }
+  })
+
+  server.get('/v1/today', async (request) => {
+    const identity = await identityVerifier.verify(request.headers.authorization)
+    const projection = await today.get(identity)
+    await accountLifecycle.recordActivity(identity)
+    return { today: projection }
   })
 
   server.get('/v1/workspace-settings', async (request) => {

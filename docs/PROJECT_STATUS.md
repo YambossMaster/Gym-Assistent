@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-12. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-13. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
@@ -8,27 +8,22 @@
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
-| Current package    | **M3.5-A3 — Student roster and detail parity for existing data**                      |
-| Package state      | **Done** — commit `26bc036`, GitHub Actions CI #11 / run `34706580673` successful     |
+| Current package    | **M3.5-A4 — Today signals from supported M3 data**                                    |
+| Package state      | **Locally complete** — cohesive commit, push, and remote CI remain                    |
 | Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
-| Branch baseline    | `main`; `origin/main` at A2 evidence commit `78407d3` before this A3 package          |
-| Worktree           | Contains the approved M0–M3 baseline plus delivered M3.5 A1/A2 foundations            |
+| Branch baseline    | `main`; `origin/main` at A3 evidence commit `99b537a` before this A4 package          |
+| Worktree           | Contains delivered M3.5 A1–A3 plus the locally verified A4 package                    |
 | Linked database    | Development only; A3 Purchase version migration `20260912161049` applied              |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Start the **M3.5-A4 Today projection Contract gate**:
+Complete the **M3.5-A4 CI delivery gate**:
 
-1. Compare the Demo Today route against the formal placeholder and freeze the Coach job, route
-   projection, time-zone day boundaries, multi-currency income, attention items, and route states.
-2. Freeze the additive `GET /v1/today?date=YYYY-MM-DD` Module/HTTP contract, authorization,
-   concurrency, copy slots, and desktop/exact-390×844 acceptance path.
-3. Do not begin A4 Terra implementation until the Contract leaves no product, visual, interaction,
-   or wording decision to Terra.
-
-Do not begin general M4 work. Nearest future session and dated Course Session history remain
-explicitly deferred to M4 because the preserved M3 schema has no schedule date/time fields.
+1. Create and push one cohesive A4 implementation commit from the locally verified worktree.
+2. Confirm GitHub Actions Verify and migration-dry-run jobs for that exact commit.
+3. Record the remote run/commit evidence here, then hand off to the A5 Contract gate. Do not begin
+   M4 or add any Scheduling data.
 
 ## Milestone status
 
@@ -38,7 +33,7 @@ explicitly deferred to M4 because the preserved M3 schema has no schedule date/t
 | M1 Cloud foundation tracer             | Done        | Supabase private schema, verified identity/Workspace derivation, two-Coach isolation, migration workflow, remote CI             |
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
-| M3.5 Frontend gap filling              | In progress | A0–A3 delivered; A4–A5 remain                                                                                                   |
+| M3.5 Frontend gap filling              | In progress | A0–A3 delivered; A4 locally complete pending remote CI; A5 remains                                                              |
 | M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
@@ -81,7 +76,8 @@ explicitly deferred to M4 because the preserved M3 schema has no schedule date/t
 
 ## Confirmed M3.5 gaps
 
-- `/today` is a static empty placeholder without its route projection or query.
+- `/today` now has its M3-supported signal projection locally. Course-session schedule flow remains
+  M4 work.
 - `/calendar`, `/sessions/:id`, and `/exercises` are placeholders; they belong to M4/M5.
 - `/students` and `/students/:id` now cover all existing M3 data. Nearest-session and dated-session
   history remain absent until M4; Training performance remains absent until M5.
@@ -111,6 +107,10 @@ explicitly deferred to M4 because the preserved M3 schema has no schedule date/t
   advisors report only the pre-existing leaked-password-protection warning.
 - M3.5-A3: commit `26bc036`; GitHub Actions CI #11 / run `34706580673` completed in 52 seconds with
   Verify and migration-dry-run jobs green (API 24, Web 45).
+- M3.5-A4 local: root check passed (API 27, Web 51), root build passed with the existing bundle-size
+  advisory, migration dry-run is up to date, linked `app_private` schema lint found no errors, and
+  the live two-Coach E2E verified the Today allowlist/isolation then deleted its isolated Student.
+  Desktop and exact 390×844 browser acceptance passed without horizontal overflow or console errors.
 - M3.5 documentation reset: targeted Prettier check and repository-wide `git diff --check` passed
   on 2026-09-12; only Git's existing LF-to-CRLF notices were emitted.
 
@@ -128,6 +128,51 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-13 — LOG-054 — M3.5-A4 Sol and local integration complete
+
+- **Scope:** converged the M3-only Today signal surface on the existing FORM workbench language and
+  completed its local integration matrix. Corrected amount display to preserve the existing
+  minor-unit presentation and formatted the server-owned local date without a second time-zone
+  conversion.
+- **Outcome:** desktop presents a restrained three-signal strip and entitlement worklist; exact
+  390×844 stacks the cards above the safe-area bottom navigation. Zero signals remain a Ready state,
+  attention items are keyboard links, and no copy implies Course Session or Calendar facts.
+- **Verification:** root check passed (API 9 files/27 tests; Web 11 files/51 tests); root build passed
+  with only the existing over-500-kB Vite advisory; migration dry-run is up to date; linked
+  `app_private` schema lint found no errors; live M3 E2E verified Today allowlist/two-Coach isolation
+  and deleted its isolated Student. Desktop 1440×675 and exact 390×844 browser acceptance passed,
+  with no horizontal overflow or console errors and keyboard focus reaching mobile Settings/nav.
+- **Next:** create/push the cohesive A4 commit and confirm remote Verify plus migration-dry-run.
+
+### 2026-09-13 — LOG-053 — M3.5-A4 Today signals Terra locally complete
+
+- **Scope:** implemented the frozen M3-only Today projection without a migration or Scheduling
+  interface. The server derives Workspace time zone/current local month and returns only active
+  Student count, per-currency recorded income, and active Student low/negative-balance attention.
+- **Outcome:** `/today` now uses a Coach-scoped, memory-only TanStack Query with Loading, Error,
+  Ready, and cached Refreshing boundaries. Student, Purchase, and Workspace-time-zone changes
+  invalidate it. The screen contains no Course Session, Calendar, location, conflict, availability,
+  Training, or no-sessions assertion.
+- **Verification:** API typecheck passed; elevated API tests passed (9 files, 25 tests); elevated Web
+  check passed (9 files, 45 tests); `git diff --check` passed. No root build, live/browser,
+  migration dry-run, commit, push, or remote CI evidence is claimed yet.
+- **Next:** Sol performs desktop/exact-390×844 acceptance, then run the A4 CI delivery gate.
+
+### 2026-09-13 — LOG-052 — M3.5-A4 scope corrected and Contract frozen
+
+- **Scope:** Product Owner explicitly ruled that every capability requiring M4 must remain in M4 or
+  later. The former A4 Today schedule projection therefore could not proceed against the preserved
+  M3 entitlement-only Course Session schema.
+- **Outcome:** A4 is now a server-owned M3 signal projection for active Students, local-calendar-
+  month income by currency, and active Student low/negative lesson-balance attention only. It has no
+  date/time-based Course Session facts, session counts/rows, location, conflicts, availability, or
+  no-sessions assertion. M4 now owns the complete Today schedule projection after its Scheduling
+  Contract freezes the required Course Session model.
+- **Verification:** Demo/formal route and M3 schema boundary were rechecked. The Contract and
+  Roadmap amendment require documentation formatting and whitespace verification; no Terra, Sol,
+  API, schema, browser, migration, commit, push, or CI evidence is claimed.
+- **Next:** Terra implements only [`M3.5-A4-CONTRACT.md`](M3.5-A4-CONTRACT.md).
 
 ### 2026-09-13 — LOG-051 — M3.5-A3 Student parity delivered
 

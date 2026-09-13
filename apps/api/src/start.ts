@@ -4,6 +4,7 @@ import { loadConfig } from './config.js'
 import { buildServer } from './http/server.js'
 import { OidcIdentityVerifier } from './identity/oidc-identity.js'
 import { StudentModule } from './students/student-module.js'
+import { TodayModule } from './today/today-module.js'
 import { WorkspaceModule } from './workspace/workspace-module.js'
 import { AccountLifecycleModule } from './account-lifecycle/account-lifecycle-module.js'
 import { SupabaseAccountDeletionExecutor } from './account-lifecycle/supabase-account-deletion-executor.js'
@@ -26,6 +27,7 @@ const identityVerifier = new OidcIdentityVerifier({
 const server = buildServer({
   identityVerifier,
   students: new StudentModule({ repository }),
+  today: new TodayModule(repository),
   workspace: new WorkspaceModule({ repository }),
   accountLifecycle: new AccountLifecycleModule({
     repository,

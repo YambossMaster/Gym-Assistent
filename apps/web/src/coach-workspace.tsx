@@ -33,6 +33,7 @@ import {
 } from './pages/students/queries'
 import { selectStudentRosterResult } from './pages/students/state'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './pages/settings/queries'
+import { invalidateTodayRoute } from './pages/today/queries'
 import { queryKeys } from './query-keys'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
@@ -163,6 +164,7 @@ export function StudentsPage({ session }: { session: Session }) {
               (current = []) => [...current, student]
             )
             void queryClient.invalidateQueries({ queryKey: queryKeys.income(session.user.id) })
+            invalidateTodayRoute(queryClient, session.user.id)
             setCreateOpen(false)
           }}
         />

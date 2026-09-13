@@ -28,6 +28,12 @@ describe('runM3LiveE2e', () => {
         expect(JSON.parse(String(init?.body))).toMatchObject({ amountMinor: 6000, currency: 'TWD' })
         return jsonResponse({ purchase: { id: 'purchase-a' } }, 201)
       }
+      if (url.endsWith('/v1/today'))
+        return jsonResponse({
+          today: {
+            attention: owner ? [{ student: { id: 'student-a', name: 'Alice' } }] : [],
+          },
+        })
       if (url.endsWith('/v1/students/student-a') && !owner) return jsonResponse({}, 404)
       if (url.endsWith('/v1/students/student-a') && init?.method === 'PATCH') {
         archived = true
@@ -38,8 +44,8 @@ describe('runM3LiveE2e', () => {
       return jsonResponse({
         detail: {
           student: { id: 'student-a', privateNote: marker, version: archived ? 2 : 1 },
-          lessonSummary: { purchased: 3, completed: 0, remaining: 3 },
-          purchases: [{ lessonCount: 3, amountMinor: 6000, currency: 'TWD', privateNote: marker }],
+          lessonSummary: { purchased: 2, completed: 0, remaining: 2 },
+          purchases: [{ lessonCount: 2, amountMinor: 6000, currency: 'TWD', privateNote: marker }],
         },
       })
     }) as typeof fetch
@@ -47,7 +53,7 @@ describe('runM3LiveE2e', () => {
     const result = await runM3LiveE2e(config, fetchImplementation)
 
     expect(result.studentId).toBe('student-a')
-    expect(result.checks).toHaveLength(5)
+    expect(result.checks).toHaveLength(6)
     expect(fetchImplementation).toHaveBeenCalledWith(
       expect.stringContaining('/v1/students/student-a'),
       expect.objectContaining({ method: 'DELETE' }),

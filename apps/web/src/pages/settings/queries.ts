@@ -9,6 +9,7 @@ import {
   updateWorkspaceSettings
 } from '../../api'
 import { queryKeys } from '../../query-keys'
+import { invalidateTodayRoute } from '../today/queries'
 
 export function useSettingsRouteQueries(session: Session) {
   const settings = useQuery({
@@ -39,6 +40,7 @@ export function useSettingsRouteMutations({
       updateWorkspaceSettings(session.access_token, input),
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.settings(session.user.id), result)
+      invalidateTodayRoute(queryClient, session.user.id)
       onMessage('設定已儲存。')
     },
     onError: (error) => {

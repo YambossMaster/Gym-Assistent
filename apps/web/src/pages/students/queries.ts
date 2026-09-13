@@ -12,6 +12,7 @@ import {
   type StudentDetail
 } from '../../api'
 import { queryKeys } from '../../query-keys'
+import { invalidateTodayRoute } from '../today/queries'
 
 export function invalidateStudentPurchaseQueries(
   queryClient: QueryClient,
@@ -21,6 +22,7 @@ export function invalidateStudentPurchaseQueries(
   void queryClient.invalidateQueries({ queryKey: queryKeys.student(coachId, studentId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.students(coachId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.income(coachId) })
+  invalidateTodayRoute(queryClient, coachId)
 }
 
 export function useStudentsRouteQuery(session: Session) {
@@ -63,6 +65,7 @@ export function useStudentRouteMutations({
         (current) => (current ? { ...current, student } : current)
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
+      invalidateTodayRoute(queryClient, session.user.id)
       onNotice('學生資料已儲存。')
     },
     onError: (error) => onNotice(readRouteError(error))
@@ -81,6 +84,7 @@ export function useStudentRouteMutations({
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: queryKeys.student(session.user.id, studentId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
+      invalidateTodayRoute(queryClient, session.user.id)
       onDeleted()
     },
     onError: (error) => onNotice(readRouteError(error))

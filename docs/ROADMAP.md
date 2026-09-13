@@ -257,31 +257,37 @@ M0–M3 operations behave identically after the split.
 recalculation, archive visibility, cache invalidation, first/filter/search Empty states, desktop, and
 390×844 all pass.
 
-#### M3.5-A4 — Today projection
+#### M3.5-A4 — Today signals from supported M3 data
 
-Add `GET /v1/today?date=YYYY-MM-DD` returning one screen projection:
+Add `GET /v1/today` returning one screen projection from existing M3 authority only:
 
 ```text
 date, timeZone
-summary: scheduled, completed, activeStudents, incomeByCurrency, attentionCount
-sessions: id, startsAt, endsAt, status, location, student summary, trainingPlanState
-attention: lowLessonBalance and scheduleConflict items with target routes
+summary: activeStudents, incomePeriod, incomeByCurrency, attentionCount
+attention: lowLessonBalance items with target routes
 ```
 
-- The backend derives Workspace and local-day boundaries from verified identity and Workspace time
-  zone.
-- `trainingPlanState` remains `unavailable` until M5; the client does not invent Training data.
-- Income is explicitly period-scoped; no Demo seed count or amount becomes production data.
-- `/today` restores the Demo's information hierarchy, daily flow, no-sessions Empty state, and
-  actionable attention without copying static seed text as fact.
+- The backend derives Workspace, the current local date, and the local calendar-month income period
+  from verified identity and Workspace time zone. The browser supplies neither a Workspace nor a
+  date, so it cannot turn the current overview into an unverified historical report.
+- The projection contains no Course Session, `scheduled`/`completed` count, start/end time,
+  location, training-plan state, schedule conflict, availability, block, or no-sessions claim.
+  Those facts need M4's Course Session calendar contract and remain M4-owned.
+- Active-student count and low/negative lesson-balance attention use the existing Student/Lesson
+  authority. Income is explicitly local-calendar-month scoped and grouped by ISO currency; no Demo
+  seed count or amount becomes production data.
+- `/today` becomes a calm current-workspace signal surface. It must not imply that the absence of a
+  schedule projection means the Coach has no lessons today.
 
-**Acceptance:** time-zone day edges, completed counts, multi-currency income, low/negative balances,
-conflicts, tenant isolation, cached refresh, desktop, and 390×844 pass.
+**Acceptance:** Workspace time-zone month edges, multi-currency income, active-only low/negative
+balances, tenant isolation, cached refresh, desktop, and 390×844 pass. Course-session and conflict
+acceptance belongs to M4.
 
 #### M3.5-A5 — Product convergence and delivery
 
-- Sol performs the complete Demo comparison for Auth, Shell, Today, Students, Student Detail, and
-  Settings.
+- Sol performs the complete supported-data comparison for Auth, Shell, Today signals, Students,
+  Student Detail, and Settings. The Demo's schedule flow on Today remains an M4 input, not an M3.5
+  imitation.
 - Remove developer/roadmap language from rendered UI.
 - Verify keyboard, focus, modal dismissal, reduced motion, destructive actions, cached navigation,
   and exact 390×844 width.
@@ -294,10 +300,10 @@ features are absent or honestly unavailable, never represented by fake controls 
 
 **Dependency:** M3.5 complete.
 
-**Preserve:** the existing `course_session`, `schedule_series`, `availability_rule`,
-`availability_override`, and `calendar_block` schema plus Course Session
-create/move/complete/cancel, transactional conflict projection, and optimistic concurrency. Resume
-from that seam; do not rebuild it.
+**Starting point:** M3 retains only entitlement-relevant `course_session` ownership and status.
+The abandoned Scheduling schema, adapters, operations, and projections were intentionally removed.
+M4 begins only after its Contract freezes the complete replacement; it does not reuse a discarded
+starter or invent dates for historical entitlement rows.
 
 #### Contract gate
 
@@ -308,6 +314,9 @@ from that seam; do not rebuild it.
   remain idempotent.
 - Freeze availability add/remove semantics, date override, recurring Calendar Block edit scope, and
   version-conflict recovery choices.
+- Freeze the complete Today schedule projection: local-day range, ordered Course Sessions,
+  scheduled/completed counts, locations, conflict attention, no-sessions state, and the interaction
+  between that projection and the M3.5-A4 supported-data signals. Training-plan state remains M5.
 
 #### Terra gate
 
@@ -315,12 +324,15 @@ from that seam; do not rebuild it.
   Availability Rule/Override, and Calendar Block.
 - Implement reconciliation and recurring-block scope transactionally.
 - Bind `/calendar` and fixed-rhythm sections to typed state skeletons with no visual or copy choices.
+- Add the M4-owned `GET /v1/today?date=YYYY-MM-DD` schedule projection and merge it with the
+  M3.5-A4 signals without duplicating Student/Lesson authority.
 - Provide Demo migration preview with counts, conflicts, rejected items, and checksum.
 
 #### Sol gate
 
 - Reproduce and refine the Demo calendar interaction, density, statuses, warnings, responsive
   behaviour, and fixed-rhythm experience.
+- Converge Today on the Demo's daily-flow hierarchy only after the M4 schedule data is available.
 - Validate pointer, touch, keyboard, scrolling, direct manipulation, modal, and conflict recovery.
 
 #### CI gate

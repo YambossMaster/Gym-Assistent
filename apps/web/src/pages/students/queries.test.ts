@@ -13,7 +13,8 @@ describe('Student Purchase cache invalidation', () => {
     expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
       queryKeys.student('coach-1', 'student-1'),
       queryKeys.students('coach-1'),
-      queryKeys.income('coach-1')
+      queryKeys.income('coach-1'),
+      queryKeys.today('coach-1')
     ])
   })
 })

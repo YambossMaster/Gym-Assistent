@@ -5,6 +5,7 @@ import {
   deleteAccountImmediately,
   deleteLessonPurchase,
   getWorkspaceSettings,
+  getToday,
   isRegistrationEmailTaken,
   listStudents,
   requestAccountDeletion,
@@ -15,6 +16,31 @@ import {
 afterEach(() => vi.restoreAllMocks())
 
 describe('student API client', () => {
+  it('loads Today through the authenticated route without browser-selected scope', async () => {
+    const today = {
+      date: '2026-09-10',
+      timeZone: 'Asia/Taipei',
+      summary: {
+        activeStudents: 0,
+        incomePeriod: { startsOn: '2026-09-01', endsOn: '2026-10-01' },
+        incomeByCurrency: [],
+        attentionCount: 0
+      },
+      attention: []
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ today }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
+    )
+
+    await expect(getToday('verified-token')).resolves.toEqual(today)
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/today', {
+      headers: { authorization: 'Bearer verified-token' }
+    })
+  })
+
   it('checks a registration email without sending a browser credential', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ exists: true }), {

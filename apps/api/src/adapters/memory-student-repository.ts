@@ -282,12 +282,26 @@ export class MemoryStudentRepository
       for (const purchase of purchases)
         grouped.set(purchase.currency, (grouped.get(purchase.currency) ?? 0) + purchase.amountMinor)
     }
-    return [...grouped]
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([currency, amountMinor]) => ({
-        currency,
-        amountMinor,
-      }))
+    return incomeRows(grouped)
+  }
+
+  async incomeSummaryForPeriod(
+    workspaceId: WorkspaceId,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<LessonIncomeSummary[]> {
+    const grouped = new Map<string, number>()
+    for (const purchases of this.#purchasesByWorkspace.get(workspaceId)?.values() ?? []) {
+      for (const purchase of purchases) {
+        const purchasedAt = new Date(purchase.purchasedAt)
+        if (purchasedAt >= startsAt && purchasedAt < endsAt)
+          grouped.set(
+            purchase.currency,
+            (grouped.get(purchase.currency) ?? 0) + purchase.amountMinor,
+          )
+      }
+    }
+    return incomeRows(grouped)
   }
 
   // Test seam for M3's derived entitlement. M4 owns session creation and transitions.
@@ -300,4 +314,10 @@ export class MemoryStudentRepository
 
 function copyPurchase(purchase: LessonPurchase): LessonPurchase {
   return { ...purchase }
+}
+
+function incomeRows(grouped: Map<string, number>): LessonIncomeSummary[] {
+  return [...grouped]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([currency, amountMinor]) => ({ currency, amountMinor }))
 }
