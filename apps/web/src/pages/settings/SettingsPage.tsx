@@ -59,7 +59,7 @@ export function SettingsPage({ session }: { session: Session }) {
   const lifecycle = lifecycleQuery.data?.deletionDueAt ?? null
 
   return (
-    <Page title="設定" eyebrow="SYSTEM / PREFERENCES">
+    <Page title="設定" eyebrow="帳號與工作台">
       <section className="settings-layout">
         <WorkspaceProfile
           state={profileState}

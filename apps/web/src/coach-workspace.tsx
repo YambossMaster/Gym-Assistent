@@ -564,6 +564,10 @@ function PurchaseEditor({
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [onCancel])
+  const cancel = () => {
+    onCancel()
+    requestAnimationFrame(() => openerRef.current?.focus())
+  }
   return (
     <section className="purchase-editor" role="dialog" aria-modal="true" aria-label="編輯購課紀錄">
       <form
@@ -628,7 +632,7 @@ function PurchaseEditor({
           <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
         </label>
         <div className="purchase-editor-actions">
-          <button className="secondary-button" type="button" onClick={onCancel} disabled={disabled}>
+          <button className="secondary-button" type="button" onClick={cancel} disabled={disabled}>
             取消
           </button>
           <button className="primary-button compact" disabled={disabled}>
@@ -987,8 +991,30 @@ function CreateStudentDialog({
   onClose: () => void
   onCreated: (student: Student) => void
 }) {
+  const openerRef = useRef<HTMLElement | null>(
+    document.activeElement instanceof HTMLElement ? document.activeElement : null
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      onClose()
+      requestAnimationFrame(() => openerRef.current?.focus())
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose])
+  const close = () => {
+    onClose()
+    requestAnimationFrame(() => openerRef.current?.focus())
+  }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
@@ -1015,7 +1041,7 @@ function CreateStudentDialog({
             <span className="eyebrow dark">學生</span>
             <h2>新增學生</h2>
           </div>
-          <button className="icon-button" onClick={onClose}>
+          <button className="icon-button" type="button" onClick={close} aria-label="關閉新增學生">
             ×
           </button>
         </header>
@@ -1038,7 +1064,7 @@ function CreateStudentDialog({
           </label>
           {error && <p className="form-error">{error}</p>}
           <footer>
-            <button className="secondary-button" type="button" onClick={onClose}>
+            <button className="secondary-button" type="button" onClick={close}>
               取消
             </button>
             <button className="primary-button compact" disabled={submitting}>

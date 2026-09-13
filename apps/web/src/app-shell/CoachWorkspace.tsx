@@ -69,35 +69,17 @@ export function CoachWorkspace({ session }: { session: Session }) {
           <Route path="/today" element={<TodayPage session={session} />} />
           <Route
             path="/calendar"
-            element={
-              <RoutePlaceholder
-                title="行事曆"
-                text="在這裡安排每一堂課，並掌握可用時段。"
-                icon={<CalendarDays />}
-              />
-            }
+            element={<RoutePlaceholder title="行事曆" icon={<CalendarDays />} />}
           />
           <Route path="/students" element={<StudentsPage session={session} />} />
           <Route path="/students/:studentId" element={<StudentDetailPage session={session} />} />
           <Route
             path="/sessions/:sessionId"
-            element={
-              <RoutePlaceholder
-                title="課堂"
-                text="選擇一堂課後，可在這裡整理訓練內容。"
-                icon={<Dumbbell />}
-              />
-            }
+            element={<RoutePlaceholder title="課堂" icon={<Dumbbell />} />}
           />
           <Route
             path="/exercises"
-            element={
-              <RoutePlaceholder
-                title="動作庫"
-                text="建立常用動作，讓每次訓練安排更順手。"
-                icon={<Dumbbell />}
-              />
-            }
+            element={<RoutePlaceholder title="動作庫" icon={<Dumbbell />} />}
           />
           <Route path="/settings" element={<SettingsPage session={session} />} />
           <Route path="*" element={<Navigate to="/today" replace />} />

@@ -18,7 +18,7 @@ export function TodayPage({ session }: { session: Session }) {
     <Page
       className="today-page"
       title="今日概覽"
-      eyebrow={today ? formatToday(today.date, today.timeZone) : '目前工作台'}
+      eyebrow={today ? formatToday(today.date, today.timeZone) : '工作台'}
     >
       {state === 'loading' ? <TodaySkeleton /> : null}
       {state === 'error' ? <TodayError onRetry={() => void todayQuery.refetch()} /> : null}
@@ -71,7 +71,7 @@ function TodaySignals({
       </section>
       <section className="today-attention" aria-labelledby="today-attention-title">
         <div>
-          <span className="eyebrow dark">ENTITLEMENT</span>
+          <span className="eyebrow dark">堂數帳戶</span>
           <h2 id="today-attention-title">需要留意的堂數</h2>
         </div>
         {today.attention.length ? (

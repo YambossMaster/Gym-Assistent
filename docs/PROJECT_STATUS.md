@@ -5,26 +5,22 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| Active phase       | **M3.5 — Stage A: frontend gap filling**                                                |
-| Current package    | **M3.5-A5 — Product convergence and delivery**                                          |
-| Package state      | **Contract gate next** — A4 is delivered; A5 scope must be frozen before implementation |
-| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful   |
-| Branch baseline    | `main`; A4 delivery commit `ae6b764`, GitHub Actions run `34764878712` successful       |
-| Worktree           | Contains delivered M3.5 A1–A4; no M4 Scheduling expansion                               |
-| Linked database    | Development only; A3 Purchase version migration `20260912161049` applied                |
-| Production         | Not configured; no real customer data                                                   |
+| Field              | Current value                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
+| Current package    | **M3.5-A5 — Product convergence and delivery**                                        |
+| Package state      | **CI delivery in progress** — Sol convergence and local/live evidence complete        |
+| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
+| Branch baseline    | `main`; A4 delivery commit `ae6b764`, GitHub Actions run `34764878712` successful     |
+| Worktree           | Contains delivered M3.5 A1–A4; no M4 Scheduling expansion                             |
+| Linked database    | Development only; A3 Purchase version migration `20260912161049` applied              |
+| Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Freeze the **M3.5-A5 Contract gate**:
-
-1. Inventory the remaining supported-data gaps across Auth, Shell, Today signals, Students, Student
-   Detail, and Settings against the Demo.
-2. Freeze the developer-copy removals and keyboard, focus, modal dismissal, reduced-motion,
-   destructive-action, cached-navigation, desktop, and exact-390×844 acceptance paths.
-3. Keep the Demo's Today schedule flow and every Scheduling dependency in M4 or later.
+Create/push the cohesive M3.5-A5 delivery commit and confirm its GitHub Actions Verify plus
+migration-dry-run jobs. Keep every Scheduling dependency in M4 or later; after remote evidence,
+M3.5 is complete and the next package is the M4 Contract gate.
 
 ## Milestone status
 
@@ -34,7 +30,7 @@ Freeze the **M3.5-A5 Contract gate**:
 | M1 Cloud foundation tracer             | Done        | Supabase private schema, verified identity/Workspace derivation, two-Coach isolation, migration workflow, remote CI             |
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
-| M3.5 Frontend gap filling              | In progress | A0–A4 delivered; A5 Contract and delivery remain                                                                                |
+| M3.5 Frontend gap filling              | In progress | A0–A4 delivered; A5 Sol/local evidence complete, remote delivery remains                                                        |
 | M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
@@ -132,6 +128,39 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-13 — LOG-057 — M3.5-A5 Sol and local integration complete
+
+- **Scope:** converged the supported-data Auth, Shell, Today, Student, Student Detail, and Settings
+  surfaces without changing the API, database, authorization, query contract, or M4 boundary.
+- **Outcome:** unavailable Calendar, lesson, and Exercise routes now state only `此功能尚未提供。`;
+  Today and Settings remove implementation-facing labels; the Create-Student and Purchase editor
+  now preserve the existing modal scroll lock, Escape dismissal, and opener-focus return. The
+  existing reduced-motion rule and destructive-confirmation focus were revalidated.
+- **Verification:** focused elevated Web check passed (11 files/51 tests). Full root check passed
+  (API 9 files/27 tests; Web 11 files/51 tests); root build passed with only the existing Vite
+  over-500-kB advisory; `git diff --check` passed; migration dry-run is up to date; linked advisors
+  report only the accepted development `auth_leaked_password_protection` warning. Live M3 E2E
+  passed two-Coach isolation/Today allowlist and deleted its isolated Student. Browser acceptance
+  passed at 1440×675 and exact 390×844 with no console errors: Auth, Today, Settings, Students,
+  unavailable-route boundary, mobile Settings/navigation, modal Escape/focus restoration, and
+  destructive-confirmation initial focus all passed.
+- **Next:** create/push the cohesive A5 commit and confirm remote Verify plus migration-dry-run.
+
+### 2026-09-13 — LOG-056 — M3.5-A5 Contract frozen
+
+- **Scope:** Product Owner authorized the final M3.5 package. The Contract inventories Auth, Shell,
+  Today signals, Students, Student Detail, Settings, and unavailable-route boundaries against the
+  archived Demo without changing production code, API, schema, or Scheduling ownership.
+- **Outcome:** A5 is strictly a Sol presentation/interaction convergence followed by CI delivery;
+  its exact copy, focus, modal, cached-refresh, reduced-motion, desktop, and 390×844 acceptance
+  rules are frozen in [`M3.5-A5-CONTRACT.md`](M3.5-A5-CONTRACT.md). Calendar, lesson, Exercise,
+  and public-capability work remains M4–M6 and is represented only by the honest static boundary.
+- **Verification:** documentation comparison against the Demo/formal supported-route boundary is
+  complete. Formatting and Git whitespace checks are required before recording Contract evidence;
+  no product implementation, browser, live, migration, commit, push, or remote CI evidence is
+  claimed yet.
+- **Next:** Sol implements only the frozen A5 Contract, then completes M3.5 CI delivery.
 
 ### 2026-09-13 — LOG-055 — M3.5-A4 delivered
 
