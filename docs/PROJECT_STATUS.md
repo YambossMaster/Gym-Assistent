@@ -5,25 +5,26 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
-| Current package    | **M3.5-A4 — Today signals from supported M3 data**                                    |
-| Package state      | **Locally complete** — cohesive commit, push, and remote CI remain                    |
-| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
-| Branch baseline    | `main`; `origin/main` at A3 evidence commit `99b537a` before this A4 package          |
-| Worktree           | Contains delivered M3.5 A1–A3 plus the locally verified A4 package                    |
-| Linked database    | Development only; A3 Purchase version migration `20260912161049` applied              |
-| Production         | Not configured; no real customer data                                                 |
+| Field              | Current value                                                                           |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| Active phase       | **M3.5 — Stage A: frontend gap filling**                                                |
+| Current package    | **M3.5-A5 — Product convergence and delivery**                                          |
+| Package state      | **Contract gate next** — A4 is delivered; A5 scope must be frozen before implementation |
+| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful   |
+| Branch baseline    | `main`; A4 delivery commit `ae6b764`, GitHub Actions run `34764878712` successful       |
+| Worktree           | Contains delivered M3.5 A1–A4; no M4 Scheduling expansion                               |
+| Linked database    | Development only; A3 Purchase version migration `20260912161049` applied                |
+| Production         | Not configured; no real customer data                                                   |
 
 ## Next handoff
 
-Complete the **M3.5-A4 CI delivery gate**:
+Freeze the **M3.5-A5 Contract gate**:
 
-1. Create and push one cohesive A4 implementation commit from the locally verified worktree.
-2. Confirm GitHub Actions Verify and migration-dry-run jobs for that exact commit.
-3. Record the remote run/commit evidence here, then hand off to the A5 Contract gate. Do not begin
-   M4 or add any Scheduling data.
+1. Inventory the remaining supported-data gaps across Auth, Shell, Today signals, Students, Student
+   Detail, and Settings against the Demo.
+2. Freeze the developer-copy removals and keyboard, focus, modal dismissal, reduced-motion,
+   destructive-action, cached-navigation, desktop, and exact-390×844 acceptance paths.
+3. Keep the Demo's Today schedule flow and every Scheduling dependency in M4 or later.
 
 ## Milestone status
 
@@ -33,7 +34,7 @@ Complete the **M3.5-A4 CI delivery gate**:
 | M1 Cloud foundation tracer             | Done        | Supabase private schema, verified identity/Workspace derivation, two-Coach isolation, migration workflow, remote CI             |
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
-| M3.5 Frontend gap filling              | In progress | A0–A3 delivered; A4 locally complete pending remote CI; A5 remains                                                              |
+| M3.5 Frontend gap filling              | In progress | A0–A4 delivered; A5 Contract and delivery remain                                                                                |
 | M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
@@ -111,6 +112,9 @@ Complete the **M3.5-A4 CI delivery gate**:
   advisory, migration dry-run is up to date, linked `app_private` schema lint found no errors, and
   the live two-Coach E2E verified the Today allowlist/isolation then deleted its isolated Student.
   Desktop and exact 390×844 browser acceptance passed without horizontal overflow or console errors.
+- M3.5-A4 remote: commit `ae6b764`, GitHub Actions CI #13 / run `34764878712` completed in 57
+  seconds with Verify and migration-dry-run jobs successful (API 9 files/27 tests; Web 11 files/51
+  tests).
 - M3.5 documentation reset: targeted Prettier check and repository-wide `git diff --check` passed
   on 2026-09-12; only Git's existing LF-to-CRLF notices were emitted.
 
@@ -128,6 +132,17 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-13 — LOG-055 — M3.5-A4 delivered
+
+- **Scope:** pushed the cohesive M3.5-A4 Today-signal implementation and checked the exact commit's
+  GitHub Actions run.
+- **Outcome:** commit `ae6b764` is on `origin/main`; A4 is delivered with no Scheduling schema,
+  Course Session operation, calendar behaviour, or M4-dependent UI.
+- **Verification:** GitHub Actions CI #13 / run `34764878712` completed successfully in 57 seconds;
+  Verify reported API 27/27 and Web 51/51, and migration-dry-run completed successfully.
+- **Next:** freeze the M3.5-A5 product-convergence Contract; keep all Scheduling-dependent work in
+  M4 or later.
 
 ### 2026-09-13 — LOG-054 — M3.5-A4 Sol and local integration complete
 
