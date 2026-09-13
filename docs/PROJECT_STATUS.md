@@ -8,19 +8,24 @@
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
-| Current package    | **M3.5-A5 — Product convergence and delivery**                                        |
-| Package state      | **CI delivery in progress** — Sol convergence and local/live evidence complete        |
+| Current package    | **M3.5 — complete**                                                                   |
+| Package state      | **M4 Contract gate next** — no Scheduling implementation is authorized                |
 | Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
-| Branch baseline    | `main`; A4 delivery commit `ae6b764`, GitHub Actions run `34764878712` successful     |
-| Worktree           | Contains delivered M3.5 A1–A4; no M4 Scheduling expansion                             |
+| Branch baseline    | `main`; A5 delivery commit `e403170`, GitHub Actions run `34766425884` successful     |
+| Worktree           | Contains delivered M3.5 A1–A5; no M4 Scheduling expansion                             |
 | Linked database    | Development only; A3 Purchase version migration `20260912161049` applied              |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Create/push the cohesive M3.5-A5 delivery commit and confirm its GitHub Actions Verify plus
-migration-dry-run jobs. Keep every Scheduling dependency in M4 or later; after remote evidence,
-M3.5 is complete and the next package is the M4 Contract gate.
+Freeze the **M4 Scheduling Contract gate** before any implementation:
+
+1. Define the complete replacement Course Session calendar model and the Calendar/Today projection
+   boundary; do not reuse the removed starter or invent dates for M3 entitlement rows.
+2. Freeze Calendar agenda/day/week/month interactions, Schedule Series reconciliation, availability,
+   blocks, conflicts, concurrency, mobile alternatives, and Demo migration preview.
+3. Define the M4 merge between the schedule projection and the preserved M3 Today signals without
+   duplicating Student/Lesson authority.
 
 ## Milestone status
 
@@ -30,7 +35,7 @@ M3.5 is complete and the next package is the M4 Contract gate.
 | M1 Cloud foundation tracer             | Done        | Supabase private schema, verified identity/Workspace derivation, two-Coach isolation, migration workflow, remote CI             |
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
-| M3.5 Frontend gap filling              | In progress | A0–A4 delivered; A5 Sol/local evidence complete, remote delivery remains                                                        |
+| M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
 | M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
@@ -111,6 +116,9 @@ M3.5 is complete and the next package is the M4 Contract gate.
 - M3.5-A4 remote: commit `ae6b764`, GitHub Actions CI #13 / run `34764878712` completed in 57
   seconds with Verify and migration-dry-run jobs successful (API 9 files/27 tests; Web 11 files/51
   tests).
+- M3.5-A5 remote: commit `e403170`, GitHub Actions CI #14 / run `34766425884` completed
+  successfully; Verify and migration-dry-run jobs both succeeded (API 9 files/27 tests; Web 11
+  files/51 tests).
 - M3.5 documentation reset: targeted Prettier check and repository-wide `git diff --check` passed
   on 2026-09-12; only Git's existing LF-to-CRLF notices were emitted.
 
@@ -128,6 +136,17 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-13 — LOG-058 — M3.5-A5 delivered; M3.5 complete
+
+- **Scope:** pushed the A5 product-convergence commit and checked its exact GitHub Actions run.
+- **Outcome:** commit `e403170` is on `origin/main`; M3.5 is complete. All currently supported
+  M0–M3 Web surfaces have passed their A5 product/interaction convergence and CI delivery without
+  adding a Scheduling model, Course Session calendar operation, or fake unavailable feature.
+- **Verification:** GitHub Actions CI #14 / run `34766425884` completed successfully. `verify`
+  succeeded (API 9 files/27 tests; Web 11 files/51 tests), and `migration-dry-run` succeeded.
+- **Next:** freeze M4's complete Scheduling Contract; do not implement M4 before it defines the
+  replacement model, projections, interactions, concurrency, and migration boundary.
 
 ### 2026-09-13 — LOG-057 — M3.5-A5 Sol and local integration complete
 
