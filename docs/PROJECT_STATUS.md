@@ -7,19 +7,20 @@
 
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M6 — Public Capability Links**                                                      |
-| Current package    | **M6 Terra / Sol / CI**                                                               |
-| Package state      | **Terra/Sol and local/live/browser CI gates passed; remote delivery pending**         |
-| Completed baseline | M0–M5 Done; M5 delivery commit `5afa212`, GitHub Actions run `34956661567` successful |
-| Branch baseline    | `main`; M5 delivery commit `5afa212`, GitHub Actions run `34956661567` successful     |
-| Worktree           | M6 complete and verified locally; cohesive delivery commit pending                    |
+| Active phase       | **M6 — Public Capability Links delivered**                                            |
+| Current package    | **M6 complete**                                                                       |
+| Package state      | **Done**                                                                              |
+| Completed baseline | M0–M6 Done; M6 delivery commit `658ce1a`, GitHub Actions run `34966898151` successful |
+| Branch baseline    | `main`; M6 delivery commit `658ce1a6f59007f7ad9f709445b5989dd69d778b`                 |
+| Worktree           | Status evidence update pending commit                                                 |
 | Linked database    | Development only; M6 migration `20260915111114` applied; dry-run up to date           |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Create and push the cohesive M6 delivery commit, then confirm GitHub Actions Verify and
-migration-dry-run for the exact SHA. Record the observed remote run before marking M6 Done.
+Stop at the completed M6 milestone boundary. Await explicit Product Owner authorization before
+entering M7 Contract to freeze local persistence, operation-queue, conflict/recovery, and ordered
+Demo export/preview/import behaviour.
 
 ## Milestone status
 
@@ -32,7 +33,7 @@ migration-dry-run for the exact SHA. Record the observed remote run before marki
 | M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
 | M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M6 Public Capability Links             | CI          | Terra/Sol and all local/live/browser gates passed; commit, push, and exact-SHA remote jobs remain                               |
+| M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
@@ -165,6 +166,9 @@ migration-dry-run for the exact SHA. Record the observed remote run before marki
 - M5 remote: commit `5afa212` pushed to `origin/main`; GitHub Actions CI #19 / run `34956661567`
   completed successfully. The `verify` and `migration-dry-run` jobs both succeeded for exact SHA
   `5afa2124e98f5fea74310516cf85119d7c62e006`.
+- M6 remote: delivery commit `658ce1a` pushed to `origin/main`; GitHub Actions run `34966898151`
+  completed successfully. Jobs `verify` and `migration-dry-run` both succeeded for exact SHA
+  `658ce1a6f59007f7ad9f709445b5989dd69d778b`.
 
 Current development validation commands:
 
@@ -184,6 +188,18 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-077 — M6 delivered with exact-SHA remote CI
+
+- **Scope:** deliver the cohesive M6 implementation and observe, rather than infer, its remote CI
+  result.
+- **Outcome:** commit `658ce1a` is on `origin/main`. Public Capability Links is Done and the M0–M6
+  baseline is protected.
+- **Verification:** GitHub Actions run `34966898151` completed successfully for exact SHA
+  `658ce1a6f59007f7ad9f709445b5989dd69d778b`; job `verify` succeeded in 30 seconds and
+  `migration-dry-run` succeeded in 25 seconds.
+- **Next:** stop at the M6 milestone boundary and await Product Owner authorization to enter M7
+  Contract.
 
 ### 2026-09-15 — LOG-076 — M6 cleanup recovered and every local/live gate passed
 
