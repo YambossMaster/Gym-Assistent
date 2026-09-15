@@ -135,6 +135,97 @@ export interface WorkspaceSettings {
   updatedAt: string
 }
 
+export type WeightUnit = 'kg' | 'lb'
+export type PerformanceMetric = 'weight' | 'reps'
+export interface ExerciseDefinition {
+  id: string
+  catalogKey: string | null
+  name: string
+  equipment: string
+  bodyParts: string[]
+  movementType: '系統動作' | '局部動作'
+  performanceMetric: PerformanceMetric
+  isSystem: boolean
+  favorite: boolean
+  version: number
+}
+export interface ExerciseLibrary {
+  definitions: ExerciseDefinition[]
+  filters: { equipment: string[]; bodyParts: string[]; movementTypes: string[] }
+  totals: { all: number; favorite: number; custom: number }
+}
+export interface TrainingSet {
+  id: string
+  plannedWeight: number | null
+  plannedReps: number | null
+  actualReps: number | null
+  rpe: number | null
+  result: 'completed' | 'incomplete' | null
+  unit: WeightUnit
+}
+export interface TrainingExercise {
+  id: string
+  definitionId: string
+  definitionName: string
+  equipment: string
+  bodyParts: string[]
+  movementType: '系統動作' | '局部動作'
+  performanceMetric: PerformanceMetric
+  sets: TrainingSet[]
+}
+export interface SessionTraining {
+  session: CalendarSession & {
+    startsAt: string
+    endsAt: string
+    location: string
+    version: number
+    isLegacy: false
+  }
+  lessonSummary: StudentDetail['lessonSummary']
+  record: {
+    id: string | null
+    version: number
+    privateNote: string
+    exercises: TrainingExercise[]
+    updatedAt: string | null
+  }
+  defaultWeightUnit: WeightUnit
+  exerciseSummaries: Array<{
+    occurrenceId: string
+    definitionId: string
+    metric: PerformanceMetric
+    unit: WeightUnit | null
+    current: number | null
+    previous: number | null
+    personal: number | null
+    history: Array<{ sessionId: string; startsAt: string; value: number; unit: WeightUnit | null }>
+  }>
+  allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
+}
+export type TrainingDraftPayload = {
+  privateNote: string
+  exercises: Array<{
+    id: string
+    definitionId: string
+    definitionName?: string
+    definitionVersion?: number
+    sets: TrainingSet[]
+  }>
+  recordVersion: number
+  sessionVersion: number
+  operationId: string
+}
+export interface PerformanceEntry {
+  definitionId: string
+  metric: PerformanceMetric
+  name: string
+  sessionCount: number
+  latest: number
+  personal: number
+  unit: WeightUnit | null
+  latestAt: string
+}
+
 export interface UpdateWorkspaceSettingsInput {
   displayName: string
   timeZone: string
@@ -328,6 +419,161 @@ export async function getSession(accessToken: string, sessionId: string) {
     lessonSummary: StudentDetail['lessonSummary'] | null
     conflicts: CalendarProjection['sessions'][number]['conflicts']
   }>(`/api/v1/sessions/${sessionId}`, accessToken)
+}
+
+export async function getExerciseLibrary(
+  accessToken: string,
+  filters: {
+    q?: string
+    equipment?: string
+    bodyParts?: string[]
+    movementType?: string
+    view?: 'all' | 'favorite' | 'custom'
+  } = {}
+) {
+  const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.equipment) params.set('equipment', filters.equipment)
+  for (const part of filters.bodyParts ?? []) params.append('bodyPart', part)
+  if (filters.movementType) params.set('movementType', filters.movementType)
+  if (filters.view) params.set('view', filters.view)
+  return request<ExerciseLibrary>(`/api/v1/exercises?${params}`, accessToken)
+}
+export async function createExercise(
+  accessToken: string,
+  input: Omit<ExerciseDefinition, 'id' | 'catalogKey' | 'isSystem' | 'favorite' | 'version'> & {
+    operationId: string
+  }
+) {
+  return (
+    await request<{ definition: ExerciseDefinition }>(
+      '/api/v1/exercises',
+      accessToken,
+      json('POST', input)
+    )
+  ).definition
+}
+export async function updateExercise(
+  accessToken: string,
+  id: string,
+  input: Omit<ExerciseDefinition, 'id' | 'catalogKey' | 'isSystem' | 'favorite'> & {
+    operationId: string
+  }
+) {
+  return (
+    await request<{ definition: ExerciseDefinition }>(
+      `/api/v1/exercises/${id}`,
+      accessToken,
+      json('PATCH', input)
+    )
+  ).definition
+}
+export async function setExerciseFavorite(
+  accessToken: string,
+  id: string,
+  input: { favorite: boolean; version: number; operationId: string }
+) {
+  return (
+    await request<{ definition: ExerciseDefinition }>(
+      `/api/v1/exercises/${id}/favorite`,
+      accessToken,
+      json('PUT', input)
+    )
+  ).definition
+}
+export async function removeExercise(accessToken: string, id: string, version: number) {
+  return request<void>(
+    `/api/v1/exercises/${id}`,
+    accessToken,
+    json('DELETE', { confirmation: 'DELETE', version, operationId: crypto.randomUUID() })
+  )
+}
+export async function getTrainingPreference(accessToken: string) {
+  return (
+    await request<{ preference: { defaultWeightUnit: WeightUnit; version: number } }>(
+      '/api/v1/training/preferences',
+      accessToken
+    )
+  ).preference
+}
+export async function setTrainingPreference(
+  accessToken: string,
+  defaultWeightUnit: WeightUnit,
+  version: number
+) {
+  return (
+    await request<{ preference: { defaultWeightUnit: WeightUnit; version: number } }>(
+      '/api/v1/training/preferences',
+      accessToken,
+      json('PUT', { defaultWeightUnit, version, operationId: crypto.randomUUID() })
+    )
+  ).preference
+}
+export async function getSessionTraining(accessToken: string, sessionId: string) {
+  return (
+    await request<{ training: SessionTraining }>(
+      `/api/v1/sessions/${sessionId}/training`,
+      accessToken
+    )
+  ).training
+}
+export async function saveSessionTraining(
+  accessToken: string,
+  sessionId: string,
+  input: TrainingDraftPayload,
+  complete = false
+) {
+  return (
+    await request<{ training: SessionTraining }>(
+      `/api/v1/sessions/${sessionId}/training${complete ? '/complete' : ''}`,
+      accessToken,
+      json(complete ? 'POST' : 'PUT', input)
+    )
+  ).training
+}
+export async function getTrainingDefaults(
+  accessToken: string,
+  sessionId: string,
+  definitionId: string,
+  metric: PerformanceMetric
+) {
+  const params = new URLSearchParams({ definitionId, metric })
+  return (
+    await request<{
+      defaults: Array<{
+        plannedWeight: number | null
+        plannedReps: number | null
+        unit: WeightUnit
+      }>
+    }>(`/api/v1/sessions/${sessionId}/training/defaults?${params}`, accessToken)
+  ).defaults
+}
+export async function getStudentPerformance(accessToken: string, studentId: string) {
+  return (
+    await request<{ performance: PerformanceEntry[] }>(
+      `/api/v1/students/${studentId}/performance`,
+      accessToken
+    )
+  ).performance
+}
+export async function getStudentTrend(
+  accessToken: string,
+  studentId: string,
+  definitionId: string,
+  metric: PerformanceMetric
+) {
+  return (
+    await request<{
+      trend: PerformanceEntry & {
+        points: Array<{
+          sessionId: string
+          startsAt: string
+          value: number
+          unit: WeightUnit | null
+        }>
+      }
+    }>(`/api/v1/students/${studentId}/performance/${definitionId}?metric=${metric}`, accessToken)
+  ).trend
 }
 
 export async function createSession(
@@ -604,6 +850,10 @@ async function request<T>(path: string, accessToken: string, init: RequestInit =
   }
 
   return (await response.json()) as T
+}
+
+function json(method: string, body: unknown): RequestInit {
+  return { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
 }
 
 async function requestPublic<T>(path: string, init: RequestInit): Promise<T> {

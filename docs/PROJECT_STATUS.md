@@ -8,21 +8,19 @@
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Active phase       | **M5 — Training and Exercise Library**                                                |
-| Current package    | **M5 Contract**                                                                       |
-| Package state      | **M4 Done; M5 Contract is the next Product Owner gate**                               |
+| Current package    | **M5 CI delivery**                                                                    |
+| Package state      | **M5 Terra and Sol complete; final local rerun and remote CI pending**                |
 | Completed baseline | M0–M4 Done; M4 delivery commit `dc83d92`, GitHub Actions run `34947956256` successful |
 | Branch baseline    | `main`; M4 delivery commit `dc83d92`, GitHub Actions run `34947956256` successful     |
-| Worktree           | Clean after the M4 Status delivery commit                                             |
-| Linked database    | Development only; M4 Scheduling migration `20260913164133` applied                    |
+| Worktree           | M5 implementation and evidence are complete; delivery commit pending                  |
+| Linked database    | Development only; M5 Training migrations through `20260915100537` applied             |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Freeze the **M5 Contract gate** in `docs/` against the approved Roadmap and archived Demo: define
-Exercise Library, Training Record/Exercise/Set, stable definition identity plus snapshots,
-weight/reps and kg/lb conversion, completed-set/history semantics, Session autosave/offline/flush,
-completion/reopen, trends, picker interactions, responsive acceptance, and required evidence. Do
-not implement Terra until the Product Owner approves the frozen Contract.
+Finish **M5 CI delivery**: rerun the exact local matrix, commit and push the complete Training slice,
+confirm GitHub Actions Verify and migration-dry-run for the delivered commit, then record M5 Done
+and stop at the milestone boundary. M6 requires its own Product Owner-approved Contract.
 
 ## Milestone status
 
@@ -34,7 +32,7 @@ not implement Terra until the Product Owner approves the frozen Contract.
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
 | M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
 | M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M5 Training and Exercise Library       | Not started | Course Session dependency satisfied by M4; Contract gate is next                                                                |
+| M5 Training and Exercise Library       | CI          | Terra, Sol, linked migrations, live E2E, and desktop/exact-mobile acceptance passed; remote CI pending                          |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
 | M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
@@ -85,11 +83,22 @@ not implement Terra until the Product Owner approves the frozen Contract.
 - Deterministic Demo scheduling preview validates entity counts, rejections, preserved legacy
   entitlement rows, conflict reports, and per-entity checksums without importing Demo persistence.
 
+### M5 Training and Exercise Library
+
+- Private-schema Exercise Definition, Training Preference, Training Record, occurrence snapshot,
+  Set, and seven-day mutation-receipt data now sit behind a tenant-scoped Training Module and
+  dedicated API role. The formal 100-item catalog uses stable keys and bootstrap-once semantics.
+- Session Training supports coalesced autosave, identity/session/tab-scoped IndexedDB recovery,
+  immutable occurrence snapshots, explicit conflicts, atomic completion, completed-record edits,
+  reopen, qualified current/previous/personal bests, and mixed-unit display conversion.
+- `/exercises`, Session Training, Student performance/trends, and Settings weight preference now
+  match FORM's desktop and mobile visual language without importing Demo persistence or private
+  Coach notes into Student projections.
+
 ## Remaining route boundaries
 
-- `/today`, `/calendar`, `/sessions/:id`, and the Student schedule section now expose their
-  server-authoritative M4 projections. Training details remain unavailable until M5.
-- `/exercises` remains a placeholder owned by M5.
+- `/today`, `/calendar`, `/sessions/:id`, Student scheduling/performance, `/exercises`, and M5
+  Settings now expose their server-authoritative projections.
 - `/t/:token` and `/r/:token` are absent and currently fall through the authenticated route path;
   they belong to M6 and must eventually mount outside Auth.
 - Some rendered copy describes implementation state rather than helping a Coach complete a task.
@@ -140,6 +149,20 @@ not implement Terra until the Product Owner approves the frozen Contract.
   scrolling, Today schedule, Student Series UI, no page overflow, and no console errors.
 - M4 remote: commit `dc83d92`, GitHub Actions CI #17 / run `34947956256` completed in 58 seconds;
   Verify and migration-dry-run succeeded (API 12 files/43 tests; Web 14 files/61 tests).
+- M5 Terra/Sol local: root check passed (API 14 files/51 tests; Web 15 files/65 tests), root builds
+  passed with the existing over-500-kB advisory, and `git diff --check` passed. Demo preview passed
+  with 100 stable catalog keys, checksum
+  `0d915287e55739226788ff7c984a729bf734c1534b87d48eef8961ba632ac08a`, zero rejections,
+  preserved legacy rows, and zero invented historical Training facts.
+- M5 linked/live: four official CLI-created Training migrations through `20260915100537` are
+  applied; final dry-run is up to date and linked `app_private` lint has no errors. Isolated M5 E2E
+  passed catalog stability, receipt retry/mismatch, atomic completion, completed-record editing,
+  performance allowlist, reopen, two-Coach isolation, and cleanup. M4 live regression also passed.
+- M5 advisors/browser: security retains only the accepted leaked-password-protection warning; M5
+  RLS and foreign-key performance findings were resolved, leaving only pre-existing M4/unused-index
+  informational notices. Authenticated desktop and exact 390×844 acceptance passed Session editor,
+  Exercise Library, Settings preference, Student performance/trend, autosave state, mobile sticky
+  actions/navigation, and isolated fixture cleanup.
 
 Current development validation commands:
 
@@ -149,6 +172,8 @@ npm run build
 npm run db:push:dry
 npm run e2e:m4 --workspace @gym-assistant/api
 npm run preview:m4-demo --workspace @gym-assistant/api
+npm run preview:m5 --workspace @gym-assistant/api
+npm run e2e:m5 --workspace @gym-assistant/api
 git diff --check
 ```
 
@@ -156,6 +181,50 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-072 — M5 Training locally complete
+
+- **Scope:** implemented the frozen M5 Contract through Terra and Sol: private Training schema,
+  tenant-scoped Module/repository/HTTP operations, formal catalog bootstrap, typed Coach-scoped Web
+  queries, IndexedDB draft coordination, and FORM-converged Session/Exercises/Student/Settings UI.
+- **Outcome:** Coaches can manage a stable 100-item/custom Exercise Library, record and recover
+  Session Training with immutable snapshots and explicit conflicts, complete/reopen Sessions, edit
+  completed records, choose display units, and inspect qualified Student performance without
+  exposing private notes. Dedicated-role RLS uses verified transaction-local Workspace context.
+- **Verification:** root check/build, deterministic preview, linked migrations/dry-run/lint,
+  security/performance advisors, M4 regression, isolated M5 live E2E, authenticated desktop, and
+  exact 390×844 acceptance passed. All isolated browser/E2E fixtures were removed. The Web build
+  retains the existing bundle-size advisory; leaked-password protection remains the accepted
+  development warning. Remote CI is not yet claimed.
+- **Next:** commit and push M5, confirm GitHub Actions Verify and migration-dry-run, record M5 Done,
+  and stop at the milestone boundary.
+
+### 2026-09-15 — LOG-071 — M5 Contract frozen and implementation authorized
+
+- **Scope:** Product Owner approved the complete M5 Contract and requested Sol as the implementing
+  agent.
+- **Outcome:** [`M5-CONTRACT.md`](M5-CONTRACT.md) is frozen. Sol may execute the required Terra,
+  Sol, and CI gates continuously without reopening settled scope or skipping gate evidence.
+- **Verification:** the approved document and Status handoff were updated; implementation evidence
+  is not claimed at this gate.
+- **Next:** Sol implements M5 Terra from Contract section 9, proves that gate, then proceeds through
+  Sol convergence and CI delivery.
+
+### 2026-09-15 — LOG-070 — M5 Contract prepared for approval
+
+- **Scope:** Product Owner authorized entry into the M5 Contract gate. Inspected the archived
+  Session/Library/Student performance flows, domain rules, catalog, and formal M4 Module seams.
+- **Outcome:** [`M5-CONTRACT.md`](M5-CONTRACT.md) specifies private definitions and immutable
+  snapshots, set/history rules, unit conversion, versioned operations and atomic completion,
+  identity-scoped draft recovery, route copy/states, responsive acceptance, and the evidence matrix.
+  Explicit formal decisions are collected in section 2; this document awaits approval to freeze.
+- **Verification:** M4 baseline commits and clean starting worktree were observed; GitHub connector
+  rechecked run `34947956256`, with Verify and migration-dry-run successful. Contract consistency
+  review, targeted Prettier check, and `git diff --check` passed. No M5 implementation, migration,
+  live/browser acceptance, commit/push, or remote CI is claimed.
+- **Known issue:** Architecture section 6.2 still describes the pre-M4 starting point. M5 uses
+  the delivered M4 Contract, implementation, and LOG-069 as the current dependency evidence.
+- **Next:** Product Owner approves the concrete Contract, then freeze it and begin M5 Terra.
 
 ### 2026-09-15 — LOG-069 — M4 Scheduling delivered
 

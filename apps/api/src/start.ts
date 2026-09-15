@@ -11,6 +11,8 @@ import { SupabaseAccountDeletionExecutor } from './account-lifecycle/supabase-ac
 import { SupabaseRegistrationEmailLookup } from './account-registration/supabase-registration-email-lookup.js'
 import { SchedulingModule } from './scheduling/scheduling-module.js'
 import { PostgresSchedulingRepository } from './adapters/postgres-scheduling-repository.js'
+import { PostgresTrainingRepository } from './adapters/postgres-training-repository.js'
+import { TrainingModule } from './training/training-module.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -43,6 +45,7 @@ const server = buildServer({
     ...(config.SUPABASE_SECRET_KEY ? { secretKey: config.SUPABASE_SECRET_KEY } : {}),
   }),
   scheduling: new SchedulingModule(new PostgresSchedulingRepository(pool)),
+  training: new TrainingModule(new PostgresTrainingRepository(pool)),
   logger: true,
 })
 

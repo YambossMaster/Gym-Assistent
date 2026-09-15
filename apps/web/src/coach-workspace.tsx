@@ -43,6 +43,8 @@ import { SchedulingDialog } from './pages/calendar/SchedulingDialog'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
 import { supabase } from './supabase'
+import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
+import type { PerformanceEntry } from './api'
 
 export function StudentsPage({ session }: { session: Session }) {
   const queryClient = useQueryClient()
@@ -345,6 +347,7 @@ export function StudentDetailPage({
           timeZone={timeZone}
           schedule={detail.schedule}
         />
+        <StudentPerformance session={session} studentId={studentId} />
         <form className="detail-section" onSubmit={save}>
           <h2>基本資料</h2>
           <label>
@@ -1461,6 +1464,134 @@ function formatMoney(amountMinor: number, currency: string) {
     currency,
     maximumFractionDigits: currency === 'TWD' ? 0 : undefined
   }).format(amountMinor)
+}
+
+function StudentPerformance({ session, studentId }: { session: Session; studentId: string }) {
+  const query = useStudentPerformance(session, studentId)
+  const [selected, setSelected] = useState<PerformanceEntry | null>(null)
+  return (
+    <section className="detail-section performance-directory">
+      <div className="section-heading">
+        <div>
+          <span>PERFORMANCE</span>
+          <h2>動作表現</h2>
+        </div>
+      </div>
+      {query.isLoading ? (
+        <p>載入表現中…</p>
+      ) : query.isError ? (
+        <p>
+          無法載入動作表現。 <button onClick={() => void query.refetch()}>重試</button>
+        </p>
+      ) : query.data?.length ? (
+        <div className="performance-list">
+          {query.data.map((entry) => (
+            <button
+              key={`${entry.definitionId}:${entry.metric}`}
+              onClick={() => setSelected(entry)}
+            >
+              <span>
+                <strong>{entry.name}</strong>
+                <small>
+                  {entry.sessionCount} 堂 · {entry.metric === 'weight' ? '重量' : '次數'}
+                </small>
+              </span>
+              <span>
+                個人最佳{' '}
+                <strong>
+                  {entry.personal}
+                  {entry.metric === 'weight' ? ` ${entry.unit}` : ' 次'}
+                </strong>
+              </span>
+              <ArrowRight />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <strong>尚無紀錄</strong>
+          <p>完成課堂並標記已完成的組別後，表現會顯示在這裡。</p>
+        </div>
+      )}
+      {selected && (
+        <PerformanceTrend
+          session={session}
+          studentId={studentId}
+          entry={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </section>
+  )
+}
+
+function PerformanceTrend({
+  session,
+  studentId,
+  entry,
+  onClose
+}: {
+  session: Session
+  studentId: string
+  entry: PerformanceEntry
+  onClose: () => void
+}) {
+  const query = useStudentTrend(session, studentId, entry.definitionId, entry.metric)
+  return (
+    <div className="dialog-backdrop">
+      <section
+        className="performance-trend"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trend-title"
+      >
+        <header>
+          <div>
+            <span>PERFORMANCE TREND</span>
+            <h2 id="trend-title">{entry.name}</h2>
+          </div>
+          <button className="icon-button" aria-label="關閉" onClick={onClose}>
+            ×
+          </button>
+        </header>
+        {query.isLoading ? (
+          <p>載入趨勢中…</p>
+        ) : query.data?.points.length ? (
+          <>
+            <div className="trend-chart" aria-hidden="true">
+              {query.data.points.map((point, index, all) => (
+                <i
+                  key={point.sessionId}
+                  style={{
+                    height: `${Math.max(12, (point.value / Math.max(...all.map((x) => x.value))) * 100)}%`
+                  }}
+                />
+              ))}
+            </div>
+            <ol className="trend-values">
+              {query.data.points.map((point) => (
+                <li key={point.sessionId}>
+                  <time>{new Date(point.startsAt).toLocaleDateString('zh-TW')}</time>
+                  <strong>
+                    {point.value}
+                    {entry.metric === 'weight' ? ` ${point.unit}` : ' 次'}
+                  </strong>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : (
+          <div className="empty-state">
+            <strong>還沒有可繪製的最佳表現</strong>
+            <p>只有標記為已完成的組別會進入最佳表現紀錄。</p>
+          </div>
+        )}
+        <button className="secondary-button" onClick={onClose}>
+          返回動作列表
+        </button>
+      </section>
+    </div>
+  )
 }
 function readError(error: unknown) {
   if (error instanceof ApiError && error.status === 401) return '登入已失效，請重新登入。'

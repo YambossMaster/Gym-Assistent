@@ -23,6 +23,8 @@ import { type RegistrationEmailLookup } from '../account-registration/registrati
 import { RegistrationLookupUnavailableError } from '../account-registration/supabase-registration-email-lookup.js'
 import { SchedulingModule } from '../scheduling/scheduling-module.js'
 import { SchedulingVersionConflictError } from '../scheduling/scheduling-repository.js'
+import { TrainingModule } from '../training/training-module.js'
+import { TrainingVersionConflictError } from '../training/training-repository.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -32,6 +34,7 @@ export interface ServerDependencies {
   accountLifecycle: AccountLifecycleModule
   registrationEmails: RegistrationEmailLookup
   scheduling?: SchedulingModule
+  training?: TrainingModule
   logger?: boolean
 }
 
@@ -133,6 +136,7 @@ export function buildServer({
   accountLifecycle,
   registrationEmails,
   scheduling,
+  training,
   logger = false,
 }: ServerDependencies): FastifyInstance {
   const server = Fastify({
@@ -166,6 +170,14 @@ export function buildServer({
         error: 'version_conflict',
         reason: 'scheduling_version_conflict',
         message: error.message,
+        current: error.current,
+      })
+    }
+    if (error instanceof TrainingVersionConflictError) {
+      return reply.status(409).send({
+        error: 'version_conflict',
+        reason: error.reason,
+        message: 'Training data changed on another device.',
         current: error.current,
       })
     }
@@ -424,6 +436,195 @@ export function buildServer({
         return reply.status(204).send()
       },
     )
+  }
+
+  if (training) {
+    server.get<{
+      Querystring: {
+        q?: string
+        equipment?: string
+        bodyPart?: string | string[]
+        movementType?: string
+        view?: string
+      }
+    }>('/v1/exercises', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const bodyParts = request.query.bodyPart
+        ? Array.isArray(request.query.bodyPart)
+          ? request.query.bodyPart
+          : [request.query.bodyPart]
+        : undefined
+      const library = await training.listDefinitions(identity, {
+        ...(request.query.q ? { q: request.query.q } : {}),
+        ...(request.query.equipment ? { equipment: request.query.equipment } : {}),
+        ...(bodyParts ? { bodyParts } : {}),
+        ...(request.query.movementType ? { movementType: request.query.movementType } : {}),
+        ...(request.query.view ? { view: request.query.view } : {}),
+      })
+      await accountLifecycle.recordActivity(identity)
+      return library
+    })
+    server.post<{ Body: unknown }>('/v1/exercises', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const definition = await training.createDefinition(identity, request.body)
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(201).send({ definition })
+    })
+    server.patch<{ Params: { definitionId: string }; Body: unknown }>(
+      '/v1/exercises/:definitionId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const definition = await training.updateDefinition(
+          identity,
+          request.params.definitionId,
+          request.body,
+        )
+        if (!definition)
+          return reply
+            .status(404)
+            .send({ error: 'exercise_not_found', message: 'Exercise was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { definition }
+      },
+    )
+    server.put<{ Params: { definitionId: string }; Body: unknown }>(
+      '/v1/exercises/:definitionId/favorite',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const definition = await training.favoriteDefinition(
+          identity,
+          request.params.definitionId,
+          request.body,
+        )
+        if (!definition)
+          return reply
+            .status(404)
+            .send({ error: 'exercise_not_found', message: 'Exercise was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { definition }
+      },
+    )
+    server.delete<{ Params: { definitionId: string }; Body: unknown }>(
+      '/v1/exercises/:definitionId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const deleted = await training.deleteDefinition(
+          identity,
+          request.params.definitionId,
+          request.body,
+        )
+        if (!deleted)
+          return reply
+            .status(404)
+            .send({ error: 'exercise_not_found', message: 'Exercise was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(204).send()
+      },
+    )
+    server.get('/v1/training/preferences', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return { preference: await training.getPreference(identity) }
+    })
+    server.put<{ Body: unknown }>('/v1/training/preferences', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const preference = await training.setPreference(identity, request.body)
+      await accountLifecycle.recordActivity(identity)
+      return { preference }
+    })
+    server.get<{ Params: { sessionId: string } }>(
+      '/v1/sessions/:sessionId/training',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const workspace = await training.getSessionTraining(identity, request.params.sessionId)
+        if (!workspace)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { training: workspace }
+      },
+    )
+    server.put<{ Params: { sessionId: string }; Body: unknown }>(
+      '/v1/sessions/:sessionId/training',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const workspace = await training.saveSessionTraining(
+          identity,
+          request.params.sessionId,
+          request.body,
+        )
+        if (!workspace)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { training: workspace }
+      },
+    )
+    server.post<{ Params: { sessionId: string }; Body: unknown }>(
+      '/v1/sessions/:sessionId/training/complete',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const workspace = await training.saveSessionTraining(
+          identity,
+          request.params.sessionId,
+          request.body,
+          true,
+        )
+        if (!workspace)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { training: workspace }
+      },
+    )
+    server.get<{
+      Params: { sessionId: string }
+      Querystring: { definitionId: string; metric: string }
+    }>('/v1/sessions/:sessionId/training/defaults', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const defaults = await training.getDefaults(
+        identity,
+        request.params.sessionId,
+        request.query.definitionId,
+        request.query.metric,
+      )
+      if (!defaults)
+        return reply
+          .status(404)
+          .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+      return { defaults }
+    })
+    server.get<{ Params: { studentId: string } }>(
+      '/v1/students/:studentId/performance',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const performance = await training.getStudentPerformance(identity, request.params.studentId)
+        if (!performance)
+          return reply
+            .status(404)
+            .send({ error: 'student_not_found', message: 'Student was not found.' })
+        return { performance }
+      },
+    )
+    server.get<{
+      Params: { studentId: string; definitionId: string }
+      Querystring: { metric: string }
+    }>('/v1/students/:studentId/performance/:definitionId', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const trend = await training.getStudentTrend(
+        identity,
+        request.params.studentId,
+        request.params.definitionId,
+        request.query.metric,
+      )
+      if (!trend)
+        return reply
+          .status(404)
+          .send({ error: 'student_not_found', message: 'Student was not found.' })
+      return { trend }
+    })
   }
 
   server.get('/v1/workspace-settings', async (request) => {

@@ -13,8 +13,10 @@
     "e2e:m1": "node --env-file=.env.e2e --import tsx src/e2e/run-m1-live.ts",
     "e2e:m3": "node --env-file=.env.e2e --import tsx src/e2e/run-m3-live.ts",
     "e2e:m4": "node --env-file=.env.e2e --import tsx src/e2e/run-m4-live.ts",
+    "e2e:m5": "node --env-file=.env.e2e --import tsx src/e2e/run-m5-live.ts",
     "migration:preview:m3": "node --import tsx src/migration/preview-demo-student-entitlement.ts",
     "migration:preview:m4": "node --import tsx src/migration/preview-demo-scheduling.ts",
+    "preview:m5": "node --import tsx src/migration/run-preview-m5-training.ts",
     "start": "node dist/start.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"

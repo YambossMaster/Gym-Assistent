@@ -9,5 +9,16 @@ export const queryKeys = {
     ['schedule-series', coachId, studentId] as const,
   student: (coachId: string, studentId: string) => ['student', coachId, studentId] as const,
   settings: (coachId: string) => ['workspace-settings', coachId] as const,
-  lifecycle: (coachId: string) => ['account-lifecycle', coachId] as const
+  lifecycle: (coachId: string) => ['account-lifecycle', coachId] as const,
+  exerciseLibrary: (coachId: string, filters: unknown = {}) =>
+    ['exercise-library', coachId, filters] as const,
+  trainingPreference: (coachId: string) => ['training-preference', coachId] as const,
+  sessionTraining: (coachId: string, sessionId: string) =>
+    ['session-training', coachId, sessionId] as const,
+  trainingDefaults: (coachId: string, sessionId: string, definitionId: string, metric: string) =>
+    ['training-defaults', coachId, sessionId, definitionId, metric] as const,
+  studentPerformance: (coachId: string, studentId: string) =>
+    ['student-performance', coachId, studentId] as const,
+  studentTrend: (coachId: string, studentId: string, definitionId: string, metric: string) =>
+    ['student-trend', coachId, studentId, definitionId, metric] as const
 }

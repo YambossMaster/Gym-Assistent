@@ -18,6 +18,7 @@ import { useSchedulingMutations } from '../calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from '../calendar/calendar-time'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { Confirmation } from '../../shared/primitives'
+import { TrainingWorkspace } from '../training/TrainingWorkspace'
 
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
@@ -136,13 +137,6 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
         {item.status === 'scheduled' ? (
           <>
             <button
-              className="primary-button compact"
-              disabled={pending}
-              onClick={() => transition('complete')}
-            >
-              <CheckCircle2 /> 完成上課
-            </button>
-            <button
               className="danger-outline-button"
               disabled={pending}
               onClick={() => transition('cancel')}
@@ -174,10 +168,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
           {notice}
         </p>
       ) : null}
-      <section className="session-unavailable">
-        <h2>訓練紀錄</h2>
-        <p>課程安排已準備完成；訓練內容與動作紀錄會在下一個訓練功能階段提供。</p>
-      </section>
+      <TrainingWorkspace session={session} sessionId={item.id} />
       {editing ? (
         <SessionEditor
           item={item}
@@ -206,7 +197,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
       {deleting ? (
         <Confirmation
           title="永久刪除這堂課？"
-          text="只有尚未完成、未連結固定課表的課程可以刪除。"
+          text="只有尚未完成、未連結固定課表的課程可以刪除。這堂課的訓練紀錄也會一併永久刪除。"
           confirmation={confirmation}
           onConfirmationChange={setConfirmation}
           onCancel={() => {

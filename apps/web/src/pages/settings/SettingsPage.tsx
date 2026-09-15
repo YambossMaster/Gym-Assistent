@@ -8,6 +8,7 @@ import { Confirmation, Page, SettingsPanelHeading } from '../../shared/primitive
 import { supabase } from '../../supabase'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
+import { useTrainingMutations, useTrainingPreference } from '../training/queries'
 
 export function SettingsPage({ session }: { session: Session }) {
   const [message, setMessage] = useState('')
@@ -126,6 +127,7 @@ export function SettingsPage({ session }: { session: Session }) {
             onImmediateDelete={() => setImmediateDelete(true)}
           />
         </section>
+        <TrainingPreferencePanel session={session} />
         {message && <p className="form-notice">{message}</p>}
       </section>
       {deletionRequestOpen && (
@@ -157,6 +159,46 @@ export function SettingsPage({ session }: { session: Session }) {
         />
       )}
     </Page>
+  )
+}
+
+function TrainingPreferencePanel({ session }: { session: Session }) {
+  const query = useTrainingPreference(session)
+  const mutations = useTrainingMutations(session)
+  if (query.isLoading)
+    return (
+      <section className="settings-panel">
+        <span className="panel-loading">正在載入訓練設定</span>
+      </section>
+    )
+  if (query.isError || !query.data)
+    return (
+      <section className="settings-panel settings-panel-error">
+        <h2>暫時無法讀取訓練設定</h2>
+        <button onClick={() => void query.refetch()}>重新載入</button>
+      </section>
+    )
+  return (
+    <section className="settings-panel training-preference">
+      <SettingsPanelHeading eyebrow="TRAINING" title="訓練設定" />
+      <label>
+        預設重量單位
+        <select
+          value={query.data.defaultWeightUnit}
+          disabled={mutations.preference.isPending}
+          onChange={(event) =>
+            mutations.preference.mutate({
+              unit: event.target.value as 'kg' | 'lb',
+              version: query.data!.version
+            })
+          }
+        >
+          <option value="kg">公斤（kg）</option>
+          <option value="lb">磅（lb）</option>
+        </select>
+      </label>
+      <p>只影響新增組別與表現顯示，不會改寫既有重量。</p>
+    </section>
   )
 }
 

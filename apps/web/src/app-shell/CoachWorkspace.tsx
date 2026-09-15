@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { getWorkspaceSettings } from '../api'
-import { RoutePlaceholder } from '../pages/RoutePlaceholder'
+import { ExercisesPage } from '../pages/exercises/ExercisesPage'
 import { StudentDetailPage, StudentsPage } from '../pages/students/StudentsPage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
@@ -82,10 +82,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
             path="/sessions/:sessionId"
             element={<SessionPage session={session} timeZone={timeZone} />}
           />
-          <Route
-            path="/exercises"
-            element={<RoutePlaceholder title="動作庫" icon={<Dumbbell />} />}
-          />
+          <Route path="/exercises" element={<ExercisesPage session={session} />} />
           <Route path="/settings" element={<SettingsPage session={session} />} />
           <Route path="*" element={<Navigate to="/today" replace />} />
         </Routes>
