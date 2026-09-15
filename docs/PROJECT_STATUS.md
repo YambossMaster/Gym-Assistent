@@ -1,31 +1,26 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-13. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-15. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M3.5 — Stage A: frontend gap filling**                                              |
-| Current package    | **M3.5 — complete**                                                                   |
-| Package state      | **M4 Contract gate next** — no Scheduling implementation is authorized                |
+| Active phase       | **M4 — Scheduling**                                                                   |
+| Current package    | **M4 CI**                                                                             |
+| Package state      | **Contract, Terra, and Sol complete locally; commit, push, and remote CI are next**   |
 | Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
 | Branch baseline    | `main`; A5 delivery commit `e403170`, GitHub Actions run `34766425884` successful     |
-| Worktree           | Contains delivered M3.5 A1–A5; no M4 Scheduling expansion                             |
-| Linked database    | Development only; A3 Purchase version migration `20260912161049` applied              |
+| Worktree           | Contains locally complete M4 Scheduling awaiting cohesive delivery                    |
+| Linked database    | Development only; M4 Scheduling migration `20260913164133` applied                    |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Freeze the **M4 Scheduling Contract gate** before any implementation:
-
-1. Define the complete replacement Course Session calendar model and the Calendar/Today projection
-   boundary; do not reuse the removed starter or invent dates for M3 entitlement rows.
-2. Freeze Calendar agenda/day/week/month interactions, Schedule Series reconciliation, availability,
-   blocks, conflicts, concurrency, mobile alternatives, and Demo migration preview.
-3. Define the M4 merge between the schedule projection and the preserved M3 Today signals without
-   duplicating Student/Lesson authority.
+Execute the **M4 CI gate** defined in [`M4-CONTRACT.md`](M4-CONTRACT.md): commit and push the locally
+verified Scheduling slice, confirm GitHub Actions Verify and migration-dry-run for the delivered
+commit, then mark M4 Done. Do not begin M5 before that evidence is recorded.
 
 ## Milestone status
 
@@ -36,7 +31,7 @@ Freeze the **M4 Scheduling Contract gate** before any implementation:
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
 | M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
-| M4 Scheduling                          | Not started | Previous starter code and development schema were removed by approved rollback; awaits a future Contract gate                   |
+| M4 Scheduling                          | In progress | Contract/Terra/Sol complete locally; API 43, Web 61, live E2E, migration checks, and desktop/390×844 acceptance passed; CI next |
 | M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
 | M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
@@ -76,13 +71,23 @@ Freeze the **M4 Scheduling Contract gate** before any implementation:
   migration `20260912103452_remove_unstarted_m4_scheduling_core` restored M3's entitlement-only
   `course_session` schema.
 
-## Confirmed M3.5 gaps
+### M4 Scheduling
 
-- `/today` now has its M3-supported signal projection locally. Course-session schedule flow remains
-  M4 work.
-- `/calendar`, `/sessions/:id`, and `/exercises` are placeholders; they belong to M4/M5.
-- `/students` and `/students/:id` now cover all existing M3 data. Nearest-session and dated-session
-  history remain absent until M4; Training performance remains absent until M5.
+- Server-authoritative Session, Series, Block, and Availability operations now use UTC storage,
+  Workspace IANA conversion, version conflicts with current state, warning-only overlaps, and
+  Coach-derived tenant isolation.
+- Calendar supports Agenda/Day/Week/Month, drag-assisted editing, recurring Block scopes, Session
+  lifecycle actions, availability editing, and accessible desktop/modal plus mobile/bottom-sheet
+  interactions. Today and Student detail expose the owned schedule projections; Session detail
+  remains scheduling-only until M5.
+- Deterministic Demo scheduling preview validates entity counts, rejections, preserved legacy
+  entitlement rows, conflict reports, and per-entity checksums without importing Demo persistence.
+
+## Remaining route boundaries
+
+- `/today`, `/calendar`, `/sessions/:id`, and the Student schedule section now expose their
+  server-authoritative M4 projections. Training details remain unavailable until M5.
+- `/exercises` remains a placeholder owned by M5.
 - `/t/:token` and `/r/:token` are absent and currently fall through the authenticated route path;
   they belong to M6 and must eventually mount outside Auth.
 - Some rendered copy describes implementation state rather than helping a Coach complete a task.
@@ -121,6 +126,16 @@ Freeze the **M4 Scheduling Contract gate** before any implementation:
   files/51 tests).
 - M3.5 documentation reset: targeted Prettier check and repository-wide `git diff --check` passed
   on 2026-09-12; only Git's existing LF-to-CRLF notices were emitted.
+- M4 local: root check passed (API 12 files/43 tests; Web 14 files/61 tests), root production builds
+  passed with the existing over-500-kB Vite advisory, and `git diff --check` passed. Linked migration
+  dry-run is up to date and linked `app_private` schema lint reports no errors.
+- M4 live: isolated two-Coach E2E passed Session stale-version/current-state handling, Availability
+  baseline conflict handling, recurring Block future/all scopes with preserved offsets, route
+  projections, Series horizon/effective boundary, tenant isolation, and cleanup; the post-run Block
+  residue count was zero. Deterministic Demo scheduling preview also passed.
+- M4 browser: authenticated desktop and exact 390×844 acceptance passed for Calendar views,
+  warning acknowledgement, modal/bottom-sheet focus and Escape restoration, Week-only horizontal
+  scrolling, Today schedule, Student Series UI, no page overflow, and no console errors.
 
 Current development validation commands:
 
@@ -128,7 +143,8 @@ Current development validation commands:
 npm run check
 npm run build
 npm run db:push:dry
-npm run e2e:m3 --workspace @gym-assistant/api
+npm run e2e:m4 --workspace @gym-assistant/api
+npm run preview:m4-demo --workspace @gym-assistant/api
 git diff --check
 ```
 
@@ -136,6 +152,165 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-068 — M4 Scheduling locally complete
+
+- **Scope:** completed the frozen M4 Contract through Terra and Sol without adding M5 Training
+  behaviour: schema/migration, Scheduling Module and Postgres adapter, HTTP and typed Web bindings,
+  Calendar/Today/Student/Session surfaces, Demo migration preview, and the required evidence paths.
+- **Outcome:** Coaches can manage dated Sessions, recurring Series and Blocks, and availability from
+  Demo-converged responsive routes. UTC/IANA conversion, version-current conflicts, warning-only
+  overlaps, reconciliation horizons/effective boundaries, tenant isolation, scoped cache
+  invalidation, lifecycle actions, and accessibility/focus behaviour remain server-authoritative
+  and covered.
+- **Verification:** root check passed (API 12 files/43 tests; Web 14 files/61 tests); root builds and
+  `git diff --check` passed; linked migration dry-run is up to date and linked schema lint has no
+  errors. Deterministic Demo preview and isolated live M4 two-Coach E2E passed with zero residual
+  test Blocks. Authenticated desktop and exact 390×844 browser acceptance passed with no horizontal
+  page overflow or console errors.
+- **Known issue:** the Web build retains the existing over-500-kB chunk advisory. Remote CI evidence
+  is not yet claimed.
+- **Next:** commit and push M4, confirm GitHub Actions Verify and migration-dry-run, then record M4
+  Done and hand off M5 Contract.
+
+### 2026-09-14 — LOG-067 — M4 Series horizon and effective-boundary delivery
+
+- **Scope:** Product Owner amended the frozen M4 Series contract with a selected future occurrence
+  boundary and bounded automatic scheduling; implemented the authorized schema, Module, private
+  Postgres adapter, typed client, test, and live-evidence changes.
+- **Outcome:** `effective_from_session_id` limits a Series PATCH to that own future scheduled
+  occurrence and later linked scheduled occurrences; omission starts at the first future linked
+  occurrence. `auto_schedule_horizon` supports `NONE`, `1_WEEK`, `2_WEEKS`, and six-month
+  `MAX_WINDOW`, and reconciliation will never create beyond its rolling cap.
+- **Verification:** migration `20260913164133_m4_scheduling` applied to linked development;
+  live M4 two-Coach E2E passed (horizon retention, selected-boundary update, isolation, cleanup).
+  API 40 tests, Web 56 tests, root build, migration dry-run, and `git diff --check` passed.
+  Local Supabase lint remains intentionally skipped because the local database is not running.
+- **Known issue:** M4 is not yet a delivered milestone: Sol Calendar/Today/Student interaction
+  convergence, browser acceptance, remote CI, and cohesive commit/push remain.
+- **Next:** perform the M4 Sol gate against the completed Terra data contract; do not add M5
+  Training behaviour.
+
+### 2026-09-14 — LOG-066 — M4 typed mutation and reconciliation binding
+
+- **Scope:** completed the independent Terra client binding and focused state coverage around the
+  existing Scheduling HTTP contract; no Sol presentation or copy was introduced.
+- **Outcome:** the Web API now types Session, Series, Block, and Availability operations; successful
+  mutations invalidate Coach-scoped Calendar, Today, Student, Series, and Session projections.
+  Accepted Series updates now re-run authorized reconciliation and report generated IDs. Calendar
+  state selection has Loading, Error, Empty, Ready, and Refreshing tests.
+- **Verification:** elevated API check passed (11 files, 36 tests); elevated Web check passed
+  (12 files, 56 tests); root check/build and `git diff --check` passed. Supabase `db lint` could
+  not connect because the local database at `127.0.0.1:54322` is not running. No migration, live
+  database, browser, push, or remote-CI result is claimed.
+- **Known issue:** future-only linked-occurrence edits need a selected occurrence/anchor input not
+  present in the frozen request shape; availability version readback and all live PostgreSQL,
+  two-Coach, Sol, and CI evidence remain outstanding.
+- **Next:** amend the Series edit request boundary, then implement and transaction-test future-only
+  persistence; do not choose that boundary in Terra.
+
+### 2026-09-14 — LOG-065 — M4 reconciliation trigger coverage
+
+- **Scope:** completed the frozen trigger wiring for the existing transactional Series reconciler.
+- **Outcome:** creating a manual Session, completing/reopening/cancelling/deleting a Session, and
+  creating/correcting/deleting a Lesson Purchase now re-run authorized Student reconciliation so
+  future coverage remains derived from current entitlement and future scheduled Sessions.
+- **Verification:** elevated API check passed (11 files, 34 tests) and `git diff --check` passed.
+- **Known issue:** M4 Terra remains in progress; future-only Series edit persistence, Student
+  schedule projections, typed Web mutations, PostgreSQL live evidence, and Sol/CI gates remain.
+- **Next:** implement the frozen Student schedule projections and their allowlist/isolation tests.
+
+### 2026-09-14 — LOG-064 — M4 transactional Series reconciliation wired
+
+- **Scope:** wired the frozen Series reconciliation planner through the private Postgres adapter and
+  the authorized explicit reconcile operation; no Sol work was added.
+- **Outcome:** reconciliation now takes a transaction-scoped advisory lock per Workspace/Student,
+  reads current entitlement and future Sessions, inserts only the planner's required future Series
+  occurrences, and returns generated IDs. The API rejects cross-Workspace Student reconciliation
+  with `404`.
+- **Verification:** elevated API check passed (11 files, 34 tests) and `git diff --check` passed.
+- **Known issue:** M4 Terra still needs direct PostgreSQL concurrency evidence, future-only Series
+  edit persistence, Student schedule projections, typed mutations, and remaining state tests.
+- **Next:** implement future-only Series edit persistence and its PostgreSQL-focused tests.
+
+### 2026-09-14 — LOG-063 — M4 Series reconciliation rule isolated
+
+- **Scope:** continued the frozen M4 Terra Series reconciliation work at its pure-rule boundary.
+- **Outcome:** added a tested reconciliation planner: it counts all future scheduled Sessions for
+  entitlement coverage, fills only the positive deficit after the latest Series occurrence, never
+  backfills, and produces no duplicates once its proposed rows exist. Deactivated Series generate
+  nothing.
+- **Verification:** API typecheck and elevated focused reconciliation tests passed (3 tests).
+- **Known issue:** persistence must still call this planner under a transaction/retry lock before it
+  can create occurrences; Series updates must also apply the frozen future-only edit semantics.
+- **Next:** wire the planner into transactional repository reconciliation and prove concurrent-safe
+  persistence before any Sol work.
+
+### 2026-09-14 — LOG-062 — M4 Terra Series creation boundary
+
+- **Scope:** continued the frozen M4 Terra gate with the initial fixed Schedule Series operations;
+  no Sol visual, interaction, or end-user-copy work was added.
+- **Outcome:** Series list/create/update HTTP operations now resolve the verified Coach Workspace.
+  Series creation derives its local cadence from the Workspace IANA time zone and atomically writes
+  the Coach-drawn anchor Session with the new Series. Series updates are versioned and return the
+  current authorized Series under the existing `409` conflict envelope.
+- **Verification:** elevated API check passed (10 files, 30 tests); elevated Web check passed
+  (11 files, 51 tests); root Prettier and `git diff --check` passed.
+- **Known issue:** M4 Terra remains incomplete: reconciliation and future-occurrence edits, Student
+  schedule projections, complete typed mutation bindings, live migration evidence, Sol convergence,
+  and the CI delivery gate are unclaimed.
+- **Next:** implement future-only Series reconciliation and its idempotency/coverage tests before
+  any Sol work.
+
+### 2026-09-14 — LOG-061 — M4 Terra scheduling-boundary correction
+
+- **Scope:** continued the frozen M4 Terra implementation without entering Sol presentation work.
+- **Outcome:** Calendar availability is now projected by local date and correctly applies a date
+  override (including an intentionally empty unavailable date); Session and Block create/edit
+  inputs require 15-minute boundaries. Added the contracted private Session read operation and
+  versioned Calendar Block deletion with single/future/all recurrence scope. The replacement
+  migration now enforces that a Series-linked Session belongs to a Series in the same Workspace.
+- **Verification:** elevated focused Scheduling tests passed (2 tests); elevated API check passed
+  (10 files, 29 tests); elevated Web check passed (11 files, 51 tests); root build passed with only
+  the existing Vite >500-kB chunk advisory; root Prettier and `git diff --check` passed.
+- **Known issue:** M4 remains Terra in progress. Schedule Series creation/reconciliation, Student
+  schedule projections, complete typed mutation bindings, live migration evidence, Sol convergence,
+  and the CI delivery gate remain unclaimed.
+- **Next:** implement the frozen Schedule Series operations and reconciliation tests before any Sol
+  work.
+
+### 2026-09-14 — LOG-060 — M4 Terra started
+
+- **Scope:** began the frozen M4 Terra gate without reusing the removed starter.
+- **Outcome:** Supabase CLI generated migration `20260913164133_m4_scheduling`; its initial schema
+  preserves date-less M3 Course Sessions as legacy entitlement rows and introduces the private M4
+  Scheduling tables. A separate Scheduling Module/Postgres adapter, initial private Calendar and
+  Session HTTP operations, M4 schedule augmentation on Today, and a Coach-scoped Calendar
+  query/state skeleton are in the worktree. Calendar date boundaries now derive from Workspace time
+  zone rather than assuming UTC.
+- **Verification:** API and Web TypeScript checks passed. Elevated API check passed (9 files/27
+  tests) and elevated Web check passed (11 files/51 tests). These existing suites do not yet prove
+  the incomplete M4 operations.
+- **Known issue:** Series reconciliation, M4-specific focused tests, Student schedule projection,
+  complete mutation bindings, and all Sol/CI work remain. Availability replacement now has its
+  initial transaction path, but still needs its focused conflict/override tests.
+- **Next:** complete the remaining frozen Terra operations and focused tests before any Sol work.
+
+### 2026-09-14 — LOG-059 — M4 Scheduling Contract frozen
+
+- **Scope:** Product Owner authorized the move from completed M3.5 into M4's Contract gate. The
+  contract defines the replacement Scheduling model, routes, authority boundaries, interactions,
+  state recovery, migration treatment, and delivery evidence without changing code or schema.
+- **Outcome:** [`M4-CONTRACT.md`](M4-CONTRACT.md) freezes temporal Course Sessions, Schedule Series,
+  Availability Rules/Overrides, finite recurring Calendar Blocks, warning-only conflicts,
+  versioned concurrency, Calendar/Today/Student projections, exact interaction/mobile behaviour,
+  and M3/M4 Today authority separation. Existing date-less M3 Course Sessions remain preserved
+  legacy entitlement rows—no timestamp or location will be invented.
+- **Verification:** Roadmap, Status, Architecture, M3 data seam, Demo Calendar/domain interactions,
+  and the prior M4 rollback boundary were reviewed. This is a documentation-only Contract gate;
+  no implementation, migration, browser, live, push, or remote CI result is claimed.
+- **Next:** execute M4 Terra only as frozen; return any required product/visual/copy decision to a
+  new Contract amendment.
 
 ### 2026-09-13 — LOG-058 — M3.5-A5 delivered; M3.5 complete
 

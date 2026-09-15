@@ -8,6 +8,8 @@ import { RoutePlaceholder } from '../pages/RoutePlaceholder'
 import { StudentDetailPage, StudentsPage } from '../pages/students/StudentsPage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
+import { CalendarPage } from '../pages/calendar/CalendarPage'
+import { SessionPage } from '../pages/sessions/SessionPage'
 import { queryKeys } from '../query-keys'
 import { Brand } from '../shared/primitives'
 import { resolveCoachIdentity } from './coach-identity'
@@ -69,13 +71,16 @@ export function CoachWorkspace({ session }: { session: Session }) {
           <Route path="/today" element={<TodayPage session={session} />} />
           <Route
             path="/calendar"
-            element={<RoutePlaceholder title="行事曆" icon={<CalendarDays />} />}
+            element={<CalendarPage session={session} timeZone={timeZone} />}
           />
           <Route path="/students" element={<StudentsPage session={session} />} />
-          <Route path="/students/:studentId" element={<StudentDetailPage session={session} />} />
+          <Route
+            path="/students/:studentId"
+            element={<StudentDetailPage session={session} timeZone={timeZone} />}
+          />
           <Route
             path="/sessions/:sessionId"
-            element={<RoutePlaceholder title="課堂" icon={<Dumbbell />} />}
+            element={<SessionPage session={session} timeZone={timeZone} />}
           />
           <Route
             path="/exercises"

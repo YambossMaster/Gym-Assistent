@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import { AlertTriangle, Cloud, UsersRound, WalletCards } from 'lucide-react'
+import { AlertTriangle, CalendarDays, Cloud, UsersRound, WalletCards } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '../../shared/primitives'
 import { useTodayRouteQuery } from './queries'
@@ -69,6 +69,7 @@ function TodaySignals({
           <strong>{today.summary.attentionCount}</strong>
         </div>
       </section>
+      {today.schedule ? <TodaySchedule schedule={today.schedule} /> : null}
       <section className="today-attention" aria-labelledby="today-attention-title">
         <div>
           <span className="eyebrow dark">堂數帳戶</span>
@@ -91,6 +92,52 @@ function TodaySignals({
         )}
       </section>
     </>
+  )
+}
+
+function TodaySchedule({
+  schedule
+}: {
+  schedule: NonNullable<ReturnType<typeof useTodayRouteQuery>['data']>['schedule']
+}) {
+  if (!schedule) return null
+  return (
+    <section className="today-schedule" aria-labelledby="today-schedule-title">
+      <div className="today-schedule-heading">
+        <div>
+          <span className="eyebrow dark">今日課表</span>
+          <h2 id="today-schedule-title">
+            {schedule.isEmpty ? '今天還沒有課程' : `${schedule.counts.scheduled} 堂待上課`}
+          </h2>
+        </div>
+        <Link className="text-button" to="/calendar">
+          開啟行事曆
+        </Link>
+      </div>
+      {schedule.sessions.length ? (
+        <ol>
+          {schedule.sessions.map(({ session, conflicts }) => (
+            <li key={session.id}>
+              <Link to={`/sessions/${session.id}`}>
+                <time>{formatSessionTime(session.startsAt, schedule.timeZone)}</time>
+                <div>
+                  <strong>{session.studentName}</strong>
+                  <span>
+                    {session.location || '未設定地點'} ·{' '}
+                    {session.status === 'completed' ? '已完成' : '即將開始'}
+                  </span>
+                </div>
+                {conflicts.length ? <small>安排提醒</small> : null}
+              </Link>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="empty-inline">
+          <CalendarDays /> 行事曆保持空白；可直接前往安排下一堂課。
+        </p>
+      )}
+    </section>
   )
 }
 
@@ -133,4 +180,14 @@ function lessonText(remaining: number) {
     : remaining === 0
       ? '堂數不足'
       : `剩餘 ${remaining} 堂`
+}
+function formatSessionTime(value: string | null, timeZone: string) {
+  return value
+    ? new Intl.DateTimeFormat('zh-TW', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(new Date(value))
+    : '—'
 }

@@ -15,6 +15,7 @@ export interface TodayProjection {
     lessonSummary: LessonSummary
     targetRoute: string
   }>
+  schedule?: import('../scheduling/scheduling.js').TodaySchedule
 }
 
 export function selectTodayAttention(students: StudentRosterItem[]): TodayProjection['attention'] {
@@ -62,7 +63,7 @@ function dateParts(value: Date, timeZone: string) {
   return { year: get('year')!, month: get('month')!, day: get('day')! }
 }
 
-function zonedMidnight(date: string, timeZone: string): Date {
+export function zonedMidnight(date: string, timeZone: string): Date {
   const [year, month, day] = date.split('-').map(Number)
   const intended = Date.UTC(year!, month! - 1, day!)
   let instant = intended

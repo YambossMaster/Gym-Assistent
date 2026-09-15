@@ -9,6 +9,8 @@ import { WorkspaceModule } from './workspace/workspace-module.js'
 import { AccountLifecycleModule } from './account-lifecycle/account-lifecycle-module.js'
 import { SupabaseAccountDeletionExecutor } from './account-lifecycle/supabase-account-deletion-executor.js'
 import { SupabaseRegistrationEmailLookup } from './account-registration/supabase-registration-email-lookup.js'
+import { SchedulingModule } from './scheduling/scheduling-module.js'
+import { PostgresSchedulingRepository } from './adapters/postgres-scheduling-repository.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -40,6 +42,7 @@ const server = buildServer({
     supabaseUrl: config.SUPABASE_URL,
     ...(config.SUPABASE_SECRET_KEY ? { secretKey: config.SUPABASE_SECRET_KEY } : {}),
   }),
+  scheduling: new SchedulingModule(new PostgresSchedulingRepository(pool)),
   logger: true,
 })
 

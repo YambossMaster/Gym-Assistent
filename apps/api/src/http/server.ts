@@ -21,6 +21,8 @@ import { AccountLifecycleModule } from '../account-lifecycle/account-lifecycle-m
 import { AccountDeletionUnavailableError } from '../account-lifecycle/supabase-account-deletion-executor.js'
 import { type RegistrationEmailLookup } from '../account-registration/registration-email-lookup.js'
 import { RegistrationLookupUnavailableError } from '../account-registration/supabase-registration-email-lookup.js'
+import { SchedulingModule } from '../scheduling/scheduling-module.js'
+import { SchedulingVersionConflictError } from '../scheduling/scheduling-repository.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -29,6 +31,7 @@ export interface ServerDependencies {
   workspace: WorkspaceModule
   accountLifecycle: AccountLifecycleModule
   registrationEmails: RegistrationEmailLookup
+  scheduling?: SchedulingModule
   logger?: boolean
 }
 
@@ -129,6 +132,7 @@ export function buildServer({
   workspace,
   accountLifecycle,
   registrationEmails,
+  scheduling,
   logger = false,
 }: ServerDependencies): FastifyInstance {
   const server = Fastify({
@@ -155,6 +159,14 @@ export function buildServer({
         reason: 'lesson_purchase_version_conflict',
         message: error.message,
         currentPurchase: error.currentPurchase,
+      })
+    }
+    if (error instanceof SchedulingVersionConflictError) {
+      return reply.status(409).send({
+        error: 'version_conflict',
+        reason: 'scheduling_version_conflict',
+        message: error.message,
+        current: error.current,
       })
     }
     if (error instanceof AccountDeletionUnavailableError) {
@@ -197,12 +209,222 @@ export function buildServer({
     return { income }
   })
 
-  server.get('/v1/today', async (request) => {
+  server.get<{ Querystring: { date?: string } }>('/v1/today', async (request) => {
     const identity = await identityVerifier.verify(request.headers.authorization)
     const projection = await today.get(identity)
     await accountLifecycle.recordActivity(identity)
-    return { today: projection }
+    return {
+      today: scheduling
+        ? {
+            ...projection,
+            schedule: await scheduling.today(identity, request.query.date ?? projection.date),
+          }
+        : projection,
+    }
   })
+
+  if (scheduling) {
+    server.get<{ Querystring: { start: string; end: string } }>('/v1/calendar', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const calendar = await scheduling.calendar(identity, request.query)
+      await accountLifecycle.recordActivity(identity)
+      return { calendar }
+    })
+    server.post<{ Body: unknown }>('/v1/sessions', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const session = await scheduling.createSession(identity, request.body)
+      if (!session)
+        return reply
+          .status(404)
+          .send({ error: 'student_not_found', message: 'Student was not found.' })
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(201).send(session)
+    })
+    server.get<{ Params: { sessionId: string } }>(
+      '/v1/sessions/:sessionId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const detail = await scheduling.session(identity, request.params.sessionId)
+        if (!detail)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return detail
+      },
+    )
+    server.get<{ Params: { studentId: string } }>(
+      '/v1/students/:studentId/schedule-series',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const series = await scheduling.listSeries(identity, request.params.studentId)
+        if (!series)
+          return reply
+            .status(404)
+            .send({ error: 'student_not_found', message: 'Student was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { series }
+      },
+    )
+    server.post<{ Params: { studentId: string }; Body: unknown }>(
+      '/v1/students/:studentId/schedule-series',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const created = await scheduling.createSeries(
+          identity,
+          request.params.studentId,
+          request.body,
+        )
+        if (!created)
+          return reply
+            .status(404)
+            .send({ error: 'student_not_found', message: 'Student was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(201).send(created)
+      },
+    )
+    server.patch<{ Params: { seriesId: string }; Body: unknown }>(
+      '/v1/schedule-series/:seriesId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const series = await scheduling.updateSeries(
+          identity,
+          request.params.seriesId,
+          request.body,
+        )
+        if (!series)
+          return reply
+            .status(404)
+            .send({ error: 'schedule_series_not_found', message: 'Schedule Series was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return series
+      },
+    )
+    server.post<{ Params: { studentId: string } }>(
+      '/v1/students/:studentId/schedule-series/reconcile',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const sessions = await scheduling.reconcileSeries(identity, request.params.studentId)
+        if (!sessions)
+          return reply
+            .status(404)
+            .send({ error: 'student_not_found', message: 'Student was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { generatedIds: sessions.map((session) => session.id), sessions }
+      },
+    )
+    server.patch<{ Params: { sessionId: string }; Body: unknown }>(
+      '/v1/sessions/:sessionId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const session = await scheduling.updateSession(
+          identity,
+          request.params.sessionId,
+          request.body,
+        )
+        if (!session)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return session
+      },
+    )
+    server.post<{ Params: { sessionId: string }; Body: unknown }>(
+      '/v1/sessions/:sessionId/transition',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const session = await scheduling.transitionSession(
+          identity,
+          request.params.sessionId,
+          request.body,
+        )
+        if (!session)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return session
+      },
+    )
+    server.post<{ Body: unknown }>('/v1/calendar-blocks', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const blocks = await scheduling.createBlock(identity, request.body)
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(201).send({ blocks })
+    })
+    server.patch<{ Params: { blockId: string }; Body: unknown }>(
+      '/v1/calendar-blocks/:blockId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const blocks = await scheduling.updateBlock(identity, request.params.blockId, request.body)
+        if (!blocks)
+          return reply
+            .status(404)
+            .send({ error: 'calendar_block_not_found', message: 'Calendar Block was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { blocks }
+      },
+    )
+    server.delete<{ Params: { blockId: string }; Body: unknown }>(
+      '/v1/calendar-blocks/:blockId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const deleted = await scheduling.deleteBlock(identity, request.params.blockId, request.body)
+        if (deleted === null)
+          return reply
+            .status(404)
+            .send({ error: 'calendar_block_not_found', message: 'Calendar Block was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(204).send()
+      },
+    )
+    server.put<{ Params: { weekday: number }; Body: unknown }>(
+      '/v1/availability/rules/:weekday',
+      async (request) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const availability = await scheduling.replaceAvailability(
+          identity,
+          'rule',
+          request.params.weekday,
+          request.body,
+        )
+        await accountLifecycle.recordActivity(identity)
+        return { availability }
+      },
+    )
+    server.put<{ Params: { date: string }; Body: unknown }>(
+      '/v1/availability/overrides/:date',
+      async (request) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const availability = await scheduling.replaceAvailability(
+          identity,
+          'override',
+          request.params.date,
+          request.body,
+        )
+        await accountLifecycle.recordActivity(identity)
+        return { availability }
+      },
+    )
+    server.delete<{ Params: { sessionId: string }; Body: unknown }>(
+      '/v1/sessions/:sessionId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const deleted = await scheduling.deleteSession(
+          identity,
+          request.params.sessionId,
+          request.body,
+        )
+        if (!deleted)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(204).send()
+      },
+    )
+  }
 
   server.get('/v1/workspace-settings', async (request) => {
     const identity = await identityVerifier.verify(request.headers.authorization)
@@ -242,8 +464,11 @@ export function buildServer({
         return reply
           .status(404)
           .send({ error: 'student_not_found', message: 'Student was not found.' })
+      const schedule = scheduling
+        ? await scheduling.studentSchedule(identity, request.params.studentId)
+        : undefined
       await accountLifecycle.recordActivity(identity)
-      return { detail }
+      return { detail: schedule ? { ...detail, schedule } : detail }
     },
   )
 
@@ -276,6 +501,7 @@ export function buildServer({
         return reply
           .status(404)
           .send({ error: 'student_not_found', message: 'Student was not found.' })
+      if (scheduling) await scheduling.reconcileSeries(identity, request.params.studentId)
       await accountLifecycle.recordActivity(identity)
       return reply.status(201).send({ purchase })
     },
@@ -299,6 +525,7 @@ export function buildServer({
         return reply
           .status(404)
           .send({ error: 'purchase_not_found', message: 'Lesson Purchase was not found.' })
+      if (scheduling) await scheduling.reconcileSeries(identity, request.params.studentId)
       await accountLifecycle.recordActivity(identity)
       return { purchase }
     },
@@ -322,6 +549,7 @@ export function buildServer({
         return reply
           .status(404)
           .send({ error: 'purchase_not_found', message: 'Lesson Purchase was not found.' })
+      if (scheduling) await scheduling.reconcileSeries(identity, request.params.studentId)
       await accountLifecycle.recordActivity(identity)
       return reply.status(204).send()
     },
