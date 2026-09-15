@@ -7,20 +7,21 @@
 
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M5 — Training and Exercise Library**                                                |
-| Current package    | **M5 CI delivery**                                                                    |
-| Package state      | **M5 Terra and Sol complete; final local rerun and remote CI pending**                |
-| Completed baseline | M0–M4 Done; M4 delivery commit `dc83d92`, GitHub Actions run `34947956256` successful |
-| Branch baseline    | `main`; M4 delivery commit `dc83d92`, GitHub Actions run `34947956256` successful     |
-| Worktree           | M5 implementation and evidence are complete; delivery commit pending                  |
+| Active phase       | **M6 — Public Capability Links**                                                      |
+| Current package    | **M6 Contract**                                                                       |
+| Package state      | **Not started; requires Product Owner authorization and frozen Contract**             |
+| Completed baseline | M0–M5 Done; M5 delivery commit `5afa212`, GitHub Actions run `34956661567` successful |
+| Branch baseline    | `main`; M5 delivery commit `5afa212`, GitHub Actions run `34956661567` successful     |
+| Worktree           | M5 completion Status update only                                                      |
 | Linked database    | Development only; M5 Training migrations through `20260915100537` applied             |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Finish **M5 CI delivery**: rerun the exact local matrix, commit and push the complete Training slice,
-confirm GitHub Actions Verify and migration-dry-run for the delivered commit, then record M5 Done
-and stop at the milestone boundary. M6 requires its own Product Owner-approved Contract.
+Stop at the completed M5 milestone boundary. The next executable package is **M6 Contract** for
+public `/t/:token` and `/r/:token` Capability Links. Begin only after Product Owner authorization;
+freeze public authorization, expiry/revocation, Training Result visibility, route states, responsive
+acceptance, and evidence before any M6 Terra implementation.
 
 ## Milestone status
 
@@ -32,7 +33,7 @@ and stop at the milestone boundary. M6 requires its own Product Owner-approved C
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
 | M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
 | M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M5 Training and Exercise Library       | CI          | Terra, Sol, linked migrations, live E2E, and desktop/exact-mobile acceptance passed; remote CI pending                          |
+| M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
 | M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
@@ -163,6 +164,9 @@ and stop at the milestone boundary. M6 requires its own Product Owner-approved C
   informational notices. Authenticated desktop and exact 390×844 acceptance passed Session editor,
   Exercise Library, Settings preference, Student performance/trend, autosave state, mobile sticky
   actions/navigation, and isolated fixture cleanup.
+- M5 remote: commit `5afa212` pushed to `origin/main`; GitHub Actions CI #19 / run `34956661567`
+  completed successfully. The `verify` and `migration-dry-run` jobs both succeeded for exact SHA
+  `5afa2124e98f5fea74310516cf85119d7c62e006`.
 
 Current development validation commands:
 
@@ -182,7 +186,7 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
-### 2026-09-15 — LOG-072 — M5 Training locally complete
+### 2026-09-15 — LOG-072 — M5 Training delivered
 
 - **Scope:** implemented the frozen M5 Contract through Terra and Sol: private Training schema,
   tenant-scoped Module/repository/HTTP operations, formal catalog bootstrap, typed Coach-scoped Web
@@ -195,9 +199,10 @@ local pass or successful push is not a remote CI completion claim.
   security/performance advisors, M4 regression, isolated M5 live E2E, authenticated desktop, and
   exact 390×844 acceptance passed. All isolated browser/E2E fixtures were removed. The Web build
   retains the existing bundle-size advisory; leaked-password protection remains the accepted
-  development warning. Remote CI is not yet claimed.
-- **Next:** commit and push M5, confirm GitHub Actions Verify and migration-dry-run, record M5 Done,
-  and stop at the milestone boundary.
+  development warning. Commit `5afa212` is on `origin/main`; GitHub Actions CI #19 / run
+  `34956661567` completed successfully with Verify and migration-dry-run green for the exact commit.
+- **Next:** stop at M5. Request Product Owner authorization to begin and freeze the M6 Contract
+  before implementing any public Capability Link behavior.
 
 ### 2026-09-15 — LOG-071 — M5 Contract frozen and implementation authorized
 
