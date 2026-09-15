@@ -1,16 +1,17 @@
 import type { TrainingDraftPayload } from '../../api'
+import {
+  CoachLocalStore,
+  LOCAL_SCHEMA_VERSION,
+  PRIVATE_TTL_MS,
+  type LocalRecord
+} from '../../local-resilience'
 
-export const DRAFT_SCHEMA_VERSION = 1
-export const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000
-export type StoredTrainingDraft = {
-  key: string
-  schemaVersion: number
-  environment: string
-  coachId: string
+export const DRAFT_SCHEMA_VERSION = LOCAL_SCHEMA_VERSION
+export const DRAFT_TTL_MS = PRIVATE_TTL_MS
+export type StoredTrainingDraft = LocalRecord & {
   sessionId: string
   tabId: string
   revision: number
-  savedAt: number
   payload: TrainingDraftPayload
 }
 
@@ -19,35 +20,76 @@ export function draftKey(environment: string, coachId: string, sessionId: string
 }
 
 export class TrainingDraftStore {
-  constructor(private readonly open = openDatabase) {}
+  private legacyChecked = false
+  constructor(private readonly store = new CoachLocalStore()) {}
   async put(draft: StoredTrainingDraft) {
-    const db = await this.open()
-    await transaction(db, 'readwrite', (store) => store.put(draft))
-    db.close()
+    await this.store.put('drafts', draft)
   }
   async delete(key: string) {
-    const db = await this.open()
-    await transaction(db, 'readwrite', (store) => store.delete(key))
-    db.close()
+    await this.store.delete('drafts', key)
   }
   async list(coachId: string, sessionId?: string, now = Date.now()) {
-    const db = await this.open()
-    const values = await transaction<StoredTrainingDraft[]>(db, 'readonly', (store) =>
-      store.getAll()
+    if (!this.legacyChecked) {
+      this.legacyChecked = true
+      await migrateLegacyDrafts(this.store, now)
+    }
+    const environment = import.meta.env.MODE
+    const values = await this.store.list<StoredTrainingDraft>(
+      'drafts',
+      { environment, coachId },
+      now
     )
-    db.close()
-    const expired = values.filter((x) => now - x.savedAt > DRAFT_TTL_MS)
-    await Promise.all(expired.map((x) => this.delete(x.key)))
-    return values.filter(
-      (x) =>
-        x.coachId === coachId &&
-        (!sessionId || x.sessionId === sessionId) &&
-        now - x.savedAt <= DRAFT_TTL_MS
-    )
+    return values.filter((item) => !sessionId || item.sessionId === sessionId)
   }
   async clearCoach(coachId: string) {
-    for (const draft of await this.list(coachId)) await this.delete(draft.key)
+    await this.store.clearCoach({ environment: import.meta.env.MODE, coachId })
   }
+}
+
+async function migrateLegacyDrafts(store: CoachLocalStore, now: number) {
+  if (typeof indexedDB === 'undefined') return
+  const legacy = await readLegacyDrafts().catch(() => [])
+  for (const item of legacy) {
+    if (
+      item.schemaVersion !== DRAFT_SCHEMA_VERSION ||
+      !item.environment ||
+      !item.coachId ||
+      now - item.savedAt > DRAFT_TTL_MS
+    )
+      continue
+    await store.put('drafts', { ...item, expiresAt: item.savedAt + DRAFT_TTL_MS })
+  }
+  if (legacy.length) indexedDB.deleteDatabase('form-training-drafts')
+}
+
+function readLegacyDrafts(): Promise<Array<Omit<StoredTrainingDraft, 'expiresAt'>>> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('form-training-drafts')
+    request.onupgradeneeded = () => {
+      request.transaction?.abort()
+      resolve([])
+    }
+    request.onerror = () => {
+      if (request.error?.name === 'AbortError') return
+      reject(request.error)
+    }
+    request.onsuccess = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains('drafts')) {
+        db.close()
+        resolve([])
+        return
+      }
+      const tx = db.transaction('drafts', 'readonly')
+      const all = tx.objectStore('drafts').getAll()
+      all.onerror = () => reject(all.error)
+      tx.oncomplete = () => {
+        db.close()
+        resolve(all.result as Array<Omit<StoredTrainingDraft, 'expiresAt'>>)
+      }
+      tx.onerror = () => reject(tx.error)
+    }
+  })
 }
 
 export class AutosaveCoordinator<T> {
@@ -95,26 +137,4 @@ export class AutosaveCoordinator<T> {
   get pending() {
     return Boolean(this.latest && this.latest.revision > this.acknowledged)
   }
-}
-
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('form-training-drafts', 1)
-    request.onupgradeneeded = () => request.result.createObjectStore('drafts', { keyPath: 'key' })
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-}
-function transaction<T = void>(
-  db: IDBDatabase,
-  mode: IDBTransactionMode,
-  action: (store: IDBObjectStore) => IDBRequest
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('drafts', mode)
-    const request = action(tx.objectStore('drafts'))
-    request.onerror = () => reject(request.error)
-    tx.oncomplete = () => resolve(request.result as T)
-    tx.onerror = () => reject(tx.error)
-  })
 }

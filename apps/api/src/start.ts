@@ -15,6 +15,8 @@ import { PostgresTrainingRepository } from './adapters/postgres-training-reposit
 import { TrainingModule } from './training/training-module.js'
 import { PostgresPublicAccessRepository } from './adapters/postgres-public-access-repository.js'
 import { PublicAccessModule } from './public-access/public-access-module.js'
+import { DemoImportModule } from './demo-import/demo-import.js'
+import { PostgresDemoImportRepository } from './adapters/postgres-demo-import-repository.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -52,9 +54,18 @@ const server = buildServer({
     new PostgresPublicAccessRepository(pool),
     config.CAPABILITY_RATE_LIMIT_SECRET ?? config.SUPABASE_SECRET_KEY ?? config.DATABASE_URL,
   ),
+  demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)),
   logger: {
     redact: {
-      paths: ['req.headers.x-capability-token', 'req.body.token', 'res.body.token'],
+      paths: [
+        'req.headers.x-capability-token',
+        'req.body.token',
+        'req.body.students',
+        'req.body.purchases',
+        'req.body.records',
+        'req.body.links',
+        'res.body.token',
+      ],
       censor: '[REDACTED]',
     },
   },

@@ -15,6 +15,7 @@
     "e2e:m4": "node --env-file=.env.e2e --import tsx src/e2e/run-m4-live.ts",
     "e2e:m5": "node --env-file=.env.e2e --import tsx src/e2e/run-m5-live.ts",
     "e2e:m6": "node --env-file=.env.e2e --import tsx src/e2e/run-m6-live.ts",
+    "e2e:m7": "node --env-file=.env.e2e --import tsx src/e2e/run-m7-live.ts",
     "migration:preview:m3": "node --import tsx src/migration/preview-demo-student-entitlement.ts",
     "migration:preview:m4": "node --import tsx src/migration/preview-demo-scheduling.ts",
     "preview:m5": "node --import tsx src/migration/run-preview-m5-training.ts",

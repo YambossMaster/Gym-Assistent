@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ArrowRight, KeyRound } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { isRegistrationEmailTaken } from './api'
 import {
@@ -17,6 +17,7 @@ import { CoachWorkspace } from './app-shell/CoachWorkspace'
 import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
 import { createAppQueryClient } from './query-client'
 import { supabase } from './supabase'
+import { CoachLocalStore } from './local-resilience'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
 
@@ -36,14 +37,25 @@ function AuthenticatedApp() {
   const [client] = useState(createAppQueryClient),
     [session, setSession] = useState<Session | null>(null),
     [ready, setReady] = useState(false),
-    [recovery, setRecovery] = useState(false)
+    [recovery, setRecovery] = useState(false),
+    previousSubject = useRef<string | null>(null)
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
+      previousSubject.current = data.session?.user.id ?? null
       setReady(true)
     })
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
-      if (!next) client.clear()
+      const previous = previousSubject.current
+      const nextSubject = next?.user.id ?? null
+      if (previous && previous !== nextSubject) {
+        client.clear()
+        void new CoachLocalStore().clearCoach({
+          environment: import.meta.env.MODE,
+          coachId: previous
+        })
+      }
+      previousSubject.current = nextSubject
       setSession(next)
       setRecovery(event === 'PASSWORD_RECOVERY')
       setReady(true)

@@ -9,6 +9,7 @@ import { supabase } from '../../supabase'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
 import { useTrainingMutations, useTrainingPreference } from '../training/queries'
+import { DemoImportPanel } from './DemoImportPanel'
 
 export function SettingsPage({ session }: { session: Session }) {
   const [message, setMessage] = useState('')
@@ -128,6 +129,16 @@ export function SettingsPage({ session }: { session: Session }) {
           />
         </section>
         <TrainingPreferencePanel session={session} />
+        {settingsQuery.data && (
+          <ImportPanelBoundary
+            session={session}
+            workspaceVersion={settingsQuery.data.version}
+            onImported={() => {
+              void settingsQuery.refetch()
+              void lifecycleQuery.refetch()
+            }}
+          />
+        )}
         {message && <p className="form-notice">{message}</p>}
       </section>
       {deletionRequestOpen && (
@@ -159,6 +170,37 @@ export function SettingsPage({ session }: { session: Session }) {
         />
       )}
     </Page>
+  )
+}
+
+function ImportPanelBoundary({
+  session,
+  workspaceVersion,
+  onImported
+}: {
+  session: Session
+  workspaceVersion: number
+  onImported: () => void
+}) {
+  const preference = useTrainingPreference(session)
+  if (preference.isLoading)
+    return (
+      <section className="settings-panel">
+        <span className="panel-loading">正在載入資料移轉工具</span>
+      </section>
+    )
+  if (preference.isError || !preference.data)
+    return <PanelError title="暫時無法開啟資料移轉工具" onRetry={() => void preference.refetch()} />
+  return (
+    <DemoImportPanel
+      session={session}
+      workspaceVersion={workspaceVersion}
+      preferenceVersion={preference.data.version}
+      onImported={() => {
+        void preference.refetch()
+        onImported()
+      }}
+    />
   )
 }
 

@@ -949,6 +949,102 @@ export async function redeemPublicReschedule(
   return capabilityRequest('/api/v1/public/reschedule/redeem', token, json('POST', { startsAt }))
 }
 
+export type DemoImportIssue = {
+  phase: 'foundation' | 'purchases' | 'training' | 'scheduling' | 'capability_links'
+  entity: string
+  sourceId: string
+  reason: string
+}
+export type DemoImportPreview = {
+  id: string
+  sourceHash: string
+  manifestChecksum: string
+  expiresAt: string
+  settings: { displayName: string; timeZone: string; defaultWeightUnit: 'kg' | 'lb' }
+  phases: Array<{
+    phase: DemoImportIssue['phase']
+    create: number
+    rejected: number
+    warnings: number
+  }>
+  rejections: DemoImportIssue[]
+  warnings: DemoImportIssue[]
+}
+export type DemoImportRun = {
+  id: string
+  status:
+    | 'ready'
+    | 'running'
+    | 'partial'
+    | 'completed'
+    | 'rolling_back'
+    | 'rolled_back'
+    | 'rollback_blocked'
+  nextPhase: number
+  completedPhases: string[]
+  failure: {
+    reason: string
+    entity?: string
+    entities?: Array<{ entity: string; id: string }>
+  } | null
+  rollbackExpiresAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export async function previewDemoImport(accessToken: string, source: unknown) {
+  const response = await request<{ preview: DemoImportPreview }>(
+    '/api/v1/demo-imports/previews',
+    accessToken,
+    json('POST', source)
+  )
+  return response.preview
+}
+
+export async function createDemoImport(
+  accessToken: string,
+  input: {
+    previewId: string
+    manifestChecksum: string
+    workspaceVersion: number
+    preferenceVersion: number
+    confirmation: 'IMPORT'
+  }
+) {
+  const response = await request<{ importRun: DemoImportRun }>(
+    '/api/v1/demo-imports',
+    accessToken,
+    json('POST', input)
+  )
+  return response.importRun
+}
+
+export async function getDemoImport(accessToken: string, importId: string) {
+  const response = await request<{ importRun: DemoImportRun }>(
+    `/api/v1/demo-imports/${importId}`,
+    accessToken
+  )
+  return response.importRun
+}
+
+export async function continueDemoImport(accessToken: string, importId: string) {
+  const response = await request<{ importRun: DemoImportRun }>(
+    `/api/v1/demo-imports/${importId}/continue`,
+    accessToken,
+    json('POST', {})
+  )
+  return response.importRun
+}
+
+export async function rollbackDemoImport(accessToken: string, importId: string) {
+  const response = await request<{ importRun: DemoImportRun }>(
+    `/api/v1/demo-imports/${importId}/rollback`,
+    accessToken,
+    json('POST', { confirmation: 'ROLLBACK' })
+  )
+  return response.importRun
+}
+
 async function request<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,

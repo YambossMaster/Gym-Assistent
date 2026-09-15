@@ -1,7 +1,8 @@
-import { ArrowRight, Check, RotateCcw } from 'lucide-react'
+import { ArrowRight, Check, Download, RotateCcw } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Badge, FormSelect, PageHeader } from '../components'
 import { useStore } from '../store'
+import { downloadDemoBackup } from '../demoBackup'
 
 export function SettingsPage() {
   const { data, saveSettings, resetDemo } = useStore()
@@ -157,6 +158,15 @@ export function SettingsPage() {
         <section className="panel danger-zone">
           <span className="eyebrow">DEMO DATA</span>
           <h2>展示資料</h2>
+          <p>移轉到正式工作台前，先下載完整 JSON 備份。下載不會修改或刪除目前資料。</p>
+          <button
+            type="button"
+            className="button ghost wide"
+            onClick={() => downloadDemoBackup(data)}
+          >
+            <Download />
+            下載完整備份
+          </button>
           <p>將所有本機操作重設回最初的示範狀態。這不影響任何外部資料。</p>
           <button
             type="button"

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-15
+
+- Added a non-destructive full JSON backup download for the preserved `form-coach-mvp-v1` graph so
+  M7 migration always starts from a user-held source backup.
+
 - Reworked the public training-record page to follow the downloaded image's information hierarchy: session identity first, student record title second, then consistently divided exercise rows. Removed the competing praise hero and summary strip.
 
 All notable user-visible, persistence, and structural changes are recorded here.

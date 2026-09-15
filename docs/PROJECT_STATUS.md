@@ -7,20 +7,19 @@
 
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M6 — Public Capability Links delivered**                                            |
-| Current package    | **M6 complete**                                                                       |
-| Package state      | **Done**                                                                              |
+| Active phase       | **M7 — Local resilience and Demo migration**                                          |
+| Current package    | **M7 CI**                                                                             |
+| Package state      | **Terra and Sol complete; delivery CI pending**                                       |
 | Completed baseline | M0–M6 Done; M6 delivery commit `658ce1a`, GitHub Actions run `34966898151` successful |
 | Branch baseline    | `main`; M6 delivery commit `658ce1a6f59007f7ad9f709445b5989dd69d778b`                 |
-| Worktree           | No M6 implementation changes pending                                                  |
-| Linked database    | Development only; M6 migration `20260915111114` applied; dry-run up to date           |
+| Worktree           | Cohesive M7 implementation ready for delivery                                         |
+| Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date  |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Stop at the completed M6 milestone boundary. Await explicit Product Owner authorization before
-entering M7 Contract to freeze local persistence, operation-queue, conflict/recovery, and ordered
-Demo export/preview/import behaviour.
+Commit and push the cohesive M7 implementation, then confirm GitHub Actions `verify` and
+`migration-dry-run` for the exact delivery SHA. Stop at the M7 milestone boundary before M8.
 
 ## Milestone status
 
@@ -34,7 +33,7 @@ Demo export/preview/import behaviour.
 | M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
+| M7 Local resilience and Demo migration | CI pending  | Contract, Terra, Sol, local/live/migration/browser gates passed; exact-SHA remote CI remains                                    |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
 
@@ -94,6 +93,17 @@ Demo export/preview/import behaviour.
 - `/exercises`, Session Training, Student performance/trends, and Settings weight preference now
   match FORM's desktop and mobile visual language without importing Demo persistence or private
   Coach notes into Student projections.
+
+### M7 Local resilience and Demo migration
+
+- Coach/environment-scoped IndexedDB stores local drafts, a receipt-backed Training operation
+  queue, UI preferences, and resumable import metadata; private Query data remains memory-only and
+  Auth subject changes clear the departing Coach's local records.
+- Settings provides exact Demo JSON backup, server-side validation and redacted preview, ordered
+  five-phase import, safe retry, stale/conflict handling, and version-protected rollback. IDs are
+  deterministic but Workspace-salted; raw legacy Capability tokens are rejected and never imported.
+- App Shell exposes offline, pending, retry, and attention states. The archived Demo only gains an
+  exact backup download and retains the `form-coach-mvp-v1` storage contract.
 
 ## Remaining route boundaries
 
@@ -169,6 +179,16 @@ Demo export/preview/import behaviour.
 - M6 remote: delivery commit `658ce1a` pushed to `origin/main`; GitHub Actions run `34966898151`
   completed successfully. Jobs `verify` and `migration-dry-run` both succeeded for exact SHA
   `658ce1a6f59007f7ad9f709445b5989dd69d778b`.
+- M7 local: root check passed API 18 files/66 tests and Web 17 files/72 tests; root production build
+  passed with the existing over-500-kB advisory. Demo check passed 9 files/61 tests and its release
+  build passed. Repository `git diff --check` passed with only LF-to-CRLF notices.
+- M7 linked/live: three official migrations through `20260915131743` are applied; final linked
+  dry-run is up to date and `app_private` lint reports no schema errors. Isolated two-Coach E2E
+  passed safe preview redaction, legacy-token rejection, Workspace-salted IDs, ordered five-phase
+  import, tenant isolation, and exact created-row rollback; its test data was removed.
+- M7 browser: authenticated desktop and exact 390×844 Settings acceptance passed import/recovery
+  hierarchy, readable step progression, mobile stacking and sticky navigation without horizontal
+  overflow; Chrome console reported no warnings or errors.
 
 Current development validation commands:
 
@@ -181,6 +201,7 @@ npm run preview:m4-demo --workspace @gym-assistant/api
 npm run preview:m5 --workspace @gym-assistant/api
 npm run e2e:m5 --workspace @gym-assistant/api
 npm run e2e:m6 --workspace @gym-assistant/api
+npm run e2e:m7 --workspace @gym-assistant/api
 git diff --check
 ```
 
@@ -188,6 +209,37 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-079 — M7 Terra and Sol complete; CI delivery pending
+
+- **Scope:** implemented the frozen M7 Contract across Coach-scoped local resilience, Demo exact
+  backup, deterministic migration planning, private-schema run/ledger persistence, five-phase API
+  execution, rollback, Settings recovery UI, and archived Demo backup affordance.
+- **Outcome:** offline Training changes now survive and replay with stable operation IDs; incomplete
+  imports resume without retaining raw source; import previews redact private notes and secrets;
+  legacy Capability Links are safely rejected; Workspace-salted IDs and version checks protect
+  tenant boundaries and rollback. A live E2E exposed JSONB key-order rollback misclassification,
+  which was corrected with explicit version comparisons before the final passing run.
+- **Verification:** root check passed API 66/Web 72 tests; root and Demo production builds passed;
+  Demo check passed 61 tests; migration dry-run and `app_private` lint passed. Final isolated live
+  E2E import `6ed27a15-04d9-42ee-b198-0ccd40048842` passed five phases, two-Coach isolation,
+  redaction/rejection, and exact rollback. Authenticated desktop and exact 390×844 acceptance passed
+  with no page overflow or browser console warnings/errors.
+- **Next:** commit/push M7 and observe GitHub Actions `verify` plus `migration-dry-run` for its exact
+  SHA; do not enter M8 without a new Product Owner decision.
+
+### 2026-09-15 — LOG-078 — M7 Contract frozen and Terra authorized
+
+- **Scope:** entered M7 after the Product Owner confirmed M6 completion; inspected the Demo storage
+  graph, delivered M3–M6 authority seams, local Training draft/receipts, architecture, and current
+  Supabase migration/security guidance.
+- **Outcome:** [`M7-CONTRACT.md`](M7-CONTRACT.md) freezes the local allowlist, idempotent operation
+  queue, exact backup, validation/preview, phased import, safe legacy-link rejection, retry, and
+  rollback experiences. Server authority and `form-coach-mvp-v1` remain protected.
+- **Verification:** Contract is mapped to every M7 Roadmap criterion; no implementation, migration,
+  live/browser evidence, or delivery claim is made at this gate.
+- **Next:** implement M7 Terra from Contract section 10, beginning with local adapters and pure Demo
+  normalization before creating the serialized database migration.
 
 ### 2026-09-15 — LOG-077 — M6 delivered with exact-SHA remote CI
 

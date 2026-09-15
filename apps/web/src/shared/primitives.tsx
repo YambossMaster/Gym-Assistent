@@ -48,7 +48,9 @@ export function Confirmation({
   onConfirmationChange,
   onCancel,
   onConfirm,
-  disabled
+  disabled,
+  requiredWord = 'DELETE',
+  confirmLabel = '永久刪除'
 }: {
   title: string
   text: string
@@ -57,6 +59,8 @@ export function Confirmation({
   onCancel: () => void
   onConfirm: () => void
   disabled: boolean
+  requiredWord?: string
+  confirmLabel?: string
 }) {
   const openerRef = useRef<HTMLElement | null>(
     document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -89,7 +93,7 @@ export function Confirmation({
         <p>{text}</p>
         {requiresText && (
           <label>
-            輸入 DELETE 以確認
+            輸入 {requiredWord} 以確認
             <input
               value={confirmation}
               onChange={(event) => onConfirmationChange(event.target.value)}
@@ -103,10 +107,10 @@ export function Confirmation({
           </button>
           <button
             className="danger-confirm-button"
-            disabled={disabled || (requiresText && confirmation !== 'DELETE')}
+            disabled={disabled || (requiresText && confirmation !== requiredWord)}
             onClick={onConfirm}
           >
-            永久刪除
+            {confirmLabel}
           </button>
         </div>
       </section>

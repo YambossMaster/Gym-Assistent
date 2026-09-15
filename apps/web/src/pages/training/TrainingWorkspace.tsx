@@ -11,12 +11,21 @@ import {
 import {
   AutosaveCoordinator,
   DRAFT_SCHEMA_VERSION,
+  DRAFT_TTL_MS,
   TrainingDraftStore,
   draftKey,
   type StoredTrainingDraft
 } from './drafts'
 import { useExerciseLibrary, useSessionTraining, useTrainingMutations } from './queries'
 import { useSchedulingMutations } from '../calendar/queries'
+import {
+  CoachLocalStore,
+  OperationQueue,
+  localRecord,
+  payloadFingerprint,
+  scopedKey,
+  type QueuedOperation
+} from '../../local-resilience'
 
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'conflict'
 
@@ -78,7 +87,8 @@ function TrainingEditor({
     [offline, setOffline] = useState(!navigator.onLine),
     [storageError, setStorageError] = useState(false),
     [notice, setNotice] = useState('')
-  const store = useMemo(() => new TrainingDraftStore(), []),
+  const localStore = useMemo(() => new CoachLocalStore(), []),
+    store = useMemo(() => new TrainingDraftStore(localStore), [localStore]),
     tabId = useRef(crypto.randomUUID()),
     versions = useRef({ record: initial.record.version, session: initial.session.version }),
     revisionRef = useRef(revision),
@@ -89,6 +99,40 @@ function TrainingEditor({
   latest.current = draft
   revisionRef.current = revision
   saveMutationRef.current = mutations.save
+  const queue = useMemo(
+    () =>
+      new OperationQueue(
+        localStore,
+        { environment: import.meta.env.MODE, coachId: session.user.id },
+        async (operation) => {
+          try {
+            const targetSessionId = operation.target.split(':')[1]
+            if (!targetSessionId) return { kind: 'failed', message: 'invalid_training_target' }
+            const accepted = await saveMutationRef.current.mutateAsync({
+              sessionId: targetSessionId,
+              payload: operation.payload as TrainingDraftPayload
+            })
+            versions.current = {
+              record: accepted.record.version,
+              session: accepted.session.version
+            }
+            const draftKeyFromTarget = operation.target.slice(`training:${targetSessionId}:`.length)
+            if (draftKeyFromTarget) await store.delete(draftKeyFromTarget)
+            return { kind: 'accepted' }
+          } catch (error) {
+            if (error instanceof ApiError && error.status === 409)
+              return { kind: 'conflict', message: error.message }
+            if (error instanceof ApiError && error.status < 500)
+              return { kind: 'failed', message: error.message }
+            return {
+              kind: 'retry',
+              message: error instanceof Error ? error.message : 'network_error'
+            }
+          }
+        }
+      ),
+    [initial.session.id, localStore, session.user.id, store]
+  )
   const coordinator = useMemo(
     () =>
       new AutosaveCoordinator<TrainingDraftPayload>(
@@ -119,7 +163,10 @@ function TrainingEditor({
     [initial.session.id, key, store]
   )
   useEffect(() => {
-    const online = () => setOffline(false),
+    const online = () => {
+        setOffline(false)
+        void queue.replay()
+      },
       off = () => setOffline(true)
     addEventListener('online', online)
     addEventListener('offline', off)
@@ -127,7 +174,10 @@ function TrainingEditor({
       removeEventListener('online', online)
       removeEventListener('offline', off)
     }
-  }, [])
+  }, [queue])
+  useEffect(() => {
+    if (navigator.onLine) void queue.replay()
+  }, [queue])
   useEffect(() => {
     void store
       .list(session.user.id, initial.session.id)
@@ -140,7 +190,7 @@ function TrainingEditor({
       ...draft,
       recordVersion: versions.current.record,
       sessionVersion: versions.current.session,
-      operationId: crypto.randomUUID()
+      operationId: draft.operationId
     }
     const local: StoredTrainingDraft = {
       key,
@@ -151,14 +201,52 @@ function TrainingEditor({
       tabId: tabId.current,
       revision,
       savedAt: Date.now(),
+      expiresAt: Date.now() + DRAFT_TTL_MS,
       payload
     }
     void store
       .put(local)
       .then(() => setStorageError(false))
       .catch(() => setStorageError(true))
+    if (valid(payload) && offline) {
+      const operationKey = scopedKey(
+        { environment: import.meta.env.MODE, coachId: session.user.id },
+        'operation',
+        'training',
+        initial.session.id,
+        tabId.current
+      )
+      void payloadFingerprint(payload)
+        .then((payloadHash) => {
+          const operation: QueuedOperation = localRecord(
+            { environment: import.meta.env.MODE, coachId: session.user.id },
+            operationKey,
+            {
+              operationId: payload.operationId,
+              target: `training:${initial.session.id}:${key}`,
+              payloadHash,
+              payload,
+              state: 'pending' as const,
+              attempts: 0,
+              nextAttemptAt: 0
+            }
+          )
+          return queue.enqueue(operation)
+        })
+        .catch(() => setStorageError(true))
+    }
     if (valid(payload) && !offline && !conflictRef.current) coordinator.change(payload, revision)
-  }, [coordinator, draft, initial.session.id, key, offline, revision, session.user.id, store])
+  }, [
+    coordinator,
+    draft,
+    initial.session.id,
+    key,
+    offline,
+    queue,
+    revision,
+    session.user.id,
+    store
+  ])
   useEffect(() => {
     const before = (event: BeforeUnloadEvent) => {
       if (coordinator.pending) {

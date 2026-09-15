@@ -13,6 +13,7 @@ import { SessionPage } from '../pages/sessions/SessionPage'
 import { queryKeys } from '../query-keys'
 import { Brand } from '../shared/primitives'
 import { resolveCoachIdentity } from './coach-identity'
+import { ResilienceStatus } from './ResilienceStatus'
 
 const navigation = [
   { to: '/today', label: '今日', icon: LayoutGrid },
@@ -85,6 +86,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
             </NavLink>
           </nav>
         </header>
+        <ResilienceStatus session={session} queryClient={queryClient} />
         <Routes>
           <Route path="/today" element={<TodayPage session={session} />} />
           <Route

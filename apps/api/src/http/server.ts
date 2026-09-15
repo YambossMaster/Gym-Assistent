@@ -27,6 +27,7 @@ import { TrainingModule } from '../training/training-module.js'
 import { TrainingVersionConflictError } from '../training/training-repository.js'
 import { PublicAccessModule } from '../public-access/public-access-module.js'
 import { PublicCapabilityError, PublicRateLimitError } from '../public-access/public-access.js'
+import { DemoImportConflictError, DemoImportModule } from '../demo-import/demo-import.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -38,6 +39,7 @@ export interface ServerDependencies {
   scheduling?: SchedulingModule
   training?: TrainingModule
   publicAccess?: PublicAccessModule
+  demoImport?: DemoImportModule
   logger?: boolean | Record<string, unknown>
 }
 
@@ -141,6 +143,7 @@ export function buildServer({
   scheduling,
   training,
   publicAccess,
+  demoImport,
   logger = false,
 }: ServerDependencies): FastifyInstance {
   const server = Fastify({
@@ -197,6 +200,9 @@ export function buildServer({
         ...(error.current === undefined ? {} : { current: error.current }),
       })
     }
+    if (error instanceof DemoImportConflictError) {
+      return reply.status(409).send({ error: error.reason, message: error.message })
+    }
     if (error instanceof AccountDeletionUnavailableError) {
       return reply
         .status(503)
@@ -218,7 +224,10 @@ export function buildServer({
   server.get('/health', async () => ({ status: 'ok' }))
 
   server.addHook('onSend', async (request, reply, payload) => {
-    if (request.routeOptions.url?.startsWith('/v1/public/')) {
+    if (
+      request.routeOptions.url?.startsWith('/v1/public/') ||
+      request.routeOptions.url?.startsWith('/v1/demo-imports')
+    ) {
       reply.header('Cache-Control', 'no-store, private')
       reply.header('Pragma', 'no-cache')
       reply.header('Referrer-Policy', 'no-referrer')
@@ -725,6 +734,63 @@ export function buildServer({
         request.body,
       )),
     }))
+  }
+
+  if (demoImport) {
+    server.post<{ Body: unknown }>(
+      '/v1/demo-imports/previews',
+      { bodyLimit: 10 * 1024 * 1024 },
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const preview = await demoImport.preview(identity, request.body)
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(201).send({ preview })
+      },
+    )
+    server.post<{ Body: unknown }>('/v1/demo-imports', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const importRun = await demoImport.create(identity, request.body)
+      await accountLifecycle.recordActivity(identity)
+      return reply.status(202).send({ importRun })
+    })
+    server.get<{ Params: { importId: string } }>(
+      '/v1/demo-imports/:importId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const importRun = await demoImport.get(identity, request.params.importId)
+        if (!importRun)
+          return reply
+            .status(404)
+            .send({ error: 'demo_import_not_found', message: 'Demo import was not found.' })
+        return { importRun }
+      },
+    )
+    server.post<{ Params: { importId: string } }>(
+      '/v1/demo-imports/:importId/continue',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const importRun = await demoImport.continue(identity, request.params.importId)
+        if (!importRun)
+          return reply
+            .status(404)
+            .send({ error: 'demo_import_not_found', message: 'Demo import was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { importRun }
+      },
+    )
+    server.post<{ Params: { importId: string }; Body: unknown }>(
+      '/v1/demo-imports/:importId/rollback',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const importRun = await demoImport.rollback(identity, request.params.importId, request.body)
+        if (!importRun)
+          return reply
+            .status(404)
+            .send({ error: 'demo_import_not_found', message: 'Demo import was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { importRun }
+      },
+    )
   }
 
   server.get('/v1/workspace-settings', async (request) => {
