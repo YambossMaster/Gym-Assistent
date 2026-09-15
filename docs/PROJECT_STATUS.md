@@ -8,20 +8,18 @@
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Active phase       | **M6 — Public Capability Links**                                                      |
-| Current package    | **M6 Contract**                                                                       |
-| Package state      | **Not started; requires Product Owner authorization and frozen Contract**             |
+| Current package    | **M6 Terra / Sol / CI**                                                               |
+| Package state      | **Terra/Sol and local/live/browser CI gates passed; remote delivery pending**         |
 | Completed baseline | M0–M5 Done; M5 delivery commit `5afa212`, GitHub Actions run `34956661567` successful |
 | Branch baseline    | `main`; M5 delivery commit `5afa212`, GitHub Actions run `34956661567` successful     |
-| Worktree           | M5 completion Status update only                                                      |
-| Linked database    | Development only; M5 Training migrations through `20260915100537` applied             |
+| Worktree           | M6 complete and verified locally; cohesive delivery commit pending                    |
+| Linked database    | Development only; M6 migration `20260915111114` applied; dry-run up to date           |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Stop at the completed M5 milestone boundary. The next executable package is **M6 Contract** for
-public `/t/:token` and `/r/:token` Capability Links. Begin only after Product Owner authorization;
-freeze public authorization, expiry/revocation, Training Result visibility, route states, responsive
-acceptance, and evidence before any M6 Terra implementation.
+Create and push the cohesive M6 delivery commit, then confirm GitHub Actions Verify and
+migration-dry-run for the exact SHA. Record the observed remote run before marking M6 Done.
 
 ## Milestone status
 
@@ -34,7 +32,7 @@ acceptance, and evidence before any M6 Terra implementation.
 | M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
 | M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
+| M6 Public Capability Links             | CI          | Terra/Sol and all local/live/browser gates passed; commit, push, and exact-SHA remote jobs remain                               |
 | M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
@@ -100,8 +98,8 @@ acceptance, and evidence before any M6 Terra implementation.
 
 - `/today`, `/calendar`, `/sessions/:id`, Student scheduling/performance, `/exercises`, and M5
   Settings now expose their server-authoritative projections.
-- `/t/:token` and `/r/:token` are absent and currently fall through the authenticated route path;
-  they belong to M6 and must eventually mount outside Auth.
+- `/t/:token` and `/r/:token` now mount before Coach Auth with a separate, non-persisted public
+  query client; the service worker excludes both route prefixes and all API responses.
 - Some rendered copy describes implementation state rather than helping a Coach complete a task.
 
 ## Open risks and constraints
@@ -178,6 +176,7 @@ npm run e2e:m4 --workspace @gym-assistant/api
 npm run preview:m4-demo --workspace @gym-assistant/api
 npm run preview:m5 --workspace @gym-assistant/api
 npm run e2e:m5 --workspace @gym-assistant/api
+npm run e2e:m6 --workspace @gym-assistant/api
 git diff --check
 ```
 
@@ -185,6 +184,77 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-076 — M6 cleanup recovered and every local/live gate passed
+
+- **Scope:** execute the Product Owner-approved recovery of the exact interrupted M6 fixture, then
+  rerun M6 and the complete pre-delivery verification matrix.
+- **Outcome:** removed only Student `3d5b9269-94b9-4021-a506-b9298439ebc5`, restored weekdays 5–7
+  of the same isolated test Coach from `06:00–22:00` to the verified inactive sentinel, corrected
+  the M6 E2E Session-detail assertion, and completed a new full run through its `finally` cleanup.
+- **Verification:** post-cleanup SQL reports zero `M6 E2E %` Students, zero linked Capability Links,
+  and zero `06:00–22:00` Availability fixture windows. M6 live E2E passed result
+  allowlist/consent/revocation, Coach isolation, lifecycle, secure headers, fresh-slot conflict, and
+  exactly-once parallel redemption. Final root check passed API 60/Web 66 tests; root build,
+  `git diff --check`, linked migration dry-run, and `app_private` lint passed. The existing Vite
+  > 500-kB advisory remains unchanged.
+- **Next:** create/push the cohesive M6 commit and confirm GitHub Actions Verify plus
+  migration-dry-run for its exact SHA.
+
+### 2026-09-15 — LOG-075 — M6 Terra/Sol implemented; delivery paused for exact test cleanup
+
+- **Scope:** implemented the frozen Public Capability Links contract through private-schema
+  persistence, Public Access orchestration/repository/HTTP boundaries, Coach management, standalone
+  Training Result and Reschedule pages, PNG export, focus refresh, service-worker exclusion, and
+  responsive FORM presentation.
+- **Outcome:** linked migration `20260915111114_m6_public_capability_links` is applied and its final
+  dry-run is up to date. Public secrets are 256-bit base64url values stored only as SHA-256 digests;
+  responses use purpose-specific allowlists, no-store/no-referrer headers, IP/token rate buckets,
+  immutable Training Note consent, automatic resource-change revocation, and serializable
+  exactly-once rescheduling with a `40001` loser retry to the recoverable Used state.
+- **Verification:** root check passed API 16 files/60 tests and Web 15 files/66 tests; root build and
+  `git diff --check` passed with only the existing >500-kB Vite advisory. Linked `app_private` lint
+  found no errors. M4 and M5 isolated live regressions passed. M6 live exercised Coach isolation,
+  active/revoke/reissue, tampered/wrong-purpose/consent allowlists, stale-slot refresh, and parallel
+  200/409 redemption. Chrome desktop/exact 390×844 accepted long names, no overflow, PNG download,
+  keyboard/Escape focus restoration, and public routing without Auth UI.
+- **Known issue:** stopping the final redundant E2E rerun terminated its `finally` midway, leaving
+  the clearly named isolated Student `3d5b9269-94b9-4021-a506-b9298439ebc5` and weekdays 5–7 of the
+  same test Coach at the fixture window. Read-only SQL confirmed the exact residue. The requested
+  cleanup mutation was denied pending explicit authorization. Supabase security advisor retains
+  only the accepted leaked-password warning; performance advisor retains pre-existing notices plus
+  fresh/unused M6 index and multiple-permissive-policy warnings, with no security finding.
+- **Next:** obtain explicit cleanup approval, restore/delete only the verified fixture, rerun M6
+  E2E through cleanup and final checks, then commit/push and observe remote Verify plus
+  migration-dry-run.
+
+### 2026-09-15 — LOG-074 — M6 Contract frozen and implementation authorized
+
+- **Scope:** Product Owner approved the complete M6 Contract and requested continuous engineering.
+- **Outcome:** [`M6-CONTRACT.md`](M6-CONTRACT.md) is frozen. Terra may implement its schema, Module,
+  HTTP, Web, and evidence package, followed in order by Sol convergence and CI delivery.
+- **Verification:** the approved document and exact handoff were recorded. No M6 implementation,
+  migration, live/browser acceptance, commit, push, or remote CI evidence is claimed at this gate.
+- **Next:** execute M6 Terra from Contract section 9; return only missing product decisions to a
+  Contract amendment.
+
+### 2026-09-15 — LOG-073 — M6 Contract prepared for approval
+
+- **Scope:** Product Owner authorized entry into M6 Contract after confirmed M5 delivery. Inspected
+  the Demo public Training/Reschedule flows, formal M4 Scheduling and M5 Training authority seams,
+  current Auth/PWA routing, ADRs, and current Supabase private-schema/Data API guidance.
+- **Outcome:** [`M6-CONTRACT.md`](M6-CONTRACT.md) freezes for approval two 24-hour capability
+  purposes, digest-only secrets, issue/revoke/reissue rules, Training Note consent, recursive public
+  allowlists, conflict-free ±3-local-day reschedule slots, single-use transactional redemption,
+  rate limiting, no-store/log-redaction boundaries, exact public states/copy, responsive acceptance,
+  and the Terra/Sol/CI evidence matrix. Architecture now reflects the delivered M4/M5 seams. No M6
+  implementation is authorized until Product Owner approval.
+- **Verification:** the M5 `5afa212`/CI `34956661567` baseline and clean starting worktree were
+  observed. Targeted Prettier check and repository `git diff --check` passed after the Contract and
+  Architecture/Status alignment. No schema/API/Web implementation, migration, live or browser
+  write, commit, push, or remote CI evidence is claimed.
+- **Next:** Product Owner reviews and approves the complete M6 Contract. Then mark it frozen and
+  execute M6 Terra from section 9 without reopening settled product decisions.
 
 ### 2026-09-15 — LOG-072 — M5 Training delivered
 

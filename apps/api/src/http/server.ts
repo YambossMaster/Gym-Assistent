@@ -25,6 +25,8 @@ import { SchedulingModule } from '../scheduling/scheduling-module.js'
 import { SchedulingVersionConflictError } from '../scheduling/scheduling-repository.js'
 import { TrainingModule } from '../training/training-module.js'
 import { TrainingVersionConflictError } from '../training/training-repository.js'
+import { PublicAccessModule } from '../public-access/public-access-module.js'
+import { PublicCapabilityError, PublicRateLimitError } from '../public-access/public-access.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -35,7 +37,8 @@ export interface ServerDependencies {
   registrationEmails: RegistrationEmailLookup
   scheduling?: SchedulingModule
   training?: TrainingModule
-  logger?: boolean
+  publicAccess?: PublicAccessModule
+  logger?: boolean | Record<string, unknown>
 }
 
 const createStudentBodySchema = {
@@ -137,6 +140,7 @@ export function buildServer({
   registrationEmails,
   scheduling,
   training,
+  publicAccess,
   logger = false,
 }: ServerDependencies): FastifyInstance {
   const server = Fastify({
@@ -181,6 +185,18 @@ export function buildServer({
         current: error.current,
       })
     }
+    if (error instanceof PublicRateLimitError) {
+      return reply
+        .header('Retry-After', String(error.retryAfter))
+        .status(429)
+        .send({ error: 'rate_limited', message: 'Too many requests.' })
+    }
+    if (error instanceof PublicCapabilityError) {
+      return reply.status(error.statusCode).send({
+        error: error.reason,
+        ...(error.current === undefined ? {} : { current: error.current }),
+      })
+    }
     if (error instanceof AccountDeletionUnavailableError) {
       return reply
         .status(503)
@@ -200,6 +216,16 @@ export function buildServer({
   })
 
   server.get('/health', async () => ({ status: 'ok' }))
+
+  server.addHook('onSend', async (request, reply, payload) => {
+    if (request.routeOptions.url?.startsWith('/v1/public/')) {
+      reply.header('Cache-Control', 'no-store, private')
+      reply.header('Pragma', 'no-cache')
+      reply.header('Referrer-Policy', 'no-referrer')
+      reply.header('X-Robots-Tag', 'noindex, nofollow')
+    }
+    return payload
+  })
 
   server.post<{ Body: { email: string } }>(
     '/v1/account-registration-check',
@@ -627,6 +653,80 @@ export function buildServer({
     })
   }
 
+  if (publicAccess) {
+    server.get<{ Params: { sessionId: string } }>(
+      '/v1/sessions/:sessionId/capability-links',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const links = await publicAccess.list(identity, request.params.sessionId)
+        if (!links)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { links }
+      },
+    )
+    server.post<{ Params: { sessionId: string }; Body: unknown }>(
+      '/v1/sessions/:sessionId/capability-links',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const issued = await publicAccess.issue(identity, request.params.sessionId, request.body)
+        if (!issued)
+          return reply
+            .status(404)
+            .send({ error: 'session_not_found', message: 'Course Session was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(201).send(issued)
+      },
+    )
+    server.post<{ Params: { linkId: string }; Body: unknown }>(
+      '/v1/capability-links/:linkId/reissue',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const issued = await publicAccess.reissue(identity, request.params.linkId, request.body)
+        if (!issued)
+          return reply
+            .status(404)
+            .send({ error: 'capability_link_not_found', message: 'Capability Link was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return reply.status(201).send(issued)
+      },
+    )
+    server.post<{ Params: { linkId: string }; Body: unknown }>(
+      '/v1/capability-links/:linkId/revoke',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const link = await publicAccess.revoke(identity, request.params.linkId, request.body)
+        if (!link)
+          return reply
+            .status(404)
+            .send({ error: 'capability_link_not_found', message: 'Capability Link was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { link }
+      },
+    )
+    server.get('/v1/public/training-result', async (request) => ({
+      trainingResult: await publicAccess.trainingResult(
+        capabilityHeader(request.headers['x-capability-token']),
+        request.ip,
+      ),
+    }))
+    server.get('/v1/public/reschedule', async (request) => ({
+      reschedule: await publicAccess.reschedule(
+        capabilityHeader(request.headers['x-capability-token']),
+        request.ip,
+      ),
+    }))
+    server.post<{ Body: unknown }>('/v1/public/reschedule/redeem', async (request) => ({
+      ...(await publicAccess.redeem(
+        capabilityHeader(request.headers['x-capability-token']),
+        request.ip,
+        request.body,
+      )),
+    }))
+  }
+
   server.get('/v1/workspace-settings', async (request) => {
     const identity = await identityVerifier.verify(request.headers.authorization)
     const settings = await workspace.getSettings(identity)
@@ -805,4 +905,8 @@ export function buildServer({
   )
 
   return server
+}
+
+function capabilityHeader(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : ''
 }

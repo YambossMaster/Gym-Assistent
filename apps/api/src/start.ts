@@ -13,6 +13,8 @@ import { SchedulingModule } from './scheduling/scheduling-module.js'
 import { PostgresSchedulingRepository } from './adapters/postgres-scheduling-repository.js'
 import { PostgresTrainingRepository } from './adapters/postgres-training-repository.js'
 import { TrainingModule } from './training/training-module.js'
+import { PostgresPublicAccessRepository } from './adapters/postgres-public-access-repository.js'
+import { PublicAccessModule } from './public-access/public-access-module.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -46,7 +48,16 @@ const server = buildServer({
   }),
   scheduling: new SchedulingModule(new PostgresSchedulingRepository(pool)),
   training: new TrainingModule(new PostgresTrainingRepository(pool)),
-  logger: true,
+  publicAccess: new PublicAccessModule(
+    new PostgresPublicAccessRepository(pool),
+    config.CAPABILITY_RATE_LIMIT_SECRET ?? config.SUPABASE_SECRET_KEY ?? config.DATABASE_URL,
+  ),
+  logger: {
+    redact: {
+      paths: ['req.headers.x-capability-token', 'req.body.token', 'res.body.token'],
+      censor: '[REDACTED]',
+    },
+  },
 })
 
 server.addHook('onClose', async () => {

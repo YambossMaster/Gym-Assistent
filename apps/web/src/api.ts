@@ -236,6 +236,54 @@ export interface AccountLifecycle {
   deletionDueAt: string | null
 }
 
+export type CapabilityPurpose = 'training_result' | 'reschedule_session'
+export type CapabilityStatus = 'active' | 'expired' | 'revoked' | 'used'
+export interface CapabilityLinkMetadata {
+  id: string
+  purpose: CapabilityPurpose
+  status: CapabilityStatus
+  expiresAt: string
+  includeTrainingNote: boolean
+  createdAt: string
+  version: number
+  allowedActions: { canReissue: boolean; canRevoke: boolean }
+}
+export interface IssuedCapabilityLink {
+  link: CapabilityLinkMetadata
+  token: string
+}
+export interface PublicTrainingResult {
+  coachDisplayName: string
+  studentDisplayName: string
+  session: { startsAt: string; endsAt: string; timeZone: string; durationMinutes: number }
+  exercises: Array<{
+    position: number
+    definitionName: string
+    sets: Array<{
+      position: number
+      plannedWeight: number | null
+      actualReps: number | null
+      unit: WeightUnit
+      rpe: number | null
+      result: 'completed' | 'incomplete' | null
+    }>
+  }>
+  trainingNote?: string
+}
+export interface PublicReschedule {
+  coachDisplayName: string
+  studentDisplayName: string
+  timeZone: string
+  expiresAt: string
+  originalSession: { startsAt: string; endsAt: string; durationMinutes: number }
+  slots: Array<{ startsAt: string; endsAt: string }>
+}
+export interface PublicUsedReschedule {
+  coachDisplayName: string
+  timeZone: string
+  redeemedStartsAt: string
+}
+
 export async function isRegistrationEmailTaken(email: string): Promise<boolean> {
   const response = await requestPublic<{ exists: boolean }>('/api/v1/account-registration-check', {
     method: 'POST',
@@ -269,9 +317,16 @@ interface AccountLifecycleResponse {
 }
 
 interface ErrorResponse {
+  error?: string
   message?: string
+  retryAfter?: number
   currentPurchase?: LessonPurchase
-  current?: CalendarSession | CalendarBlock | ScheduleSeries
+  current?:
+    | CalendarSession
+    | CalendarBlock
+    | ScheduleSeries
+    | PublicUsedReschedule
+    | { reschedule: PublicReschedule }
 }
 
 export class ApiError extends Error {
@@ -831,6 +886,69 @@ export async function deleteAccountImmediately(accessToken: string): Promise<voi
   })
 }
 
+export async function listCapabilityLinks(
+  accessToken: string,
+  sessionId: string
+): Promise<CapabilityLinkMetadata[]> {
+  const response = await request<{ links: CapabilityLinkMetadata[] }>(
+    `/api/v1/sessions/${sessionId}/capability-links`,
+    accessToken
+  )
+  return response.links
+}
+
+export async function issueCapabilityLink(
+  accessToken: string,
+  sessionId: string,
+  input: { purpose: CapabilityPurpose; includeTrainingNote?: boolean }
+): Promise<IssuedCapabilityLink> {
+  return request(`/api/v1/sessions/${sessionId}/capability-links`, accessToken, json('POST', input))
+}
+
+export async function reissueCapabilityLink(
+  accessToken: string,
+  linkId: string,
+  input: { version: number; includeTrainingNote?: boolean }
+): Promise<IssuedCapabilityLink> {
+  return request(`/api/v1/capability-links/${linkId}/reissue`, accessToken, json('POST', input))
+}
+
+export async function revokeCapabilityLink(
+  accessToken: string,
+  linkId: string,
+  version: number
+): Promise<CapabilityLinkMetadata> {
+  const response = await request<{ link: CapabilityLinkMetadata }>(
+    `/api/v1/capability-links/${linkId}/revoke`,
+    accessToken,
+    json('POST', { version })
+  )
+  return response.link
+}
+
+export async function getPublicTrainingResult(token: string): Promise<PublicTrainingResult> {
+  const response = await capabilityRequest<{ trainingResult: PublicTrainingResult }>(
+    '/api/v1/public/training-result',
+    token
+  )
+  return response.trainingResult
+}
+
+export async function getPublicReschedule(token: string): Promise<PublicReschedule> {
+  const response = await capabilityRequest<{ reschedule: PublicReschedule }>(
+    '/api/v1/public/reschedule',
+    token
+  )
+  return response.reschedule
+}
+
+export async function redeemPublicReschedule(
+  token: string,
+  startsAt: string
+): Promise<{ reschedule: PublicReschedule; used: PublicUsedReschedule }> {
+  return capabilityRequest('/api/v1/public/reschedule/redeem', token, json('POST', { startsAt }))
+}
+
 async function request<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -860,7 +978,24 @@ async function requestPublic<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, init)
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse
-    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', error)
+    const retryAfter = Number(response.headers.get('retry-after'))
+    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', {
+      ...error,
+      ...(Number.isInteger(retryAfter) && retryAfter > 0 ? { retryAfter } : {})
+    })
   }
   return (await response.json()) as T
+}
+
+async function capabilityRequest<T>(
+  path: string,
+  token: string,
+  init: RequestInit = {}
+): Promise<T> {
+  return requestPublic<T>(path, {
+    ...init,
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer',
+    headers: { ...init.headers, 'x-capability-token': token }
+  })
 }

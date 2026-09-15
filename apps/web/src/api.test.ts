@@ -4,6 +4,7 @@ import {
   createLessonPurchase,
   deleteAccountImmediately,
   deleteLessonPurchase,
+  getPublicTrainingResult,
   getWorkspaceSettings,
   getToday,
   isRegistrationEmailTaken,
@@ -284,5 +285,38 @@ describe('student API client', () => {
         headers: expect.objectContaining({ authorization: 'Bearer verified-token' })
       })
     )
+  })
+
+  it('sends a public capability only in a no-store header request', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          trainingResult: {
+            coachDisplayName: 'FORM',
+            studentDisplayName: '品妤',
+            session: {
+              startsAt: '2026-09-15T01:00:00.000Z',
+              endsAt: '2026-09-15T02:00:00.000Z',
+              timeZone: 'Asia/Taipei',
+              durationMinutes: 60
+            },
+            exercises: []
+          }
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
+    )
+
+    await getPublicTrainingResult('secret-capability')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/public/training-result',
+      expect.objectContaining({
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer',
+        headers: { 'x-capability-token': 'secret-capability' }
+      })
+    )
+    expect(fetchMock.mock.calls[0]![0]).not.toContain('secret-capability')
   })
 })

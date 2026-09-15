@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
@@ -24,9 +24,27 @@ const navigation = [
 
 export function CoachWorkspace({ session }: { session: Session }) {
   const location = useLocation()
+  const queryClient = useQueryClient()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [location.pathname])
+  useEffect(() => {
+    const schedulingKeys = new Set([
+      'session',
+      'calendar',
+      'today',
+      'student',
+      'students',
+      'session-training',
+      'capability-links'
+    ])
+    const refreshPublicMutationConsumers = () =>
+      void queryClient.invalidateQueries({
+        predicate: (query) => schedulingKeys.has(String(query.queryKey[0]))
+      })
+    window.addEventListener('focus', refreshPublicMutationConsumers)
+    return () => window.removeEventListener('focus', refreshPublicMutationConsumers)
+  }, [queryClient])
   const coachSettingsQuery = useQuery({
     queryKey: queryKeys.settings(session.user.id),
     queryFn: () => getWorkspaceSettings(session.access_token)

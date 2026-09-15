@@ -19,6 +19,7 @@ import { isoToLocalDateTime, localDateTimeToIso } from '../calendar/calendar-tim
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { Confirmation } from '../../shared/primitives'
 import { TrainingWorkspace } from '../training/TrainingWorkspace'
+import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
 
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
@@ -162,6 +163,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
             <Trash2 /> 刪除
           </button>
         ) : null}
+        <CapabilityLinkActions session={session} item={item} />
       </section>
       {notice ? (
         <p className="form-notice" role="status">

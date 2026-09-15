@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ArrowRight, KeyRound } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { isRegistrationEmailTaken } from './api'
 import {
   requestPasswordReset,
@@ -14,12 +14,25 @@ import {
   verifySignupEmail
 } from './account-auth'
 import { CoachWorkspace } from './app-shell/CoachWorkspace'
+import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
 import { createAppQueryClient } from './query-client'
 import { supabase } from './supabase'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
 
 export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/t/:token" element={<PublicCapabilityApp purpose="training" />} />
+        <Route path="/r/:token" element={<PublicCapabilityApp purpose="reschedule" />} />
+        <Route path="*" element={<AuthenticatedApp />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+function AuthenticatedApp() {
   const [client] = useState(createAppQueryClient),
     [session, setSession] = useState<Session | null>(null),
     [ready, setReady] = useState(false),
@@ -42,9 +55,7 @@ export function App() {
   if (!session) return <SignIn />
   return (
     <QueryClientProvider client={client}>
-      <BrowserRouter>
-        <CoachWorkspace session={session} />
-      </BrowserRouter>
+      <CoachWorkspace session={session} />
     </QueryClientProvider>
   )
 }

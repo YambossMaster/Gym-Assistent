@@ -204,12 +204,19 @@ balance or online payment. Money uses integer minor units and ISO currency. Rema
 derived as purchased lesson count minus completed Course Sessions; low and negative values remain
 visible. Student and Purchase private notes remain Coach-only.
 
-### 6.2 M4 scheduling boundary
+### 6.2 Delivered Scheduling and Training boundaries
 
-M4 is not started. Its Contract gate will define Course Session calendar fields, range projections,
-Series reconciliation, Availability and Block operations, concurrency, and conflict presentation
-before any Scheduling Module, migration, or Web route is added. M3 retains only the entitlement
-relevant `course_session` state.
+M4 Scheduling owns temporal Course Session placement and status, range projections, Series
+reconciliation, Availability, Blocks, schedule warnings, and Session versions. Preserved date-less
+M3 rows remain legacy entitlement facts and never enter temporal or public projections.
+
+M5 Training owns Exercise Definitions, accepted Training Records and snapshots, private Training
+Notes, performance projections, and record versions. Scheduling remains authority for completing or
+reopening a Session even when Training coordinates an atomic record-and-completion operation.
+
+M6 Public Access may read only frozen purpose-specific interfaces from these Modules. It does not
+duplicate their private projections or take ownership of placement, status, Training content, or
+performance history.
 
 ### 6.3 HTTP and conflict contract
 

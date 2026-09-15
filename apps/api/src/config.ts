@@ -8,6 +8,7 @@ const baseConfigSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_JWT_AUDIENCE: z.string().min(1).default('authenticated'),
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),
+  CAPABILITY_RATE_LIMIT_SECRET: z.string().min(32).optional(),
 })
 
 export type AppConfig = z.infer<typeof baseConfigSchema>
