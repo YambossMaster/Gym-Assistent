@@ -7,20 +7,22 @@
 
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M4 — Scheduling**                                                                   |
-| Current package    | **M4 CI**                                                                             |
-| Package state      | **Contract, Terra, and Sol complete locally; commit, push, and remote CI are next**   |
-| Completed baseline | M0–M3 Done; M3 delivery commit `c55a95d`, GitHub Actions run `34565338417` successful |
-| Branch baseline    | `main`; A5 delivery commit `e403170`, GitHub Actions run `34766425884` successful     |
-| Worktree           | Contains locally complete M4 Scheduling awaiting cohesive delivery                    |
+| Active phase       | **M5 — Training and Exercise Library**                                                |
+| Current package    | **M5 Contract**                                                                       |
+| Package state      | **M4 Done; M5 Contract is the next Product Owner gate**                               |
+| Completed baseline | M0–M4 Done; M4 delivery commit `dc83d92`, GitHub Actions run `34947956256` successful |
+| Branch baseline    | `main`; M4 delivery commit `dc83d92`, GitHub Actions run `34947956256` successful     |
+| Worktree           | Clean after the M4 Status delivery commit                                             |
 | Linked database    | Development only; M4 Scheduling migration `20260913164133` applied                    |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Execute the **M4 CI gate** defined in [`M4-CONTRACT.md`](M4-CONTRACT.md): commit and push the locally
-verified Scheduling slice, confirm GitHub Actions Verify and migration-dry-run for the delivered
-commit, then mark M4 Done. Do not begin M5 before that evidence is recorded.
+Freeze the **M5 Contract gate** in `docs/` against the approved Roadmap and archived Demo: define
+Exercise Library, Training Record/Exercise/Set, stable definition identity plus snapshots,
+weight/reps and kg/lb conversion, completed-set/history semantics, Session autosave/offline/flush,
+completion/reopen, trends, picker interactions, responsive acceptance, and required evidence. Do
+not implement Terra until the Product Owner approves the frozen Contract.
 
 ## Milestone status
 
@@ -31,8 +33,8 @@ commit, then mark M4 Done. Do not begin M5 before that evidence is recorded.
 | M2 Coach account operations            | Done        | Registration, six-digit OTP, Email/Google/recovery, settings, sessions, deletion lifecycle, Edge Function/cron, live acceptance |
 | M3 Student and Lesson entitlement      | Done        | Student lifecycle, purchases/manual income, derived balances, two-Coach E2E, 390px acceptance, CI run `34565338417`             |
 | M3.5 Frontend gap filling              | Done        | A0–A5 delivered; commit `e403170`, CI run `34766425884` Verify and migration-dry-run successful                                 |
-| M4 Scheduling                          | In progress | Contract/Terra/Sol complete locally; API 43, Web 61, live E2E, migration checks, and desktop/390×844 acceptance passed; CI next |
-| M5 Training and Exercise Library       | Not started | Await M4 Course Session read contract                                                                                           |
+| M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
+| M5 Training and Exercise Library       | Not started | Course Session dependency satisfied by M4; Contract gate is next                                                                |
 | M6 Public Capability Links             | Not started | Await M4 rescheduling and M5 Training Result contracts                                                                          |
 | M7 Local resilience and Demo migration | Not started | Await stable target schemas                                                                                                     |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
@@ -136,6 +138,8 @@ commit, then mark M4 Done. Do not begin M5 before that evidence is recorded.
 - M4 browser: authenticated desktop and exact 390×844 acceptance passed for Calendar views,
   warning acknowledgement, modal/bottom-sheet focus and Escape restoration, Week-only horizontal
   scrolling, Today schedule, Student Series UI, no page overflow, and no console errors.
+- M4 remote: commit `dc83d92`, GitHub Actions CI #17 / run `34947956256` completed in 58 seconds;
+  Verify and migration-dry-run succeeded (API 12 files/43 tests; Web 14 files/61 tests).
 
 Current development validation commands:
 
@@ -152,6 +156,19 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-069 — M4 Scheduling delivered
+
+- **Scope:** delivered the complete frozen M4 Scheduling slice after its local, live database, Demo
+  preview, desktop, and exact-mobile evidence passed.
+- **Outcome:** M4 is Done on `main`; the protected M0–M4 baseline now includes the dated Course
+  Session read/write contract required by M5 without adding any Training data or behaviour.
+- **Verification:** commit `dc83d92` pushed to `origin/main`; GitHub Actions CI #17 / run
+  `34947956256` completed successfully in 58 seconds. Verify passed API 12 files/43 tests and Web 14
+  files/61 tests; migration-dry-run also succeeded. The two annotations are the tracked Node 20
+  action compatibility warnings, not job failures.
+- **Next:** freeze the M5 Training and Exercise Library Contract; do not begin Terra before Product
+  Owner approval.
 
 ### 2026-09-15 — LOG-068 — M4 Scheduling locally complete
 
