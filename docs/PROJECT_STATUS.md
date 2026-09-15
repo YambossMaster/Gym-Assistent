@@ -8,18 +8,19 @@
 | Field              | Current value                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------- |
 | Active phase       | **M7 — Local resilience and Demo migration**                                          |
-| Current package    | **M7 CI**                                                                             |
-| Package state      | **Terra and Sol complete; delivery CI pending**                                       |
-| Completed baseline | M0–M6 Done; M6 delivery commit `658ce1a`, GitHub Actions run `34966898151` successful |
-| Branch baseline    | `main`; M6 delivery commit `658ce1a6f59007f7ad9f709445b5989dd69d778b`                 |
-| Worktree           | Cohesive M7 implementation ready for delivery                                         |
+| Current package    | **M7 complete**                                                                       |
+| Package state      | **Done**                                                                              |
+| Completed baseline | M0–M7 Done; M7 delivery commit `8885404`, GitHub Actions run `34976808273` successful |
+| Branch baseline    | `main`; M7 delivery commit `888540469df530432c9ca62031742257900f077f`                 |
+| Worktree           | No M7 implementation changes pending                                                  |
 | Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date  |
 | Production         | Not configured; no real customer data                                                 |
 
 ## Next handoff
 
-Commit and push the cohesive M7 implementation, then confirm GitHub Actions `verify` and
-`migration-dry-run` for the exact delivery SHA. Stop at the M7 milestone boundary before M8.
+Stop at the M7 milestone boundary. Before entering M8, the Product Owner must authorize the
+deployment/Beta package and resolve its hosting, secrets, recovery, observability, and security
+decisions through Contract.
 
 ## Milestone status
 
@@ -33,7 +34,7 @@ Commit and push the cohesive M7 implementation, then confirm GitHub Actions `ver
 | M4 Scheduling                          | Done        | Commit `dc83d92`; CI run `34947956256` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M7 Local resilience and Demo migration | CI pending  | Contract, Terra, Sol, local/live/migration/browser gates passed; exact-SHA remote CI remains                                    |
+| M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
 
@@ -189,6 +190,11 @@ Commit and push the cohesive M7 implementation, then confirm GitHub Actions `ver
 - M7 browser: authenticated desktop and exact 390×844 Settings acceptance passed import/recovery
   hierarchy, readable step progression, mobile stacking and sticky navigation without horizontal
   overflow; Chrome console reported no warnings or errors.
+- M7 remote: delivery commit `8885404` is on `origin/main`; GitHub Actions CI #24 / run
+  `34976808273` completed successfully in 1 minute 9 seconds for exact SHA
+  `888540469df530432c9ca62031742257900f077f`. Job `verify` succeeded in 37 seconds (API 66, Web 72)
+  and `migration-dry-run` succeeded in 24 seconds. The two annotations are the tracked Node 20
+  action compatibility warnings, not job failures.
 
 Current development validation commands:
 
@@ -209,6 +215,19 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-15 — LOG-080 — M7 delivered with exact-SHA remote CI
+
+- **Scope:** delivered the cohesive M7 Contract/Terra/Sol implementation and observed the remote CI
+  result for the exact delivery commit.
+- **Outcome:** commit `8885404` is on `origin/main`; Local resilience and Demo migration is Done and
+  the protected baseline is now M0–M7. No M8 deployment or production scope was entered.
+- **Verification:** GitHub Actions CI #24 / run `34976808273` succeeded in 1 minute 9 seconds for
+  exact SHA `888540469df530432c9ca62031742257900f077f`; `verify` passed in 37 seconds with API 66 and
+  Web 72 tests, and `migration-dry-run` passed in 24 seconds. Its two annotations are the already
+  tracked Node 20 action compatibility warnings.
+- **Next:** stop at the M7 milestone boundary. Product Owner authorization and a frozen M8 Contract
+  are required before hosting, secrets, recovery, observability, or production security work.
 
 ### 2026-09-15 — LOG-079 — M7 Terra and Sol complete; CI delivery pending
 
