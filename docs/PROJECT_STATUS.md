@@ -12,7 +12,7 @@
 | Package state      | **Done**                                                                              |
 | Completed baseline | M0–M6 Done; M6 delivery commit `658ce1a`, GitHub Actions run `34966898151` successful |
 | Branch baseline    | `main`; M6 delivery commit `658ce1a6f59007f7ad9f709445b5989dd69d778b`                 |
-| Worktree           | Status evidence update pending commit                                                 |
+| Worktree           | No M6 implementation changes pending                                                  |
 | Linked database    | Development only; M6 migration `20260915111114` applied; dry-run up to date           |
 | Production         | Not configured; no real customer data                                                 |
 
