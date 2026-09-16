@@ -9,19 +9,19 @@
 | ------------------ | ------------------------------------------------------------------------------------ |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                           |
 | Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                     |
-| Package state      | **Local/browser complete; Product Owner-authorized early CI delivery pending**       |
+| Package state      | **Stage 1 checkpoint delivered; Product Owner review continues**                     |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                        |
-| Branch baseline    | `main`; local M7.5 checkpoint `120f867`, one commit ahead of `origin/main`           |
-| Worktree           | Stage 1 workflow plus route-prefetch/client-filter delivery pending                  |
+| Branch baseline    | `main`; M7.5 interim delivery commit `f5996f1` is on `origin/main`                   |
+| Worktree           | Interim delivery/evidence aligned; Stage 1 review remains open                       |
 | Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date |
 | Production         | Not configured; no real customer data                                                |
 
 ## Next handoff
 
-Deliver the Product Owner-authorized early M7.5 Stage 1 checkpoint: create and push the cohesive
-route-prefetch/client-filter commit with the existing `120f867` checkpoint, then confirm exact-SHA
-GitHub Actions Verify and migration-dry-run. After delivery, remain in Stage 1 for the next reported
-issue; do not begin the consolidated Stage 2 package or enter M8.
+Continue M7.5 Stage 1 with the next Product Owner-reported issue. Apply immediate corrections with
+focused local/browser evidence and append deferrable work to the Stage 2 backlog below. The interim
+checkpoint through `f5996f1` is delivered; do not begin the consolidated Stage 2 package or enter M8
+until the Product Owner explicitly changes the phase.
 
 ## M7.5 Stage 2 backlog
 
@@ -43,7 +43,7 @@ issue; do not begin the consolidated Stage 2 package or enter M8.
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M7.5 Pre-deployment product hardening  | In progress | Stage 1 active; course records and route-prefetch/client-filter corrections verified locally/browser; delivery deferred         |
+| M7.5 Pre-deployment product hardening  | In progress | Stage 1 interim checkpoint `f5996f1`; CI run `35065072206` Verify and migration-dry-run succeeded                               |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
 
@@ -219,6 +219,11 @@ issue; do not begin the consolidated Stage 2 package or enter M8.
   Fresh authenticated Chrome acceptance showed Calendar and Exercise Library without loading
   skeletons after prefetch, reduced 101 definitions to one visible `Pallof` match locally, and
   reported no console warnings or errors.
+- M7.5 Stage 1 interim remote: commits `120f867` and `f5996f1` reached `origin/main`; GitHub Actions
+  CI #26 / run `35065072206` succeeded in 55 seconds for exact SHA
+  `f5996f1b25454dca3f7b186d801123ebe8bdcce8`. Verify succeeded in 28 seconds with API 18 files/66
+  tests and Web 19 files/79 tests; migration-dry-run succeeded in 20 seconds. Its two annotations are
+  the tracked Node 20 action compatibility warnings, not job failures.
 
 Current development validation commands:
 
@@ -240,18 +245,22 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
-### 2026-09-16 — LOG-084 — M7.5 Stage 1 early delivery authorized; local CI gate complete
+### 2026-09-16 — LOG-084 — M7.5 Stage 1 interim checkpoint delivered
 
 - **Scope:** Product Owner explicitly requested an interim push and CI run for the current M7.5
   Stage 1 checkpoint, including Student course-record composition, the two-stage workflow, route
   prefetch/cache correction, and client-side Exercise filtering.
-- **Outcome:** the combined checkpoint is locally ready for an early delivery without ending Stage 1
-  or starting the deferred Stage 2 backlog. No schema, migration, production, or M8 scope changed.
+- **Outcome:** commits `120f867` and `f5996f1` are on `origin/main`; the interim delivery does not end
+  Stage 1 or start the deferred Stage 2 backlog. No schema, migration, production, or M8 scope changed.
 - **Verification:** root check passed API 18 files/66 tests and Web 19 files/79 tests. Root production
   build passed with only the existing Web >500-kB advisory; linked migration dry-run reported
   `upToDate:true` with no migrations, seeds, or roles pending; `git diff --check` passed.
-- **Next:** create and push the cohesive delivery commit, confirm exact-SHA GitHub Actions Verify and
-  migration-dry-run, then record the remote evidence and resume Stage 1 review.
+- **Delivery:** GitHub Actions CI #26 / run `35065072206` completed successfully in 55 seconds for
+  exact SHA `f5996f1b25454dca3f7b186d801123ebe8bdcce8`; Verify passed in 28 seconds and
+  migration-dry-run passed in 20 seconds. The two annotations are the tracked Node 20 action
+  compatibility warnings.
+- **Next:** resume Stage 1 with the next Product Owner-reported issue; keep the Windows-entrypoint
+  correction in the Stage 2 backlog and do not enter M8.
 
 ### 2026-09-16 — LOG-083 — M7.5 route prefetch and local Exercise filtering complete
 
