@@ -54,7 +54,18 @@ export interface TodayProjection {
     lessonSummary: { purchased: number; completed: number; remaining: number }
     targetRoute: string
   }>
+  notifications?: TodayNotification[]
   schedule?: TodaySchedule
+}
+
+export interface TodayNotification {
+  id: string
+  kind: 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
+  title: string
+  detail: string
+  targetRoute: string | null
+  occurredAt: string
+  readAt: string | null
 }
 
 export interface CalendarSession {
@@ -109,7 +120,11 @@ export interface ScheduleSeries {
 export interface TodaySchedule {
   date: string
   timeZone: string
-  sessions: CalendarProjection['sessions']
+  sessions: Array<
+    CalendarProjection['sessions'][number] & {
+      trainingPlan?: { exerciseCount: number; status: 'unplanned' | 'in_progress' | 'ready' }
+    }
+  >
   counts: { scheduled: number; completed: number }
   conflictAttention: CalendarProjection['sessions']
   isEmpty: boolean
@@ -454,6 +469,22 @@ export async function getLessonPurchaseIncome(accessToken: string): Promise<Less
 export async function getToday(accessToken: string): Promise<TodayProjection> {
   const response = await request<{ today: TodayProjection }>('/api/v1/today', accessToken)
   return response.today
+}
+
+export async function readTodayNotification(accessToken: string, id: string) {
+  return request<{ id: string; readAt: string }>(
+    '/api/v1/today/notifications/read',
+    accessToken,
+    json('POST', { id })
+  )
+}
+
+export async function dismissTodayNotification(accessToken: string, id: string) {
+  return request<{ id: string }>(
+    '/api/v1/today/notifications/dismiss',
+    accessToken,
+    json('POST', { id })
+  )
 }
 
 export async function getCalendar(

@@ -6,6 +6,7 @@ import type {
   PerformanceMetric,
   SaveTrainingInput,
   SessionTraining,
+  TodayTrainingPlan,
   WeightUnit,
 } from './training.js'
 
@@ -57,6 +58,10 @@ export interface TrainingRepository {
     input: { defaultWeightUnit: WeightUnit; version: number; operationId: string },
   ): Promise<{ defaultWeightUnit: WeightUnit; version: number }>
   getSessionTraining(workspaceId: string, sessionId: string): Promise<SessionTraining | null>
+  todayTrainingPlans(
+    workspaceId: string,
+    sessionIds: string[],
+  ): Promise<Record<string, TodayTrainingPlan>>
   saveSessionTraining(
     workspaceId: string,
     sessionId: string,

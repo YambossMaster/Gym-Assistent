@@ -152,6 +152,30 @@ export type SessionTraining = {
   allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
 }
 
+export type TodayTrainingPlan = {
+  exerciseCount: number
+  status: 'unplanned' | 'in_progress' | 'ready'
+}
+
+export function todayTrainingPlan(input: {
+  exerciseCount: number
+  exercisesWithSets: number
+  setCount: number
+  plannedSetCount: number
+}): TodayTrainingPlan {
+  return {
+    exerciseCount: input.exerciseCount,
+    status:
+      input.exerciseCount === 0
+        ? 'unplanned'
+        : input.exercisesWithSets === input.exerciseCount &&
+            input.setCount > 0 &&
+            input.plannedSetCount === input.setCount
+          ? 'ready'
+          : 'in_progress',
+  }
+}
+
 export function deriveResult(actualReps: number | null, plannedReps: number | null) {
   if (actualReps === null || plannedReps === null) return null
   return actualReps < plannedReps ? ('incomplete' as const) : ('completed' as const)

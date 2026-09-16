@@ -31,8 +31,15 @@ publishable key；資料庫密碼與 secret/service-role key 不得進入瀏覽�
 
 若只想直接進入現有正式應用，不必使用命令列：在根目錄雙擊
 [`start-gym-assistant.cmd`](start-gym-assistant.cmd)。它會在首次需要時安裝依賴、開啟
-API 視窗，並自動在瀏覽器開啟 `http://127.0.0.1:5173`。使用期間請保留兩個視窗開啟。
+API 視窗，確認本機 API 已可使用後，才在瀏覽器開啟 `http://127.0.0.1:5173`。
+再次執行可補啟已關閉的 API 並重用既有 Web；若 API 無法啟動，入口會停下並提示查看
+API 視窗的錯誤。使用期間請保留服務視窗開啟。
 這是 development Supabase 環境，請勿輸入真實客戶資料。
+
+若要在電腦上檢查手機版畫面，雙擊根目錄的
+[`start-gym-assistant-mobile.cmd`](start-gym-assistant-mobile.cmd)。它沿用相同的服務啟動流程，
+並開啟 `http://127.0.0.1:5173/mobile-preview.html`；應用會顯示在固定 390 × 844 的
+可操作視窗內。這是桌機上的響應式預覽，實際觸控與手機瀏覽器行為仍需在手機上檢查。
 
 資料庫設定與本機啟動方式請見 [`apps/api/README.md`](apps/api/README.md)。正式架構與
 核心詞彙分別記錄於 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 和

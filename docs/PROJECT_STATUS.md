@@ -1,20 +1,20 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-16. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-17. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                           |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                     |
-| Package state      | **Stage 1 checkpoint delivered; Product Owner review continues**                     |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                        |
-| Branch baseline    | `main`; M7.5 interim delivery commit `f5996f1` is on `origin/main`                   |
-| Worktree           | Interim delivery/evidence aligned; Stage 1 review remains open                       |
-| Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date |
-| Production         | Not configured; no real customer data                                                |
+| Field              | Current value                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                           |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                     |
+| Package state      | **Stage 1 checkpoint delivered; Product Owner review continues**                                     |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                        |
+| Branch baseline    | `main`; M7.5 interim delivery commit `f5996f1` is on `origin/main`                                   |
+| Worktree           | Stage 1 link/Auth/entrypoint, mobile preview, Today notices, Calendar focus local; fixtures retained |
+| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date              |
+| Production         | Not configured; no real customer data                                                                |
 
 ## Next handoff
 
@@ -25,10 +25,21 @@ until the Product Owner explicitly changes the phase.
 
 ## M7.5 Stage 2 backlog
 
-- **Windows local entrypoint reliability:** a Web-only half-start currently leaves every authenticated
-  route unable to load server data while Supabase Auth still appears signed in. Stage 2 must start API
-  and Web together, wait for `/health` before opening the product, surface API startup/exit failures,
-  distinguish API-unavailable recovery from ordinary retry, and verify a clean Windows cold start.
+- **Windows local entrypoint follow-through:** Stage 1 now starts/reuses API, waits for `/health`,
+  reuses a verified formal Web, and gives Today a local-proxy failure hint. Stage 2 still needs
+  continued API-exit detection and consistent service-unavailable recovery across authenticated
+  routes; this local correction is not a complete persistent-runtime or remote-CI claim.
+- **Cross-route information architecture:** the Product Owner reports that broad sidebar categories
+  leave many route actions, facts, and recovery options at the same apparent priority. Stage 2 must
+  inventory every formal Coach route and its nested panels against the actual job-to-be-done, group
+  primary work, contextual detail, secondary actions, and recovery at their owning locations, and
+  remove premature or duplicate controls. Freeze route-by-route hierarchy with Product Owner review;
+  accept desktop and exact 390×844 task paths, keyboard order, and no hidden/overflowing action.
+- **Cross-route notification scope:** Stage 1 Today now has the Product Owner-selected low-balance,
+  current-day conflict, and redeemed-reschedule notifications with Workspace-scoped read receipts.
+  Stage 2 should evaluate other future event kinds and a cross-route inbox only after the Coach
+  workflow is frozen; do not treat Today’s 30-day reschedule window as push delivery or a universal
+  notification service. Preserve private-note and capability-token boundaries.
 
 ## Milestone status
 
@@ -53,8 +64,9 @@ until the Product Owner explicitly changes the phase.
 
 - React/Vite PWA in `apps/web`, Fastify modular monolith in `apps/api`, Supabase Auth/PostgreSQL.
 - Same-origin `/api` contract with Vite development proxy.
-- Root `start-gym-assistant.cmd` opens API at `127.0.0.1:3000` and Web at
-  `http://127.0.0.1:5173`; it has been inspected but not end-to-end launch-verified.
+- Root `start-gym-assistant.cmd` starts or reuses API at `127.0.0.1:3000`, waits for health, then
+  opens or reuses the formal Web at `http://127.0.0.1:5173`. A Web-only half-start is refused; the
+  current Windows API-absent/Web-present cold path has been launch-verified locally.
 - Account lifecycle deletion uses a server-only Supabase Edge Function, `pg_cron`, `pg_net`, and a
   Vault-held function-specific token.
 
@@ -224,6 +236,44 @@ until the Product Owner explicitly changes the phase.
   `f5996f1b25454dca3f7b186d801123ebe8bdcce8`. Verify succeeded in 28 seconds with API 18 files/66
   tests and Web 19 files/79 tests; migration-dry-run succeeded in 20 seconds. Its two annotations are
   the tracked Node 20 action compatibility warnings, not job failures.
+- M7.5 Stage 1 development-data setup: only the authenticated test Coach's development Workspace
+  received 11 Availability windows on six weekdays, five clearly marked fictional Students with
+  Purchase entitlements, fixed weekly/biweekly Series, historical completed and future scheduled
+  Sessions, plus eight historical completed Sessions for its one pre-existing Student. Read-only
+  verification found six active Students/Series, 47 completed Sessions, 21 future Sessions, and
+  zero Session overlaps. Authenticated Web showed six Students, derived balances, the nearest future
+  and all completed history, fixed rhythm, and this week's Calendar. No application code, schema,
+  Demo data, production environment, push, or remote CI changed for this data-only setup.
+- M7.5 Stage 1 performance-data setup: every completed temporal Session in that same development
+  Workspace now has one Training Record with three completed three-set exercises: 高背槓深蹲、槓鈴臥推、
+  相撲硬舉. Read-only verification found 47 Training Records, 141 exercise entries, and 423 completed
+  sets. After reload, the Student performance projection visibly showed all three exercise series and
+  personal-best weights. No application code, schema, Demo data, production environment, push, or
+  remote CI changed.
+- M7.5 Stage 1 link discovery: the M6 reschedule operation already lived on `/sessions/:id`, but
+  Calendar's session editor offered only an unlabeled route hop. A future scheduled Session now has
+  an explicit `建立改期連結` entry that opens the existing Session link dialog directly. Desktop and
+  390×844 authenticated browser paths passed; closing clears the route hint and restores focus.
+  Web check passed 19 files/79 tests, Web build passed with the existing chunk-size advisory, and
+  `git diff --check` passed. This is local Stage 1 work; no new link was issued, pushed, or run in CI.
+- M7.5 Stage 1 Auth hierarchy: the sign-in page now separates password and Google with `或者`,
+  places password recovery by that field, removes the unconditional verification-help entry, and
+  uses the Product Owner's exact headline and supporting copy. After signup, the six-digit-code
+  screen first prompts inbox review and waits 60 seconds before exposing resend; a specific
+  `email_not_confirmed` sign-in error offers a contextual return to verification. Focused Web check
+  passed 19 files/79 tests and Web build passed with the existing chunk advisory. Desktop and exact
+  390×844 browser inspection passed; mocked signup/resend proved the wait, appearance, feedback, and
+  reset without creating an account or sending email. No live Auth delivery or remote CI is claimed.
+- M7.5 Stage 1 local-entrypoint recovery: initial `5173/today` was 200 while its `/api/health`
+  was 502 and `3000/health` refused connection. A normal-environment API start made both health
+  paths 200; stopping it restored the same failure. The revised double-click launcher then started
+  API from that red state, waited for health, and reused the already-running formal Web. Both health
+  paths returned 200 afterward; unauthenticated `/api/v1/today` returned the expected 401, proving
+  proxy reachability. A second formal Vite startup refused occupied 5173 instead of moving ports.
+  The local 502 Today message has focused regression coverage. Elevated root check passed API 18
+  files/66 tests and Web 19 files/80 tests; elevated root build passed with the existing chunk-size
+  advisory; `git diff --check` passed. No authenticated data read, linked migration, push, or remote
+  CI is claimed for this local correction.
 
 Current development validation commands:
 
@@ -244,6 +294,279 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-17 — LOG-099 — M7.5 Today quotation rotation completed
+
+- **Scope:** Product Owner clarified that the supplied quotation list contained twelve sayings,
+  not the five previously implemented.
+- **Outcome:** added the seven missing sayings and kept a twelve-entry random rotation with concise
+  credentials and source links. Direct English wording guided the Chinese copy. The supplied
+  “iron is the best antidepressant” attribution was corrected from Jim Wendler to Henry Rollins,
+  whose essay contains it; the rotation thus has twelve sayings by eleven named people. Dorian
+  Yates's line uses the wording traceable to his book rather than the earlier interpretive version.
+- **Verification:** a focused quote test asserts twelve distinct sayings with attributions and
+  links. Web check passed 21 files/84 tests; Web build passed with the existing >500-kB chunk
+  advisory. Stage 1 remains local; no push, remote CI, API, or schema change is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; keep Stage 2 and M8 gated.
+
+### 2026-09-17 — LOG-098 — M7.5 Today quotation translations
+
+- **Scope:** Product Owner rejected interpretive rewrites of the five Today quotations and requested
+  direct Chinese translations, specifically correcting the Dave Tate statement that had become a
+  question.
+- **Outcome:** replaced all five interpretive lines with close translations of their cited English
+  wording, without added advice or conclusions. Attribution, random selection, compact layout, and
+  existing source links remain unchanged.
+- **Verification:** checked the available cited wording and the Product Owner-provided Dave Tate
+  original; Web check passed 20 files/83 tests; Web build passed with the existing >500-kB chunk
+  advisory. This copy-only Stage 1 correction remains local; no push, remote CI, API, or schema
+  change is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; keep Stage 2 and M8 gated.
+
+### 2026-09-16 — LOG-097 — M7.5 Today notification row balance
+
+- **Scope:** Product Owner flagged crowded read/time metadata, top-heavy notice rows, and a
+  navigation arrow attached awkwardly to the message title.
+- **Outcome:** vertically centered each notice's content and unread marker, expanded the space
+  between read state/action and occurrence time, and anchored the subtle arrow at the right edge
+  of navigable message space. Informational reschedules retain no arrow or destination. The
+  existing three-row scroll viewport and notification behavior are unchanged.
+- **Verification:** Web check passed 20 files/83 tests; Web build passed with the existing
+  > 500-kB chunk advisory. Authenticated Chrome visual inspection covered desktop and 390px notice
+  > layouts, including the right-aligned mobile metadata row; no overflow was visible. No schema,
+  > API, push, remote CI, or production change is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; keep Stage 2 and M8 gated.
+
+### 2026-09-16 — LOG-096 — M7.5 Today notification alignment and quiet refresh
+
+- **Scope:** Product Owner supplied a notification screenshot with explicit right-side alignment
+  targets for read control/state and occurrence date/time, and asked how redeemed reschedules can
+  appear without manually refreshing Today.
+- **Outcome:** the desktop notice row keeps its message at left, read control/status near the right,
+  and Workspace-local date plus time at the far right. The dismiss control stays upper-right; at
+  390px the metadata moves to a right-aligned second line rather than squeezing the message. Today
+  alone refreshes its server projection every 60 seconds while visible, immediately on entry,
+  focus return, and reconnect. Hidden tabs and other routes do not poll. Cached content stays in
+  place without a per-tick update banner; a failed background refresh explicitly says the last
+  data is being shown. This is bounded polling, not instant push or a cross-route inbox.
+- **Verification:** elevated Web check passed 20 files/83 tests, including the new Today refresh
+  options check; Web production build passed with the existing >500-kB advisory. Authenticated
+  Chrome showed one newly redeemed reschedule with original/new times, an unread control, three
+  visible notices with internal scrolling, and right-side timestamps at desktop and exact 390px.
+  No new redemption was initiated by this check. No schema, API, push, remote CI, or production
+  change is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; keep cross-route notification scope in
+  the Stage 2 backlog and M8 gated.
+
+### 2026-09-16 — LOG-095 — M7.5 Today notification actions and quotation copy
+
+- **Scope:** Product Owner refined the Today inbox: redeemed reschedules are informational with
+  original/new times, navigable reminders have a subtle arrow, each row can be marked read or
+  dismissed separately, only three rows show before scrolling, and the newest 30 remain in the
+  feed. Removed redundant read-count copy/zero padding and the manual quote control; updated the
+  page description and quote attribution/length.
+- **Outcome:** reschedule redemption now atomically stores the actual pre-change start time. New
+  notices say `從…改至…` and do not navigate; older redemptions without a retained original time say
+  `原時間未留存，改至…`. A Workspace-scoped read/dismiss state hides only the selected notice, never
+  deletes its source event. A navigable message is a separate Link from the read and dismiss
+  controls. Mobile keeps the three-row notification panel above the bottom navigation; the quote
+  card selects one longer sourced paraphrase per page mount and credits its author with one title.
+- **Verification:** elevated API check passed 19 files/70 tests; elevated Web check passed 20
+  files/82 tests. Elevated root build passed with the existing >500-kB chunk advisory. Official
+  migration `20260916151038` was applied only to linked development; read-only schema query
+  confirmed the new columns, private-schema lint found no errors, and linked dry-run is up to date.
+  Authenticated Chrome showed informational legacy reschedules without route arrows, a separate
+  dismiss control, three visible rows, unpadded zero count, revised header and attribution, and
+  desktop/390px panel placement. `git diff --check` passed. No new live redemption was performed,
+  and no push, remote CI, production, or Stage 2 claim is made.
+- **Known issue:** historical redeemed links cannot be backfilled with an original time from the
+  existing schema. Their notices remain truthful rather than reconstructed from a later Session.
+- **Next:** continue M7.5 Stage 1 Product Owner review; keep consolidated Stage 2 and M8 gated.
+
+### 2026-09-16 — LOG-094 — M7.5 mobile preview entry added
+
+- **Scope:** Product Owner requested a separate way to enter the formal application from a phone-sized perspective for visual review.
+- **Outcome:** root `start-gym-assistant-mobile.cmd` reuses the existing API/Web startup checks and opens a development-only `mobile-preview.html`. Its same-origin iframe keeps the formal app interactive at a 390 × 844 viewport; the normal launcher still opens Today directly.
+- **Verification:** the new batch entry exited successfully while reusing healthy API/Web services and opened `/mobile-preview.html`. Browser inspection showed the formal sign-in route inside the iframe with `innerWidth=390`, `innerHeight=844`, and body `scrollWidth=375`. Preview HTML passed Prettier; `git diff --check` passed. No phone hardware, touch-event, full root check/build, push, or remote CI evidence is claimed for this focused Stage 1 correction.
+- **Next:** continue M7.5 Stage 1 Product Owner review; keep the consolidated Stage 2 and M8 gates unchanged.
+
+### 2026-09-16 — LOG-093 — M7.5 Today notifications and compact fitness quotations
+
+- **Scope:** Product Owner set low-balance attention to <=1, removed training-plan reminders from
+  notifications, retained schedule conflicts, added redeemed Student reschedules, and moved the
+  read/unread feed into the fourth Today signal. The separate attention panel's principle quote was
+  replaced with rotating sourced fitness quotations.
+- **Outcome:** a single expandable `待處理與課程提醒` signal counts unread notices, displays four rows at
+  a time with internal scrolling and newest first, and dims a row after an acknowledged open. The
+  server derives active low-balance and current-day conflict occurrences plus recent redeemed-link
+  events, and persists only idempotent read receipts in `app_private` under verified Workspace RLS.
+  Training readiness remains on Session rows. The compact quote card rotates five source-checked
+  Chinese paraphrases on mount or `換一句`, with author and source links. The bounded interaction and
+  30-day reschedule window are recorded in `M7.5-TODAY-NOTIFICATIONS-CONTRACT.md`.
+- **Verification:** elevated API tests passed 19 files/69 tests after updating the <=1 contract;
+  Web check passed 20 files/82 tests after restoring an empty-state icon import. Root build passed
+  with its existing >500-kB advisory. Linked development dry-run identified only migration
+  `20260916140649`, which was applied with Vault changes skipped; a read-only query confirmed RLS,
+  no anon select, API insert, and one policy. Private-schema lint found no errors; dry-run then
+  reported up to date. Authenticated Chrome showed the real redeemed-reschedule notice and persisted
+  read style, dropdown/Escape, quote rotation, and 390×844 no horizontal overflow; extra mobile
+  bottom space makes quote attribution reachable. No push, remote CI, production, or broad Stage 2
+  claim is made.
+- **Known issue:** the current feed is a focused Today surface, not background push or an all-route
+  inbox. A source occurrence can age out or resolve without deleting the historical read receipt.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue; keep the broader
+  notification taxonomy in Stage 2 and do not enter M8 without authorization.
+
+### 2026-09-16 — LOG-092 — M7.5 Calendar editor input focus repaired
+
+- **Scope:** Product Owner's recording showed the Schedule editor moving focus from the location
+  field to the upper-right close button after every character; requested a check of other editable
+  fields and interaction options.
+- **Outcome:** `SchedulingDialog` now initializes and restores focus only for its mount/unmount
+  lifecycle, while Escape uses the latest close callback. The parent can update a controlled draft
+  without restarting the focus effect. Audited the other formal Web dialogs and focus effects; no
+  other text-input dialog repeats autofocus on every controlled-field update.
+- **Verification:** the focused DOM regression failed before the fix with `activeElement` on the
+  close button after typing `F`, then passed afterward. Additional note, date, select, and checkbox
+  focus cases passed. Elevated root check passed API 18 files/68 tests and Web 20 files/82 tests;
+  root build passed with the existing >500-kB advisory; `git diff --check` passed. Authenticated
+  Chrome at `5173/calendar` kept location focused across `F`, `o`, `r`, `m`, and Block note focused
+  across `N`, `o`; Exercise search retained focus across `P`, `a`, and Student creation name across
+  `T`, `e`. Unsaved drafts were cancelled and the modal opener regained focus. No push or remote CI
+  is claimed for this local correction.
+- **Known issue:** unrelated Stage 1 edits remain in the shared worktree; preserve them for their
+  own review and delivery.
+- **Next:** continue M7.5 Stage 1 Product Owner review with the next reported issue. Do not begin
+  Stage 2 or M8 without the stated phase decision.
+
+### 2026-09-16 — LOG-091 — M7.5 Today Demo fidelity and authoritative course readiness
+
+- **Scope:** Product Owner compared the first Today correction with the Demo again and requested
+  closer typography, spacing, markers, hover motion, a “今日課表” heading, training readiness, and
+  planned duration. They also questioned duplicated low-balance signals and a broader reminder feed.
+- **Outcome:** Today now matches the Demo's compact greeting, signal-strip/panel proportions,
+  typographic hierarchy, numbered timeline, status pills, and subtle pale-lime row hover/shift,
+  while retaining the formal Session location. The fourth signal is today's courses needing a plan
+  instead of duplicating the low-balance list. A workspace-scoped Training summary adds
+  `待規劃`/`規劃中`/`已就緒` from persisted exercise/set plans, and the row shows duration from scheduled
+  start/end. The side panel groups existing low-balance, schedule-conflict, and unplanned-training
+  attention. Existing low-balance <=2 is unchanged; redeemed-link event notifications and the
+  proposed <=1 rule await Product Owner decision in the Stage 2 backlog.
+- **Verification:** elevated root `npm run check` passed Prettier, API typecheck/18 files/68 tests,
+  and Web typecheck/19 files/80 tests. Root production build passed (existing >500-kB advisory).
+  Authenticated Chrome at 2048px and exact 390×844 showed live session status/duration, the plan
+  signal, and no mobile horizontal overflow; the supplied Demo recording confirmed the row-hover
+  motion used here. No schema migration, push, or remote CI is claimed for this Stage 1 correction.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Freeze notification-event and low-balance
+  threshold decisions before broadening the Today reminder feed.
+
+### 2026-09-16 — LOG-090 — M7.5 Today hierarchy converged with Demo
+
+- **Scope:** Product Owner compared the formal `/today` against the Demo and identified a scattered
+  three-card dashboard, oversized heading, dark schedule block, and low-priority reminders occupying
+  a full-width section. This is an immediate Stage 1 visual correction, not the Stage 2 cross-route
+  audit.
+- **Outcome:** Today now has a compact date/heading, one lime-and-ink four-signal strip, a white
+  schedule timeline, and a distinct reminder panel. Desktop uses a schedule/attention grid; mobile
+  stacks a 2×2 strip and the two panels. The formal projection remains authoritative: real recorded
+  income, lesson-balance attention, and scheduled/completed sessions only; no Demo seed facts or
+  invented training status. Existing local API-error recovery is preserved.
+- **Verification:** elevated Web check passed formatting, typecheck, and 19 files/80 tests; Web
+  production build passed with the existing over-500-kB advisory. Authenticated Chrome inspection
+  confirmed the current Today projection at desktop and 390×844; mobile document width stayed below
+  the viewport, and schedule/reminder links remained exposed. `git diff --check` passed. No push,
+  migration, remote CI, or complete Stage 2 regression is claimed.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue. Do not begin Stage 2 or
+  M8 without the respective Product Owner handoff.
+
+### 2026-09-16 — LOG-089 — M7.5 local entrypoint recovered for Product Owner debugging
+
+- **Scope:** Product Owner could not debug because the formal Web remained at 5173 while its local
+  API at 3000 had stopped; the prior separate-service procedure was only temporary. Prioritized this
+  concrete Stage 1 interruption without changing M7.5 scope or starting the consolidated Stage 2.
+- **Outcome:** the Windows launcher now reuses healthy services, starts a missing API through a
+  simple dedicated batch entry, waits for `/health`, and refuses to open a Web-only half-start.
+  Vite refuses silent 5174 fallback. Today distinguishes a local proxy 502 from ordinary failures
+  and tells the Coach to reopen the application and retry. The API was restored for this session.
+- **Verification:** reproduced `5173/today` 200 + proxy 502 + API refusal; stopped the temporary API
+  and reproduced the red state; actual launcher cold start restored API/proxy health 200 and left
+  formal Web at 5173. Unauthenticated Today returned 401, and duplicate formal Vite failed on
+  occupied 5173. Elevated root check passed API 66/Web 80 tests; elevated root build passed with
+  the existing bundle-size warning; whitespace check passed.
+- **Known issue:** the cause of the original API process exit was not captured from its old window;
+  the launcher prevents startup half-state but does not supervise later API exits. Cross-route
+  service recovery remains Stage 2; no authenticated Today read or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; Stage 2 retains persistent-runtime and
+  cross-route recovery work. Do not enter M8 without its authorization and decisions.
+
+### 2026-09-16 — LOG-088 — M7.5 Auth hierarchy corrected; broader IA queued
+
+- **Scope:** Product Owner identified an unconditional verification-help action on sign-in, weak
+  separation between password and Google, unclear brand copy, and broader cross-route hierarchy
+  concerns. Inspected the existing six-digit signup/verification/resend operations and Auth layout.
+- **Outcome:** sign-in keeps only contextual password recovery and account creation; `或者` separates
+  the alternate Google method. Verification help lives after code delivery with a 60-second resend
+  wait and safe pending/error feedback; an unconfirmed-email sign-in offers the verification route.
+  The left panel now uses the Product Owner's headline and subtitle. A cross-route hierarchy audit
+  is recorded in the Stage 2 backlog, not prematurely redesigned in Stage 1.
+- **Verification:** elevated Web check passed 19 files/79 tests; Web build passed with the existing
+  chunk-size advisory; `git diff --check` passed. Desktop and 390×844 browser inspection found no
+  mobile horizontal overflow. Intercepted signup and resend requests showed the countdown and
+  renewed wait without development account or email side effects.
+- **Known issue:** live SMTP/OTP delivery and the conditional unconfirmed-account error path were
+  not exercised against a real account; the existing M2 acceptance remains the baseline. Stage 1
+  remains local; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue. Keep the cross-route
+  audit and Windows entrypoint in Stage 2 until the Product Owner ends review; do not enter M8.
+
+### 2026-09-16 — LOG-087 — M7.5 reschedule-link entry exposed from Calendar
+
+- **Scope:** Product Owner could not find the Demo's `改期連結` in the formal product. Compared the
+  Demo Session header, M6 Contract, formal Session action, and the Calendar session editor.
+- **Outcome:** retained the existing server-authoritative link dialog on the Session route and added
+  a direct Calendar editor entry for future scheduled Sessions. The route opens that dialog without
+  issuing a link; closing removes the route hint and returns focus to its Session action.
+- **Verification:** elevated Web check passed 19 files/79 tests; Web production build passed with the
+  existing chunk-size advisory; `git diff --check` passed. Authenticated Chrome verified the path
+  at desktop and exact 390×844, with no horizontal overflow (390px viewport/390px content).
+- **Known issue:** no link issuance or public redemption was exercised in this UI-only correction;
+  existing M6 behaviour and its verification remain the baseline. Stage 1 remains local.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue; defer Stage 2 and M8
+  until their respective Product Owner decisions.
+
+### 2026-09-16 — LOG-086 — M7.5 performance fixtures prepared
+
+- **Scope:** the Product Owner requested weight-and-repetition records for every established Student
+  Session in the current development test Workspace.
+- **Outcome:** created a complete Training Record for each of the 47 completed temporal Sessions.
+  Each Record contains high-bar back squat, barbell bench press, and sumo deadlift snapshots, with
+  three completed kg-based sets, recorded repetitions, and progressive loads; future Sessions and
+  the open scheduled-session draft were untouched.
+- **Verification:** read-only database query returned 47 Records, 141 exercise entries, 423 Sets,
+  and exactly the three requested catalog exercises. An authenticated reload showed Student
+  performance cards for all three series and their personal bests.
+- **Known issue:** all weights, repetitions, and RPE values are fabricated development fixtures.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue; keep Stage 2 and M8
+  gated by the existing Product Owner decisions.
+
+### 2026-09-16 — LOG-085 — M7.5 review test data prepared
+
+- **Scope:** the Product Owner requested realistic Availability and established Student schedules
+  before continuing Stage 1 review. Confirmed the currently authenticated test Coach against the
+  linked development Workspace and checked that it held only one Student and no Availability.
+- **Outcome:** added 11 weekday Availability windows and five marked fictional Students, each with a
+  Purchase, active fixed Series, 6–11 historical completed Sessions, and four upcoming Sessions.
+  Retained the original Student and its existing Sessions/Purchase, moved only its Series anchor back
+  to July, and added eight historical completed Sessions. No other Workspace was targeted.
+- **Verification:** one guarded database transaction; read-only post-write query returned six active
+  Students/Series, 47 completed Sessions, 21 future Sessions, and zero temporal Session overlaps.
+  Authenticated browser verified the six-row roster, derived entitlement, full Student history and
+  next Session, active rhythm, and Calendar entries for the current week. No code/schema checks were
+  applicable to this data-only setup.
+- **Known issue:** these are fabricated development fixtures, including the original Student's
+  backdated history; they must not be treated as real coaching or payment records.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue; keep Stage 2 and M8
+  gated by the existing Product Owner decisions.
 
 ### 2026-09-16 — LOG-084 — M7.5 Stage 1 interim checkpoint delivered
 

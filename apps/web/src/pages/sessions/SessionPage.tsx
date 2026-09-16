@@ -10,7 +10,7 @@ import {
   XCircle
 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError, getSession } from '../../api'
 import { queryKeys } from '../../query-keys'
 import { Page } from '../../shared/primitives'
@@ -23,6 +23,7 @@ import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
 
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmation, setConfirmation] = useState('')
@@ -163,7 +164,17 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
             <Trash2 /> 刪除
           </button>
         ) : null}
-        <CapabilityLinkActions session={session} item={item} />
+        <CapabilityLinkActions
+          session={session}
+          item={item}
+          initialPurpose={searchParams.get('link') === 'reschedule' ? 'reschedule_session' : null}
+          onClose={() => {
+            if (!searchParams.has('link')) return
+            const next = new URLSearchParams(searchParams)
+            next.delete('link')
+            setSearchParams(next, { replace: true })
+          }}
+        />
       </section>
       {notice ? (
         <p className="form-notice" role="status">

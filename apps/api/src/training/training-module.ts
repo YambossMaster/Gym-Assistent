@@ -65,6 +65,13 @@ export class TrainingModule {
   async getSessionTraining(identity: AuthenticatedIdentity, sessionId: string) {
     return this.repository.getSessionTraining(await this.workspace(identity), sessionId)
   }
+  async todayTrainingPlans(identity: AuthenticatedIdentity, sessionIds: string[]) {
+    if (!sessionIds.length) return {}
+    return this.repository.todayTrainingPlans(
+      await this.repository.resolveWorkspace(identity),
+      sessionIds,
+    )
+  }
   async saveSessionTraining(
     identity: AuthenticatedIdentity,
     sessionId: string,

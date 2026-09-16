@@ -35,6 +35,7 @@ describe('TodayModule', () => {
       })(),
     })
     const alice = await students.create(coach, { name: 'Alice' })
+    const twoLessons = await students.create(coach, { name: 'Two lessons' })
     const archived = await students.create(coach, { name: 'Archived' })
     await students.update(coach, archived.id, {
       name: 'Archived',
@@ -43,7 +44,7 @@ describe('TodayModule', () => {
     })
     await students.createLessonPurchase(coach, alice.id, {
       purchasedAt: '2026-08-31T16:30:00.000Z',
-      lessonCount: 2,
+      lessonCount: 1,
       amountMinor: 4000,
       currency: 'TWD',
     })
@@ -52,6 +53,12 @@ describe('TodayModule', () => {
       lessonCount: 1,
       amountMinor: 3000,
       currency: 'USD',
+    })
+    await students.createLessonPurchase(coach, twoLessons.id, {
+      purchasedAt: '2026-09-10T00:00:00.000Z',
+      lessonCount: 2,
+      amountMinor: 0,
+      currency: 'TWD',
     })
 
     const today = await new TodayModule(repository, () => new Date('2026-09-10T00:00:00.000Z')).get(
@@ -62,7 +69,7 @@ describe('TodayModule', () => {
       date: '2026-09-10',
       timeZone: 'Asia/Taipei',
       summary: {
-        activeStudents: 1,
+        activeStudents: 2,
         incomePeriod: { startsOn: '2026-09-01', endsOn: '2026-10-01' },
         incomeByCurrency: [
           { currency: 'TWD', amountMinor: 4000 },
@@ -74,7 +81,7 @@ describe('TodayModule', () => {
         {
           kind: 'low_lesson_balance',
           student: { id: alice.id, name: 'Alice' },
-          lessonSummary: { purchased: 2, completed: 0, remaining: 2 },
+          lessonSummary: { purchased: 1, completed: 0, remaining: 1 },
           targetRoute: `/students/${alice.id}`,
         },
       ],

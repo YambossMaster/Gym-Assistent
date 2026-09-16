@@ -17,12 +17,21 @@ import { queryKeys } from '../../query-keys'
 
 export function CapabilityLinkActions({
   session,
-  item
+  item,
+  initialPurpose = null,
+  onClose
 }: {
   session: Session
   item: CalendarSession
+  initialPurpose?: CapabilityPurpose | null
+  onClose?: () => void
 }) {
-  const [purpose, setPurpose] = useState<CapabilityPurpose | null>(null)
+  const [purpose, setPurpose] = useState<CapabilityPurpose | null>(
+    item.status === 'scheduled' && item.startsAt && new Date(item.startsAt) > new Date()
+      ? initialPurpose
+      : null
+  )
+  const rescheduleButton = useRef<HTMLButtonElement>(null)
   return (
     <>
       {item.status === 'completed' ? (
@@ -31,7 +40,11 @@ export function CapabilityLinkActions({
         </button>
       ) : null}
       {item.status === 'scheduled' && item.startsAt && new Date(item.startsAt) > new Date() ? (
-        <button className="secondary-button" onClick={() => setPurpose('reschedule_session')}>
+        <button
+          ref={rescheduleButton}
+          className="secondary-button"
+          onClick={() => setPurpose('reschedule_session')}
+        >
           <CalendarLinkIcon /> 建立改期連結
         </button>
       ) : null}
@@ -40,7 +53,12 @@ export function CapabilityLinkActions({
           session={session}
           sessionId={item.id}
           purpose={purpose}
-          onClose={() => setPurpose(null)}
+          onClose={() => {
+            setPurpose(null)
+            onClose?.()
+            if (purpose === 'reschedule_session')
+              requestAnimationFrame(() => rescheduleButton.current?.focus())
+          }}
         />
       ) : null}
     </>

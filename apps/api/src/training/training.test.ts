@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { trainingCatalog } from './catalog.js'
+import { TrainingModule } from './training-module.js'
+import type { TrainingRepository } from './training-repository.js'
 import {
   convertWeight,
   deriveResult,
   displayWeight,
   filterLibrary,
   qualifiedBest,
+  todayTrainingPlan,
   trainingSetInputSchema,
 } from './training.js'
 
@@ -35,6 +38,48 @@ const set = (values: Partial<any> = {}) => ({
 })
 
 describe('M5 training domain', () => {
+  it('resolves the verified Coach workspace for Today plan summaries', async () => {
+    const calls: Array<{ workspaceId: string; sessionIds: string[] }> = []
+    const repository = {
+      resolveWorkspace: async ({ userId }: { userId: string }) => `workspace-${userId}`,
+      todayTrainingPlans: async (workspaceId: string, sessionIds: string[]) => {
+        calls.push({ workspaceId, sessionIds })
+        return { [sessionIds[0]!]: { exerciseCount: 0, status: 'unplanned' as const } }
+      },
+    } as unknown as TrainingRepository
+    const module = new TrainingModule(repository)
+    expect(await module.todayTrainingPlans({ userId: 'coach-a' }, [])).toEqual({})
+    expect(await module.todayTrainingPlans({ userId: 'coach-a' }, ['session-a'])).toEqual({
+      'session-a': { exerciseCount: 0, status: 'unplanned' },
+    })
+    expect(calls).toEqual([{ workspaceId: 'workspace-coach-a', sessionIds: ['session-a'] }])
+  })
+  it('marks Today plans ready only when every exercise has fully planned sets', () => {
+    expect(
+      todayTrainingPlan({
+        exerciseCount: 0,
+        exercisesWithSets: 0,
+        setCount: 0,
+        plannedSetCount: 0,
+      }),
+    ).toEqual({ exerciseCount: 0, status: 'unplanned' })
+    expect(
+      todayTrainingPlan({ exerciseCount: 2, exercisesWithSets: 1, setCount: 1, plannedSetCount: 1 })
+        .status,
+    ).toBe('in_progress')
+    expect(
+      todayTrainingPlan({ exerciseCount: 2, exercisesWithSets: 2, setCount: 3, plannedSetCount: 2 })
+        .status,
+    ).toBe('in_progress')
+    expect(
+      todayTrainingPlan({
+        exerciseCount: 2,
+        exercisesWithSets: 2,
+        setCount: 3,
+        plannedSetCount: 3,
+      }),
+    ).toEqual({ exerciseCount: 2, status: 'ready' })
+  })
   it('freezes all 100 unique catalog definitions and stable keys', () => {
     expect(trainingCatalog).toHaveLength(100)
     expect(new Set(trainingCatalog.map((x) => x.catalogKey)).size).toBe(100)

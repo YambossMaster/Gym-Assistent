@@ -6,6 +6,7 @@ import {
   displayWeight,
   filterLibrary,
   qualifiedBest,
+  todayTrainingPlan,
   type ExerciseDefinition,
   type ExerciseLibrary,
   type PerformanceMetric,
@@ -246,6 +247,44 @@ export class PostgresTrainingRepository implements TrainingRepository {
   async getSessionTraining(workspaceId: string, sessionId: string) {
     return this.scoped(workspaceId, (client) =>
       this.readSessionTraining(client, workspaceId, sessionId),
+    )
+  }
+
+  async todayTrainingPlans(workspaceId: string, sessionIds: string[]) {
+    if (!sessionIds.length) return {}
+    const result = await this.scoped(workspaceId, (client) =>
+      client.query<{
+        session_id: string
+        exercise_count: number
+        exercises_with_sets: number
+        set_count: number
+        planned_set_count: number
+      }>(
+        `select cs.id session_id,
+          count(distinct te.id)::int exercise_count,
+          count(distinct te.id) filter (where ts.id is not null)::int exercises_with_sets,
+          count(ts.id)::int set_count,
+          count(ts.id) filter (where ts.planned_reps is not null and
+            (te.performance_metric='reps' or ts.planned_weight is not null))::int planned_set_count
+         from app_private.course_session cs
+         left join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id
+         left join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id
+         left join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id
+         where cs.workspace_id=$1 and cs.id=any($2::uuid[]) and not cs.is_legacy
+         group by cs.id`,
+        [workspaceId, sessionIds],
+      ),
+    )
+    return Object.fromEntries(
+      result.rows.map((row) => [
+        row.session_id,
+        todayTrainingPlan({
+          exerciseCount: Number(row.exercise_count),
+          exercisesWithSets: Number(row.exercises_with_sets),
+          setCount: Number(row.set_count),
+          plannedSetCount: Number(row.planned_set_count),
+        }),
+      ]),
     )
   }
 

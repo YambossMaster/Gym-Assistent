@@ -317,8 +317,9 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
         throw new PublicCapabilityError('slot_unavailable', 409, { reschedule: projection })
       await client.query(
         `update app_private.capability_link set used_at=$2,redeemed_starts_at=$3,
+          original_starts_at=$4,
           version=version+1,updated_at=$2 where token_hash=decode($1,'hex')`,
-        [tokenHash, now, selected.startsAt],
+        [tokenHash, now, selected.startsAt, projection.originalSession.startsAt],
       )
       await client.query(
         `update app_private.course_session set starts_at=$3,ends_at=$4,version=version+1,updated_at=$5

@@ -80,11 +80,21 @@ function SignIn() {
     [code, setCode] = useState(''),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
-    [submitting, setSubmitting] = useState(false)
+    [submitting, setSubmitting] = useState(false),
+    [verificationNeeded, setVerificationNeeded] = useState(false),
+    [resendAvailableAt, setResendAvailableAt] = useState(0),
+    [now, setNow] = useState(Date.now())
+  const resendWait = Math.max(0, Math.ceil((resendAvailableAt - now) / 1000))
+  useEffect(() => {
+    if (mode !== 'verify' || resendWait === 0) return
+    const interval = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [mode, resendWait])
   const change = (next: Mode) => {
     setMode(next)
     setError('')
     setNotice('')
+    setVerificationNeeded(false)
     setPassword('')
     setConfirm('')
     setCode('')
@@ -94,16 +104,25 @@ function SignIn() {
     setSubmitting(true)
     setError('')
     setNotice('')
+    setVerificationNeeded(false)
     try {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw new Error('登入失敗，請確認 Email 與密碼。')
+        if (error) {
+          if (error.code === 'email_not_confirmed') {
+            setVerificationNeeded(true)
+            throw new Error('請先完成電子信箱驗證，再登入工作台。')
+          }
+          throw new Error('登入失敗，請確認 Email 與密碼。')
+        }
       } else if (mode === 'signup') {
         if (password !== confirm) throw new Error('兩次輸入的密碼不一致。')
         if (await isRegistrationEmailTaken(email)) throw new Error('此帳號已經註冊過。')
         await signUpCoach(supabase.auth, email, password, window.location.origin)
         setMode('verify')
-        setNotice('6 位驗證碼已寄出。')
+        setNow(Date.now())
+        setResendAvailableAt(Date.now() + 60_000)
+        setNotice('6 位驗證碼已寄出，請查看收件匣與垃圾郵件。')
       } else if (mode === 'verify') {
         await verifySignupEmail(supabase.auth, email, code)
         setNotice('Email 已驗證，正在開啟工作台…')
@@ -117,6 +136,22 @@ function SignIn() {
       setSubmitting(false)
     }
   }
+  const resend = async () => {
+    if (resendWait > 0 || submitting) return
+    setSubmitting(true)
+    setError('')
+    setNotice('')
+    try {
+      await resendEmailVerification(supabase.auth, email, window.location.origin)
+      setNow(Date.now())
+      setResendAvailableAt(Date.now() + 60_000)
+      setNotice('新的 6 位驗證碼已寄出，請查看收件匣。')
+    } catch (reason) {
+      setError(readError(reason))
+    } finally {
+      setSubmitting(false)
+    }
+  }
   return (
     <main className="auth-layout">
       <section className="auth-story">
@@ -124,11 +159,11 @@ function SignIn() {
         <div className="auth-copy">
           <span className="eyebrow">FORM COACH DESK</span>
           <h1>
-            專注在教學，
+            專業，
             <br />
-            其餘保持<span>有序。</span>
+            始於<span>有跡可循。</span>
           </h1>
-          <p>學生、課程與每一次訓練脈絡，隨時都能接續。</p>
+          <p>告別凌亂的備忘錄。系統化保留學員的完整軌跡，讓每一堂課都無縫接軌。</p>
         </div>
       </section>
       <section className="auth-panel">
@@ -146,7 +181,17 @@ function SignIn() {
           </div>
           <label>
             Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setVerificationNeeded(false)
+              }}
+              readOnly={mode === 'verify'}
+              autoComplete="email"
+              required
+            />
           </label>
           {(mode === 'signin' || mode === 'signup') && (
             <label>
@@ -155,10 +200,18 @@ function SignIn() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                 required
                 minLength={mode === 'signup' ? 12 : undefined}
               />
             </label>
+          )}
+          {mode === 'signin' && (
+            <div className="auth-field-action">
+              <button type="button" onClick={() => change('reset')}>
+                忘記密碼？
+              </button>
+            </div>
           )}
           {mode === 'signup' && (
             <label>
@@ -183,45 +236,63 @@ function SignIn() {
               />
             </label>
           )}
-          {error && <p className="form-error">{error}</p>}
-          {notice && <p className="form-notice">{notice}</p>}
+          {mode === 'verify' && (
+            <p className="auth-guidance">請輸入寄至上述 Email 的驗證碼，完成帳號建立。</p>
+          )}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          {verificationNeeded && mode === 'signin' && (
+            <button type="button" className="auth-inline-action" onClick={() => change('verify')}>
+              前往電子信箱驗證
+            </button>
+          )}
+          {notice && (
+            <p className="form-notice" role="status">
+              {notice}
+            </p>
+          )}
           <button className="primary-button" disabled={submitting}>
             {submitting ? '處理中…' : '繼續'}
             <ArrowRight />
           </button>
-          {mode === 'verify' && (
+          {mode === 'verify' && resendWait > 0 && (
+            <p className="auth-guidance">尚未收到？請稍候 {resendWait} 秒，再重新寄送。</p>
+          )}
+          {mode === 'verify' && resendWait === 0 && (
             <button
               type="button"
               className="secondary-button"
-              onClick={() =>
-                void resendEmailVerification(supabase.auth, email, window.location.origin)
-              }
+              disabled={submitting}
+              onClick={() => void resend()}
             >
               重新寄送驗證碼
             </button>
           )}
           {(mode === 'signin' || mode === 'signup') && (
-            <button
-              type="button"
-              className="secondary-button auth-google"
-              onClick={() => void signInWithGoogle(supabase.auth, window.location.origin)}
-            >
-              使用 Google 繼續
-            </button>
+            <div className="auth-alternative">
+              <div className="auth-divider" aria-hidden="true">
+                或者
+              </div>
+              <button
+                type="button"
+                className="secondary-button auth-google"
+                onClick={() => void signInWithGoogle(supabase.auth, window.location.origin)}
+              >
+                使用 Google 繼續
+              </button>
+            </div>
           )}
           <div className="auth-links">
             {mode === 'signin' ? (
-              <>
+              <span>
+                第一次使用？{' '}
                 <button type="button" onClick={() => change('signup')}>
                   建立帳號
                 </button>
-                <button type="button" onClick={() => change('reset')}>
-                  忘記密碼
-                </button>
-                <button type="button" onClick={() => change('verify')}>
-                  未收到驗證信
-                </button>
-              </>
+              </span>
             ) : (
               <button type="button" onClick={() => change('signin')}>
                 返回登入

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { TodayProjection } from '../../api'
-import { selectTodayRouteState } from './state'
+import { ApiError } from '../../api'
+import { selectTodayRouteState, todayErrorMessage } from './state'
 
 const zeroSignals: TodayProjection = {
   date: '2026-09-13',
@@ -25,5 +26,14 @@ describe('Today route state', () => {
     [{ data: zeroSignals, isLoading: false, isFetching: true, error: null }, 'refreshing']
   ] as const)('selects %s as %s', (input, expected) => {
     expect(selectTodayRouteState(input)).toBe(expected)
+  })
+
+  it('explains a missing local API without mislabeling auth or production errors', () => {
+    const proxyError = new ApiError(502, 'Bad Gateway')
+    expect(todayErrorMessage(proxyError, true)).toContain('本機資料服務未連線')
+    expect(todayErrorMessage(new ApiError(401, 'Unauthorized'), true)).toBe(
+      '暫時無法整理目前的工作台訊號。'
+    )
+    expect(todayErrorMessage(proxyError, false)).toBe('暫時無法整理目前的工作台訊號。')
   })
 })

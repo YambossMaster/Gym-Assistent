@@ -9,6 +9,7 @@ import {
 } from '../students/student.js'
 import { StudentModule } from '../students/student-module.js'
 import { TodayModule } from '../today/today-module.js'
+import { TodayNotificationModule } from '../today/today-notifications.js'
 import {
   LessonPurchaseVersionConflictError,
   StudentVersionConflictError,
@@ -33,6 +34,7 @@ export interface ServerDependencies {
   identityVerifier: IdentityVerifier
   students: StudentModule
   today: TodayModule
+  todayNotifications?: TodayNotificationModule
   workspace: WorkspaceModule
   accountLifecycle: AccountLifecycleModule
   registrationEmails: RegistrationEmailLookup
@@ -137,6 +139,7 @@ export function buildServer({
   identityVerifier,
   students,
   today,
+  todayNotifications,
   workspace,
   accountLifecycle,
   registrationEmails,
@@ -260,15 +263,77 @@ export function buildServer({
     const identity = await identityVerifier.verify(request.headers.authorization)
     const projection = await today.get(identity)
     await accountLifecycle.recordActivity(identity)
+    if (!scheduling) return { today: projection }
+    const schedule = await scheduling.today(identity, request.query.date ?? projection.date)
+    const plans = training
+      ? await training.todayTrainingPlans(
+          identity,
+          schedule.sessions.map(({ session }) => session.id),
+        )
+      : {}
+    const notifications = todayNotifications
+      ? await todayNotifications.list(
+          identity,
+          projection.attention,
+          schedule.date === projection.date ? schedule.conflictAttention : [],
+          projection.timeZone,
+        )
+      : []
     return {
-      today: scheduling
-        ? {
-            ...projection,
-            schedule: await scheduling.today(identity, request.query.date ?? projection.date),
-          }
-        : projection,
+      today: {
+        ...projection,
+        notifications,
+        schedule: {
+          ...schedule,
+          sessions: schedule.sessions.map((item) => ({
+            ...item,
+            ...(plans[item.session.id] ? { trainingPlan: plans[item.session.id] } : {}),
+          })),
+        },
+      },
     }
   })
+
+  if (todayNotifications) {
+    server.post<{ Body: unknown }>('/v1/today/notifications/read', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const { id } = z
+        .object({ id: z.string().min(1).max(160) })
+        .strict()
+        .parse(request.body)
+      const projection = await today.get(identity)
+      const schedule = scheduling ? await scheduling.today(identity, projection.date) : null
+      const readAt = await todayNotifications.read(
+        identity,
+        id,
+        projection.attention,
+        schedule?.conflictAttention ?? [],
+        projection.timeZone,
+      )
+      if (!readAt) return reply.status(404).send({ error: 'notification_not_found' })
+      await accountLifecycle.recordActivity(identity)
+      return { id, readAt }
+    })
+    server.post<{ Body: unknown }>('/v1/today/notifications/dismiss', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const { id } = z
+        .object({ id: z.string().min(1).max(160) })
+        .strict()
+        .parse(request.body)
+      const projection = await today.get(identity)
+      const schedule = scheduling ? await scheduling.today(identity, projection.date) : null
+      const dismissed = await todayNotifications.dismiss(
+        identity,
+        id,
+        projection.attention,
+        schedule?.conflictAttention ?? [],
+        projection.timeZone,
+      )
+      if (!dismissed) return reply.status(404).send({ error: 'notification_not_found' })
+      await accountLifecycle.recordActivity(identity)
+      return { id }
+    })
+  }
 
   if (scheduling) {
     server.get<{ Querystring: { start: string; end: string } }>('/v1/calendar', async (request) => {

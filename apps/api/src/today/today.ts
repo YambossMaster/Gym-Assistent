@@ -1,4 +1,5 @@
 import type { LessonIncomeSummary, LessonSummary, StudentRosterItem } from '../students/student.js'
+import type { TodayTrainingPlan } from '../training/training.js'
 
 export interface TodayProjection {
   date: string
@@ -15,12 +16,19 @@ export interface TodayProjection {
     lessonSummary: LessonSummary
     targetRoute: string
   }>
-  schedule?: import('../scheduling/scheduling.js').TodaySchedule
+  schedule?: Omit<import('../scheduling/scheduling.js').TodaySchedule, 'sessions' | 'counts'> & {
+    counts: { scheduled: number; completed: number }
+    sessions: Array<
+      import('../scheduling/scheduling.js').SessionWithConflicts & {
+        trainingPlan?: TodayTrainingPlan
+      }
+    >
+  }
 }
 
 export function selectTodayAttention(students: StudentRosterItem[]): TodayProjection['attention'] {
   return students
-    .filter((student) => student.active && student.lessonSummary.remaining <= 2)
+    .filter((student) => student.active && student.lessonSummary.remaining <= 1)
     .sort(
       (left, right) =>
         left.lessonSummary.remaining - right.lessonSummary.remaining ||

@@ -76,7 +76,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
         </header>
         <ResilienceStatus session={session} queryClient={queryClient} />
         <Routes>
-          <Route path="/today" element={<TodayPage session={session} />} />
+          <Route path="/today" element={<TodayPage session={session} coachName={coach.name} />} />
           <Route
             path="/calendar"
             element={<CalendarPage session={session} timeZone={timeZone} />}

@@ -638,9 +638,18 @@ function Editor({
         ) : null}
         <div className="scheduling-form-actions">
           {draft.kind === 'session' && draft.current ? (
-            <Link className="text-button" to={`/sessions/${draft.current.id}`}>
-              開啟課堂
-            </Link>
+            <div className="scheduling-form-links">
+              <Link className="text-button" to={`/sessions/${draft.current.id}`}>
+                開啟課堂
+              </Link>
+              {draft.current.status === 'scheduled' &&
+              draft.current.startsAt &&
+              new Date(draft.current.startsAt) > new Date() ? (
+                <Link className="text-button" to={`/sessions/${draft.current.id}?link=reschedule`}>
+                  建立改期連結
+                </Link>
+              ) : null}
+            </div>
           ) : null}
           {draft.kind === 'block' && draft.current ? (
             <button

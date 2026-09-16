@@ -83,7 +83,7 @@ describe('student HTTP interface', () => {
       headers: ownerHeaders,
       payload: {
         purchasedAt: '2026-08-31T16:00:00.000Z',
-        lessonCount: 2,
+        lessonCount: 1,
         amountMinor: 6000,
         currency: 'TWD',
         privateNote: 'Never expose',
@@ -113,7 +113,7 @@ describe('student HTTP interface', () => {
           {
             kind: 'low_lesson_balance',
             student: { id: student.id, name: 'Alice' },
-            lessonSummary: { purchased: 2, completed: 0, remaining: 2 },
+            lessonSummary: { purchased: 1, completed: 0, remaining: 1 },
             targetRoute: `/students/${student.id}`,
           },
         ],

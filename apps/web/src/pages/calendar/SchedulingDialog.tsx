@@ -12,9 +12,14 @@ export function SchedulingDialog({
   children: ReactNode
 }) {
   const dialogRef = useRef<HTMLElement>(null)
+  const onCloseRef = useRef(onClose)
   const openerRef = useRef<HTMLElement | null>(
     document.activeElement instanceof HTMLElement ? document.activeElement : null
   )
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -27,7 +32,7 @@ export function SchedulingDialog({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
         requestAnimationFrame(() => openerRef.current?.focus())
         return
       }
@@ -54,7 +59,7 @@ export function SchedulingDialog({
       window.removeEventListener('keydown', onKeyDown)
       requestAnimationFrame(() => openerRef.current?.focus())
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div
