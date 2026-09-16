@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Student } from '../../api'
-import { selectStudentRosterResult } from './state'
+import type { CalendarSession, Student } from '../../api'
+import { selectStudentCourseRecords, selectStudentRosterResult } from './state'
 
 const student = (overrides: Partial<Student> = {}): Student => ({
   id: 'student-1',
@@ -43,5 +43,46 @@ describe('Student roster result selection', () => {
       query: '肌力'
     })
     expect(result).toMatchObject({ state: 'ready', students: [{ id: 'student-1' }] })
+  })
+})
+
+const courseSession = (
+  id: string,
+  startsAt: string,
+  status: CalendarSession['status']
+): CalendarSession => ({
+  id,
+  studentId: 'student-1',
+  studentName: '品妤',
+  seriesId: null,
+  startsAt,
+  endsAt: new Date(Date.parse(startsAt) + 60 * 60_000).toISOString(),
+  location: '訓練室',
+  status,
+  completedAt: status === 'completed' ? startsAt : null,
+  version: 1,
+  isLegacy: false
+})
+
+describe('Student course records', () => {
+  it('shows the nearest upcoming Session before every completed Session in reverse chronology', () => {
+    const next = courseSession('next', '2026-09-20T02:00:00.000Z', 'scheduled')
+    const records = selectStudentCourseRecords({
+      nearestFuture: next,
+      history: [
+        courseSession('older', '2026-09-01T02:00:00.000Z', 'completed'),
+        courseSession('cancelled', '2026-09-12T02:00:00.000Z', 'cancelled'),
+        courseSession('newer', '2026-09-10T02:00:00.000Z', 'completed')
+      ]
+    })
+
+    expect(records.map(({ id }) => id)).toEqual(['next', 'newer', 'older'])
+  })
+
+  it('keeps completed history useful when no future Session exists', () => {
+    const completed = courseSession('completed', '2026-09-10T02:00:00.000Z', 'completed')
+    expect(selectStudentCourseRecords({ nearestFuture: null, history: [completed] })).toEqual([
+      completed
+    ])
   })
 })

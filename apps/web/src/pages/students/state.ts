@@ -1,4 +1,4 @@
-import type { Student } from '../../api'
+import type { CalendarSession, Student } from '../../api'
 
 export type StudentRosterResultState = 'first-empty' | 'filter-empty' | 'search-empty' | 'ready'
 
@@ -22,4 +22,15 @@ export function selectStudentRosterResult({
   if (students.length === 0) return { state: 'first-empty', students: [] }
   if (filtered.length > 0) return { state: 'ready', students: filtered }
   return { state: keyword ? 'search-empty' : 'filter-empty', students: [] }
+}
+
+export function selectStudentCourseRecords(schedule?: {
+  nearestFuture: CalendarSession | null
+  history: CalendarSession[]
+}): CalendarSession[] {
+  if (!schedule) return []
+  const completed = schedule.history
+    .filter((session) => session.status === 'completed')
+    .sort((left, right) => (right.startsAt ?? '').localeCompare(left.startsAt ?? ''))
+  return schedule.nearestFuture ? [schedule.nearestFuture, ...completed] : completed
 }

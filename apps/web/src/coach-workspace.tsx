@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
+  Check,
   Cloud,
   KeyRound,
   LogOut,
@@ -33,7 +35,7 @@ import {
   useStudentRouteMutations,
   useStudentsRouteQuery
 } from './pages/students/queries'
-import { selectStudentRosterResult } from './pages/students/state'
+import { selectStudentCourseRecords, selectStudentRosterResult } from './pages/students/state'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './pages/settings/queries'
 import { invalidateTodayRoute } from './pages/today/queries'
 import { queryKeys } from './query-keys'
@@ -340,6 +342,7 @@ export function StudentDetailPage({
               ? '堂數偏低，可以提早與學生確認補課。'
               : '堂數依購課與已完成課堂自動計算。'}
         </p>
+        <StudentCourseRecord schedule={detail.schedule} />
         <StudentSchedule
           session={session}
           studentId={studentId}
@@ -545,6 +548,82 @@ export function StudentDetailPage({
   )
 }
 
+function StudentCourseRecord({
+  schedule
+}: {
+  schedule?: {
+    nearestFuture: import('./api').CalendarSession | null
+    history: import('./api').CalendarSession[]
+  }
+}) {
+  if (!schedule) return null
+  const records = selectStudentCourseRecords(schedule)
+  const completedCount = records.filter((item) => item.status === 'completed').length
+  return (
+    <section className="student-course-record" aria-labelledby="student-course-record-title">
+      <header className="student-course-record-heading">
+        <div>
+          <span className="eyebrow">SESSION HISTORY</span>
+          <h2 id="student-course-record-title">課程紀錄</h2>
+          <p>距今最近的未上課課堂，以及之前已完成的所有課堂。</p>
+        </div>
+        <div className="student-course-record-total" aria-label={`顯示 ${records.length} 堂課程`}>
+          <strong>{String(records.length).padStart(2, '0')}</strong>
+          <span>堂顯示中</span>
+        </div>
+      </header>
+      {records.length ? (
+        <div className="student-course-record-list">
+          {records.map((item, index) => {
+            const isNext = item.status === 'scheduled'
+            return (
+              <Link
+                key={item.id}
+                className={`student-course-record-row${isNext ? ' is-next' : ''}`}
+                to={`/sessions/${item.id}`}
+              >
+                <span className="student-course-record-index">
+                  {isNext ? <CalendarClock /> : <Check />}
+                </span>
+                <span className="student-course-record-date">
+                  <small>
+                    {isNext
+                      ? 'NEXT SESSION'
+                      : String(index + (schedule.nearestFuture ? 0 : 1)).padStart(2, '0')}
+                  </small>
+                  <strong>{formatScheduleDate(item.startsAt)}</strong>
+                </span>
+                <span className="student-course-record-meta">
+                  <strong>
+                    {formatScheduleTime(item.startsAt)}–{formatScheduleTime(item.endsAt)}
+                  </strong>
+                  <small>{item.location || '未設定地點'}</small>
+                </span>
+                <span className="student-course-record-status">
+                  {isNext ? '最近未上課' : '已完成'}
+                </span>
+                <ArrowRight />
+              </Link>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="student-course-record-empty">
+          <CalendarClock />
+          <div>
+            <strong>還沒有課程紀錄</strong>
+            <span>安排下一堂課或完成課堂後，就會顯示在這裡。</span>
+          </div>
+        </div>
+      )}
+      <footer className="student-course-record-footer">
+        <span>{completedCount} 堂已完成</span>
+        <span>{schedule.nearestFuture ? '已列出下一堂課' : '尚未安排下一堂課'}</span>
+      </footer>
+    </section>
+  )
+}
+
 function StudentSchedule({
   session,
   studentId,
@@ -573,44 +652,14 @@ function StudentSchedule({
     <section className="detail-section student-schedule" aria-labelledby="student-schedule-title">
       <div className="student-schedule-heading">
         <div>
-          <span className="eyebrow dark">課程安排</span>
-          <h2 id="student-schedule-title">下次課程</h2>
+          <span className="eyebrow dark">FIXED RHYTHM</span>
+          <h2 id="student-schedule-title">固定課程節奏</h2>
         </div>
         <button className="text-button" onClick={() => setEditor('new')}>
           建立固定課表
         </button>
       </div>
-      {schedule.nearestFuture ? (
-        <Link className="student-next-session" to={`/sessions/${schedule.nearestFuture.id}`}>
-          <time>{formatScheduleDate(schedule.nearestFuture.startsAt)}</time>
-          <div>
-            <strong>{formatScheduleTime(schedule.nearestFuture.startsAt)}</strong>
-            <span>{schedule.nearestFuture.location || '未設定地點'}</span>
-          </div>
-          <ArrowRight />
-        </Link>
-      ) : (
-        <p className="empty-inline">尚未安排下一堂課。</p>
-      )}
-      <div className="student-session-history">
-        <h3>已結束課程</h3>
-        {schedule.history.length ? (
-          <ol>
-            {schedule.history.slice(0, 4).map((item) => (
-              <li key={item.id}>
-                <Link to={`/sessions/${item.id}`}>
-                  {formatScheduleDate(item.startsAt)} ·{' '}
-                  {item.status === 'completed' ? '已完成' : '已取消'}
-                </Link>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p>還沒有日期化的課程紀錄。</p>
-        )}
-      </div>
       <div className="student-series-list">
-        <h3>固定課表</h3>
         {seriesQuery.isLoading ? (
           <p>正在載入固定課表…</p>
         ) : seriesQuery.isError ? (

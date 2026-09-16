@@ -1,26 +1,26 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-15. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-16. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| Active phase       | **M7 — Local resilience and Demo migration**                                          |
-| Current package    | **M7 complete**                                                                       |
-| Package state      | **Done**                                                                              |
-| Completed baseline | M0–M7 Done; M7 delivery commit `8885404`, GitHub Actions run `34976808273` successful |
-| Branch baseline    | `main`; M7 delivery commit `888540469df530432c9ca62031742257900f077f`                 |
-| Worktree           | No M7 implementation changes pending                                                  |
-| Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date  |
-| Production         | Not configured; no real customer data                                                 |
+| Field              | Current value                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                           |
+| Current package    | **M7.5-01 — Student course-record composition and prominence**                       |
+| Package state      | **Local and browser complete; CI delivery pending**                                  |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                        |
+| Branch baseline    | `main`; M7 delivery commit `888540469df530432c9ca62031742257900f077f`                |
+| Worktree           | M7.5 Roadmap and Student course-record package pending delivery                      |
+| Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date |
+| Production         | Not configured; no real customer data                                                |
 
 ## Next handoff
 
-Stop at the M7 milestone boundary. Before entering M8, the Product Owner must authorize the
-deployment/Beta package and resolve its hosting, secrets, recovery, observability, and security
-decisions through Contract.
+Deliver M7.5-01 as one cohesive commit, confirm exact-SHA GitHub Actions, then continue with the next
+Product Owner-reported M7.5 issue. The Windows local-entrypoint half-start correction remains an
+approved M7.5 item; do not enter M8.
 
 ## Milestone status
 
@@ -35,6 +35,7 @@ decisions through Contract.
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
+| M7.5 Pre-deployment product hardening  | In progress | M7.5-01 Student course records are locally/browser verified; exact-SHA remote CI is pending                                     |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
 
@@ -195,6 +196,12 @@ decisions through Contract.
   `888540469df530432c9ca62031742257900f077f`. Job `verify` succeeded in 37 seconds (API 66, Web 72)
   and `migration-dry-run` succeeded in 24 seconds. The two annotations are the tracked Node 20
   action compatibility warnings, not job failures.
+- M7.5-01 local: Student course records now compose the nearest future scheduled Session with every
+  completed Session in reverse chronology, exclude cancelled Sessions, and render as a dedicated
+  prominent panel separate from fixed rhythm. Focused Student state tests passed 6/6; root check
+  passed API 66 and Web 74 tests; root production build passed with the existing >500-kB advisory.
+  Authenticated desktop and exact 390×844 Chrome acceptance showed the upcoming and completed rows,
+  no horizontal overflow (`390` viewport / `375` content), and no console warnings or errors.
 
 Current development validation commands:
 
@@ -215,6 +222,21 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-16 — LOG-081 — M7.5 opened; Student course records locally complete
+
+- **Scope:** added the Product Owner-approved M7.5 pre-deployment hardening milestone and corrected
+  the Student-detail course-record hierarchy against the archived Demo.
+- **Outcome:** `課程紀錄` is now a dedicated prominent panel containing exactly the nearest future
+  scheduled Session followed by every completed Session in newest-first order. Cancelled Sessions
+  are excluded, the former four-row limit is removed, and fixed rhythm remains a separate section.
+- **Verification:** focused Student selection tests passed 6/6; final root check passed API 66/Web 74;
+  production build passed with only the existing bundle-size advisory. Authenticated desktop and
+  exact 390×844 Chrome acceptance passed with no horizontal overflow or console warning/error.
+- **Known issue:** the first root check ran concurrently with build and two unrelated API HTTP tests
+  exceeded their five-second timeout; isolated API 66/66 and the final sequential root check passed.
+- **Next:** commit and push M7.5-01, confirm exact-SHA Verify and migration-dry-run, then continue the
+  next Product Owner-reported M7.5 correction. Keep the local-entrypoint half-start fix in M7.5.
 
 ### 2026-09-15 — LOG-080 — M7 delivered with exact-SHA remote CI
 

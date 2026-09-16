@@ -425,6 +425,61 @@ starter or invent dates for historical entitlement rows.
 - Prove interruption/reconnection, duplicate submission, partial success, stale version, rerunnable
   import, backup recovery, desktop/mobile operation, and remote CI.
 
+### M7.5 — Pre-deployment product hardening and acceptance
+
+**Dependency:** M7 is complete. M8 deployment and Beta infrastructure have not started.
+
+**Purpose:** run a Product Owner-led, route-by-route pre-deployment review of the complete M1–M7
+product. Resolve reported functional, data-loading, reliability, visual, responsive, accessibility,
+interaction, and product-language defects before committing to production infrastructure. When the
+Product Owner identifies the current work as M7.5, take the active issue and exact next action from
+`PROJECT_STATUS.md`; the Product Owner does not need to restate this milestone's purpose or workflow.
+
+Each bounded correction passes `Contract -> Terra -> Sol -> CI` without reopening completed
+milestone scope or weakening server authority, tenant isolation, privacy, concurrency, or recovery.
+Record the issue, evidence, and one executable next handoff in `PROJECT_STATUS.md`. Continue through
+reported issues until the Product Owner explicitly accepts M7.5; entering M8 remains a separate
+decision.
+
+#### Contract gate
+
+- Reproduce each reported problem and freeze the expected Coach or Student outcome, affected route,
+  data authority, responsive states, and acceptance evidence before implementation.
+- Compare the formal product with the Demo where the Demo owns validated behaviour or presentation;
+  preserve deliberate formal-product deviations and completed API/Auth/schema/cache assets.
+- Classify deployment-provider, production-secret, domain, observability, recovery-policy, and Beta
+  operations decisions as M8 inputs rather than making them implicitly during product hardening.
+
+#### Terra gate
+
+- Correct confirmed functional, projection, mutation, Auth-session, cache, persistence, error-state,
+  and local-testability defects in their owning modules with focused regression coverage.
+- Make the Windows local entrypoint deterministic: start both API and Web, wait for API health before
+  opening the product, surface startup failure clearly, and prevent a Web-only half-started state.
+  During M7.5, separately running `npm run dev:api` and `npm run dev:web` remains an accepted temporary
+  test procedure, not completion evidence for the entrypoint.
+- Keep retry and recovery truthful: distinguish an unavailable local/API service from authorization,
+  server, validation, conflict, offline, and empty-data states.
+
+#### Sol gate
+
+- Converge each reviewed route with the approved visual hierarchy, interaction behaviour, responsive
+  composition, accessibility, and calm user-facing language under direct Product Owner review.
+- Verify desktop and exact 390×844 behaviour for every changed surface, including loading, failure,
+  empty, ready, refreshing, mutating, conflict, focus, keyboard, touch, scroll, and recovery states
+  that the correction can reach.
+
+#### CI gate
+
+- For every bounded correction, run the focused tests plus the applicable root check/build, live,
+  migration, browser, and remote-CI evidence required by its affected contracts.
+- Before M7.5 completion, prove a clean Windows cold start, API health readiness, useful API-startup
+  failure handling, authenticated reload/retry across every Coach route, public-route isolation,
+  desktop and 390×844 critical journeys, migration dry-run/advisors, and exact-SHA GitHub Actions.
+- M7.5 is complete only when every reported item is fixed or explicitly accepted/deferred by the
+  Product Owner, no known release-blocking product defect remains, and the Product Owner authorizes
+  the M8 Contract handoff.
+
 ### M8 — Deployment and Beta readiness
 
 **Dependency:** the approved Beta scope from M1–M7 is complete.
