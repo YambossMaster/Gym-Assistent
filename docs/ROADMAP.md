@@ -435,11 +435,30 @@ interaction, and product-language defects before committing to production infras
 Product Owner identifies the current work as M7.5, take the active issue and exact next action from
 `PROJECT_STATUS.md`; the Product Owner does not need to restate this milestone's purpose or workflow.
 
-Each bounded correction passes `Contract -> Terra -> Sol -> CI` without reopening completed
-milestone scope or weakening server authority, tenant isolation, privacy, concurrency, or recovery.
-Record the issue, evidence, and one executable next handoff in `PROJECT_STATUS.md`. Continue through
-reported issues until the Product Owner explicitly accepts M7.5; entering M8 remains a separate
-decision.
+#### Two-stage operating model
+
+**Stage 1 — Product Owner review and iterative correction (current):** the Product Owner continuously
+identifies concrete problems. Reproduce each problem, correct the items requested for immediate work,
+and run only the focused local and browser evidence needed to keep the next review trustworthy. Keep
+Stage 1 work local; commits are optional checkpoints, while push and remote CI wait for Stage 2 unless
+the Product Owner explicitly requests an earlier delivery.
+
+When Stage 1 exposes a valid issue that is safer or more efficient to solve as one later batch, append
+it to the `M7.5 Stage 2 backlog` in `PROJECT_STATUS.md` with its observed symptom, owning surface,
+required outcome, and acceptance evidence. Recording a deferred item is the Stage 1 completion
+criterion for that item; do not implement it early merely to clear the list. Stage 1 ends only when
+the Product Owner explicitly says the review phase is complete.
+
+**Stage 2 — Consolidated correction and delivery:** after the Product Owner ends Stage 1, freeze the
+complete deferred backlog, resolve every listed item as one coordinated hardening package, run the
+full M7.5 regression and release-readiness matrix, then commit, push, and confirm exact-SHA remote CI.
+Stage 2 may return a newly discovered product decision to the Product Owner, but it does not enter M8
+deployment scope.
+
+Both stages preserve completed milestone scope, server authority, tenant isolation, privacy,
+concurrency, and recovery. Stage 1 applies the relevant Contract, Terra, and Sol work to each immediate
+correction; the consolidated CI gate belongs to Stage 2. Record current work, local evidence, the
+Stage 2 backlog, and one executable next handoff in `PROJECT_STATUS.md`.
 
 #### Contract gate
 
@@ -471,8 +490,11 @@ decision.
 
 #### CI gate
 
-- For every bounded correction, run the focused tests plus the applicable root check/build, live,
-  migration, browser, and remote-CI evidence required by its affected contracts.
+- During Stage 1, use focused local tests and browser checks proportional to the current correction;
+  reserve repeated full-suite, push, and remote-CI cycles for Stage 2 unless risk or the Product Owner
+  requires them earlier.
+- During Stage 2, run the complete applicable root check/build, live, migration, browser, and remote-CI
+  evidence for the combined immediate corrections and deferred backlog.
 - Before M7.5 completion, prove a clean Windows cold start, API health readiness, useful API-startup
   failure handling, authenticated reload/retry across every Coach route, public-route isolation,
   desktop and 390×844 critical journeys, migration dry-run/advisors, and exact-SHA GitHub Actions.

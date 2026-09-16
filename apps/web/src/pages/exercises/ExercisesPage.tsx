@@ -1,9 +1,10 @@
 import type { Session } from '@supabase/supabase-js'
 import { Dumbbell, Heart, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import type { ExerciseDefinition, PerformanceMetric } from '../../api'
 import { Page } from '../../shared/primitives'
 import { useExerciseLibrary, useTrainingMutations } from '../training/queries'
+import { filterExerciseDefinitions } from './filter'
 
 export function ExercisesPage({ session }: { session: Session }) {
   const [q, setQ] = useState(''),
@@ -13,14 +14,19 @@ export function ExercisesPage({ session }: { session: Session }) {
     [movementType, setMovementType] = useState(''),
     [editing, setEditing] = useState<ExerciseDefinition | null | undefined>(undefined),
     [message, setMessage] = useState('')
-  const query = useExerciseLibrary(session, {
-      q,
-      view,
-      ...(equipment ? { equipment } : {}),
-      ...(bodyParts.length ? { bodyParts } : {}),
-      ...(movementType ? { movementType } : {})
-    }),
+  const query = useExerciseLibrary(session),
     mutations = useTrainingMutations(session)
+  const definitions = useMemo(
+    () =>
+      filterExerciseDefinitions(query.data?.definitions ?? [], {
+        q,
+        view,
+        equipment,
+        bodyParts,
+        movementType
+      }),
+    [bodyParts, equipment, movementType, q, query.data?.definitions, view]
+  )
   const clear = () => {
     setQ('')
     setEquipment('')
@@ -125,9 +131,9 @@ export function ExercisesPage({ session }: { session: Session }) {
           <h2>無法載入動作庫。</h2>
           <button onClick={() => void query.refetch()}>重試</button>
         </section>
-      ) : query.data?.definitions.length ? (
+      ) : definitions.length ? (
         <section className="library-grid">
-          {query.data.definitions.map((definition) => (
+          {definitions.map((definition) => (
             <article className="exercise-library-card" key={definition.id}>
               <header>
                 <span>{definition.isSystem ? 'FORM CATALOG' : 'CUSTOM'}</span>

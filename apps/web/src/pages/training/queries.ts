@@ -18,13 +18,10 @@ import {
 import { queryKeys } from '../../query-keys'
 import { invalidateSchedulingQueries } from '../calendar/queries'
 
-export function useExerciseLibrary(
-  session: Session,
-  filters: Parameters<typeof getExerciseLibrary>[1] = {}
-) {
+export function useExerciseLibrary(session: Session) {
   return useQuery({
-    queryKey: queryKeys.exerciseLibrary(session.user.id, filters),
-    queryFn: () => getExerciseLibrary(session.access_token, filters)
+    queryKey: queryKeys.exerciseLibrary(session.user.id),
+    queryFn: () => getExerciseLibrary(session.access_token)
   })
 }
 export function useSessionTraining(session: Session, sessionId: string) {

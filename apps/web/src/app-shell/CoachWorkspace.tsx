@@ -14,6 +14,7 @@ import { queryKeys } from '../query-keys'
 import { Brand } from '../shared/primitives'
 import { resolveCoachIdentity } from './coach-identity'
 import { ResilienceStatus } from './ResilienceStatus'
+import { prefetchPrimaryCoachRoutes } from '../route-prefetch'
 
 const navigation = [
   { to: '/today', label: '今日', icon: LayoutGrid },
@@ -29,23 +30,6 @@ export function CoachWorkspace({ session }: { session: Session }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [location.pathname])
-  useEffect(() => {
-    const schedulingKeys = new Set([
-      'session',
-      'calendar',
-      'today',
-      'student',
-      'students',
-      'session-training',
-      'capability-links'
-    ])
-    const refreshPublicMutationConsumers = () =>
-      void queryClient.invalidateQueries({
-        predicate: (query) => schedulingKeys.has(String(query.queryKey[0]))
-      })
-    window.addEventListener('focus', refreshPublicMutationConsumers)
-    return () => window.removeEventListener('focus', refreshPublicMutationConsumers)
-  }, [queryClient])
   const coachSettingsQuery = useQuery({
     queryKey: queryKeys.settings(session.user.id),
     queryFn: () => getWorkspaceSettings(session.access_token)
@@ -55,6 +39,10 @@ export function CoachWorkspace({ session }: { session: Session }) {
     email: session.user.email
   })
   const timeZone = coachSettingsQuery.data?.timeZone || 'Asia/Taipei'
+  useEffect(() => {
+    if (!coachSettingsQuery.data) return
+    void prefetchPrimaryCoachRoutes(queryClient, session, timeZone)
+  }, [coachSettingsQuery.data, queryClient, session, timeZone])
   return (
     <div className="app-shell">
       <aside className="sidebar">

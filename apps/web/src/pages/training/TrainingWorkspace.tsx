@@ -18,6 +18,7 @@ import {
 } from './drafts'
 import { useExerciseLibrary, useSessionTraining, useTrainingMutations } from './queries'
 import { useSchedulingMutations } from '../calendar/queries'
+import { filterExerciseDefinitions } from '../exercises/filter'
 import {
   CoachLocalStore,
   OperationQueue,
@@ -690,7 +691,11 @@ function ExercisePicker({
 }) {
   const [q, setQ] = useState(''),
     [view, setView] = useState<'all' | 'favorite' | 'custom'>('all')
-  const query = useExerciseLibrary(session, { q, view })
+  const query = useExerciseLibrary(session)
+  const definitions = useMemo(
+    () => filterExerciseDefinitions(query.data?.definitions ?? [], { q, view }),
+    [q, query.data?.definitions, view]
+  )
   useEffect(() => {
     const escape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -741,9 +746,9 @@ function ExercisePicker({
           <p>
             無法載入動作庫。 <button onClick={() => void query.refetch()}>重試</button>
           </p>
-        ) : query.data?.definitions.length ? (
+        ) : definitions.length ? (
           <div className="picker-list">
-            {query.data.definitions.map((definition) => (
+            {definitions.map((definition) => (
               <button key={definition.id} onClick={() => onPick(definition)}>
                 <span>
                   <strong>{definition.name}</strong>

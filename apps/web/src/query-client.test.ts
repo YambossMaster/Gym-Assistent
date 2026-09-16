@@ -2,6 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { createAppQueryClient } from './query-client'
 
 describe('formal route query cache', () => {
+  it('keeps prefetched route data fresh across ordinary navigation', () => {
+    const client = createAppQueryClient()
+
+    expect(client.getDefaultOptions().queries?.staleTime).toBe(5 * 60_000)
+    expect(client.getDefaultOptions().queries?.gcTime).toBe(30 * 60_000)
+    expect(client.getDefaultOptions().queries?.refetchOnWindowFocus).toBe(false)
+  })
+
   it('serves a prefetched student detail from in-memory cache without a second request', async () => {
     const client = createAppQueryClient()
     const request = vi.fn().mockResolvedValue({ id: 'student-1', name: '品妤' })

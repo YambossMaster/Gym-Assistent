@@ -8,19 +8,27 @@
 | Field              | Current value                                                                        |
 | ------------------ | ------------------------------------------------------------------------------------ |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                           |
-| Current package    | **M7.5-01 — Student course-record composition and prominence**                       |
-| Package state      | **Local and browser complete; CI delivery pending**                                  |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                     |
+| Package state      | **Local/browser complete; Product Owner-authorized early CI delivery pending**       |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                        |
-| Branch baseline    | `main`; M7 delivery commit `888540469df530432c9ca62031742257900f077f`                |
-| Worktree           | M7.5 Roadmap and Student course-record package pending delivery                      |
+| Branch baseline    | `main`; local M7.5 checkpoint `120f867`, one commit ahead of `origin/main`           |
+| Worktree           | Stage 1 workflow plus route-prefetch/client-filter delivery pending                  |
 | Linked database    | Development only; M7 migrations through `20260915131743` applied; dry-run up to date |
 | Production         | Not configured; no real customer data                                                |
 
 ## Next handoff
 
-Deliver M7.5-01 as one cohesive commit, confirm exact-SHA GitHub Actions, then continue with the next
-Product Owner-reported M7.5 issue. The Windows local-entrypoint half-start correction remains an
-approved M7.5 item; do not enter M8.
+Deliver the Product Owner-authorized early M7.5 Stage 1 checkpoint: create and push the cohesive
+route-prefetch/client-filter commit with the existing `120f867` checkpoint, then confirm exact-SHA
+GitHub Actions Verify and migration-dry-run. After delivery, remain in Stage 1 for the next reported
+issue; do not begin the consolidated Stage 2 package or enter M8.
+
+## M7.5 Stage 2 backlog
+
+- **Windows local entrypoint reliability:** a Web-only half-start currently leaves every authenticated
+  route unable to load server data while Supabase Auth still appears signed in. Stage 2 must start API
+  and Web together, wait for `/health` before opening the product, surface API startup/exit failures,
+  distinguish API-unavailable recovery from ordinary retry, and verify a clean Windows cold start.
 
 ## Milestone status
 
@@ -35,7 +43,7 @@ approved M7.5 item; do not enter M8.
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M7.5 Pre-deployment product hardening  | In progress | M7.5-01 Student course records are locally/browser verified; exact-SHA remote CI is pending                                     |
+| M7.5 Pre-deployment product hardening  | In progress | Stage 1 active; course records and route-prefetch/client-filter corrections verified locally/browser; delivery deferred         |
 | M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
 | M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
 
@@ -202,6 +210,15 @@ approved M7.5 item; do not enter M8.
   passed API 66 and Web 74 tests; root production build passed with the existing >500-kB advisory.
   Authenticated desktop and exact 390×844 Chrome acceptance showed the upcoming and completed rows,
   no horizontal overflow (`390` viewport / `375` content), and no console warnings or errors.
+- M7.5 Stage 1 route-data correction: primary Coach route data now prefetches after authenticated
+  Workspace settings resolve; ordinary navigation reuses a five-minute fresh cache retained for
+  thirty minutes, and window focus no longer invalidates unrelated route queries. The complete
+  Exercise Library is fetched under one Coach-scoped key, while `/exercises` and the Session picker
+  search/filter locally. Focused regression tests passed 8/8; full Web check passed 19 files/79
+  tests; Web production build passed with the existing >500-kB advisory; `git diff --check` passed.
+  Fresh authenticated Chrome acceptance showed Calendar and Exercise Library without loading
+  skeletons after prefetch, reduced 101 definitions to one visible `Pallof` match locally, and
+  reported no console warnings or errors.
 
 Current development validation commands:
 
@@ -223,6 +240,48 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
+### 2026-09-16 — LOG-084 — M7.5 Stage 1 early delivery authorized; local CI gate complete
+
+- **Scope:** Product Owner explicitly requested an interim push and CI run for the current M7.5
+  Stage 1 checkpoint, including Student course-record composition, the two-stage workflow, route
+  prefetch/cache correction, and client-side Exercise filtering.
+- **Outcome:** the combined checkpoint is locally ready for an early delivery without ending Stage 1
+  or starting the deferred Stage 2 backlog. No schema, migration, production, or M8 scope changed.
+- **Verification:** root check passed API 18 files/66 tests and Web 19 files/79 tests. Root production
+  build passed with only the existing Web >500-kB advisory; linked migration dry-run reported
+  `upToDate:true` with no migrations, seeds, or roles pending; `git diff --check` passed.
+- **Next:** create and push the cohesive delivery commit, confirm exact-SHA GitHub Actions Verify and
+  migration-dry-run, then record the remote evidence and resume Stage 1 review.
+
+### 2026-09-16 — LOG-083 — M7.5 route prefetch and local Exercise filtering complete
+
+- **Scope:** corrected the Product Owner-reported fragmented route loading, frequent background
+  refresh, and server-bound Exercise Library filtering during Stage 1.
+- **Outcome:** the authenticated shell prefetches Today, current-week Calendar, Students/income,
+  Exercise Library, account lifecycle, and Training preference after Workspace settings resolve.
+  Cached route data stays fresh for five minutes and retained for thirty; the former window-focus
+  invalidation sweep is removed while accepted mutations keep their targeted invalidations. Both
+  the Exercise Library route and Session picker filter one complete Coach-authorized library in the
+  browser, so typing and filter changes no longer create query keys or API requests.
+- **Verification:** the red-capable focused suite failed against the prior 30-second cache and
+  missing prefetch/filter seams, then passed 8/8 after correction. Full Web check passed 19 files/79
+  tests; Web build passed with only the existing bundle-size advisory; `git diff --check` passed.
+  Fresh authenticated Chrome acceptance confirmed prefetched Calendar/Exercise navigation without
+  skeletons, local 101-to-one search filtering, and no console warning/error.
+- **Next:** continue M7.5 Stage 1 with the next Product Owner-reported issue; keep push, remote CI,
+  and the Windows-entrypoint backlog deferred to Stage 2.
+
+### 2026-09-16 — LOG-082 — M7.5 two-stage workflow frozen
+
+- **Scope:** incorporated the Product Owner's operating model for the extended pre-deployment review.
+- **Outcome:** Stage 1 is iterative issue discovery and immediate local correction; deferrable findings
+  enter the explicit Stage 2 backlog. Stage 2 begins only on Product Owner instruction and owns the
+  combined backlog, full regression, cohesive delivery, push, and exact-SHA remote CI.
+- **Verification:** Roadmap and Status consistency plus targeted formatting and `git diff --check`;
+  no product implementation changed in this clarification.
+- **Next:** remain in Stage 1, accept the next Product Owner-reported issue, and avoid push/remote CI
+  until Stage 2 or an explicit earlier delivery request.
+
 ### 2026-09-16 — LOG-081 — M7.5 opened; Student course records locally complete
 
 - **Scope:** added the Product Owner-approved M7.5 pre-deployment hardening milestone and corrected
@@ -235,8 +294,8 @@ local pass or successful push is not a remote CI completion claim.
   exact 390×844 Chrome acceptance passed with no horizontal overflow or console warning/error.
 - **Known issue:** the first root check ran concurrently with build and two unrelated API HTTP tests
   exceeded their five-second timeout; isolated API 66/66 and the final sequential root check passed.
-- **Next:** commit and push M7.5-01, confirm exact-SHA Verify and migration-dry-run, then continue the
-  next Product Owner-reported M7.5 correction. Keep the local-entrypoint half-start fix in M7.5.
+- **Next:** continue Stage 1 with the next Product Owner-reported issue. Keep the local-entrypoint
+  half-start correction in the Stage 2 backlog; defer push and remote CI.
 
 ### 2026-09-15 — LOG-080 — M7 delivered with exact-SHA remote CI
 

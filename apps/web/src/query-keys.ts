@@ -12,8 +12,7 @@ export const queryKeys = {
   student: (coachId: string, studentId: string) => ['student', coachId, studentId] as const,
   settings: (coachId: string) => ['workspace-settings', coachId] as const,
   lifecycle: (coachId: string) => ['account-lifecycle', coachId] as const,
-  exerciseLibrary: (coachId: string, filters: unknown = {}) =>
-    ['exercise-library', coachId, filters] as const,
+  exerciseLibrary: (coachId: string) => ['exercise-library', coachId] as const,
   trainingPreference: (coachId: string) => ['training-preference', coachId] as const,
   sessionTraining: (coachId: string, sessionId: string) =>
     ['session-training', coachId, sessionId] as const,
