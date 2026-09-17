@@ -5,26 +5,21 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                                                    |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                                       |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                 |
-| Package state      | **Stage 1 checkpoint delivered; Product Owner review continues**                                                                                                 |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                    |
-| Branch baseline    | Local `main` at `18b0960`, one commit ahead of `origin/main` at `39009a4`; push blocked pending approval                                                         |
-| Worktree           | Stage 1 checkpoint committed locally; dropdown, Exercise Library, favorite-sync, shared dialog, and page-title corrections remain uncommitted; fixtures retained |
-| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                                          |
-| Production         | Not configured; no real customer data                                                                                                                            |
+| Field              | Current value                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                               |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                         |
+| Package state      | **Exercise Library Stage 1 correction delivered; Product Owner review continues**        |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                            |
+| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded         |
+| Worktree           | Exercise Library, shared dialog, and page-title corrections delivered; fixtures retained |
+| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date  |
+| Production         | Not configured; no real customer data                                                    |
 
 ## Next handoff
 
-Await the Product Owner's explicit decision on pushing the 43-file M7.5 Stage 1 checkpoint commit
-`18b0960` directly to `origin/main` for the requested early CI. The attempted push was rejected by
-auto-review because its broad default-branch scope was not explicitly authorized. Do not route around
-that rejection. If approved, push only the authorized scope, confirm exact-SHA GitHub Actions
-`verify` and `migration-dry-run`, then update this Status with observed remote evidence. If not
-approved, retain the local commit and agree on a narrower delivery scope. Stage 1 review remains
-open; do not begin Stage 2 or M8.
+Continue M7.5 Stage 1 Product Owner review from the delivered Exercise Library correction. Start
+Stage 2 only after explicit Product Owner authorization; do not begin M8.
 
 ## M7.5 Stage 2 backlog
 
@@ -297,6 +292,21 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-17 — LOG-106 — M7.5 Exercise Library CI delivery
+
+- **Scope:** Product Owner authorized CI after closing the Exercise Library review.
+- **Outcome:** committed and pushed Exercise Library, shared dropdown/dialog, optimistic favorite,
+  save-feedback, and page-title corrections as `6f42cfc` (`feat: refine M7.5 exercise library interactions`).
+- **Verification:** local `npm run check` passed: API 70 tests in 19 files and Web 94 tests in 24
+  files. `npm run build` passed with the existing >500-kB chunk advisory. Linked development
+  `npm run db:push:dry` reported the remote migrations up to date. GitHub Actions run
+  `35205978389` for exact SHA `6f42cfc` succeeded: `verify` in 42s and `migration-dry-run` in 29s.
+- **Known issue:** GitHub Actions emitted two informational notices that `actions/checkout@v4` and
+  `actions/setup-node@v4` target deprecated Node 20 and were forced to run on Node 24. No project
+  check failed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; do not begin Stage 2 or M8 without explicit
+  authorization.
 
 ### 2026-09-17 — LOG-105 — M7.5 page-title size alignment
 
