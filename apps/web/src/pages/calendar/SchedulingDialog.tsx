@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
+import { useDialogBehavior } from '../../shared/useDialogBehavior'
 
 export function SchedulingDialog({
   title,
@@ -11,31 +12,14 @@ export function SchedulingDialog({
   onClose: () => void
   children: ReactNode
 }) {
-  const dialogRef = useRef<HTMLElement>(null)
-  const onCloseRef = useRef(onClose)
-  const openerRef = useRef<HTMLElement | null>(
-    document.activeElement instanceof HTMLElement ? document.activeElement : null
-  )
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
+    submitOnEnter: true,
+    focusDialog: true
+  })
 
   useEffect(() => {
-    onCloseRef.current = onClose
-  }, [onClose])
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     const dialog = dialogRef.current
-    const first = dialog?.querySelector<HTMLElement>(
-      'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]'
-    )
-    requestAnimationFrame(() => first?.focus())
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onCloseRef.current()
-        requestAnimationFrame(() => openerRef.current?.focus())
-        return
-      }
       if (event.key !== 'Tab' || !dialog) return
       const focusable = [
         ...dialog.querySelectorAll<HTMLElement>(
@@ -55,19 +39,15 @@ export function SchedulingDialog({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => {
-      document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', onKeyDown)
-      requestAnimationFrame(() => openerRef.current?.focus())
     }
   }, [])
 
   return (
-    <div
-      className="scheduling-dialog-backdrop"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
-    >
+    <div className="scheduling-dialog-backdrop" onPointerDown={onBackdropPointerDown}>
       <section
         ref={dialogRef}
+        tabIndex={-1}
         className="scheduling-dialog"
         role="dialog"
         aria-modal="true"

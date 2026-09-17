@@ -500,7 +500,6 @@
 }
 .training-heading span,
 .training-exercise-card header span,
-.exercise-library-card header > span,
 .definition-editor header span,
 .exercise-picker header span,
 .performance-trend header span {
@@ -592,7 +591,7 @@
   color: var(--muted);
 }
 .training-set-card input,
-.training-set-card select {
+.training-set-card .form-select {
   width: 100%;
   margin-top: 5px;
 }
@@ -757,6 +756,7 @@
   background: var(--white);
   border-radius: 12px;
   padding: 0 14px;
+  cursor: pointer;
 }
 .library-tabs button[aria-pressed='true'],
 .body-part-filters button[aria-pressed='true'] {
@@ -788,34 +788,60 @@
   gap: 14px;
 }
 .exercise-library-card {
-  display: grid;
-  gap: 10px;
-  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-height: 218px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 18px;
+  padding: 18px 20px 0;
   background: var(--white);
 }
-.exercise-library-card > svg {
-  width: 30px;
-  color: #738b12;
+.exercise-library-card .exercise-card-heading {
+  min-width: 0;
+  align-items: center;
+  min-height: 37px;
+}
+.exercise-card-identity {
+  min-width: 0;
+}
+.exercise-equipment-mark {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #536d0d;
+  background: transparent;
+}
+.exercise-equipment-mark svg {
+  width: 36px;
+  height: 36px;
+}
+.exercise-card-heading .favorite-button {
+  flex: 0 0 auto;
+  background: transparent;
+}
+.exercise-card-heading .favorite-button:hover:not(:disabled) {
+  background: transparent;
 }
 .exercise-library-card h2,
 .exercise-library-card p {
   margin: 0;
 }
+.exercise-library-card .exercise-card-identity p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
 .exercise-library-card footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 10px;
   margin-top: auto;
-  padding-top: 12px;
+  padding: 9px 0;
   border-top: 1px solid var(--line);
-}
-.exercise-library-card footer > span {
-  margin-right: auto;
-  color: var(--muted);
-  font-size: 0.78rem;
 }
 .favorite-button[aria-pressed='true'] svg {
   fill: currentColor;
@@ -832,33 +858,232 @@
   padding: 4px 9px;
   font-size: 0.72rem;
 }
-.definition-editor form {
-  display: grid;
-  gap: 15px;
-  margin-top: 20px;
+.definition-editor {
+  width: min(880px, 100%);
+  max-height: min(760px, calc(100dvh - 40px));
+  padding: 24px;
+  background: #fbfaf5;
 }
-.definition-editor label {
-  display: grid;
-  gap: 6px;
-}
-.definition-editor fieldset {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 13px;
-}
-.definition-editor fieldset label {
-  display: flex;
+.definition-editor > header {
   align-items: center;
 }
-.definition-editor fieldset label input {
-  width: auto;
-  min-height: 0;
+.definition-editor > header h2 {
+  margin-top: 3px;
+  font-size: 1.45rem;
+}
+.definition-editor form {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+.editor-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.definition-editor .editor-field {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+.definition-editor .editor-field > label,
+.definition-editor label.editor-field,
+.definition-editor .editor-field > strong,
+.definition-editor .editor-field-heading strong {
+  color: #41483d;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.definition-editor .editor-field-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+.definition-editor .editor-field-heading small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.definition-editor .editor-field > input,
+.definition-editor .equipment-combobox input {
+  min-height: 48px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.definition-editor .equipment-combobox {
+  position: relative;
+}
+.definition-editor .equipment-combobox input {
+  padding-right: 57px;
+}
+.definition-editor .equipment-combobox > button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #5c654a;
+  background: #f0efe8;
+}
+.definition-editor .equipment-combobox > button[aria-expanded='true'] {
+  background: #e4e3da;
+}
+.definition-editor .equipment-combobox > button svg {
+  width: 17px;
+  transition: transform 160ms ease;
+}
+.definition-editor .equipment-combobox > button[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.definition-editor .editor-body-parts {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8f7f2;
+}
+.definition-editor .body-part-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.definition-editor .body-part-filters button[aria-pressed='true'] {
+  border-color: #292d23;
+  color: #fff;
+  background: #292d23;
+}
+.definition-editor .body-part-filters button svg {
+  width: 14px;
+  height: 14px;
+}
+.editor-tag-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.editor-tag-entry input {
+  min-height: 42px;
+  background: #fff;
+  font-size: 13px;
+}
+.editor-tag-entry button {
+  min-width: 68px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--white);
+  font-size: 12px;
+  font-weight: 650;
+}
+.editor-tag-entry button svg {
+  width: 15px;
+  height: 15px;
+}
+.editor-tag-entry button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.editor-custom-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.editor-custom-tags button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: #e9e8dd;
+  font-size: 11px;
+  font-weight: 650;
+}
+.editor-custom-tags svg {
+  width: 13px;
+  height: 13px;
+}
+.editor-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.editor-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #efeee8;
+}
+.editor-segmented button {
+  min-height: 47px;
+  display: grid;
+  place-content: center;
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+}
+.editor-segmented button[aria-pressed='true'] {
+  border-color: #292d23;
+  color: #fff;
+  background: #292d23;
+}
+.editor-segmented button:focus-visible {
+  outline: 2px solid #697d16;
+  outline-offset: 2px;
+}
+.editor-segmented small {
+  color: #696e62;
+  font-size: 10px;
+  font-weight: 400;
+}
+.editor-segmented button[aria-pressed='true'] small {
+  color: #d1d5c9;
+}
+.editor-note {
   margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
 }
 .definition-editor footer {
+  position: sticky;
+  bottom: -24px;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 -24px -24px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--line);
+  background: #fbfaf5;
+}
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 .training-preference p {
   color: var(--muted);
@@ -925,7 +1150,7 @@
   .library-grid {
     grid-template-columns: 1fr;
   }
-  .filter-shelf select {
+  .filter-shelf .form-select {
     flex: 1;
   }
   .training-workspace {
@@ -982,7 +1207,24 @@
     flex: 1;
   }
   .exercise-library-card {
-    min-height: 210px;
+    min-height: 218px;
+  }
+  .editor-top-grid,
+  .editor-choice-grid {
+    grid-template-columns: 1fr;
+  }
+  .definition-editor footer {
+    bottom: -20px;
+    margin: 0 -20px -20px;
+    padding: 12px 20px;
+    flex-wrap: wrap;
+  }
+  .editor-note {
+    flex-basis: 100%;
+  }
+  .editor-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1020,6 +1262,10 @@ textarea {
 
 button {
   color: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
 }
 
 button,
@@ -1036,6 +1282,175 @@ svg {
 ::selection {
   color: var(--ink);
   background: var(--lime);
+}
+
+/* Shared dropdown language across Coach routes. The menu is portaled so it remains visible in dialogs. */
+.form-select {
+  min-width: 0;
+  width: 100%;
+}
+.filter-shelf .form-select {
+  width: auto;
+  min-width: 142px;
+}
+.form-select-trigger {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--ink);
+  background: var(--white);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+.form-select-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.form-select-trigger svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: #75805b;
+  transition: transform 160ms ease;
+}
+.form-select.is-open .form-select-trigger,
+.form-select-trigger:focus-visible {
+  outline: none;
+  border-color: #a9ca2d;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(217, 255, 67, 0.24);
+}
+.form-select.is-open .form-select-trigger svg {
+  transform: rotate(180deg);
+}
+.form-select-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.form-select-menu {
+  position: fixed;
+  z-index: 200;
+  padding: 7px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #d8d7cf;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 44px rgba(21, 23, 17, 0.19);
+  scrollbar-color: #a9b18b transparent;
+  animation: form-select-in 140ms ease-out both;
+}
+.equipment-field {
+  position: relative;
+}
+.equipment-suggestions {
+  position: absolute;
+  z-index: 201;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  max-height: 248px;
+  padding: 7px;
+  overflow-y: auto;
+  border: 1px solid #d8d7cf;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 44px rgba(21, 23, 17, 0.19);
+  scrollbar-color: #a9b18b transparent;
+}
+.form-select-menu button {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+.equipment-suggestions button {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+.equipment-suggestions button svg {
+  width: 16px;
+  height: 16px;
+}
+.equipment-suggestions button.active,
+.equipment-suggestions button:hover {
+  background: #f1f2e9;
+}
+.form-select-menu button.active {
+  background: #f1f2e9;
+}
+.form-select-menu button.selected {
+  background: #e8f6ad;
+}
+.form-select-menu button.selected.active {
+  background: #dff38a;
+}
+.form-select-menu button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.form-select-menu button svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+@keyframes form-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .form-select-menu {
+    animation: none;
+  }
+  .form-select-trigger,
+  .form-select-trigger svg {
+    transition: none;
+  }
 }
 
 .auth-layout {
@@ -2372,6 +2787,11 @@ textarea:focus {
   background: var(--lime);
   color: var(--ink);
 }
+.primary-button.compact:hover:not(:disabled) {
+  background: var(--lime-deep);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
 
 .secondary-button {
   min-height: 46px;
@@ -2593,7 +3013,6 @@ textarea:focus {
 .student-detail-page .page-header h1 {
   max-width: min(780px, 62vw);
   overflow-wrap: anywhere;
-  font-size: clamp(42px, 5vw, 60px);
   line-height: 0.98;
 }
 
@@ -3215,7 +3634,7 @@ textarea:focus {
 
 .page-header h1 {
   margin: 10px 0 4px;
-  font-size: clamp(42px, 6vw, 72px);
+  font-size: clamp(32px, 4vw, 52px);
   line-height: 1;
   letter-spacing: -0.07em;
 }
@@ -4316,7 +4735,7 @@ textarea:focus {
     padding-bottom: 20px;
   }
   .page-header h1 {
-    font-size: clamp(34px, 11vw, 44px);
+    font-size: 34px;
   }
   .calendar-page .page-header .primary-button {
     width: auto;
@@ -4583,7 +5002,6 @@ textarea:focus {
   .student-detail-page .page-header h1 {
     max-width: 100%;
     overflow-wrap: anywhere;
-    font-size: clamp(30px, 9vw, 38px);
     line-height: 0.98;
   }
   .student-detail-page .page-header > .secondary-button {

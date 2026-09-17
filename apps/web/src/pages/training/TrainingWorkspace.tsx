@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
+import { FormSelect } from '../../shared/FormSelect'
 import { Check, ChevronRight, Dumbbell, Plus, RotateCcw, Trash2, WifiOff, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -17,6 +18,7 @@ import {
   type StoredTrainingDraft
 } from './drafts'
 import { useExerciseLibrary, useSessionTraining, useTrainingMutations } from './queries'
+import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { useSchedulingMutations } from '../calendar/queries'
 import { filterExerciseDefinitions } from '../exercises/filter'
 import {
@@ -454,7 +456,7 @@ function TrainingEditor({
           disabled={mutations.save.isPending || offline}
           onClick={() => void coordinator.flush()}
         >
-          儲存紀錄
+          {saveState === 'saving' || mutations.save.isPending ? '儲存中…' : '儲存紀錄'}
         </button>
         {initial.allowedActions.canComplete && (
           <button
@@ -593,13 +595,15 @@ function SetCard({
       </label>
       <label>
         單位
-        <select
+        <FormSelect
+          label="單位"
           value={set.unit}
-          onChange={(e) => onChange({ ...set, unit: e.target.value as 'kg' | 'lb' })}
-        >
-          <option>kg</option>
-          <option>lb</option>
-        </select>
+          onChange={(value) => onChange({ ...set, unit: value as 'kg' | 'lb' })}
+          options={[
+            { value: 'kg', label: 'kg' },
+            { value: 'lb', label: 'lb' }
+          ]}
+        />
       </label>
       <label>
         目標次數
@@ -692,20 +696,19 @@ function ExercisePicker({
   const [q, setQ] = useState(''),
     [view, setView] = useState<'all' | 'favorite' | 'custom'>('all')
   const query = useExerciseLibrary(session)
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
+    submitOnEnter: true,
+    focusDialog: true
+  })
   const definitions = useMemo(
     () => filterExerciseDefinitions(query.data?.definitions ?? [], { q, view }),
     [q, query.data?.definitions, view]
   )
-  useEffect(() => {
-    const escape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    addEventListener('keydown', escape)
-    return () => removeEventListener('keydown', escape)
-  }, [onClose])
   return (
-    <div className="dialog-backdrop" role="presentation">
+    <div className="dialog-backdrop" role="presentation" onPointerDown={onBackdropPointerDown}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className="exercise-picker"
         role="dialog"
         aria-modal="true"
@@ -721,7 +724,6 @@ function ExercisePicker({
           </button>
         </header>
         <input
-          autoFocus
           type="search"
           placeholder="搜尋動作、器材或部位"
           value={q}

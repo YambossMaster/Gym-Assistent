@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
+import { FormSelect } from './shared/FormSelect'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -44,6 +45,7 @@ import { isoToLocalDateTime, localDateTimeToIso } from './pages/calendar/calenda
 import { SchedulingDialog } from './pages/calendar/SchedulingDialog'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
+import { useDialogBehavior } from './shared/useDialogBehavior'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
 import type { PerformanceEntry } from './api'
@@ -380,7 +382,7 @@ export function StudentDetailPage({
             進行中的學生
           </label>
           <button className="secondary-button" disabled={submitting}>
-            儲存資料
+            {saveMutation.isPending ? '儲存中…' : '儲存資料'}
           </button>
         </form>
         <form className="detail-section purchase-form" onSubmit={purchase}>
@@ -409,7 +411,7 @@ export function StudentDetailPage({
             <textarea name="purchaseNote" maxLength={4000} placeholder="僅供自己查看" />
           </label>
           <button className="primary-button compact" disabled={submitting}>
-            登錄購課 <ArrowRight />
+            {purchaseMutation.isPending ? '登錄中…' : '登錄購課'} <ArrowRight />
           </button>
         </form>
         <section className="detail-section purchase-history">
@@ -521,6 +523,7 @@ export function StudentDetailPage({
           conflict={purchaseConflict}
           error={updatePurchaseMutation.error}
           disabled={submitting}
+          saving={updatePurchaseMutation.isPending}
           onCancel={() => {
             setPurchaseEditor(null)
             setPurchaseConflict(null)
@@ -868,27 +871,29 @@ function SeriesEditor({
         <div className="field-row">
           <label>
             頻率
-            <select
-              value={interval}
-              onChange={(event) => setInterval(Number(event.target.value) as 1 | 2)}
-            >
-              <option value="1">每週</option>
-              <option value="2">隔週</option>
-            </select>
+            <FormSelect
+              label="頻率"
+              value={String(interval)}
+              onChange={(value) => setInterval(Number(value) as 1 | 2)}
+              options={[
+                { value: '1', label: '每週' },
+                { value: '2', label: '隔週' }
+              ]}
+            />
           </label>
           <label>
             自動安排範圍
-            <select
+            <FormSelect
+              label="自動安排範圍"
               value={horizon}
-              onChange={(event) =>
-                setHorizon(event.target.value as ScheduleSeries['autoScheduleHorizon'])
-              }
-            >
-              <option value="NONE">只建立首堂</option>
-              <option value="1_WEEK">未來 1 週</option>
-              <option value="2_WEEKS">未來 2 週</option>
-              <option value="MAX_WINDOW">依剩餘堂數補齊</option>
-            </select>
+              onChange={(value) => setHorizon(value as ScheduleSeries['autoScheduleHorizon'])}
+              options={[
+                { value: 'NONE', label: '只建立首堂' },
+                { value: '1_WEEK', label: '未來 1 週' },
+                { value: '2_WEEKS', label: '未來 2 週' },
+                { value: 'MAX_WINDOW', label: '依剩餘堂數補齊' }
+              ]}
+            />
           </label>
         </div>
         {series ? (
@@ -951,6 +956,7 @@ function PurchaseEditor({
   conflict,
   error,
   disabled,
+  saving,
   onCancel,
   onSave
 }: {
@@ -958,6 +964,7 @@ function PurchaseEditor({
   conflict: LessonPurchase | null
   error: unknown
   disabled: boolean
+  saving: boolean
   onCancel: () => void
   onSave: (input: {
     purchasedAt: string
@@ -968,30 +975,20 @@ function PurchaseEditor({
     version: number
   }) => void
 }) {
-  const openerRef = useRef<HTMLElement | null>(
-    document.activeElement instanceof HTMLElement ? document.activeElement : null
-  )
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      onCancel()
-      requestAnimationFrame(() => openerRef.current?.focus())
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [onCancel])
-  const cancel = () => {
-    onCancel()
-    requestAnimationFrame(() => openerRef.current?.focus())
-  }
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onCancel, {
+    submitOnEnter: true,
+    focusDialog: true
+  })
   return (
-    <section className="purchase-editor" role="dialog" aria-modal="true" aria-label="編輯購課紀錄">
+    <section
+      ref={dialogRef}
+      tabIndex={-1}
+      className="purchase-editor"
+      role="dialog"
+      aria-modal="true"
+      aria-label="編輯購課紀錄"
+      onPointerDown={onBackdropPointerDown}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -1025,7 +1022,6 @@ function PurchaseEditor({
             type="date"
             defaultValue={purchase.purchasedAt.slice(0, 10)}
             required
-            autoFocus
           />
         </label>
         <label>
@@ -1054,11 +1050,11 @@ function PurchaseEditor({
           <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
         </label>
         <div className="purchase-editor-actions">
-          <button className="secondary-button" type="button" onClick={cancel} disabled={disabled}>
+          <button className="secondary-button" type="button" onClick={onCancel} disabled={disabled}>
             取消
           </button>
           <button className="primary-button compact" disabled={disabled}>
-            儲存購課紀錄
+            {saving ? '儲存中…' : '儲存購課紀錄'}
           </button>
         </div>
       </form>
@@ -1234,7 +1230,7 @@ export function SettingsPage({ session }: { session: Session }) {
             <input name="timeZone" defaultValue={settings.timeZone} maxLength={64} required />
           </label>
           <button className="primary-button compact settings-submit" disabled={submitting}>
-            儲存設定
+            {settingsMutation.isPending ? '儲存中…' : '儲存設定'}
           </button>
         </form>
         <section className="settings-panel account-settings-panel">
@@ -1413,30 +1409,12 @@ function CreateStudentDialog({
   onClose: () => void
   onCreated: (student: Student) => void
 }) {
-  const openerRef = useRef<HTMLElement | null>(
-    document.activeElement instanceof HTMLElement ? document.activeElement : null
-  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      onClose()
-      requestAnimationFrame(() => openerRef.current?.focus())
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [onClose])
-  const close = () => {
-    onClose()
-    requestAnimationFrame(() => openerRef.current?.focus())
-  }
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
+    submitOnEnter: true,
+    focusDialog: true
+  })
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
@@ -1456,21 +1434,21 @@ function CreateStudentDialog({
     }
   }
   return (
-    <div className="modal-backdrop">
-      <section className="modal" role="dialog" aria-modal="true">
+    <div className="modal-backdrop" onPointerDown={onBackdropPointerDown}>
+      <section ref={dialogRef} tabIndex={-1} className="modal" role="dialog" aria-modal="true">
         <header>
           <div>
             <span className="eyebrow dark">學生</span>
             <h2>新增學生</h2>
           </div>
-          <button className="icon-button" type="button" onClick={close} aria-label="關閉新增學生">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="關閉新增學生">
             ×
           </button>
         </header>
         <form onSubmit={submit}>
           <label>
             姓名
-            <input name="name" required maxLength={120} autoFocus />
+            <input name="name" required maxLength={120} />
           </label>
           <label>
             電話
@@ -1486,11 +1464,11 @@ function CreateStudentDialog({
           </label>
           {error && <p className="form-error">{error}</p>}
           <footer>
-            <button className="secondary-button" type="button" onClick={close}>
+            <button className="secondary-button" type="button" onClick={onClose}>
               取消
             </button>
             <button className="primary-button compact" disabled={submitting}>
-              建立學生
+              {submitting ? '建立中…' : '建立學生'}
             </button>
           </footer>
         </form>
@@ -1586,9 +1564,12 @@ function PerformanceTrend({
   onClose: () => void
 }) {
   const query = useStudentTrend(session, studentId, entry.definitionId, entry.metric)
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, { focusDialog: true })
   return (
-    <div className="dialog-backdrop">
+    <div className="dialog-backdrop" onPointerDown={onBackdropPointerDown}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className="performance-trend"
         role="dialog"
         aria-modal="true"

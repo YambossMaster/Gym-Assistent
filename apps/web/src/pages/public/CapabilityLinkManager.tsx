@@ -14,6 +14,7 @@ import {
   type IssuedCapabilityLink
 } from '../../api'
 import { queryKeys } from '../../query-keys'
+import { useDialogBehavior } from '../../shared/useDialogBehavior'
 
 export function CapabilityLinkActions({
   session,
@@ -77,10 +78,6 @@ function CapabilityLinkDialog({
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
-  const dialogRef = useRef<HTMLElement>(null)
-  const openerRef = useRef<HTMLElement | null>(
-    document.activeElement instanceof HTMLElement ? document.activeElement : null
-  )
   const [includeNote, setIncludeNote] = useState(false)
   const [issued, setIssued] = useState<IssuedCapabilityLink | null>(null)
   const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>('idle')
@@ -150,20 +147,15 @@ function CapabilityLinkDialog({
       void refresh()
     }
   })
+  const pending = issue.isPending || reissue.isPending || revoke.isPending
   const close = () => {
+    if (pending) return
     setIssued(null)
     onClose()
-    requestAnimationFrame(() => openerRef.current?.focus())
   }
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(close, { submitOnEnter: true })
   useEffect(() => {
-    const prior = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        close()
-        return
-      }
       if (event.key !== 'Tab' || !dialogRef.current) return
       const focusable = [
         ...dialogRef.current.querySelectorAll<HTMLElement>(
@@ -184,16 +176,17 @@ function CapabilityLinkDialog({
     window.addEventListener('keydown', keydown)
     requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLElement>('button')?.focus())
     return () => {
-      document.body.style.overflow = prior
       window.removeEventListener('keydown', keydown)
     }
   }, [])
   const rawUrl = issued
     ? `${window.location.origin}/${purpose === 'training_result' ? 't' : 'r'}/${issued.token}`
     : ''
-  const pending = issue.isPending || reissue.isPending || revoke.isPending
   return (
-    <div className="modal-backdrop capability-dialog-backdrop">
+    <div
+      className="modal-backdrop capability-dialog-backdrop"
+      onPointerDown={onBackdropPointerDown}
+    >
       <section
         className="modal capability-dialog"
         role="dialog"

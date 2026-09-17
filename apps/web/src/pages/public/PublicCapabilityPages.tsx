@@ -203,7 +203,7 @@ function ReschedulePage() {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        close()
+        if (!mutation.isPending) close()
         return
       }
       if (event.key !== 'Tab' || !dialogRef.current) return
@@ -226,7 +226,7 @@ function ReschedulePage() {
       dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
     )
     return () => window.removeEventListener('keydown', keydown)
-  }, [confirming, selected])
+  }, [confirming, selected, mutation.isPending])
   if (used)
     return (
       <PublicFrame>
@@ -322,7 +322,14 @@ function ReschedulePage() {
         )}
       </article>
       {confirming && selected ? (
-        <div className="public-dialog-backdrop">
+        <div
+          className="public-dialog-backdrop"
+          onPointerDown={(event) => {
+            if (event.target !== event.currentTarget || mutation.isPending) return
+            setConfirming(false)
+            requestAnimationFrame(() => focusSelectedSlot(selected))
+          }}
+        >
           <section
             className="public-dialog"
             role="dialog"

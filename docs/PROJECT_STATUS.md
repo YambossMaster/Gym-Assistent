@@ -5,23 +5,26 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                        |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                           |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                     |
-| Package state      | **Stage 1 checkpoint delivered; Product Owner review continues**                                     |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                        |
-| Branch baseline    | `main`; M7.5 interim delivery commit `f5996f1` is on `origin/main`                                   |
-| Worktree           | Stage 1 link/Auth/entrypoint, mobile preview, Today notices, Calendar focus local; fixtures retained |
-| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date              |
-| Production         | Not configured; no real customer data                                                                |
+| Field              | Current value                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                                       |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                 |
+| Package state      | **Stage 1 checkpoint delivered; Product Owner review continues**                                                                                                 |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                    |
+| Branch baseline    | Local `main` at `18b0960`, one commit ahead of `origin/main` at `39009a4`; push blocked pending approval                                                         |
+| Worktree           | Stage 1 checkpoint committed locally; dropdown, Exercise Library, favorite-sync, shared dialog, and page-title corrections remain uncommitted; fixtures retained |
+| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                                          |
+| Production         | Not configured; no real customer data                                                                                                                            |
 
 ## Next handoff
 
-Continue M7.5 Stage 1 with the next Product Owner-reported issue. Apply immediate corrections with
-focused local/browser evidence and append deferrable work to the Stage 2 backlog below. The interim
-checkpoint through `f5996f1` is delivered; do not begin the consolidated Stage 2 package or enter M8
-until the Product Owner explicitly changes the phase.
+Await the Product Owner's explicit decision on pushing the 43-file M7.5 Stage 1 checkpoint commit
+`18b0960` directly to `origin/main` for the requested early CI. The attempted push was rejected by
+auto-review because its broad default-branch scope was not explicitly authorized. Do not route around
+that rejection. If approved, push only the authorized scope, confirm exact-SHA GitHub Actions
+`verify` and `migration-dry-run`, then update this Status with observed remote evidence. If not
+approved, retain the local commit and agree on a narrower delivery scope. Stage 1 review remains
+open; do not begin Stage 2 or M8.
 
 ## M7.5 Stage 2 backlog
 
@@ -294,6 +297,127 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-17 — LOG-105 — M7.5 page-title size alignment
+
+- **Scope:** Product Owner requested page titles to match the Today greeting size.
+- **Outcome:** the shared page-header title now uses Today's `clamp(32px, 4vw, 52px)` desktop size and 34px mobile size. Removed the Student detail size overrides so Calendar, Students, Exercise Library, Settings, and detail titles follow the same scale.
+- **Verification:** checked the title selectors and `git diff --check` passed. This focused CSS correction did not receive a broader browser or build run.
+- **Known issue:** local Stage 1 review work; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review while retaining the LOG-100 push decision; do not begin Stage 2 or M8.
+
+### 2026-09-17 — LOG-104 — M7.5 Exercise Enter, favorite convergence, and save feedback
+
+- **Scope:** Product Owner reported intermittent Enter submission in the Exercise editor, forbidden
+  cursor during favorite persistence, opaque favorite-button backing, illegible lime-button hover,
+  and missing in-button saving feedback.
+- **Outcome:** fixed Strict Mode's temporary effect cleanup restoring focus to the opener after the
+  editor had opened. Enter now submits a dialog form whenever a text input is not active, including
+  when a choice button retains focus; focused text input Enter still blurs first, and select controls
+  retain their own keyboard handling. Favorite clicks remain available during persistence and update
+  the Coach-scoped cache immediately. A per-Exercise queue coalesces rapid clicks, sends writes in
+  order using each accepted server version, retries version conflicts after refreshing authority,
+  and rolls back only when the final requested state cannot be saved. The heart backing is
+  transparent. Lime primary buttons now hover to a slightly deeper lime while retaining dark text.
+  The Exercise editor stays open with a disabled `儲存中…` button until the write finishes, keeping
+  input in place on error. Existing Student, purchase, settings, and training save buttons now show
+  their pending wording consistently.
+- **Verification:** focused Strict Mode focus/Enter, in-flight save, rapid favorite, rollback, and
+  version-conflict tests passed. Web format/typecheck and all 94 tests in 24 files passed; Web build
+  passed with the existing >500-kB chunk advisory. Authenticated desktop review showed focus on the
+  open editor and a transparent heart backing; favorite was toggled on/off and a reload confirmed
+  its original off state on the server. `git diff --check` passed.
+- **Known issue:** this remains local Stage 1 review work. No push or remote CI is claimed; the
+  earlier checkpoint push remains blocked as recorded in LOG-100.
+- **Next:** continue M7.5 Stage 1 Product Owner review while retaining the LOG-100 push decision;
+  do not begin Stage 2 or M8.
+
+### 2026-09-17 — LOG-103 — M7.5 Exercise Library interaction and dialog correction
+
+- **Scope:** Product Owner requested roomier cards with recognizable transparent equipment icons,
+  restrained lime emphasis and denser editor layout, reliable equipment-menu dismissal, immediate
+  feedback for Exercise mutations, and consistent Enter/Escape/outside dismissal in popups.
+- **Outcome:** put the equipment glyph on its own card row, restored card breathing room, and redrew
+  barbell, kettlebell, pulley, and fixed-machine marks. The desktop editor puts name and equipment
+  side by side, reserves lime for Save, uses consistent dark selections and field labels, and moves
+  the snapshot note into its subdued footer. The equipment list opens on deliberate input/click
+  rather than focus and closes on outside pointer action without blur/click reopening. Exercise
+  create, edit, favorite, and delete now optimistically update the Coach-scoped TanStack cache,
+  reconcile with the server response, and roll back on error; delete uses a styled confirmation.
+  Shared dialog behavior removes default input autofocus, blurs text inputs on Enter, submits a
+  form on a later Enter outside an input, and cancels on Escape or direct backdrop click, with
+  focus restored to the opener. This is applied to Coach editor, student, scheduling, purchase,
+  training picker, trend, and capability dialogs; public rescheduling confirmation also dismisses
+  on backdrop click.
+- **Verification:** focused editor/dropdown and optimistic cache rollback tests passed. Web format,
+  typecheck, and all 90 tests in 24 files passed; Web build passed with the existing >500-kB chunk
+  advisory. Authenticated desktop review confirmed three roomier cards per row and a non-scrolling
+  editor at the observed desktop viewport; the 390 × 844 preview had no horizontal overflow.
+  Equipment outside-click, editor Escape/focus, student Escape, and delete-confirmation backdrop
+  dismissal were exercised in the live browser without permanent data changes. Favorite was toggled
+  on and off and returned to its original value. `git diff --check` passed.
+- **Known issue:** this remains local Stage 1 review work. No push or remote CI is claimed; the
+  earlier checkpoint push remains blocked as recorded in LOG-100.
+- **Next:** continue M7.5 Stage 1 Product Owner review while retaining the LOG-100 push decision;
+  do not begin Stage 2 or M8.
+
+### 2026-09-17 — LOG-102 — M7.5 Exercise Library cards and editor design correction
+
+- **Scope:** Product Owner requested less repeated content in Exercise cards, equipment-specific icons,
+  shorter three-column cards, consistent clickable controls, and a more coherent Exercise editor.
+- **Outcome:** removed persistent success copy, catalog labels, and per-card performance copy;
+  condensed the cards to 174px minimum height and added distinct glyphs for known equipment while
+  leaving unrecognized custom equipment without a generic glyph. Reworked the editor with consistent
+  field labels and spacing, two-option movement and metric controls, editable equipment with the full
+  selection list, and styled body-part chips. Clickable buttons now show a pointer cursor.
+- **Verification:** Web format/typecheck and all 86 tests in 22 files passed; production build passed
+  with the existing >500-kB chunk advisory. Authenticated desktop review showed three compact cards
+  per row and the equipment menu attached below its field. The 390 × 844 preview showed single-column
+  cards and an editor without horizontal overflow; choosing a different equipment option updated the
+  field, and the unsaved change was discarded. `git diff --check` passed.
+- **Known issue:** this is local Stage 1 review work. No push or remote CI is claimed; the earlier
+  checkpoint push remains blocked as recorded in LOG-100.
+- **Next:** continue M7.5 Stage 1 Product Owner review while retaining the LOG-100 push decision;
+  do not begin Stage 2 or M8.
+
+### 2026-09-17 — LOG-101 — M7.5 shared dropdown styling and placement correction
+
+- **Scope:** Product Owner requested FORM-styled dropdowns across the formal Web, then reported that
+  the new menu sometimes appeared far from its field in the Exercise editor.
+- **Outcome:** added one shared select with a white floating menu, lime selection, keyboard and
+  pointer interaction, and viewport-aware placement; migrated every runtime native select in Coach
+  routes. Replaced the Exercise equipment datalist with styled editable suggestions. The placement
+  error came from using the menu's maximum available height when flipping a short menu upward;
+  positioning now uses its content height and scrolls only the menu's own contents. Calendar's
+  Student selection retains an explicit required-field check.
+- **Verification:** Web format, typecheck, and all 86 tests in 22 files passed; Web production build
+  passed with the existing >500-kB chunk advisory. A focused regression test covers upward menu
+  adjacency. Authenticated desktop Exercise editor and 390 × 844 preview showed the open menu next
+  to its trigger with no horizontal overflow in the visible mobile viewport. No data was changed.
+- **Known issue:** this remains local Stage 1 review work. No push or remote CI is claimed for these
+  files; the earlier checkpoint push remains blocked as recorded in LOG-100.
+- **Next:** continue M7.5 Stage 1 Product Owner review while retaining the LOG-100 push decision;
+  do not begin Stage 2 or M8.
+
+### 2026-09-17 — LOG-100 — M7.5 early CI preflight complete; main push needs approval
+
+- **Scope:** Product Owner paused Today review and asked for CI before Stage 2. Reconciled all 43
+  pending files as accumulated Stage 1 corrections: Today, notifications, Auth, Calendar focus/link
+  entry, local launcher/mobile preview, API support, and two already-applied development migrations.
+- **Outcome:** created local checkpoint commit `18b0960a9ac62154ae511dfa5975d633dbc659f1` on `main`.
+  An attempted push to `origin/main` was rejected by auto-review because the broad default-branch
+  mutation lacked explicit authorization for that scope. No remote CI has run for this SHA, and no
+  alternate push path was used.
+- **Verification:** root check passed API 19 files/70 tests and Web 21 files/84 tests; root build
+  passed with the existing >500-kB Vite advisory. Linked development migration dry-run was up to
+  date, `app_private` lint reported no schema errors, and Supabase Security Advisor retained only
+  the known leaked-password-protection warning. Performance Advisor retained existing informational
+  index and policy findings. Staged `git diff --check` passed; `origin/main` matched the pre-commit
+  local baseline `39009a4`. Existing desktop/390px Today acceptance is recorded in LOG-093–097.
+- **Known issue:** the requested exact-SHA remote CI is blocked until the Product Owner explicitly
+  approves a 43-file direct `main` push or chooses a narrower delivery scope.
+- **Next:** obtain that decision, then run exact-SHA remote CI only for the authorized push; remain
+  in M7.5 Stage 1.
 
 ### 2026-09-17 — LOG-099 — M7.5 Today quotation rotation completed
 

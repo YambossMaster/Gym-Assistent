@@ -9,6 +9,7 @@ import {
   type CalendarSession
 } from '../../api'
 import { Page } from '../../shared/primitives'
+import { FormSelect } from '../../shared/FormSelect'
 import { useStudentsRouteQuery } from '../students/queries'
 import { addLocalMinutes, isoToLocalDateTime, localDateTimeToIso } from './calendar-time'
 import { useCalendarRouteQuery, useSchedulingMutations } from './queries'
@@ -232,6 +233,10 @@ function Editor({
     if (warning && !acknowledged) return
     if (draft.end <= draft.start) {
       setError('結束時間必須晚於開始時間。')
+      return
+    }
+    if (draft.kind === 'session' && !draft.current && !draft.studentId) {
+      setError('請選擇學生。')
       return
     }
     if (draft.kind === 'session') {
@@ -464,19 +469,17 @@ function Editor({
           <>
             <label>
               學生
-              <select
+              <FormSelect
+                label="學生"
                 value={draft.studentId}
                 disabled={Boolean(draft.current)}
-                onChange={(event) => onChange({ ...draft, studentId: event.target.value })}
+                onChange={(value) => onChange({ ...draft, studentId: value })}
                 required
-              >
-                <option value="">選擇學生</option>
-                {students.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: '選擇學生' },
+                  ...students.map((student) => ({ value: student.id, label: student.name }))
+                ]}
+              />
             </label>
             <label>
               地點
@@ -515,19 +518,18 @@ function Editor({
             ) : draft.current.recurrenceId ? (
               <label>
                 套用範圍
-                <select
+                <FormSelect
+                  label="套用範圍"
                   value={draft.scope}
-                  onChange={(event) =>
-                    onChange({
-                      ...draft,
-                      scope: event.target.value as 'single' | 'future' | 'all'
-                    })
+                  onChange={(value) =>
+                    onChange({ ...draft, scope: value as 'single' | 'future' | 'all' })
                   }
-                >
-                  <option value="single">只有這一次</option>
-                  <option value="future">這次及之後</option>
-                  <option value="all">全部重複時段</option>
-                </select>
+                  options={[
+                    { value: 'single', label: '只有這一次' },
+                    { value: 'future', label: '這次及之後' },
+                    { value: 'all', label: '全部重複時段' }
+                  ]}
+                />
               </label>
             ) : null}
           </>
@@ -537,27 +539,27 @@ function Editor({
             <div className="field-row">
               <label>
                 套用
-                <select
+                <FormSelect
+                  label="套用"
                   value={draft.scope}
-                  onChange={(event) =>
-                    onChange({ ...draft, scope: event.target.value as 'date' | 'weekday' })
-                  }
-                >
-                  <option value="date">僅此日期</option>
-                  <option value="weekday">每週這一天</option>
-                </select>
+                  onChange={(value) => onChange({ ...draft, scope: value as 'date' | 'weekday' })}
+                  options={[
+                    { value: 'date', label: '僅此日期' },
+                    { value: 'weekday', label: '每週這一天' }
+                  ]}
+                />
               </label>
               <label>
                 操作
-                <select
+                <FormSelect
+                  label="操作"
                   value={draft.action}
-                  onChange={(event) =>
-                    onChange({ ...draft, action: event.target.value as 'add' | 'remove' })
-                  }
-                >
-                  <option value="add">加入時段</option>
-                  <option value="remove">移除時段</option>
-                </select>
+                  onChange={(value) => onChange({ ...draft, action: value as 'add' | 'remove' })}
+                  options={[
+                    { value: 'add', label: '加入時段' },
+                    { value: 'remove', label: '移除時段' }
+                  ]}
+                />
               </label>
             </div>
             <p className="field-help">

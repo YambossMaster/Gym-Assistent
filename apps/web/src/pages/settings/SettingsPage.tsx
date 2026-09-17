@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
+import { FormSelect } from '../../shared/FormSelect'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRight, KeyRound, LogOut, TimerReset, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
@@ -225,19 +226,21 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
       <SettingsPanelHeading eyebrow="TRAINING" title="訓練設定" />
       <label>
         預設重量單位
-        <select
+        <FormSelect
+          label="預設重量單位"
           value={query.data.defaultWeightUnit}
           disabled={mutations.preference.isPending}
-          onChange={(event) =>
+          onChange={(value) =>
             mutations.preference.mutate({
-              unit: event.target.value as 'kg' | 'lb',
+              unit: value as 'kg' | 'lb',
               version: query.data!.version
             })
           }
-        >
-          <option value="kg">公斤（kg）</option>
-          <option value="lb">磅（lb）</option>
-        </select>
+          options={[
+            { value: 'kg', label: '公斤（kg）' },
+            { value: 'lb', label: '磅（lb）' }
+          ]}
+        />
       </label>
       <p>只影響新增組別與表現顯示，不會改寫既有重量。</p>
     </section>
@@ -280,7 +283,7 @@ function WorkspaceProfile({
         <input name="timeZone" defaultValue={settings.timeZone} maxLength={64} required />
       </label>
       <button className="primary-button compact settings-submit" disabled={isSaving}>
-        儲存設定
+        {isSaving ? '儲存中…' : '儲存設定'}
       </button>
     </form>
   )
@@ -369,7 +372,7 @@ function PasswordSection({
               取消
             </button>
             <button className="primary-button compact" disabled={saving}>
-              更新密碼 <KeyRound />
+              {saving ? '更新中…' : '更新密碼'} <KeyRound />
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import { useDialogBehavior } from './useDialogBehavior'
 
 export function Page({
   title,
@@ -62,33 +63,20 @@ export function Confirmation({
   requiredWord?: string
   confirmLabel?: string
 }) {
-  const openerRef = useRef<HTMLElement | null>(
-    document.activeElement instanceof HTMLElement ? document.activeElement : null
-  )
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onCancel()
-        requestAnimationFrame(() => openerRef.current?.focus())
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [onCancel])
-  const cancel = () => {
-    onCancel()
-    requestAnimationFrame(() => openerRef.current?.focus())
-  }
   const requiresText = onConfirmationChange !== undefined
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onCancel, {
+    focusDialog: true,
+    submitOnEnter: true
+  })
   return (
-    <div className="danger-confirmation">
-      <section className="danger-confirmation-card" role="alertdialog" aria-modal="true">
+    <div className="danger-confirmation" onPointerDown={onBackdropPointerDown}>
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="danger-confirmation-card"
+        role="alertdialog"
+        aria-modal="true"
+      >
         <h2>{title}</h2>
         <p>{text}</p>
         {requiresText && (
@@ -97,12 +85,11 @@ export function Confirmation({
             <input
               value={confirmation}
               onChange={(event) => onConfirmationChange(event.target.value)}
-              autoFocus
             />
           </label>
         )}
         <div className="danger-confirmation-actions">
-          <button className="secondary-button" disabled={disabled} onClick={cancel}>
+          <button className="secondary-button" disabled={disabled} onClick={onCancel}>
             取消
           </button>
           <button
