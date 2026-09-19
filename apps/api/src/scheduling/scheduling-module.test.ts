@@ -225,6 +225,99 @@ describe('SchedulingModule', () => {
     await expect(module.deleteSession(identity, 'session-1', { version: 1 })).rejects.toThrow()
   })
 
+  it('reassigns a scheduled standalone Session to a Student in the same Workspace', async () => {
+    const previousStudentId = '00000000-0000-4000-8000-000000000010'
+    const nextStudentId = '00000000-0000-4000-8000-000000000011'
+    const current = {
+      id: 'session-1',
+      studentId: previousStudentId,
+      studentName: 'Alice',
+      seriesId: null,
+      startsAt: '2026-09-14T02:00:00.000Z',
+      endsAt: '2026-09-14T03:00:00.000Z',
+      location: 'Studio',
+      status: 'scheduled' as const,
+      completedAt: null,
+      version: 3,
+      isLegacy: false,
+    }
+    let changedStudentId: string | undefined
+    const module = new SchedulingModule({
+      resolveWorkspace: async () => 'workspace-1',
+      getSession: async () => current,
+      hasStudent: async (workspaceId: string, studentId: string) =>
+        workspaceId === 'workspace-1' && studentId === nextStudentId,
+      updateSession: async (
+        _workspaceId: string,
+        _sessionId: string,
+        input: Parameters<SchedulingRepository['updateSession']>[2],
+      ) => {
+        changedStudentId = input.studentId
+        return { ...current, studentId: nextStudentId, studentName: 'Bob', version: 4 }
+      },
+      listSessions: async () => [],
+      listBlocks: async () => [],
+      getTimeZone: async () => 'Asia/Taipei',
+      listAvailability: async () => [],
+      getAvailabilityOverride: async () => null,
+    } as unknown as SchedulingRepository)
+    await expect(
+      module.updateSession(identity, 'session-1', {
+        studentId: nextStudentId,
+        startsAt: current.startsAt,
+        endsAt: current.endsAt,
+        location: 'Studio',
+        version: 3,
+      }),
+    ).resolves.toMatchObject({ session: { studentId: nextStudentId, version: 4 } })
+    expect(changedStudentId).toBe(nextStudentId)
+  })
+
+  it('rejects cross-Workspace and Series-owned Student reassignment before persistence', async () => {
+    const originalId = '00000000-0000-4000-8000-000000000010'
+    const nextId = '00000000-0000-4000-8000-000000000011'
+    const current = {
+      id: 'session-1',
+      studentId: originalId,
+      studentName: 'Alice',
+      seriesId: null,
+      startsAt: '2026-09-14T02:00:00.000Z',
+      endsAt: '2026-09-14T03:00:00.000Z',
+      location: 'Studio',
+      status: 'scheduled' as const,
+      completedAt: null,
+      version: 3,
+      isLegacy: false,
+    }
+    let persisted = false
+    let seriesId: string | null = null
+    const repository = {
+      resolveWorkspace: async () => 'workspace-1',
+      getSession: async () => ({ ...current, seriesId }),
+      hasStudent: async () => false,
+      updateSession: async () => {
+        persisted = true
+        return current
+      },
+    } as unknown as SchedulingRepository
+    const module = new SchedulingModule(repository)
+    const input = {
+      studentId: nextId,
+      startsAt: current.startsAt,
+      endsAt: current.endsAt,
+      location: 'Studio',
+      version: 3,
+    }
+    await expect(module.updateSession(identity, 'session-1', input)).rejects.toMatchObject({
+      reason: 'student_not_found',
+    })
+    seriesId = 'series-1'
+    await expect(module.updateSession(identity, 'session-1', input)).rejects.toMatchObject({
+      reason: 'series_owned',
+    })
+    expect(persisted).toBe(false)
+  })
+
   it('returns an outside-availability warning without rejecting Session creation', async () => {
     const session = {
       id: 'session-1',

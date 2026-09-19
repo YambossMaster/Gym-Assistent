@@ -23,7 +23,10 @@ import { AccountDeletionUnavailableError } from '../account-lifecycle/supabase-a
 import { type RegistrationEmailLookup } from '../account-registration/registration-email-lookup.js'
 import { RegistrationLookupUnavailableError } from '../account-registration/supabase-registration-email-lookup.js'
 import { SchedulingModule } from '../scheduling/scheduling-module.js'
-import { SchedulingVersionConflictError } from '../scheduling/scheduling-repository.js'
+import {
+  SchedulingStudentChangeError,
+  SchedulingVersionConflictError,
+} from '../scheduling/scheduling-repository.js'
 import { TrainingModule } from '../training/training-module.js'
 import { TrainingVersionConflictError } from '../training/training-repository.js'
 import { PublicAccessModule } from '../public-access/public-access-module.js'
@@ -181,6 +184,12 @@ export function buildServer({
         reason: 'scheduling_version_conflict',
         message: error.message,
         current: error.current,
+      })
+    }
+    if (error instanceof SchedulingStudentChangeError) {
+      return reply.status(error.reason === 'student_not_found' ? 404 : 400).send({
+        error: error.reason,
+        message: error.message,
       })
     }
     if (error instanceof TrainingVersionConflictError) {

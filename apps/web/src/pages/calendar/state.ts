@@ -1,4 +1,12 @@
-import type { CalendarProjection } from '../../api'
+import type { CalendarProjection, CalendarSession } from '../../api'
+
+export function calendarSessionVisualState(
+  session: CalendarSession,
+  now = new Date()
+): 'upcoming' | 'overdue' | 'completed' {
+  if (session.status === 'completed') return 'completed'
+  return session.endsAt && Date.parse(session.endsAt) <= now.getTime() ? 'overdue' : 'upcoming'
+}
 
 export type CalendarRouteState = 'loading' | 'error' | 'empty' | 'ready' | 'refreshing'
 export function selectCalendarRouteState(input: {

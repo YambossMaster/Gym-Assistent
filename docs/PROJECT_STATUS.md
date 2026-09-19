@@ -1,25 +1,26 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-17. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-19. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                               |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                         |
-| Package state      | **Exercise Library Stage 1 correction delivered; Product Owner review continues**        |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                            |
-| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded         |
-| Worktree           | Exercise Library, shared dialog, and page-title corrections delivered; fixtures retained |
-| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date  |
-| Production         | Not configured; no real customer data                                                    |
+| Field              | Current value                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                       |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                 |
+| Package state      | **Calendar quick actions, edit return flow, white Week background, and standalone Student reassignment local; review continues** |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                    |
+| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded                                                 |
+| Worktree           | Calendar view/composer and sidebar corrections verified locally; ready for authorized delivery                                   |
+| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                          |
+| Production         | Not configured; no real customer data                                                                                            |
 
 ## Next handoff
 
-Continue M7.5 Stage 1 Product Owner review from the delivered Exercise Library correction. Start
-Stage 2 only after explicit Product Owner authorization; do not begin M8.
+Continue M7.5 Stage 1 Product Owner review of the Calendar quick view, Student reassignment, Day/Week
+touch gestures, and Block editor on a physical phone if available. Stage 2 begins only after explicit
+Product Owner authorization; do not begin M8.
 
 ## M7.5 Stage 2 backlog
 
@@ -292,6 +293,261 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-19 — LOG-117 — M7.5 Stage 1 accumulated local CI
+
+- **Scope:** ran the authorized local CI gate for the current M7.5 Stage 1 Calendar, Scheduling, and shared dialog corrections before delivery.
+- **Outcome:** root format/typecheck/test check passed (API 19 files/72 tests; Web 28 files/115 tests). API and Web production builds passed; the Web build retains only the existing >500-kB chunk-size advisory. Linked Supabase migration dry-run reports the remote database is up to date; `git diff --check` passed.
+- **Known issue:** the initial sandbox test run hit Windows `spawn EPERM`, and the first dry-run could not write Supabase telemetry. Approved elevated reruns completed successfully; neither error was an application or migration failure.
+- **Next:** commit and push this authorized Stage 1 delivery, then confirm the exact commit's GitHub Actions Verify and migration-dry-run jobs. Stage 2 and M8 remain separate Product Owner decisions.
+
+### 2026-09-19 — LOG-116 — M7.5 Calendar Week background correction
+
+- **Scope:** Product Owner requested that the Calendar Week surface use one white background rather than a white/cream splice, while retaining the existing faint green treatment for today only.
+- **Outcome:** the legend strip and every non-today timeline column now render white, including their hover state. The today column continues to use its existing faint green background; availability and course-status colors are unchanged.
+- **Verification:** authenticated desktop Calendar inspection confirmed the unified white surface and preserved today highlight. `git diff --check` passed. This is a focused local Stage 1 correction; no schema, API, push, or remote CI claim.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Stage 2, push, remote CI, and M8 require separate authorization.
+
+### 2026-09-18 — LOG-115 — M7.5 Calendar preview and editor follow-up
+
+- **Scope:** Product Owner requested a Demo-sized Delete action, removal of the duplicate Cancel
+  Course control, Edit Arrangement within the time card, a shorter course editor whose Cancel returns
+  to preview, editable Student, and a designed Delete Block action.
+- **Outcome:** the preview now gives Open, Complete, and Delete equal-width primary actions, with a
+  quiet Edit Arrangement link in the time card. The redundant Cancel Course link is removed; a
+  scheduled Series occurrence still uses its versioned cancellation transition behind the sole
+  visible Delete action, retaining M4 history. The course editor fits its contents and Cancel,
+  Escape, or close returns to preview with the unchanged Session; its Student selector can reassign
+  an individual scheduled Session to another Student in the same Workspace. Version conflicts and
+  missing Students remain explicit, and old/new Student queries invalidate after a successful
+  reassignment. A Series-owned occurrence retains its Series Student and explains the restriction.
+  Delete Block now has the Demo's pale red button treatment and sufficient width on mobile.
+- **Verification:** API format/typecheck and 19 files/72 tests passed; Web format/typecheck and 28
+  files/115 tests passed. API and Web production builds passed; Web reports only the existing
+  > 500-kB chunk advisory. Isolated development M4 live E2E passed Student reassignment and Series
+  > guard alongside existing conflict, Block recurrence, projection, and isolation flows, with fixture
+  > cleanup. Authenticated Chrome confirmed equal preview actions, edit/Cancel return and focus,
+  > enabled Student selection for standalone Sessions, compact desktop/mobile editors, and the Block
+  > Delete style. At 390×844 the Block dialog was 370 px wide, all three footer actions fit one row,
+  > and document width remained 390 px. `git diff --check` passed. No schema migration was required.
+- **Limit:** changing the Student of one Series occurrence is not supported by the M4 Series ownership
+  contract; the edit form says so. No physical touchscreen acceptance was available.
+- **Next:** continue M7.5 Stage 1 Product Owner review. This correction remains local; Stage 2,
+  push, remote CI, and M8 require their separate authorized handoff.
+
+### 2026-09-18 — LOG-114 — M7.5 Calendar interaction and dialog parity corrections
+
+- **Scope:** Product Owner reported seven follow-ups from two recordings and screenshots: a green day
+  focus frame, dialog-close timeline jump, touch gestures, desktop cursors, course quick-view parity,
+  Block editor density, and Delete keyboard access.
+- **Outcome:** removed the day-sized focus shadow and restored dialog opener focus without scrolling.
+  Blank grid now uses a crosshair; movable events use grab/grabbing. Day/Week touch keeps tap to open,
+  shows a selection preview after a 300 ms hold, and lets a held finger extend a blank range or move a
+  scheduled Session/Block; immediate swipes continue to pan. The mobile legend names these actions.
+  Tapping an existing Session opens a compact Student/time/location quick view with Open, status,
+  edit, and contextual removal actions; the full scheduling form remains behind Edit. The Block
+  editor fits its date/time/note and actions to content height, with a single-row mobile footer.
+  Delete works while a removable Session or Block dialog is active and focus is outside editable
+  controls. A one-time scheduled Session uses the versioned delete operation; a scheduled Series
+  occurrence uses the supported cancel transition and is labeled accordingly. Completed Sessions
+  remain historical and do not expose deletion.
+- **Verification:** a focused dialog regression failed before the focus fix and passed afterward.
+  Web format/typecheck and 28 files/114 tests passed; Web production build passed with only the
+  existing >500-kB chunk advisory; `git diff --check` passed. Authenticated Chrome confirmed the
+  Block and Session dialogs, crosshair/grab cursor computation, no grid shadow, and unchanged
+  timeline scroll positions (54 px desktop; 47.33 px at 390×844) after close. At 390×844, document
+  width remained 390 px, the 370 px quick view and Block editor fit, and Block actions occupied one
+  row. Touch pointer paths were exercised in jsdom regression tests; a physical touchscreen was not
+  available for hardware validation.
+- **Known issue:** M4 authority permits permanent delete only for scheduled, non-Series Sessions.
+  Series occurrences use cancellation; completed Sessions remain history. The focus outline removal
+  follows the Product Owner's request for no day-sized rectangle; keyboard users can still reach
+  each day grid and press Enter.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Stage 2 and M8 require separate approval;
+  this correction remains local, with no migration, push, or remote CI claim.
+
+### 2026-09-18 — LOG-113 — M7.5 Calendar Day/Week drag scheduling
+
+- **Scope:** Product Owner asked the formal Calendar to reproduce the Demo video's Day/Week gestures:
+  drag a blank range into the composer and directly move scheduled Sessions or Blocks, including
+  touch interaction on mobile. Agenda and Month do not use these gestures.
+- **Outcome:** replaced release-only distance math with a captured pointer gesture and live range
+  preview. A blank drag opens the existing three-mode composer at a 15-minute snapped range.
+  Dragging a scheduled Session or Block preserves its duration and grab offset, can cross visible
+  Week columns, and submits immediately through the existing versioned scheduling mutations;
+  recurring Blocks move only the selected occurrence. Touch uses a 300 ms hold to start dragging;
+  an immediate swipe pans the timeline instead, including when it begins over a completed Session.
+  The grid can still scroll within the mobile panel.
+  A failed move retains the proposed range in the editor, and a stale-version response refreshes
+  Calendar authority. Completed Sessions remain openable but are not offered for direct movement
+  because their scheduling update is not allowed by the M4 API.
+- **Verification:** focused gesture regressions passed for dragged range, cross-day Session timing
+  and version, held-touch range creation, touch pan/hold Block move, completed-Session touch panning,
+  and retained failure draft. Complete Web format/typecheck and 28 test files/109 tests passed;
+  Web production build passed with only the existing >500-kB
+  advisory. In the authenticated desktop Chrome tab, a blank-grid drag opened the 12:00–13:30
+  composer. An isolated development Block marked `[M7.5 開發測試資料] 拖曳驗證` was created on Friday,
+  dragged to Saturday, and reopened showing the new date and original 90-minute duration. The
+  390×844 browser preview showed Day at 390px document width and a 375px timeline without
+  horizontal overflow; Week's 832px timeline scrolls inside its 375px panel. The computed grid
+  touch action is `none`, with touch panning handled by the gesture code. `git diff --check` passed.
+- **Boundary:** the 390×844 preview is a desktop browser frame; a physical touchscreen was not
+  available for hardware acceptance. After the Product Owner approved cleanup, the isolated Block
+  was deleted and its absence confirmed after a fresh Calendar reload. Stage 1 remains local;
+  no migration, push, or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review of Day/Week Calendar gestures.
+  Stage 2 and M8 require their own authorization.
+
+### 2026-09-18 — LOG-112 — M7.5 Calendar composer control scale and mobile fit
+
+- **Scope:** Product Owner clarified that Demo typography and control dimensions were already
+  correct; only the container needed slight expansion. The 390 × 844 composer still showed an
+  internal scrollbar, and the scheduling backdrop should dim without blur.
+- **Outcome:** kept a modest 560 × 550 desktop frame while restoring Demo-scale title, labels,
+  inputs, selectors, mode cards, segmented controls, note, and action buttons. The 390 × 844
+  composer uses a compact 610-pixel frame, reduced spacing, and a full-width location field.
+  Removed the backdrop blur while retaining the dark overlay. This is a presentation-only change;
+  scheduling operations and server authority are unchanged.
+- **Verification:** the pre-change 390 × 844 Chrome preview visibly reproduced an inner form
+  scrollbar. After the change, Course, Availability, and Block each showed all fields and actions
+  within the same frame without an inner scrollbar. The existing desktop Chrome tab showed all
+  three modes without internal scrolling; the block-repeat menu opened outside the dialog without
+  clipping. A desktop screenshot confirmed the background remains dim but no longer blurred.
+  Focused Calendar interaction tests passed 4/4, Web Prettier check passed, Web build/typecheck
+  passed with only the existing >500-kB advisory, and `git diff --check` passed.
+- **Boundary:** no live scheduling mutation, push, or remote CI was performed. On viewports shorter
+  than the verified 390 × 844 target, overflow remains a safety fallback to avoid clipping.
+  Continue Stage 1 Product Owner review; Stage 2 requires explicit authorization.
+
+### 2026-09-18 — LOG-111 — M7.5 Calendar composer footprint and success feedback
+
+- **Scope:** Product Owner found the new dialog oversized despite its availability mode still
+  showing an inner scrollbar, and asked to remove the redundant `已建立 1 個封鎖時段。` display.
+- **Outcome:** removed Calendar's routine success banners for scheduling mutations while keeping
+  successful close, server-backed refresh, and in-form failure/conflict feedback. Reduced the
+  composer from an 800 × 760 CSS-pixel frame to a fixed 620 × 620 desktop footprint, with tighter
+  mode-card, field, segmented-control, note, and footer spacing. All three creation modes retain
+  the same frame; the content region scrolls only when a genuinely short viewport or expanded
+  editing controls cannot fit. Portaled dropdowns remain outside the dialog clipping boundary.
+- **Verification:** a focused interaction test failed first on the exact block-success banner,
+  then passed after the change (4/4 tests). Web Prettier check and production build/typecheck
+  passed; build retained only the existing >500-kB advisory. `git diff --check` passed. In the
+  existing authenticated desktop Chrome tab (1440 × 674), course, availability, and block modes
+  all showed their fields without an inner scrollbar; the Student menu remained visible outside
+  the dialog. The 390 × 844 mobile preview opened the course composer; its narrow-screen internal
+  scrolling remains the deliberate overflow fallback, not a no-scroll acceptance claim.
+- **Boundary:** no live block was created for this visual correction, and no remote CI/push was
+  run. Very short/mobile viewports retain internal scrolling as a safety fallback instead of
+  clipping fields or controls. Continue Stage 1 Product Owner review; Stage 2 needs explicit
+  authorization.
+
+### 2026-09-18 — LOG-110 — M7.5 Calendar composer and collapsed-header continuity
+
+- **Scope:** Product Owner's video showed the collapsed title expanding again on view changes;
+  the scheduling dialog's warning acknowledgement, layout, availability controls, block wording,
+  shifting dimensions, and clipped Demo dropdowns required correction.
+- **Outcome:** removed the view-change effect that reset the collapsed header and kept the wheel
+  listener stable across views. Rebuilt the three scheduling modes around the Demo's type cards,
+  shared date/time row, course Student/repeat/location grouping, availability add/remove and
+  date/weekday segmented controls, and optional block note/repeat selector. Removed the extra
+  pre-save warning and confirmation checkbox while retaining required time validation and server
+  conflict responses. Course repeat uses the existing server-authoritative Schedule Series
+  operation; no Demo persistence was introduced. The dialog now has a stable bounded size with a
+  scrollable content region and fixed footer; time suggestions and shared FormSelect menus render
+  above the dialog instead of being clipped by it. The block-note placeholder rejected by the
+  Product Owner is absent from the formal UI.
+- **Verification:** a CalendarPage interaction regression failed before the header fix and passed
+  after it. The same test covers all three modes, the time-menu portal, and weekly-repeat routing
+  to Schedule Series; SchedulingDialog focus tests passed. Web format/typecheck and all 27 test
+  files/103 tests passed; Web production build
+  passed with the existing >500-kB advisory. `git diff --check` passed. Sandbox `spawn EPERM`
+  required elevated Vite runs. Local API `/health` and Web `/calendar` both returned 200.
+  Authenticated desktop Chrome confirmed the header stays collapsed after switching Week to Day,
+  the fixed-size three-mode dialog, and fully visible time and repeat menus. The exact 390×844
+  mobile preview confirmed all three modes, the fixed footer/internal scroll, and student/repeat
+  menus within the screen without horizontal clipping.
+- **Known issue:** visual/browser checks did not submit new development scheduling records, so
+  live save/repeat effects are not claimed. This remains Stage 1 local work; no push or remote CI.
+- **Product Owner follow-up:** the existing `5173/calendar` Chrome tab still held the old runtime
+  after the source and Vite-served module had changed. Its dialog still showed the native time
+  picker and warning checkbox at 15:08, even though the new CalendarPage source was last written
+  at 14:58. The prior browser check had used a new tab and therefore missed this mismatch. Reloaded
+  that exact existing tab without preserving an in-progress form; it then showed `FORM / ACTION`,
+  the Demo-style three modes, custom time fields, and no warning. In the reloaded tab, an actually
+  collapsed header stayed collapsed across Week → Month → Day. Course, availability, and block
+  modes were inspected there; the block repeat menu remained visible after scrolling its trigger
+  into view. The focused Calendar interaction suite passed again (3/3); its first sandbox run
+  hit Windows `spawn EPERM`, then passed through the approved elevated path. The reason the old tab
+  did not hot-update is not yet confirmed. Do not treat a new-tab
+  check alone as Product Owner-visible browser acceptance.
+- **Next:** continue M7.5 Stage 1 Product Owner review of the Calendar interface. Stage 2 needs
+  explicit authorization.
+
+### 2026-09-18 — LOG-109 — M7.5 Calendar four-view correction
+
+- **Scope:** Product Owner identified excess title spacing, mismatched pager controls, a vertical
+  Agenda, Day's large empty-state overlay, Month's extra October-only week and weak outside-month
+  contrast, and lime selection in the view switch. Agenda and Month also did not collapse the page
+  header on wheel input.
+- **Outcome:** reduced the title-to-panel gap, copied the Demo's plain arrow and bold Today control,
+  seven-column desktop Agenda and horizontal-date mobile cards, and centered Day timeline with the
+  weekday in its date title. Removed
+  the empty overlay so availability remains visible on a day without lessons. All four views share
+  the expanding planner and wheel-triggered header collapse. Month now ends after its last
+  intersecting week, advances by calendar month, dims entire outside-month cells including lessons,
+  and keeps fixed-height cells with a `還有 N 堂` entry leading to Day. The selected view uses dark
+  ink with white type; panel and timeline chrome are white.
+- **Verification:** Web format/typecheck and 26 test files/100 tests passed; the final test pass
+  used one worker after a transient four-worker startup timeout. Production build passed with the
+  existing >500-kB advisory. Authenticated Chrome confirmed desktop seven-column Agenda,
+  centered 620px Day without an empty overlay, Agenda and Month wheel collapse, September 2026's
+  35 fixed-height month cells ending at October 4, and dark selected view. Exact 390×844 preview
+  confirmed mobile Agenda's horizontal-date cards without overlap. Stage 1 remains local; no push
+  or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; Stage 2 needs explicit authorization.
+
+### 2026-09-18 — LOG-108 — M7.5 Calendar Demo presentation and scroll convergence
+
+- **Scope:** Product Owner rejected LOG-107's partial Calendar visual copy: the collapsed header did
+  not expand the planner, the document still had a scrollbar, the overdue palette was absent, and the
+  panel was too narrow with the wrong background and cramped type.
+- **Outcome:** matched the Demo's bounded viewport layout, expanding planner flex structure, and
+  captured wheel gesture logic with a short tail lock. One downward wheel gesture anywhere on the
+  day/week Calendar collapses the header; upward scrolling expands it only at the planner top. The
+  page no longer scrolls separately. Matched the Demo's 48px page insets, white planner, compact
+  typography, time labels, pastel availability/Session/Block palette, and drag grips. Added
+  `逾時未完成` in the legend and classified scheduled Sessions as overdue once their end time passes;
+  week, agenda, and month use the same visual state. Retained server-authoritative data and the
+  existing scheduling operations.
+- **Verification:** Web format/typecheck, 25 test files/98 tests, and Web production build passed
+  with the existing >500-kB advisory. Authenticated 1440px Chrome showed planner and document widths
+  equal their client widths, document height equal viewport height, and the planner growing from
+  about 507px to 661px after the first downward wheel gesture. The next gesture scrolled only the
+  planner; agenda showed three `逾時未完成` Sessions. Exact 390×844 mobile preview showed the bounded
+  panel, visible controls, and readable agenda. `git diff --check` passed.
+- **Known issue:** mobile Week view retains its Demo-style in-panel horizontal scroll for legible
+  time blocks. This Stage 1 correction remains local; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; do not begin Stage 2 or M8 without explicit
+  authorization.
+
+### 2026-09-18 — LOG-107 — M7.5 Calendar visual and sidebar identity correction
+
+- **Scope:** Product Owner requested the formal Calendar adopt the Demo's clear seven-day visual
+  presentation without desktop horizontal scrolling and reported a truncated sidebar account label.
+- **Outcome:** combined the Calendar period, view switch, legend, date headers, shared time axis,
+  availability bands, sessions, and blocks into a Demo-aligned planner panel. Seven desktop day
+  columns now share the available width; the mobile default remains the readable agenda, with all
+  four view controls visible at 390px. Removed three obsolete grid columns from the sidebar Coach
+  card so its existing Workspace-name/Email fallback can render at full width.
+- **Verification:** Web format/typecheck and 24 test files/94 tests passed; Web build passed with
+  the existing >500-kB advisory. Authenticated Chrome at 1440px showed all seven columns in the
+  planner (`1016px` client and scroll width), no document horizontal overflow, and full sidebar
+  name/Email. The exact 390×844 mobile preview showed an uncut view switch and working agenda/week
+  toggle. `git diff --check` passed.
+- **Known issue:** mobile Week view retains its intentional in-panel horizontal scroll to keep
+  time blocks legible; mobile opens in Agenda. Stage 1 remains local; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review; do not begin Stage 2 or M8 without explicit
+  authorization.
 
 ### 2026-09-17 — LOG-106 — M7.5 Exercise Library CI delivery
 

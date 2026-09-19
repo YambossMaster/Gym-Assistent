@@ -86,7 +86,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
   }
   async updateSession(workspaceId: string, id: string, input: ChangedSession) {
     const row = await this.pool.query(
-      `update app_private.course_session set starts_at=$4,ends_at=$5,location=$6,version=version+1,updated_at=$7 where workspace_id=$1 and id=$2 and version=$3 and status='scheduled' and not is_legacy returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
+      `update app_private.course_session set starts_at=$4,ends_at=$5,location=$6,version=version+1,updated_at=$7,student_id=coalesce($8::uuid,student_id) where workspace_id=$1 and id=$2 and version=$3 and status='scheduled' and not is_legacy and ($8::uuid is null or series_id is null) returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
       [
         workspaceId,
         id,
@@ -95,6 +95,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
         input.endsAt,
         input.location,
         input.now,
+        input.studentId ?? null,
       ],
     )
     if (row.rows[0]) return mapSession(row.rows[0])

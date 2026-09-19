@@ -676,7 +676,7 @@ export async function createSession(
 export async function updateSession(
   accessToken: string,
   sessionId: string,
-  input: SessionTimingInput & { version: number }
+  input: SessionTimingInput & { version: number; studentId?: string }
 ) {
   return request<CalendarProjection['sessions'][number]>(
     `/api/v1/sessions/${sessionId}`,

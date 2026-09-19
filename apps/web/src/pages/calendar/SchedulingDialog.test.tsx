@@ -121,4 +121,41 @@ describe('SchedulingDialog focus', () => {
       await act(async () => root.unmount())
     }
   })
+
+  it('restores focus without scrolling the calendar when the dialog closes', async () => {
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    function Screen() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>開啟</button>
+          {open ? (
+            <SchedulingDialog title="安排課程" onClose={() => setOpen(false)}>
+              內容
+            </SchedulingDialog>
+          ) : null}
+        </>
+      )
+    }
+    try {
+      await act(async () => root.render(<Screen />))
+      const opener = host.querySelector('button')!
+      const focus = vi.spyOn(opener, 'focus')
+      opener.focus()
+      await act(async () => opener.click())
+      await act(async () =>
+        host.querySelector<HTMLButtonElement>('.scheduling-dialog .icon-button')!.click()
+      )
+      expect(focus).toHaveBeenLastCalledWith({ preventScroll: true })
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
 })

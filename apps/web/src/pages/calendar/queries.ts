@@ -58,8 +58,16 @@ export function useSchedulingMutations(session: Session) {
       }: {
         sessionId: string
         input: Parameters<typeof updateSession>[2]
+        previousStudentId?: string
       }) => updateSession(session.access_token, sessionId, input),
-      onSuccess: (accepted) => invalidate(accepted.session.studentId, accepted.session.id)
+      onSuccess: (accepted, variables) => {
+        invalidate(accepted.session.studentId, accepted.session.id)
+        if (
+          variables.previousStudentId &&
+          variables.previousStudentId !== accepted.session.studentId
+        )
+          invalidate(variables.previousStudentId)
+      }
     }),
     transitionSession: useMutation({
       mutationFn: ({

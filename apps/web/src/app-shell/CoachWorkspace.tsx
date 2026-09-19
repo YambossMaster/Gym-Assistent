@@ -58,7 +58,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
         <div className="sidebar-bottom">
           <div className="coach-card">
             <div className="mini-avatar">{coach.initials}</div>
-            <div>
+            <div className="coach-card-identity">
               <strong>{coach.name}</strong>
               {coach.email && <small>{coach.email}</small>}
             </div>

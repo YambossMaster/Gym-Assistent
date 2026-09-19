@@ -19,6 +19,8 @@ import {
   type TodaySchedule,
 } from './scheduling.js'
 import {
+  SchedulingStudentChangeError,
+  SchedulingVersionConflictError,
   conflictsFor,
   type NewScheduleSeries,
   type SchedulingRepository,
@@ -120,7 +122,22 @@ export class SchedulingModule {
   ): Promise<SessionWithConflicts | null> {
     const input = updateSessionSchema.parse(raw)
     const workspaceId = await this.repository.resolveWorkspace(identity)
+    let changedStudentId: string | undefined
+    if (input.studentId) {
+      const current = await this.repository.getSession(workspaceId, sessionId)
+      if (!current) return null
+      if (current.version !== input.version) throw new SchedulingVersionConflictError(current)
+      if (input.studentId !== current.studentId) {
+        if (current.seriesId) throw new SchedulingStudentChangeError('series_owned')
+        if (current.status !== 'scheduled' || current.isLegacy)
+          throw new SchedulingStudentChangeError('session_not_editable')
+        if (!(await this.repository.hasStudent(workspaceId, input.studentId)))
+          throw new SchedulingStudentChangeError('student_not_found')
+        changedStudentId = input.studentId
+      }
+    }
     const session = await this.repository.updateSession(workspaceId, sessionId, {
+      ...(changedStudentId ? { studentId: changedStudentId } : {}),
       startsAt: new Date(input.startsAt),
       endsAt: new Date(input.endsAt),
       location: input.location,

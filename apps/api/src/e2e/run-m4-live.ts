@@ -56,7 +56,17 @@ const studentResponse = await requireStatus(
 )
 const student = (await studentResponse.json()).student as { id: string; version: number }
 let blockCleanup: { id: string; version: number } | null = null
+let secondStudent: { id: string } | null = null
 try {
+  const secondStudentResponse = await requireStatus(
+    'create reassignment Student',
+    await request('/v1/students', coachA, {
+      method: 'POST',
+      body: JSON.stringify({ name: `${marker}-reassigned` }),
+    }),
+    201,
+  )
+  secondStudent = (await secondStudentResponse.json()).student as { id: string }
   await requireStatus(
     'create Purchase',
     await request(`/v1/students/${student.id}/lesson-purchases`, coachA, {
@@ -122,6 +132,38 @@ try {
   const staleBody = (await staleMove.json()) as { current?: { version?: number } }
   if (staleBody.current?.version !== movedManual.session.version)
     throw new Error('Session conflict did not return current authorized state')
+  const reassignedResponse = await requireStatus(
+    'reassign standalone Session Student',
+    await request(`/v1/sessions/${manual.session.id}`, coachA, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        studentId: secondStudent.id,
+        startsAt: movedManualStart.toISOString(),
+        endsAt: movedManualEnd.toISOString(),
+        location: 'M4 Manual Studio',
+        version: movedManual.session.version,
+      }),
+    }),
+    200,
+  )
+  const reassigned = (await reassignedResponse.json()) as {
+    session: { studentId: string; studentName: string; version: number }
+  }
+  if (
+    reassigned.session.studentId !== secondStudent.id ||
+    reassigned.session.version !== movedManual.session.version + 1
+  )
+    throw new Error('Session reassignment did not persist Student and advance version')
+  const reassignedDetail = await requireStatus(
+    'reassigned Student schedule',
+    await request(`/v1/students/${secondStudent.id}`, coachA),
+    200,
+  )
+  const reassignedSchedule = (await reassignedDetail.json()) as {
+    detail?: { schedule?: { nearestFuture?: { id?: string } } }
+  }
+  if (reassignedSchedule.detail?.schedule?.nearestFuture?.id !== manual.session.id)
+    throw new Error('Reassigned Session did not appear under its new Student')
   await requireStatus(
     'two-Coach Session isolation',
     await request(`/v1/sessions/${manual.session.id}`, coachB),
@@ -190,8 +232,22 @@ try {
   )
   const seriesResult = (await created.json()) as {
     series: { id: string; version: number; autoScheduleHorizon: string }
-    anchor: { id: string }
+    anchor: { id: string; version: number }
   }
+  await requireStatus(
+    'reject Series-owned Student reassignment',
+    await request(`/v1/sessions/${seriesResult.anchor.id}`, coachA, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        studentId: secondStudent.id,
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        location: 'M4 Studio',
+        version: seriesResult.anchor.version,
+      }),
+    }),
+    400,
+  )
   if (seriesResult.series.autoScheduleHorizon !== '2_WEEKS')
     throw new Error('Series did not retain horizon')
   const movedStart = new Date(start.getTime() + 15 * 60 * 1000)
@@ -303,7 +359,7 @@ try {
     404,
   )
   console.log(
-    `M4 live E2E passed for isolated Student ${student.id}: Session two-device conflict/current state, recurring Block future/all scope with preserved offsets, projections, horizon/effective boundary, and two-Coach isolation.`,
+    `M4 live E2E passed for isolated Student ${student.id}: Session Student reassignment/Series guard, two-device conflict/current state, recurring Block future/all scope with preserved offsets, projections, horizon/effective boundary, and two-Coach isolation.`,
   )
 } finally {
   if (blockCleanup) {
@@ -311,6 +367,20 @@ try {
       method: 'DELETE',
       body: JSON.stringify({ confirmation: 'DELETE', version: blockCleanup.version, scope: 'all' }),
     })
+  }
+  if (secondStudent) {
+    const detail = await request(`/v1/students/${secondStudent.id}`, coachA)
+    if (detail.ok) {
+      const current = (await detail.json()) as { detail: { student: { version: number } } }
+      await requireStatus(
+        'cleanup reassignment Student',
+        await request(`/v1/students/${secondStudent.id}`, coachA, {
+          method: 'DELETE',
+          body: JSON.stringify({ confirmation: 'DELETE', version: current.detail.student.version }),
+        }),
+        204,
+      )
+    }
   }
   const detail = await request(`/v1/students/${student.id}`, coachA)
   if (detail.ok) {

@@ -61,7 +61,7 @@ export function useDialogBehavior(
       if (lockScroll) document.body.style.overflow = priorOverflow
       window.removeEventListener('keydown', keydown)
       restoreFocusFrameRef.current = requestAnimationFrame(() => {
-        openerRef.current?.focus()
+        if (openerRef.current?.isConnected) openerRef.current.focus({ preventScroll: true })
         restoreFocusFrameRef.current = null
       })
     }

@@ -1,20 +1,43 @@
 import type { Session } from '@supabase/supabase-js'
-import { CalendarDays, ChevronLeft, ChevronRight, List, Plus, Rows3, Table2 } from 'lucide-react'
-import { useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import {
+  CalendarDays,
+  CalendarClock,
+  Ban,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
+  List,
+  MousePointer2,
+  Plus,
+  Rows3,
+  ShieldCheck,
+  Table2
+} from 'lucide-react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+  type Ref
+} from 'react'
 import { Link } from 'react-router-dom'
 import {
   ApiError,
   type CalendarBlock,
   type CalendarProjection,
-  type CalendarSession
+  type CalendarSession,
+  type Student
 } from '../../api'
-import { Page } from '../../shared/primitives'
 import { FormSelect } from '../../shared/FormSelect'
 import { useStudentsRouteQuery } from '../students/queries'
-import { addLocalMinutes, isoToLocalDateTime, localDateTimeToIso } from './calendar-time'
+import { isoToLocalDateTime, localDateTimeToIso } from './calendar-time'
 import { useCalendarRouteQuery, useSchedulingMutations } from './queries'
 import { SchedulingDialog } from './SchedulingDialog'
-import { selectCalendarRouteState } from './state'
+import { SchedulingTimeInput } from './SchedulingTimeInput'
+import { calendarSessionVisualState, selectCalendarRouteState } from './state'
+import { calendarHeaderWheelAction } from './calendar-header-wheel'
 
 type CalendarView = 'agenda' | 'day' | 'week' | 'month'
 type Draft =
@@ -25,6 +48,7 @@ type Draft =
       end: string
       studentId: string
       location: string
+      repeat?: 0 | 1 | 2
       current?: CalendarSession
     }
   | {
@@ -52,9 +76,12 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
   )
   const [anchor, setAnchor] = useState(() => localDate(new Date(), timeZone))
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [notice, setNotice] = useState('')
+  const [draftError, setDraftError] = useState('')
   const [collapsed, setCollapsed] = useState(false)
-  const wheelArmed = useRef(false)
+  const pageRef = useRef<HTMLElement | null>(null)
+  const calendarViewportRef = useRef<HTMLDivElement | null>(null)
+  const collapsedRef = useRef(false)
+  const headerGestureLockUntilRef = useRef(0)
   const range = rangeFor(anchor, view)
   const query = useCalendarRouteQuery(session, range)
   const students =
@@ -74,108 +101,217 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
     studentId: students[0]?.id ?? '',
     location: ''
   })
-  const onTimelineWheel = (event: React.WheelEvent<HTMLElement>) => {
-    if (event.deltaY > 0 && !collapsed && !wheelArmed.current) {
-      wheelArmed.current = true
-      setCollapsed(true)
-    } else if (
-      event.deltaY < 0 &&
-      collapsed &&
-      event.currentTarget.scrollTop === 0 &&
-      !wheelArmed.current
-    ) {
-      wheelArmed.current = true
-      setCollapsed(false)
-    }
-    window.setTimeout(() => {
-      wheelArmed.current = false
-    }, 180)
-  }
-  return (
-    <Page
-      className={`calendar-page${collapsed ? ' calendar-header-collapsed' : ''}`}
-      title="行事曆"
-      eyebrow={formatRange(range, timeZone)}
-      actions={
-        <button className="primary-button compact" onClick={() => setDraft(initialDraft())}>
-          <Plus /> 安排課程
-        </button>
+  useEffect(() => {
+    const page = pageRef.current
+    if (!page) return
+    const handleWheel = (event: WheelEvent) => {
+      const now = performance.now()
+      if (now < headerGestureLockUntilRef.current) {
+        event.preventDefault()
+        headerGestureLockUntilRef.current = now + 180
+        return
       }
+      const action = calendarHeaderWheelAction(
+        collapsedRef.current,
+        calendarViewportRef.current?.scrollTop ?? 0,
+        event.deltaY
+      )
+      if (action === 'pass') return
+      event.preventDefault()
+      const next = action === 'collapse'
+      collapsedRef.current = next
+      headerGestureLockUntilRef.current = now + 300
+      setCollapsed(next)
+    }
+    page.addEventListener('wheel', handleWheel, { capture: true, passive: false })
+    return () => page.removeEventListener('wheel', handleWheel, { capture: true })
+  }, [])
+  return (
+    <section
+      ref={pageRef}
+      className={`page calendar-page compact-calendar-page${collapsed ? ' calendar-focus-mode' : ''}`}
     >
-      <section className="calendar-controls" aria-label="行事曆控制項">
-        <div className="calendar-pager">
-          <button
-            className="icon-button"
-            onClick={() => setAnchor(addDays(anchor, -unitDays(view)))}
-            aria-label="上一個期間"
-          >
-            <ChevronLeft />
-          </button>
-          <button
-            className="secondary-button"
-            onClick={() => setAnchor(localDate(new Date(), timeZone))}
-          >
-            今天
-          </button>
-          <button
-            className="icon-button"
-            onClick={() => setAnchor(addDays(anchor, unitDays(view)))}
-            aria-label="下一個期間"
-          >
-            <ChevronRight />
-          </button>
+      <div className="calendar-collapsible-header">
+        <div className="calendar-header-inner">
+          <header className="page-header reveal">
+            <div>
+              <span className="eyebrow dark">{formatRange(range, timeZone)}</span>
+              <h1>行事曆</h1>
+            </div>
+            <button className="primary-button compact" onClick={() => setDraft(initialDraft())}>
+              <Plus /> 安排課程
+            </button>
+          </header>
         </div>
-        <div className="calendar-view-switch" role="group" aria-label="行事曆檢視">
-          <ViewButton view="agenda" current={view} onSelect={setView} icon={<List />}>
-            課表
-          </ViewButton>
-          <ViewButton view="day" current={view} onSelect={setView} icon={<Rows3 />}>
-            日
-          </ViewButton>
-          <ViewButton view="week" current={view} onSelect={setView} icon={<Table2 />}>
-            週<span className="mobile-only">（橫向捲動）</span>
-          </ViewButton>
-          <ViewButton view="month" current={view} onSelect={setView} icon={<CalendarDays />}>
-            月
-          </ViewButton>
-        </div>
-      </section>
-      {notice ? (
-        <p className="form-notice" role="status">
-          {notice}
-        </p>
-      ) : null}
-      {state === 'loading' ? <CalendarSkeleton /> : null}
-      {state === 'error' ? <CalendarError onRetry={() => void query.refetch()} /> : null}
-      {query.data ? (
-        <section className="calendar-surface" aria-label="課程與可排課時段">
-          {state === 'refreshing' ? (
-            <p className="calendar-refreshing" role="status">
-              正在更新行事曆
-            </p>
-          ) : null}
-          {state === 'empty' ? <CalendarEmpty onCreate={() => setDraft(initialDraft())} /> : null}
-          {view === 'agenda' ? (
-            <Agenda
-              calendar={query.data}
-              onOpen={(item) => setDraft(sessionDraft(item, timeZone))}
-            />
-          ) : null}
-          {view === 'day' || view === 'week' ? (
-            <Timeline calendar={query.data} onWheel={onTimelineWheel} onDraft={setDraft} />
-          ) : null}
-          {view === 'month' ? (
-            <Month
-              calendar={query.data}
-              anchor={anchor}
-              onOpenDay={(date) => {
-                setAnchor(date)
-                setView('day')
-              }}
-            />
-          ) : null}
+      </div>
+      <div className="calendar-shell">
+        <section className="calendar-controls" aria-label="行事曆控制項">
+          <div className="calendar-pager">
+            <button
+              className="icon-button"
+              onClick={() => setAnchor(shiftPeriod(anchor, view, -1))}
+              aria-label="上一個期間"
+            >
+              <ChevronLeft />
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => setAnchor(localDate(new Date(), timeZone))}
+            >
+              今天
+            </button>
+            <button
+              className="icon-button"
+              onClick={() => setAnchor(shiftPeriod(anchor, view, 1))}
+              aria-label="下一個期間"
+            >
+              <ChevronRight />
+            </button>
+          </div>
+          <h2 className="calendar-period-title">{formatCalendarPeriod(anchor, range, view)}</h2>
+          <div className="calendar-view-switch" role="group" aria-label="行事曆檢視">
+            <ViewButton view="agenda" current={view} onSelect={setView} icon={<List />}>
+              課表
+            </ViewButton>
+            <ViewButton view="day" current={view} onSelect={setView} icon={<Rows3 />}>
+              日
+            </ViewButton>
+            <ViewButton view="week" current={view} onSelect={setView} icon={<Table2 />}>
+              週
+            </ViewButton>
+            <ViewButton view="month" current={view} onSelect={setView} icon={<CalendarDays />}>
+              月
+            </ViewButton>
+          </div>
         </section>
-      ) : null}
+        <div className="calendar-legend" aria-label="行事曆圖例">
+          <span>
+            <MousePointer2 />
+            <span className="calendar-hint-pointer">點按開啟・拖曳空白選時段／事件改時間</span>
+            <span className="calendar-hint-touch">點按開啟・長按空白選時段／事件改時間</span>
+          </span>
+          <span>
+            <GripVertical />
+            拖曳期間可跨日移動
+          </span>
+          <span>
+            <i className="scheduled" />
+            未到課程
+          </span>
+          <span>
+            <i className="overdue" />
+            逾時未完成
+          </span>
+          <span>
+            <i className="completed" />
+            已完成
+          </span>
+          <span>
+            <i className="available" />
+            可排課
+          </span>
+          <span>
+            <i className="blocked" />
+            封鎖
+          </span>
+        </div>
+        {state === 'loading' ? <CalendarSkeleton /> : null}
+        {state === 'error' ? <CalendarError onRetry={() => void query.refetch()} /> : null}
+        {query.data ? (
+          <section className="calendar-surface" aria-label="課程與可排課時段">
+            {state === 'refreshing' ? (
+              <p className="calendar-refreshing" role="status">
+                正在更新行事曆
+              </p>
+            ) : null}
+            {view === 'agenda' ? (
+              <Agenda
+                calendar={query.data}
+                viewportRef={calendarViewportRef}
+                onOpen={(item) => setDraft(sessionDraft(item, timeZone))}
+                onOpenDay={(date) => {
+                  setAnchor(date)
+                  setView('day')
+                }}
+              />
+            ) : null}
+            {view === 'day' || view === 'week' ? (
+              <Timeline
+                calendar={query.data}
+                viewportRef={calendarViewportRef}
+                defaultStudentId={students[0]?.id ?? ''}
+                onDraft={(next) => {
+                  setDraftError('')
+                  setDraft(next)
+                }}
+                onMove={(next, done) => {
+                  if (!next.current) return
+                  let startsAt: string, endsAt: string
+                  try {
+                    startsAt = localDateTimeToIso({ date: next.date, time: next.start }, timeZone)
+                    endsAt = localDateTimeToIso({ date: next.date, time: next.end }, timeZone)
+                  } catch {
+                    setDraftError('這個本地時間不存在，請另選時間。')
+                    setDraft(next)
+                    done()
+                    return
+                  }
+                  const onError = (error: unknown) => {
+                    if (error instanceof ApiError && error.status === 409) void query.refetch()
+                    setDraftError(
+                      error instanceof ApiError && error.status === 409
+                        ? '此安排已在其他裝置變更。行事曆正在重新載入；請取消編輯後查看目前安排。'
+                        : error instanceof Error
+                          ? error.message
+                          : '暫時無法移動，請確認後重試。'
+                    )
+                    setDraft(next)
+                    done()
+                  }
+                  if (next.kind === 'session')
+                    mutations.updateSession.mutate(
+                      {
+                        sessionId: next.current.id,
+                        input: {
+                          startsAt,
+                          endsAt,
+                          location: next.location,
+                          version: next.current.version!
+                        }
+                      },
+                      { onSuccess: done, onError }
+                    )
+                  else
+                    mutations.updateBlock.mutate(
+                      {
+                        blockId: next.current.id,
+                        input: {
+                          startsAt,
+                          endsAt,
+                          note: next.note,
+                          scope: 'single',
+                          version: next.current.version
+                        }
+                      },
+                      { onSuccess: done, onError }
+                    )
+                }}
+              />
+            ) : null}
+            {view === 'month' ? (
+              <Month
+                calendar={query.data}
+                anchor={anchor}
+                viewportRef={calendarViewportRef}
+                onOpenDay={(date) => {
+                  setAnchor(date)
+                  setView('day')
+                }}
+              />
+            ) : null}
+          </section>
+        ) : null}
+      </div>
       {draft && query.data ? (
         <Editor
           draft={draft}
@@ -183,15 +319,19 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
           students={students}
           timeZone={timeZone}
           mutations={mutations}
+          initialError={draftError}
           onChange={setDraft}
-          onClose={() => setDraft(null)}
-          onNotice={(message) => {
-            setNotice(message)
+          onClose={() => {
             setDraft(null)
+            setDraftError('')
+          }}
+          onSaved={() => {
+            setDraft(null)
+            setDraftError('')
           }}
         />
       ) : null}
-    </Page>
+    </section>
   )
 }
 
@@ -201,41 +341,46 @@ function Editor({
   students,
   timeZone,
   mutations,
+  initialError,
   onChange,
   onClose,
-  onNotice
+  onSaved
 }: {
   draft: Draft
   calendar: CalendarProjection
-  students: Array<{ id: string; name: string }>
+  students: Student[]
   timeZone: string
   mutations: ReturnType<typeof useSchedulingMutations>
+  initialError: string
   onChange: (draft: Draft) => void
   onClose: () => void
-  onNotice: (message: string) => void
+  onSaved: () => void
 }) {
-  const [acknowledged, setAcknowledged] = useState(false)
-  const [error, setError] = useState('')
-  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [error, setError] = useState(initialError)
+  const [sessionMode, setSessionMode] = useState<'view' | 'edit'>(initialError ? 'edit' : 'view')
+  const quickEditRef = useRef<HTMLButtonElement>(null)
+  const editDateRef = useRef<HTMLInputElement>(null)
   const pending = Object.values(mutations).some((mutation) => mutation.isPending)
-  const warning = draft.kind === 'session' ? conflictWarning(draft, calendar, timeZone) : ''
   const mutateError = (value: unknown) =>
     setError(
       value instanceof ApiError && value.status === 409
         ? '此安排已在其他裝置變更。草稿已保留，請重新載入目前版本後再套用。'
-        : value instanceof Error
-          ? value.message
-          : '暫時無法儲存，草稿仍保留。'
+        : value instanceof ApiError && value.details.error === 'student_not_found'
+          ? '找不到選取的學生，請重新選擇。'
+          : value instanceof ApiError && value.details.error === 'series_owned'
+            ? '週期課程的學生無法只改這一堂；請保留原學生。'
+            : value instanceof Error
+              ? value.message
+              : '暫時無法儲存，草稿仍保留。'
     )
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setError('')
-    if (warning && !acknowledged) return
-    if (draft.end <= draft.start) {
+    if (!validTime(draft.start) || !validTime(draft.end) || draft.end <= draft.start) {
       setError('結束時間必須晚於開始時間。')
       return
     }
-    if (draft.kind === 'session' && !draft.current && !draft.studentId) {
+    if (draft.kind === 'session' && !draft.studentId) {
       setError('請選擇學生。')
       return
     }
@@ -251,19 +396,36 @@ function Editor({
       const input = { startsAt, endsAt, location: draft.location }
       if (draft.current)
         mutations.updateSession.mutate(
-          { sessionId: draft.current.id, input: { ...input, version: draft.current.version! } },
-          { onSuccess: () => onNotice('課程已更新。'), onError: mutateError }
+          {
+            sessionId: draft.current.id,
+            previousStudentId: draft.current.studentId,
+            input: {
+              ...input,
+              ...(draft.studentId !== draft.current.studentId
+                ? { studentId: draft.studentId }
+                : {}),
+              version: draft.current.version!
+            }
+          },
+          { onSuccess: onSaved, onError: mutateError }
+        )
+      else if (draft.repeat)
+        mutations.createSeries.mutate(
+          {
+            studentId: draft.studentId,
+            input: {
+              ...input,
+              intervalWeeks: draft.repeat,
+              autoScheduleHorizon: 'NONE'
+            }
+          },
+          { onSuccess: onSaved, onError: mutateError }
         )
       else
         mutations.createSession.mutate(
           { ...input, studentId: draft.studentId },
           {
-            onSuccess: (accepted) =>
-              onNotice(
-                accepted.conflicts.length
-                  ? `課程已建立，保留 ${accepted.conflicts.length} 個安排提醒。`
-                  : '課程已建立。'
-              ),
+            onSuccess: onSaved,
             onError: mutateError
           }
         )
@@ -288,13 +450,13 @@ function Editor({
               scope: draft.scope
             }
           },
-          { onSuccess: () => onNotice('封鎖時段已更新。'), onError: mutateError }
+          { onSuccess: onSaved, onError: mutateError }
         )
       else
         mutations.createBlock.mutate(
           { startsAt, endsAt, note: draft.note, repeatCount: draft.repeatCount },
           {
-            onSuccess: (blocks) => onNotice(`已建立 ${blocks.length} 個封鎖時段。`),
+            onSuccess: onSaved,
             onError: mutateError
           }
         )
@@ -323,8 +485,7 @@ function Editor({
       mutations.replaceAvailability.mutate(
         { target, input: { windows: next, version } },
         {
-          onSuccess: () =>
-            onNotice(draft.scope === 'date' ? '當日可排課時段已更新。' : '每週可排課時段已更新。'),
+          onSuccess: onSaved,
           onError: mutateError
         }
       )
@@ -337,7 +498,7 @@ function Editor({
           blockId: draft.current.id,
           input: { version: draft.current.version, scope: draft.scope }
         },
-        { onSuccess: () => onNotice('封鎖時段已刪除。'), onError: mutateError }
+        { onSuccess: onSaved, onError: mutateError }
       )
   }
   const transition = (action: 'complete' | 'reopen' | 'cancel') => {
@@ -345,269 +506,94 @@ function Editor({
     mutations.transitionSession.mutate(
       { sessionId: draft.current.id, input: { action, version: draft.current.version } },
       {
-        onSuccess: () =>
-          onNotice(
-            action === 'complete'
-              ? '課程已完成。'
-              : action === 'cancel'
-                ? '課程已取消。'
-                : '課程已改回待上課。'
-          ),
+        onSuccess: onSaved,
         onError: mutateError
       }
     )
   }
   const removeSession = () => {
-    if (draft.kind !== 'session' || !draft.current?.version || deleteConfirmation !== 'DELETE')
+    if (draft.kind !== 'session' || !draft.current?.version || draft.current.status !== 'scheduled')
       return
+    if (draft.current.seriesId) {
+      transition('cancel')
+      return
+    }
     mutations.deleteSession.mutate(
       { sessionId: draft.current.id, version: draft.current.version },
-      { onSuccess: () => onNotice('課程已刪除。'), onError: mutateError }
+      { onSuccess: onSaved, onError: mutateError }
     )
   }
-  return (
-    <SchedulingDialog
-      title={
-        draft.kind === 'session'
-          ? draft.current
-            ? '查看與編輯課程'
-            : '安排課程'
-          : draft.kind === 'block'
-            ? draft.current
-              ? '編輯封鎖時段'
-              : '建立封鎖時段'
-            : '編輯可排課時段'
-      }
-      onClose={onClose}
-    >
-      <form className="scheduling-form" onSubmit={submit}>
-        {!('current' in draft && draft.current) ? (
-          <div className="composer-kind" role="group" aria-label="安排類型">
-            <button
-              type="button"
-              aria-pressed={draft.kind === 'session'}
-              onClick={() =>
-                onChange({
-                  kind: 'session',
-                  date: draft.date,
-                  start: draft.start,
-                  end: draft.end,
-                  studentId: students[0]?.id ?? '',
-                  location: ''
-                })
-              }
-            >
-              課程
-            </button>
-            <button
-              type="button"
-              aria-pressed={draft.kind === 'availability'}
-              onClick={() =>
-                onChange({
-                  kind: 'availability',
-                  date: draft.date,
-                  start: draft.start,
-                  end: draft.end,
-                  scope: 'date',
-                  action: 'add'
-                })
-              }
-            >
-              可排課
-            </button>
-            <button
-              type="button"
-              aria-pressed={draft.kind === 'block'}
-              onClick={() =>
-                onChange({
-                  kind: 'block',
-                  date: draft.date,
-                  start: draft.start,
-                  end: draft.end,
-                  note: '',
-                  repeatCount: 1,
-                  scope: 'single'
-                })
-              }
-            >
-              封鎖
-            </button>
-          </div>
-        ) : null}
-        <div className="field-row">
-          <label>
-            日期
-            <input
-              type="date"
-              value={draft.date}
-              onChange={(event) => onChange({ ...draft, date: event.target.value })}
-              required
-            />
-          </label>
-          <label>
-            開始
-            <input
-              type="time"
-              step="900"
-              value={draft.start}
-              onChange={(event) => onChange({ ...draft, start: event.target.value })}
-              required
-            />
-          </label>
-          <label>
-            結束
-            <input
-              type="time"
-              step="900"
-              value={draft.end}
-              onChange={(event) => onChange({ ...draft, end: event.target.value })}
-              required
-            />
-          </label>
-        </div>
-        {draft.kind === 'session' ? (
-          <>
-            <label>
-              學生
-              <FormSelect
-                label="學生"
-                value={draft.studentId}
-                disabled={Boolean(draft.current)}
-                onChange={(value) => onChange({ ...draft, studentId: value })}
-                required
-                options={[
-                  { value: '', label: '選擇學生' },
-                  ...students.map((student) => ({ value: student.id, label: student.name }))
-                ]}
-              />
-            </label>
-            <label>
-              地點
-              <input
-                value={draft.location}
-                onChange={(event) => onChange({ ...draft, location: event.target.value })}
-                maxLength={160}
-                required
-              />
-            </label>
-          </>
-        ) : null}
-        {draft.kind === 'block' ? (
-          <>
-            <label>
-              備註
-              <textarea
-                value={draft.note}
-                onChange={(event) => onChange({ ...draft, note: event.target.value })}
-                maxLength={1000}
-              />
-            </label>
-            {!draft.current ? (
-              <label>
-                每週重複次數
-                <input
-                  type="number"
-                  min="1"
-                  max="52"
-                  value={draft.repeatCount}
-                  onChange={(event) =>
-                    onChange({ ...draft, repeatCount: Number(event.target.value) })
-                  }
-                />
-              </label>
-            ) : draft.current.recurrenceId ? (
-              <label>
-                套用範圍
-                <FormSelect
-                  label="套用範圍"
-                  value={draft.scope}
-                  onChange={(value) =>
-                    onChange({ ...draft, scope: value as 'single' | 'future' | 'all' })
-                  }
-                  options={[
-                    { value: 'single', label: '只有這一次' },
-                    { value: 'future', label: '這次及之後' },
-                    { value: 'all', label: '全部重複時段' }
-                  ]}
-                />
-              </label>
-            ) : null}
-          </>
-        ) : null}
-        {draft.kind === 'availability' ? (
-          <>
-            <div className="field-row">
-              <label>
-                套用
-                <FormSelect
-                  label="套用"
-                  value={draft.scope}
-                  onChange={(value) => onChange({ ...draft, scope: value as 'date' | 'weekday' })}
-                  options={[
-                    { value: 'date', label: '僅此日期' },
-                    { value: 'weekday', label: '每週這一天' }
-                  ]}
-                />
-              </label>
-              <label>
-                操作
-                <FormSelect
-                  label="操作"
-                  value={draft.action}
-                  onChange={(value) => onChange({ ...draft, action: value as 'add' | 'remove' })}
-                  options={[
-                    { value: 'add', label: '加入時段' },
-                    { value: 'remove', label: '移除時段' }
-                  ]}
-                />
-              </label>
+  const cancelEdit = () => {
+    if (draft.kind !== 'session' || !draft.current) return onClose()
+    onChange(sessionDraft(draft.current, timeZone))
+    setError('')
+    setSessionMode('view')
+    requestAnimationFrame(() => quickEditRef.current?.focus({ preventScroll: true }))
+  }
+  const beginEdit = () => {
+    setSessionMode('edit')
+    requestAnimationFrame(() => editDateRef.current?.focus({ preventScroll: true }))
+  }
+  if (draft.kind === 'session' && draft.current && sessionMode === 'view') {
+    const current = draft.current
+    const canRemove = current.status === 'scheduled'
+    const dateLabel = new Intl.DateTimeFormat('zh-TW', {
+      timeZone,
+      month: 'numeric',
+      day: 'numeric',
+      weekday: 'long'
+    }).format(new Date(current.startsAt!))
+    return (
+      <SchedulingDialog
+        title={current.studentName}
+        onClose={onClose}
+        onDelete={canRemove && !pending ? removeSession : undefined}
+        variant="quick"
+      >
+        <div className="calendar-session-quickview">
+          <div className="calendar-quick-time">
+            <CalendarClock aria-hidden="true" />
+            <div>
+              <span>{dateLabel}</span>
+              <strong>
+                {draft.start}–{draft.end}
+              </strong>
+              <small>
+                {draft.location || '未設定地點'}
+                {current.seriesId ? '・週期課程' : ''}
+              </small>
             </div>
-            <p className="field-help">
-              目前：{formatWindows(calendar.availabilityByDate[draft.date] ?? [])}
+            {current.status === 'scheduled' ? (
+              <button
+                ref={quickEditRef}
+                type="button"
+                className="calendar-quick-edit"
+                disabled={pending}
+                onClick={beginEdit}
+              >
+                編輯安排
+              </button>
+            ) : null}
+          </div>
+          {error ? (
+            <p className="notice error" role="alert">
+              {error}
             </p>
-          </>
-        ) : null}
-        {warning ? (
-          <label className="schedule-warning">
-            <strong>安排提醒</strong>
-            <span>{warning}</span>
-            <span>
-              <input
-                type="checkbox"
-                checked={acknowledged}
-                onChange={(event) => setAcknowledged(event.target.checked)}
-              />{' '}
-              我已確認，仍要儲存
-            </span>
-          </label>
-        ) : null}
-        {error ? (
-          <p className="notice error" role="alert">
-            {error}
-          </p>
-        ) : null}
-        {draft.kind === 'session' && draft.current ? (
-          <div className="session-quick-actions" aria-label="課程狀態操作">
-            {draft.current.status === 'scheduled' ? (
-              <>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={pending}
-                  onClick={() => transition('complete')}
-                >
-                  完成上課
-                </button>
-                <button
-                  type="button"
-                  className="danger-outline-button"
-                  disabled={pending}
-                  onClick={() => transition('cancel')}
-                >
-                  取消課程
-                </button>
-              </>
-            ) : draft.current.status === 'completed' ? (
+          ) : null}
+          <div className={`calendar-quick-actions${canRemove ? ' has-remove' : ''}`}>
+            <Link className="secondary-button calendar-open-session" to={`/sessions/${current.id}`}>
+              開啟課堂
+            </Link>
+            {current.status === 'scheduled' ? (
+              <button
+                type="button"
+                className="primary-button compact"
+                disabled={pending}
+                onClick={() => transition('complete')}
+              >
+                完成上課
+              </button>
+            ) : current.status === 'completed' ? (
               <button
                 type="button"
                 className="secondary-button"
@@ -617,61 +603,320 @@ function Editor({
                 改回待上課
               </button>
             ) : null}
-            {draft.current.status === 'scheduled' && !draft.current.seriesId ? (
-              <label className="quick-delete">
-                輸入 DELETE 後可永久刪除
-                <span>
-                  <input
-                    value={deleteConfirmation}
-                    onChange={(event) => setDeleteConfirmation(event.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="danger-button"
-                    disabled={pending || deleteConfirmation !== 'DELETE'}
-                    onClick={removeSession}
-                  >
-                    刪除
-                  </button>
-                </span>
-              </label>
+            {canRemove ? (
+              <button
+                type="button"
+                className="calendar-delete-button"
+                disabled={pending}
+                onClick={removeSession}
+              >
+                刪除
+              </button>
             ) : null}
           </div>
-        ) : null}
-        <div className="scheduling-form-actions">
-          {draft.kind === 'session' && draft.current ? (
-            <div className="scheduling-form-links">
-              <Link className="text-button" to={`/sessions/${draft.current.id}`}>
-                開啟課堂
+          {current.status === 'scheduled' &&
+          current.startsAt &&
+          new Date(current.startsAt) > new Date() ? (
+            <div className="calendar-quick-secondary">
+              <Link className="text-button" to={`/sessions/${current.id}?link=reschedule`}>
+                建立改期連結
               </Link>
-              {draft.current.status === 'scheduled' &&
-              draft.current.startsAt &&
-              new Date(draft.current.startsAt) > new Date() ? (
-                <Link className="text-button" to={`/sessions/${draft.current.id}?link=reschedule`}>
-                  建立改期連結
-                </Link>
-              ) : null}
             </div>
           ) : null}
-          {draft.kind === 'block' && draft.current ? (
+          <span className="scheduling-shortcut-hint">
+            {canRemove ? 'DELETE 刪除 · ' : ''}ESC 取消
+          </span>
+        </div>
+      </SchedulingDialog>
+    )
+  }
+  return (
+    <SchedulingDialog
+      title={
+        draft.kind !== 'availability' && draft.current
+          ? draft.kind === 'session'
+            ? '編輯課程'
+            : '封鎖選項'
+          : '安排這個時段'
+      }
+      onClose={draft.kind === 'session' && draft.current ? cancelEdit : onClose}
+      onDelete={draft.kind === 'block' && draft.current && !pending ? removeBlock : undefined}
+      variant={
+        draft.kind === 'block' && draft.current
+          ? 'block'
+          : draft.kind === 'session' && draft.current
+            ? 'session-edit'
+            : undefined
+      }
+    >
+      <form className="scheduling-form" onSubmit={submit}>
+        <div className="scheduling-form-body">
+          {!('current' in draft && draft.current) ? (
+            <div className="composer-kind" role="group" aria-label="安排類型">
+              <button
+                type="button"
+                aria-pressed={draft.kind === 'session'}
+                onClick={() =>
+                  onChange({
+                    kind: 'session',
+                    date: draft.date,
+                    start: draft.start,
+                    end: draft.end,
+                    studentId: students[0]?.id ?? '',
+                    location: ''
+                  })
+                }
+              >
+                <CalendarClock aria-hidden="true" /> 課程
+              </button>
+              <button
+                type="button"
+                aria-pressed={draft.kind === 'availability'}
+                onClick={() =>
+                  onChange({
+                    kind: 'availability',
+                    date: draft.date,
+                    start: draft.start,
+                    end: draft.end,
+                    scope: 'date',
+                    action: 'add'
+                  })
+                }
+              >
+                <ShieldCheck aria-hidden="true" /> 可排課
+              </button>
+              <button
+                type="button"
+                aria-pressed={draft.kind === 'block'}
+                onClick={() =>
+                  onChange({
+                    kind: 'block',
+                    date: draft.date,
+                    start: draft.start,
+                    end: draft.end,
+                    note: '',
+                    repeatCount: 1,
+                    scope: 'single'
+                  })
+                }
+              >
+                <Ban aria-hidden="true" /> 封鎖
+              </button>
+            </div>
+          ) : null}
+          <div className="scheduling-time-fields">
+            <label>
+              日期
+              <input
+                ref={editDateRef}
+                type="date"
+                value={draft.date}
+                onChange={(event) => onChange({ ...draft, date: event.target.value })}
+                required
+              />
+            </label>
+            <SchedulingTimeInput
+              label="開始"
+              value={draft.start}
+              onChange={(start) => {
+                const duration = timeMinutes(draft.end) - timeMinutes(draft.start)
+                const end =
+                  validTime(start) &&
+                  validTime(draft.start) &&
+                  validTime(draft.end) &&
+                  duration > 0 &&
+                  timeMinutes(start) + duration < 1440
+                    ? minutesToTime(timeMinutes(start) + duration)
+                    : draft.end
+                onChange({ ...draft, start, end })
+              }}
+            />
+            <span className="scheduling-time-arrow" aria-hidden="true">
+              →
+            </span>
+            <SchedulingTimeInput
+              label="結束"
+              value={draft.end}
+              start={draft.start}
+              onChange={(end) => onChange({ ...draft, end })}
+            />
+          </div>
+          {draft.kind === 'session' ? (
+            <>
+              <label>
+                學生
+                <FormSelect
+                  label="學生"
+                  value={draft.studentId}
+                  disabled={Boolean(draft.current?.seriesId)}
+                  onChange={(value) => onChange({ ...draft, studentId: value })}
+                  required
+                  options={[
+                    { value: '', label: '選擇學生' },
+                    ...students.map((student) => ({
+                      value: student.id,
+                      label: student.lessonSummary
+                        ? `${student.name}・剩餘 ${student.lessonSummary.remaining} 堂`
+                        : student.name
+                    }))
+                  ]}
+                />
+              </label>
+              {draft.current?.seriesId ? (
+                <p className="field-help">
+                  週期課程的學生由固定課程節奏決定；這裡可修改本堂時間與地點。
+                </p>
+              ) : null}
+              <div className="field-row">
+                {!draft.current ? (
+                  <label>
+                    重複
+                    <FormSelect
+                      label="重複"
+                      name="repeat"
+                      value={String(draft.repeat ?? 0)}
+                      onChange={(value) =>
+                        onChange({ ...draft, repeat: Number(value) as 0 | 1 | 2 })
+                      }
+                      options={[
+                        { value: '0', label: '僅這一次' },
+                        { value: '1', label: '每週' },
+                        { value: '2', label: '每兩週' }
+                      ]}
+                    />
+                  </label>
+                ) : null}
+                <label>
+                  地點
+                  <input
+                    value={draft.location}
+                    onChange={(event) => onChange({ ...draft, location: event.target.value })}
+                    maxLength={160}
+                    required
+                  />
+                </label>
+              </div>
+            </>
+          ) : null}
+          {draft.kind === 'block' ? (
+            <>
+              <label>
+                備註（選填）
+                <input
+                  value={draft.note}
+                  onChange={(event) => onChange({ ...draft, note: event.target.value })}
+                  placeholder="不填也可以"
+                  maxLength={1000}
+                />
+              </label>
+              {!draft.current ? (
+                <label>
+                  重複
+                  <FormSelect
+                    label="重複"
+                    value={String(draft.repeatCount)}
+                    onChange={(value) => onChange({ ...draft, repeatCount: Number(value) })}
+                    options={[1, 4, 8, 12].map((count) => ({
+                      value: String(count),
+                      label: count === 1 ? '僅這一次' : `每週，共 ${count} 次`
+                    }))}
+                  />
+                </label>
+              ) : draft.current.recurrenceId ? (
+                <label>
+                  套用範圍
+                  <FormSelect
+                    label="套用範圍"
+                    value={draft.scope}
+                    onChange={(value) =>
+                      onChange({ ...draft, scope: value as 'single' | 'future' | 'all' })
+                    }
+                    options={[
+                      { value: 'single', label: '只有這一次' },
+                      { value: 'future', label: '這次及之後' },
+                      { value: 'all', label: '全部重複時段' }
+                    ]}
+                  />
+                </label>
+              ) : null}
+            </>
+          ) : null}
+          {draft.kind === 'availability' ? (
+            <>
+              <div className="scheduling-segmented" role="group" aria-label="可排課操作">
+                <button
+                  type="button"
+                  aria-pressed={draft.action === 'add'}
+                  onClick={() => onChange({ ...draft, action: 'add' })}
+                >
+                  加入可排課
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={draft.action === 'remove'}
+                  onClick={() => onChange({ ...draft, action: 'remove' })}
+                >
+                  從可排課移除
+                </button>
+              </div>
+              <div className="scheduling-segmented" role="group" aria-label="套用範圍">
+                <button
+                  type="button"
+                  aria-pressed={draft.scope === 'date'}
+                  onClick={() => onChange({ ...draft, scope: 'date' })}
+                >
+                  只改這一天
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={draft.scope === 'weekday'}
+                  onClick={() => onChange({ ...draft, scope: 'weekday' })}
+                >
+                  每週這一天
+                </button>
+              </div>
+              <p className="scheduling-availability-note">
+                <ShieldCheck aria-hidden="true" />
+                可新增多段，也能從中間移除一段；單日修改不會影響其他週。
+              </p>
+            </>
+          ) : null}
+          {error ? (
+            <p className="notice error" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
+        <div className="scheduling-form-footer">
+          <span className="scheduling-shortcut-hint">
+            ENTER 確認 · {draft.kind === 'block' && draft.current ? 'DELETE 刪除 · ' : ''}ESC 取消
+          </span>
+          <div className="scheduling-form-actions">
+            {draft.kind === 'block' && draft.current ? (
+              <button
+                type="button"
+                className="calendar-delete-button"
+                onClick={removeBlock}
+                disabled={pending}
+              >
+                刪除封鎖
+              </button>
+            ) : null}
             <button
               type="button"
-              className="danger-button"
-              onClick={removeBlock}
-              disabled={pending}
+              className="secondary-button"
+              onClick={draft.kind === 'session' && draft.current ? cancelEdit : onClose}
             >
-              刪除
+              取消
             </button>
-          ) : null}
-          <button type="button" className="secondary-button" onClick={onClose}>
-            取消
-          </button>
-          <button
-            className="primary-button compact"
-            disabled={pending || Boolean(warning && !acknowledged)}
-          >
-            {pending ? '儲存中…' : '儲存'}
-          </button>
+            <button className="primary-button compact" disabled={pending}>
+              {pending
+                ? '儲存中…'
+                : draft.kind === 'block' && draft.current
+                  ? '儲存修改'
+                  : '儲存安排'}
+            </button>
+          </div>
         </div>
       </form>
     </SchedulingDialog>
@@ -681,157 +926,359 @@ function Editor({
 function Timeline({
   calendar,
   onDraft,
-  onWheel
+  onMove,
+  defaultStudentId,
+  viewportRef
 }: {
   calendar: CalendarProjection
   onDraft: (draft: Draft) => void
-  onWheel: (event: React.WheelEvent<HTMLElement>) => void
+  onMove: (draft: Extract<Draft, { kind: 'session' | 'block' }>, done: () => void) => void
+  defaultStudentId: string
+  viewportRef: Ref<HTMLDivElement>
 }) {
   const days = dateRange(calendar.range.start, calendar.range.end)
-  const pointer = useRef<{ x: number; y: number; date: string; time: string } | null>(null)
-  const itemPointer = useRef<{
-    x: number
-    y: number
-    draft: Extract<Draft, { kind: 'session' | 'block' }>
-  } | null>(null)
-  const pointerDown = (event: React.PointerEvent<HTMLDivElement>, date: string) => {
-    if (event.button !== 0) return
-    const rect = event.currentTarget.getBoundingClientRect()
-    pointer.current = {
-      x: event.clientX,
-      y: event.clientY,
-      date,
-      time: yToTime(event.clientY - rect.top)
+  type ItemDraft = Extract<Draft, { kind: 'session' | 'block' }>
+  type Preview = { date: string; start: string; end: string; kind: 'create' | 'move' }
+  type Gesture = {
+    pointerId: number
+    pointerType: string
+    originX: number
+    originY: number
+    date: string
+    minute: number
+    item?: ItemDraft
+    movable: boolean
+    grabOffset: number
+    dragging: boolean
+    touchReady: boolean
+    panning: boolean
+    scrollLeft: number
+    scrollTop: number
+  }
+  const timelineRef = useRef<HTMLDivElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const gestureRef = useRef<Gesture | null>(null)
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [preview, setPreview] = useState<Preview | null>(null)
+  const [moving, setMoving] = useState(false)
+  const clearGesture = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current)
+    holdTimer.current = null
+    gestureRef.current = null
+  }
+  useEffect(() => {
+    const cancelWithEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !gestureRef.current) return
+      clearGesture()
+      setPreview(null)
     }
-    event.currentTarget.setPointerCapture(event.pointerId)
+    window.addEventListener('keydown', cancelWithEscape)
+    return () => {
+      window.removeEventListener('keydown', cancelWithEscape)
+      clearGesture()
+    }
+  }, [])
+  const point = (x: number, y: number) => {
+    const grids = [
+      ...(timelineRef.current?.querySelectorAll<HTMLElement>('.calendar-time-grid') ?? [])
+    ]
+    const index = Math.max(
+      0,
+      grids.findIndex((grid, index) => {
+        const rect = grid.getBoundingClientRect()
+        return x < rect.right || index === grids.length - 1
+      })
+    )
+    const grid = grids[index]
+    return {
+      date: days[index] ?? days[0]!,
+      minute: Math.max(
+        360,
+        Math.min(1320, timeMinutes(yToTime(y - (grid?.getBoundingClientRect().top ?? 0))))
+      )
+    }
   }
-  const pointerUp = (event: React.PointerEvent<HTMLDivElement>, date: string) => {
-    const began = pointer.current
-    pointer.current = null
-    if (!began || began.date !== date) return
-    const distance = Math.hypot(event.clientX - began.x, event.clientY - began.y)
-    const rect = event.currentTarget.getBoundingClientRect()
-    const finish = yToTime(event.clientY - rect.top)
-    const start = distance < 6 ? began.time : earlierTime(began.time, finish)
-    const end =
-      distance < 6 || finish === began.time
-        ? addLocalMinutes({ date, time: start }, 60).time
-        : laterTime(began.time, finish)
-    onDraft({ kind: 'session', date, start, end, studentId: '', location: '' })
+  const rangeForPointer = (gesture: Gesture, x: number, y: number): Preview => {
+    const target = point(x, y)
+    if (!gesture.item) {
+      const startMinute = Math.min(gesture.minute, target.minute)
+      const endMinute = Math.min(1320, Math.max(gesture.minute, target.minute) + 15)
+      return {
+        date: gesture.date,
+        start: minutesToTime(startMinute),
+        end: minutesToTime(endMinute),
+        kind: 'create'
+      }
+    }
+    const duration = timeMinutes(gesture.item.end) - timeMinutes(gesture.item.start)
+    const startMinute = Math.max(360, Math.min(1320 - duration, target.minute - gesture.grabOffset))
+    return {
+      date: target.date,
+      start: minutesToTime(startMinute),
+      end: minutesToTime(startMinute + duration),
+      kind: 'move'
+    }
   }
-  const itemDown = (
-    event: React.PointerEvent<HTMLButtonElement>,
-    draft: Extract<Draft, { kind: 'session' | 'block' }>
+  const begin = (
+    event: React.PointerEvent<HTMLElement>,
+    date: string,
+    item?: ItemDraft,
+    movable = true
   ) => {
+    if (event.button !== 0 || moving) return
     event.stopPropagation()
-    itemPointer.current = { x: event.clientX, y: event.clientY, draft }
+    const hit = point(event.clientX, event.clientY)
+    const gesture: Gesture = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      originX: event.clientX,
+      originY: event.clientY,
+      date,
+      minute: hit.minute,
+      item,
+      movable,
+      grabOffset: item ? Math.max(0, hit.minute - timeMinutes(item.start)) : 0,
+      dragging: false,
+      touchReady: event.pointerType !== 'touch',
+      panning: false,
+      scrollLeft: scrollRef.current?.scrollLeft ?? 0,
+      scrollTop: scrollRef.current?.scrollTop ?? 0
+    }
+    gestureRef.current = gesture
     event.currentTarget.setPointerCapture(event.pointerId)
+    if (event.pointerType === 'touch' && movable)
+      holdTimer.current = setTimeout(() => {
+        if (gestureRef.current === gesture && !gesture.panning) {
+          gesture.touchReady = true
+          gesture.dragging = true
+          setPreview(rangeForPointer(gesture, gesture.originX, gesture.originY))
+        }
+      }, 300)
   }
-  const itemUp = (event: React.PointerEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-    const began = itemPointer.current
-    itemPointer.current = null
-    if (!began) return
-    const distance = Math.hypot(event.clientX - began.x, event.clientY - began.y)
-    if (distance < 6) {
-      onDraft(began.draft)
+  const move = (event: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = gestureRef.current
+    if (!gesture || gesture.pointerId !== event.pointerId) return
+    const dx = event.clientX - gesture.originX
+    const dy = event.clientY - gesture.originY
+    const distance = Math.hypot(dx, dy)
+    if (gesture.pointerType === 'touch' && !gesture.touchReady) {
+      if (distance >= 6) {
+        gesture.panning = true
+        if (holdTimer.current) clearTimeout(holdTimer.current)
+      }
+      if (gesture.panning && scrollRef.current) {
+        scrollRef.current.scrollLeft = gesture.scrollLeft - dx
+        scrollRef.current.scrollTop = gesture.scrollTop - dy
+      }
       return
     }
-    const timelineWidth = event.currentTarget.closest('.calendar-timeline')?.clientWidth ?? 1
-    const dayShift = Math.round((event.clientX - began.x) / (timelineWidth / days.length))
-    const minuteShift = Math.round((((event.clientY - began.y) / 720) * 960) / 15) * 15
-    const duration = timeMinutes(began.draft.end) - timeMinutes(began.draft.start)
-    const shiftedStart = addLocalMinutes(
-      { date: addDays(began.draft.date, dayShift), time: began.draft.start },
-      minuteShift
-    )
-    const shiftedEnd = addLocalMinutes(shiftedStart, duration)
-    onDraft({
-      ...began.draft,
-      date: shiftedStart.date,
-      start: shiftedStart.time,
-      end: shiftedEnd.time
+    if (!gesture.movable) return
+    if (gesture.panning || (distance < 6 && !gesture.dragging)) return
+    event.preventDefault()
+    gesture.dragging = true
+    const scroll = scrollRef.current
+    if (scroll && days.length > 1) {
+      const rect = scroll.getBoundingClientRect()
+      if (event.clientX > rect.right - 24) scroll.scrollLeft += 18
+      if (event.clientX < rect.left + 24) scroll.scrollLeft -= 18
+    }
+    if (scroll) {
+      const rect = scroll.getBoundingClientRect()
+      if (event.clientY > rect.bottom - 24) scroll.scrollTop += 18
+      if (event.clientY < rect.top + 24) scroll.scrollTop -= 18
+    }
+    setPreview(rangeForPointer(gesture, event.clientX, event.clientY))
+  }
+  const finish = (event: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = gestureRef.current
+    if (!gesture || gesture.pointerId !== event.pointerId) return
+    clearGesture()
+    if (gesture.panning) return
+    if (!gesture.dragging) {
+      if (gesture.item) onDraft(gesture.item)
+      else {
+        const start = Math.min(1260, gesture.minute)
+        onDraft({
+          kind: 'session',
+          date: gesture.date,
+          start: minutesToTime(start),
+          end: minutesToTime(start + 60),
+          studentId: defaultStudentId,
+          location: ''
+        })
+      }
+      return
+    }
+    const range = rangeForPointer(gesture, event.clientX, event.clientY)
+    if (!gesture.item) {
+      setPreview(null)
+      onDraft({ ...range, kind: 'session', studentId: defaultStudentId, location: '' })
+      return
+    }
+    const next = { ...gesture.item, date: range.date, start: range.start, end: range.end }
+    if (
+      next.date === gesture.item.date &&
+      next.start === gesture.item.start &&
+      next.end === gesture.item.end
+    ) {
+      setPreview(null)
+      return
+    }
+    setMoving(true)
+    onMove(next, () => {
+      setMoving(false)
+      setPreview(null)
     })
   }
   return (
-    <div className="calendar-timeline-scroll" onWheel={onWheel}>
+    <div
+      ref={(node) => {
+        scrollRef.current = node
+        if (typeof viewportRef === 'function') viewportRef(node)
+        else if (viewportRef) viewportRef.current = node
+      }}
+      className="calendar-timeline-scroll"
+    >
       <div
-        className="calendar-timeline"
+        ref={timelineRef}
+        className={`calendar-timeline${days.length === 1 ? ' single-day' : ''}`}
         style={{ '--calendar-days': days.length } as CSSProperties}
+        onPointerMove={move}
+        onPointerUp={finish}
+        onPointerCancel={() => {
+          clearGesture()
+          setPreview(null)
+        }}
       >
+        <div className="calendar-time-corner">
+          {calendar.timeZone === 'Asia/Taipei' ? 'GMT+8' : calendar.timeZone}
+        </div>
         {days.map((date) => (
-          <section key={date} className="calendar-day-column">
-            <header>
-              <time dateTime={date}>{formatShortDate(date, calendar.timeZone)}</time>
-            </header>
-            <div
-              className="calendar-time-grid"
-              tabIndex={0}
-              aria-label={`${date} 時間格，按 Enter 建立安排`}
-              onKeyDown={(event) =>
-                event.key === 'Enter' &&
-                onDraft({
-                  kind: 'session',
-                  date,
-                  start: '09:00',
-                  end: '10:00',
-                  studentId: '',
-                  location: ''
-                })
-              }
-              onPointerDown={(event) => pointerDown(event, date)}
-              onPointerUp={(event) => pointerUp(event, date)}
-            >
-              <div className="availability-layer">
-                {(calendar.availabilityByDate[date] ?? []).map((window) => (
-                  <span
-                    key={`${window.startTime}-${window.endTime}`}
-                    style={timeStyle(window.startTime, window.endTime)}
-                    title={`可排課 ${window.startTime}–${window.endTime}`}
-                  />
-                ))}
-              </div>
-              {calendar.blocks
-                .filter((block) => localDay(block.startsAt, calendar.timeZone) === date)
-                .map((block) => {
-                  const local = blockDraft(block, calendar.timeZone)
-                  return (
-                    <button
-                      className="calendar-block positioned"
-                      style={timeStyle(local.start, local.end)}
-                      key={block.id}
-                      onPointerDown={(event) => itemDown(event, local)}
-                      onPointerUp={itemUp}
-                    >
-                      <strong>封鎖</strong>
-                      <span>{block.note || '私人時段'}</span>
-                    </button>
-                  )
-                })}
-              {calendar.sessions
-                .filter(
+          <div
+            key={`${date}-head`}
+            className={`calendar-day-header${date === localDate(new Date(), calendar.timeZone) ? ' today' : ''}`}
+          >
+            <span>
+              {new Intl.DateTimeFormat('zh-TW', { weekday: 'short', timeZone: 'UTC' }).format(
+                new Date(`${date}T12:00:00Z`)
+              )}
+            </span>
+            <strong>{Number(date.slice(-2))}</strong>
+            <small>
+              {
+                calendar.sessions.filter(
                   ({ session }) =>
                     session.status !== 'cancelled' &&
                     localDay(session.startsAt, calendar.timeZone) === date
-                )
-                .map((entry) => {
-                  const local = sessionDraft(entry.session, calendar.timeZone)
-                  return (
-                    <button
-                      className={`calendar-session positioned ${entry.session.status}${entry.conflicts.length ? ' has-conflict' : ''}`}
-                      style={timeStyle(local.start, local.end)}
-                      key={entry.session.id}
-                      onPointerDown={(event) => itemDown(event, local)}
-                      onPointerUp={itemUp}
-                    >
-                      <time>{local.start}</time>
-                      <strong>{entry.session.studentName}</strong>
-                      <span>{entry.session.location || '未設定地點'}</span>
-                    </button>
-                  )
-                })}
+                ).length
+              }{' '}
+              堂
+            </small>
+          </div>
+        ))}
+        <div className="calendar-time-axis" aria-hidden="true">
+          {Array.from({ length: 17 }, (_, index) => (
+            <span key={index} style={{ top: `${(index / 16) * 100}%` }}>
+              {String(index + 6).padStart(2, '0')}:00
+            </span>
+          ))}
+        </div>
+        {days.map((date) => (
+          <div
+            key={date}
+            className={`calendar-time-grid${date === localDate(new Date(), calendar.timeZone) ? ' today' : ''}`}
+            tabIndex={0}
+            aria-label={`${date} 時間格，按 Enter 建立安排`}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget || event.key !== 'Enter') return
+              onDraft({
+                kind: 'session',
+                date,
+                start: '09:00',
+                end: '10:00',
+                studentId: defaultStudentId,
+                location: ''
+              })
+            }}
+            onPointerDown={(event) => begin(event, date)}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            <div className="availability-layer">
+              {(calendar.availabilityByDate[date] ?? []).map((window) => (
+                <span
+                  key={`${window.startTime}-${window.endTime}`}
+                  style={timeStyle(window.startTime, window.endTime)}
+                  title={`可排課 ${window.startTime}–${window.endTime}`}
+                />
+              ))}
             </div>
-          </section>
+            {calendar.blocks
+              .filter((block) => localDay(block.startsAt, calendar.timeZone) === date)
+              .map((block) => {
+                const local = blockDraft(block, calendar.timeZone)
+                return (
+                  <button
+                    className="calendar-block positioned"
+                    style={timeStyle(local.start, local.end)}
+                    key={block.id}
+                    onPointerDown={(event) => begin(event, date, local)}
+                    onClick={(event) => {
+                      if (event.detail === 0) onDraft(local)
+                    }}
+                    onContextMenu={(event) => event.preventDefault()}
+                  >
+                    <GripVertical aria-hidden="true" />
+                    <strong>封鎖</strong>
+                    <span>{block.note || '私人時段'}</span>
+                  </button>
+                )
+              })}
+            {calendar.sessions
+              .filter(
+                ({ session }) =>
+                  session.status !== 'cancelled' &&
+                  localDay(session.startsAt, calendar.timeZone) === date
+              )
+              .map((entry) => {
+                const local = sessionDraft(entry.session, calendar.timeZone)
+                return (
+                  <button
+                    className={`calendar-session positioned ${calendarSessionVisualState(entry.session)}${entry.conflicts.length ? ' has-conflict' : ''}`}
+                    style={timeStyle(local.start, local.end)}
+                    key={entry.session.id}
+                    onPointerDown={(event) => {
+                      event.stopPropagation()
+                      begin(event, date, local, entry.session.status === 'scheduled')
+                    }}
+                    onClick={(event) => {
+                      if (event.detail === 0) onDraft(local)
+                    }}
+                    onContextMenu={(event) => event.preventDefault()}
+                  >
+                    {entry.session.status === 'scheduled' ? (
+                      <GripVertical aria-hidden="true" />
+                    ) : null}
+                    <time>{local.start}</time>
+                    <strong>{entry.session.studentName}</strong>
+                    <span>{entry.session.location || '未設定地點'}</span>
+                  </button>
+                )
+              })}
+            {preview?.date === date ? (
+              <div
+                className={`calendar-drag-preview${preview.kind === 'move' ? ' moving' : ''}`}
+                style={timeStyle(preview.start, preview.end)}
+                aria-hidden="true"
+              >
+                <strong>
+                  {preview.start}—{preview.end}
+                </strong>
+                <span>
+                  {moving ? '儲存中…' : preview.kind === 'move' ? '放開以移動' : '放開以安排'}
+                </span>
+              </div>
+            ) : null}
+          </div>
         ))}
       </div>
     </div>
@@ -840,62 +1287,81 @@ function Timeline({
 
 function Agenda({
   calendar,
-  onOpen
+  onOpen,
+  onOpenDay,
+  viewportRef
 }: {
   calendar: CalendarProjection
   onOpen: (session: CalendarSession) => void
+  onOpenDay: (date: string) => void
+  viewportRef: Ref<HTMLDivElement>
 }) {
   const days = dateRange(calendar.range.start, calendar.range.end)
   return (
-    <ol className="calendar-agenda">
+    <div ref={viewportRef} className="calendar-agenda-board">
       {days.map((date) => {
         const entries = calendar.sessions.filter(
-          ({ session }) => localDay(session.startsAt, calendar.timeZone) === date
+          ({ session }) =>
+            session.status !== 'cancelled' && localDay(session.startsAt, calendar.timeZone) === date
         )
         return (
-          <li key={date}>
-            <header>
-              <time dateTime={date}>{formatDate(date, calendar.timeZone)}</time>
-              <span>{entries.length ? `${entries.length} 堂` : '無課程'}</span>
-            </header>
+          <section
+            key={date}
+            className={`calendar-agenda-day${date === localDate(new Date(), calendar.timeZone) ? ' today' : ''}`}
+          >
+            <button
+              className="calendar-agenda-date"
+              onClick={() => onOpenDay(date)}
+              aria-label={`查看 ${formatDate(date, calendar.timeZone)} 的日檢視`}
+            >
+              <span>
+                {new Intl.DateTimeFormat('zh-TW', { weekday: 'short', timeZone: 'UTC' }).format(
+                  new Date(`${date}T12:00:00Z`)
+                )}
+              </span>
+              <strong>{Number(date.slice(-2))}</strong>
+            </button>
             {entries.length ? (
-              <div>
+              <div className="calendar-agenda-lessons">
                 {entries.map(({ session, conflicts }) => (
                   <button
                     key={session.id}
-                    className={`calendar-session ${session.status}${conflicts.length ? ' has-conflict' : ''}`}
+                    className={`calendar-agenda-lesson ${calendarSessionVisualState(session)}${conflicts.length ? ' has-conflict' : ''}`}
                     onClick={() => onOpen(session)}
                   >
                     <time>{formatTime(session.startsAt, calendar.timeZone)}</time>
                     <strong>{session.studentName}</strong>
-                    <span>
-                      {statusLabel(session)} · {session.location || '未設定地點'}
-                    </span>
+                    <small>
+                      {session.startsAt && session.endsAt
+                        ? `${Math.round((Date.parse(session.endsAt) - Date.parse(session.startsAt)) / 60000)} 分`
+                        : statusLabel(session)}
+                    </small>
                   </button>
                 ))}
               </div>
             ) : (
-              <p>保留給新的安排。</p>
+              <p className="calendar-agenda-none">無課程</p>
             )}
-          </li>
+          </section>
         )
       })}
-    </ol>
+    </div>
   )
 }
 function Month({
   calendar,
   anchor,
-  onOpenDay
+  onOpenDay,
+  viewportRef
 }: {
   calendar: CalendarProjection
   anchor: string
   onOpenDay: (date: string) => void
+  viewportRef: Ref<HTMLDivElement>
 }) {
-  const start = monthGridStart(anchor)
-  const days = Array.from({ length: 42 }, (_, index) => addDays(start, index))
+  const days = dateRange(calendar.range.start, calendar.range.end)
   return (
-    <div className="calendar-month">
+    <div ref={viewportRef} className="calendar-month">
       <div className="calendar-weekdays">
         {['一', '二', '三', '四', '五', '六', '日'].map((label) => (
           <span key={label}>週{label}</span>
@@ -916,11 +1382,16 @@ function Month({
             >
               <time>{Number(date.slice(-2))}</time>
               {entries.slice(0, 2).map(({ session }) => (
-                <span key={session.id}>
+                <span
+                  key={session.id}
+                  className={`calendar-month-session ${calendarSessionVisualState(session)}`}
+                >
                   {formatTime(session.startsAt, calendar.timeZone)} {session.studentName}
                 </span>
               ))}
-              {entries.length > 2 ? <small>+{entries.length - 2}</small> : null}
+              {entries.length > 2 ? (
+                <small className="calendar-month-more">還有 {entries.length - 2} 堂</small>
+              ) : null}
             </button>
           )
         })}
@@ -946,18 +1417,6 @@ function ViewButton({
       {icon}
       <span>{children}</span>
     </button>
-  )
-}
-function CalendarEmpty({ onCreate }: { onCreate: () => void }) {
-  return (
-    <div className="calendar-empty">
-      <CalendarDays />
-      <h2>這段期間還沒有課程</h2>
-      <p>可排課時段與封鎖時間仍會顯示在日、週檢視中。</p>
-      <button className="text-button" onClick={onCreate}>
-        建立第一堂課
-      </button>
-    </div>
   )
 }
 function CalendarSkeleton() {
@@ -1006,41 +1465,6 @@ export function removeWindow(
         ].filter((part) => part.endTime > part.startTime)
   )
 }
-function conflictWarning(
-  draft: Extract<Draft, { kind: 'session' }>,
-  calendar: CalendarProjection,
-  timeZone: string
-) {
-  let start: number, end: number
-  try {
-    start = Date.parse(localDateTimeToIso({ date: draft.date, time: draft.start }, timeZone))
-    end = Date.parse(localDateTimeToIso({ date: draft.date, time: draft.end }, timeZone))
-  } catch {
-    return ''
-  }
-  const overlap =
-    calendar.sessions.some(
-      ({ session }) =>
-        session.id !== draft.current?.id &&
-        session.status !== 'cancelled' &&
-        session.startsAt &&
-        session.endsAt &&
-        start < Date.parse(session.endsAt) &&
-        end > Date.parse(session.startsAt)
-    ) ||
-    calendar.blocks.some(
-      (block) => start < Date.parse(block.endsAt) && end > Date.parse(block.startsAt)
-    )
-  const available = (calendar.availabilityByDate[draft.date] ?? []).some(
-    (window) => window.startTime <= draft.start && window.endTime >= draft.end
-  )
-  return [
-    overlap ? '時間與其他課程或封鎖時段重疊。' : '',
-    !available ? '時間落在目前可排課時段之外。' : ''
-  ]
-    .filter(Boolean)
-    .join(' ')
-}
 function sessionDraft(
   item: CalendarSession,
   timeZone: string
@@ -1085,28 +1509,28 @@ function yToTime(y: number) {
 function timeMinutes(value: string) {
   return Number(value.slice(0, 2)) * 60 + Number(value.slice(3))
 }
-function earlierTime(a: string, b: string) {
-  return a < b ? a : b
+function validTime(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 }
-function laterTime(a: string, b: string) {
-  return a > b ? a : b
+function minutesToTime(value: number) {
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
 }
-function formatWindows(items: Array<{ startTime: string; endTime: string }>) {
-  return items.length
-    ? items.map((item) => `${item.startTime}–${item.endTime}`).join('、')
-    : '全天不開放'
-}
-function rangeFor(anchor: string, view: CalendarView) {
+export function rangeFor(anchor: string, view: CalendarView) {
   if (view === 'day') return { start: anchor, end: addDays(anchor, 1) }
   if (view === 'month') {
     const start = monthGridStart(anchor)
-    return { start, end: addDays(start, 42) }
+    const [year, month] = anchor.split('-').map(Number)
+    const nextMonth = new Date(Date.UTC(year!, month!, 1)).toISOString().slice(0, 10)
+    const lastWeekStart = monday(nextMonth)
+    return { start, end: nextMonth === lastWeekStart ? lastWeekStart : addDays(lastWeekStart, 7) }
   }
   const start = monday(anchor)
   return { start, end: addDays(start, 7) }
 }
-function unitDays(view: CalendarView) {
-  return view === 'day' ? 1 : view === 'month' ? 28 : 7
+export function shiftPeriod(anchor: string, view: CalendarView, direction: -1 | 1) {
+  if (view !== 'month') return addDays(anchor, direction * (view === 'day' ? 1 : 7))
+  const [year, month] = anchor.split('-').map(Number)
+  return new Date(Date.UTC(year!, month! - 1 + direction, 1)).toISOString().slice(0, 10)
 }
 function dateRange(start: string, end: string) {
   const result: string[] = []
@@ -1169,12 +1593,25 @@ function formatTime(value: string | null, timeZone: string) {
 function formatRange(range: { start: string; end: string }, timeZone: string) {
   return `${formatShortDate(range.start, timeZone)} — ${formatShortDate(addDays(range.end, -1), timeZone)}`
 }
+function formatCalendarPeriod(
+  anchor: string,
+  range: { start: string; end: string },
+  view: CalendarView
+) {
+  const [year, month, day] = anchor.split('-').map(Number)
+  if (view === 'month') return `${year} 年 ${month} 月`
+  if (view === 'day') {
+    const weekday = new Intl.DateTimeFormat('zh-TW', { weekday: 'long', timeZone: 'UTC' }).format(
+      new Date(`${anchor}T12:00:00Z`)
+    )
+    return `${year} 年 ${month} 月 ${day} 日 ${weekday}`
+  }
+  const start = range.start.split('-').map(Number)
+  const end = addDays(range.end, -1).split('-').map(Number)
+  return `${start[0]} 年 ${start[1]} 月・${start[1]}/${start[2]}—${end[1]}/${end[2]}`
+}
 function statusLabel(item: CalendarSession) {
-  return item.status === 'completed'
-    ? '已完成'
-    : item.status === 'cancelled'
-      ? '已取消'
-      : item.endsAt && Date.parse(item.endsAt) < Date.now()
-        ? '待確認'
-        : '即將開始'
+  if (item.status === 'cancelled') return '已取消'
+  const state = calendarSessionVisualState(item)
+  return state === 'completed' ? '已完成' : state === 'overdue' ? '逾時未完成' : '未到課程'
 }

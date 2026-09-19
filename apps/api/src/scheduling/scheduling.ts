@@ -25,7 +25,10 @@ const sessionTimingRangeSchema = sessionTimingSchema.refine(
 export const createSessionSchema = sessionTimingSchema
   .extend({ studentId: z.string().uuid() })
   .refine((value) => new Date(value.endsAt) > new Date(value.startsAt), { path: ['endsAt'] })
-export const updateSessionSchema = sessionTimingRangeSchema.extend({ version })
+export const updateSessionSchema = sessionTimingRangeSchema.extend({
+  version,
+  studentId: z.string().uuid().optional(),
+})
 export const transitionSessionSchema = z.object({
   action: z.enum(['complete', 'reopen', 'cancel']),
   version,
