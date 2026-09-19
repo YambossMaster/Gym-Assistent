@@ -19,34 +19,34 @@ import { useDialogBehavior } from '../../shared/useDialogBehavior'
 export function CapabilityLinkActions({
   session,
   item,
+  compactLabels = false,
   initialPurpose = null,
   onClose
 }: {
   session: Session
   item: CalendarSession
+  compactLabels?: boolean
   initialPurpose?: CapabilityPurpose | null
   onClose?: () => void
 }) {
   const [purpose, setPurpose] = useState<CapabilityPurpose | null>(
-    item.status === 'scheduled' && item.startsAt && new Date(item.startsAt) > new Date()
-      ? initialPurpose
-      : null
+    item.status === 'scheduled' ? initialPurpose : null
   )
   const rescheduleButton = useRef<HTMLButtonElement>(null)
   return (
     <>
       {item.status === 'completed' ? (
         <button className="secondary-button" onClick={() => setPurpose('training_result')}>
-          <Link2 /> 分享訓練結果
+          <Link2 /> {compactLabels ? '分享結果' : '分享訓練結果'}
         </button>
       ) : null}
-      {item.status === 'scheduled' && item.startsAt && new Date(item.startsAt) > new Date() ? (
+      {item.status === 'scheduled' ? (
         <button
           ref={rescheduleButton}
           className="secondary-button"
           onClick={() => setPurpose('reschedule_session')}
         >
-          <CalendarLinkIcon /> 建立改期連結
+          <CalendarLinkIcon /> {compactLabels ? '改期連結' : '建立改期連結'}
         </button>
       ) : null}
       {purpose ? (

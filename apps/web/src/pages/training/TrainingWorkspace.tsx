@@ -1,7 +1,23 @@
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
-import { Check, ChevronRight, Dumbbell, Plus, RotateCcw, Trash2, WifiOff, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Check,
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  LoaderCircle,
+  MapPin,
+  Plus,
+  RotateCcw,
+  TrendingUp,
+  WifiOff,
+  X,
+  XCircle
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { UseQueryResult } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   ApiError,
   type ExerciseDefinition,
@@ -14,10 +30,12 @@ import {
   DRAFT_SCHEMA_VERSION,
   DRAFT_TTL_MS,
   TrainingDraftStore,
+  TRAINING_AUTOSAVE_IDLE_MS,
   draftKey,
+  sameTrainingContent,
   type StoredTrainingDraft
 } from './drafts'
-import { useExerciseLibrary, useSessionTraining, useTrainingMutations } from './queries'
+import { useExerciseLibrary, useTrainingMutations } from './queries'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { useSchedulingMutations } from '../calendar/queries'
 import { filterExerciseDefinitions } from '../exercises/filter'
@@ -30,10 +48,23 @@ import {
   type QueuedOperation
 } from '../../local-resilience'
 
-type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'conflict'
+type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'retrying' | 'conflict'
 
-export function TrainingWorkspace({ session, sessionId }: { session: Session; sessionId: string }) {
-  const query = useSessionTraining(session, sessionId)
+export function TrainingWorkspace({
+  session,
+  query,
+  headerActions,
+  onBack,
+  sessionNotice,
+  timeZone
+}: {
+  session: Session
+  query: UseQueryResult<SessionTraining, Error>
+  headerActions?: ReactNode
+  onBack: () => void
+  sessionNotice?: string
+  timeZone: string
+}) {
   if (query.isLoading)
     return (
       <section className="training-workspace training-loading" aria-live="polite">
@@ -60,25 +91,112 @@ export function TrainingWorkspace({ session, sessionId }: { session: Session; se
       </section>
     )
   return (
-    <TrainingEditor
+    <ExclusiveTrainingEditor
       session={session}
       initial={query.data}
-      refreshing={query.isFetching}
-      onRefresh={() => void query.refetch()}
+      onRefresh={async () => (await query.refetch()).data}
+      headerActions={headerActions}
+      onBack={onBack}
+      sessionNotice={sessionNotice}
+      timeZone={timeZone}
     />
   )
 }
 
+function ExclusiveTrainingEditor(props: Parameters<typeof TrainingEditor>[0]) {
+  const [ownsEditor, setOwnsEditor] = useState(false)
+  const refreshRef = useRef(props.onRefresh)
+  const ownerId = useRef(crypto.randomUUID())
+  refreshRef.current = props.onRefresh
+  useEffect(() => {
+    let cancelled = false,
+      waited = false
+    const key = `form-training-editor:${import.meta.env.MODE}:${props.session.user.id}:${props.initial.session.id}`
+    const readLease = () => {
+      try {
+        return JSON.parse(localStorage.getItem(key) ?? 'null') as {
+          ownerId: string
+          expiresAt: number
+        } | null
+      } catch {
+        return null
+      }
+    }
+    const release = () => {
+      if (readLease()?.ownerId === ownerId.current) localStorage.removeItem(key)
+      if (!cancelled) setOwnsEditor(false)
+    }
+    const acquire = async () => {
+      if (cancelled || document.visibilityState === 'hidden') return
+      const current = readLease()
+      const now = Date.now()
+      if (current && current.ownerId !== ownerId.current && current.expiresAt > now) {
+        waited = true
+        setOwnsEditor(false)
+        return
+      }
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ownerId: ownerId.current, expiresAt: now + EDITOR_LEASE_TTL_MS })
+      )
+      if (readLease()?.ownerId !== ownerId.current) {
+        waited = true
+        setOwnsEditor(false)
+        return
+      }
+      if (waited) await refreshRef.current()
+      if (!cancelled) setOwnsEditor(true)
+      waited = false
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') release()
+      else void acquire()
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === key) void acquire()
+    }
+    void acquire()
+    const heartbeat = setInterval(() => void acquire(), EDITOR_LEASE_HEARTBEAT_MS)
+    addEventListener('storage', onStorage)
+    addEventListener('pagehide', release)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      cancelled = true
+      release()
+      clearInterval(heartbeat)
+      removeEventListener('storage', onStorage)
+      removeEventListener('pagehide', release)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [props.initial.session.id, props.session.user.id])
+  if (!ownsEditor)
+    return (
+      <section className="training-workspace training-loading" aria-live="polite">
+        這堂課已在另一個分頁編輯；原分頁關閉後，這裡會自動接手並載入最新內容。
+      </section>
+    )
+  return <TrainingEditor {...props} />
+}
+
+const EDITOR_LEASE_TTL_MS = 10_000
+const EDITOR_LEASE_HEARTBEAT_MS = 2_000
+
 function TrainingEditor({
   session,
   initial,
-  refreshing,
-  onRefresh
+  onRefresh,
+  headerActions,
+  onBack,
+  sessionNotice,
+  timeZone
 }: {
   session: Session
   initial: SessionTraining
-  refreshing: boolean
-  onRefresh: () => void
+  onRefresh: () => Promise<SessionTraining | undefined>
+  headerActions?: ReactNode
+  onBack: () => void
+  sessionNotice?: string
+  timeZone: string
 }) {
   const mutations = useTrainingMutations(session),
     scheduling = useSchedulingMutations(session)
@@ -86,10 +204,11 @@ function TrainingEditor({
     [revision, setRevision] = useState(0),
     [saveState, setSaveState] = useState<SaveState>('idle'),
     [picker, setPicker] = useState(false),
-    [recovery, setRecovery] = useState<StoredTrainingDraft | null>(null),
     [offline, setOffline] = useState(!navigator.onLine),
     [storageError, setStorageError] = useState(false),
-    [notice, setNotice] = useState('')
+    [notice, setNotice] = useState(''),
+    [trendId, setTrendId] = useState<string | null>(null),
+    [completing, setCompleting] = useState(false)
   const localStore = useMemo(() => new CoachLocalStore(), []),
     store = useMemo(() => new TrainingDraftStore(localStore), [localStore]),
     tabId = useRef(crypto.randomUUID()),
@@ -97,7 +216,7 @@ function TrainingEditor({
     revisionRef = useRef(revision),
     saveMutationRef = useRef(mutations.save),
     conflictRef = useRef(false)
-  const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id, tabId.current)
+  const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id)
   const latest = useRef(draft)
   latest.current = draft
   revisionRef.current = revision
@@ -119,8 +238,7 @@ function TrainingEditor({
               record: accepted.record.version,
               session: accepted.session.version
             }
-            const draftKeyFromTarget = operation.target.slice(`training:${targetSessionId}:`.length)
-            if (draftKeyFromTarget) await store.delete(draftKeyFromTarget)
+            await store.deleteSession(session.user.id, targetSessionId)
             return { kind: 'accepted' }
           } catch (error) {
             if (error instanceof ApiError && error.status === 409)
@@ -141,6 +259,17 @@ function TrainingEditor({
       new AutosaveCoordinator<TrainingDraftPayload>(
         async (payload, sentRevision) => {
           if (!navigator.onLine) throw new Error('offline')
+          if (sentRevision === revisionRef.current)
+            await store.put(
+              storedDraft({
+                key,
+                coachId: session.user.id,
+                sessionId: initial.session.id,
+                tabId: tabId.current,
+                revision: sentRevision,
+                payload
+              })
+            )
           let accepted: SessionTraining
           try {
             accepted = await saveMutationRef.current.mutateAsync({
@@ -155,16 +284,28 @@ function TrainingEditor({
             throw error
           }
           versions.current = { record: accepted.record.version, session: accepted.session.version }
-          if (sentRevision === revisionRef.current) await store.delete(key)
+          if (sentRevision === revisionRef.current)
+            await store.deleteSession(session.user.id, initial.session.id)
         },
-        650,
+        TRAINING_AUTOSAVE_IDLE_MS,
         (state) => {
           if (conflictRef.current) return
           setSaveState(state === 'error' ? (navigator.onLine ? 'error' : 'pending') : state)
-        }
+        },
+        (payload) => ({
+          ...payload,
+          recordVersion: versions.current.record,
+          sessionVersion: versions.current.session
+        }),
+        (error) => !(error instanceof ApiError) || error.status >= 500
       ),
-    [initial.session.id, key, store]
+    [initial.session.id, key, session.user.id, store]
   )
+  useEffect(() => {
+    if (conflictRef.current) return
+    versions.current.session = initial.session.version
+    if (!coordinator.pending) versions.current.record = initial.record.version
+  }, [coordinator, initial.record.version, initial.session.version])
   useEffect(() => {
     const online = () => {
         setOffline(false)
@@ -184,7 +325,32 @@ function TrainingEditor({
   useEffect(() => {
     void store
       .list(session.user.id, initial.session.id)
-      .then((items) => setRecovery(items.find((x) => x.tabId !== tabId.current) ?? null))
+      .then(async (items) => {
+        const candidate = items.find((item) => item.tabId !== tabId.current)
+        if (!candidate) return
+        if (sameTrainingContent(candidate.payload, toDraft(initial))) {
+          await store.deleteSession(session.user.id, initial.session.id)
+          return
+        }
+        if (
+          candidate.schemaVersion === DRAFT_SCHEMA_VERSION &&
+          candidate.payload.recordVersion === initial.record.version &&
+          candidate.payload.sessionVersion === initial.session.version
+        ) {
+          latest.current = candidate.payload
+          revisionRef.current = Math.max(1, candidate.revision)
+          setDraft(candidate.payload)
+          setRevision(revisionRef.current)
+          setNotice('已恢復尚未同步的內容，系統會繼續自動儲存。')
+          return
+        }
+        conflictRef.current = true
+        latest.current = candidate.payload
+        revisionRef.current = Math.max(1, candidate.revision)
+        setDraft(candidate.payload)
+        setRevision(revisionRef.current)
+        setSaveState('conflict')
+      })
       .catch(() => setStorageError(true))
   }, [initial.session.id, session.user.id, store])
   useEffect(() => {
@@ -195,18 +361,14 @@ function TrainingEditor({
       sessionVersion: versions.current.session,
       operationId: draft.operationId
     }
-    const local: StoredTrainingDraft = {
+    const local = storedDraft({
       key,
-      schemaVersion: DRAFT_SCHEMA_VERSION,
-      environment: import.meta.env.MODE,
       coachId: session.user.id,
       sessionId: initial.session.id,
       tabId: tabId.current,
       revision,
-      savedAt: Date.now(),
-      expiresAt: Date.now() + DRAFT_TTL_MS,
       payload
-    }
+    })
     void store
       .put(local)
       .then(() => setStorageError(false))
@@ -216,8 +378,7 @@ function TrainingEditor({
         { environment: import.meta.env.MODE, coachId: session.user.id },
         'operation',
         'training',
-        initial.session.id,
-        tabId.current
+        initial.session.id
       )
       void payloadFingerprint(payload)
         .then((payloadHash) => {
@@ -259,9 +420,12 @@ function TrainingEditor({
     addEventListener('beforeunload', before)
     return () => removeEventListener('beforeunload', before)
   }, [coordinator])
+  useEffect(() => () => void coordinator.flush().catch(() => undefined), [coordinator])
   const change = (next: TrainingDraftPayload) => {
+    latest.current = next
+    revisionRef.current += 1
     setDraft(next)
-    setRevision((x) => x + 1)
+    setRevision(revisionRef.current)
     setSaveState('pending')
   }
   const addDefinition = (definition: ExerciseDefinition) => {
@@ -282,6 +446,8 @@ function TrainingEditor({
     setPicker(false)
   }
   const complete = async () => {
+    if (completing) return
+    setCompleting(true)
     try {
       await coordinator.flush()
       const payload = {
@@ -296,10 +462,12 @@ function TrainingEditor({
         complete: true
       })
       versions.current = { record: accepted.record.version, session: accepted.session.version }
-      await store.delete(key)
-      setNotice('課程已完成。')
+      await store.deleteSession(session.user.id, initial.session.id)
+      setNotice('')
     } catch (error) {
       setSaveState(error instanceof ApiError && error.status === 409 ? 'conflict' : 'error')
+    } finally {
+      setCompleting(false)
     }
   }
   const reopen = () =>
@@ -311,174 +479,235 @@ function TrainingEditor({
       {
         onSuccess: (accepted) => {
           versions.current.session = accepted.session.version!
-          setNotice('課程已改回待上課。')
+          setNotice('')
         }
       }
     )
+  const statusText =
+    saveState === 'conflict'
+      ? '儲存衝突'
+      : offline
+        ? '離線中，恢復連線後會繼續儲存。'
+        : saveState === 'pending' || saveState === 'saving'
+          ? '儲存中…'
+          : saveState === 'error' || saveState === 'retrying'
+            ? '暫時無法同步，系統會在背景重試。'
+            : '已儲存'
+  const completedSets = draft.exercises.reduce(
+    (count, exercise) => count + exercise.sets.filter((set) => set.result !== null).length,
+    0
+  )
+  const totalSets = draft.exercises.reduce((count, exercise) => count + exercise.sets.length, 0)
+  const trend = initial.exerciseSummaries.find((summary) => summary.occurrenceId === trendId)
   return (
-    <section className="training-workspace">
-      <header className="training-heading">
-        <div>
-          <span>TRAINING LOG</span>
-          <h2>訓練紀錄</h2>
-        </div>
-        <div className={`save-indicator ${saveState}`} role="status" aria-live="polite">
-          {saveState === 'saving'
-            ? '儲存中…'
-            : saveState === 'saved'
-              ? '已儲存'
-              : saveState === 'conflict'
-                ? '紀錄已在其他裝置變更；你的草稿仍保留。'
-                : offline
-                  ? '離線中，草稿已保留於此裝置。'
-                  : saveState === 'error'
-                    ? '暫時無法儲存，草稿已保留。'
-                    : ''}
+    <section className="session-workspace">
+      <header className="session-topbar">
+        <button className="session-back-button" onClick={onBack}>
+          <ChevronLeft />
+          返回
+        </button>
+        <Link
+          className="session-title"
+          to={`/students/${initial.session.studentId}`}
+          aria-label={`前往${initial.session.studentName}的學生頁面`}
+        >
+          <span className="mini-avatar">{initial.session.studentName.slice(-2)}</span>
+          <span>
+            <strong>{initial.session.studentName}</strong>
+            <small>
+              {formatSessionRange(initial.session.startsAt, initial.session.endsAt, timeZone)}
+            </small>
+          </span>
+        </Link>
+        <div className="session-top-actions">
+          {headerActions}
+          <span className={`session-save-status ${saveState}`} role="status" aria-live="polite">
+            {saveState === 'saved' || saveState === 'idle' ? <Check /> : null}
+            {statusText}
+          </span>
         </div>
       </header>
-      {refreshing && <p className="refresh-note">正在更新紀錄…</p>}
-      {storageError && <p className="notice error">無法保留本機草稿，請保持此頁開啟並重試儲存。</p>}
-      {recovery && (
-        <section className="recovery-banner">
-          <div>
-            <strong>有尚未送出的草稿。</strong>
-            <p>本機草稿保留至最後編輯後 7 天。</p>
+      {sessionNotice ? (
+        <p className="session-feedback" role="status">
+          {sessionNotice}
+        </p>
+      ) : null}
+      <div className="session-body">
+        <aside className="session-context">
+          <div className="session-context-summary">
+            <CalendarClock aria-hidden="true" />
+            <div>
+              <span>{formatSessionDate(initial.session.startsAt, timeZone)}</span>
+              <h1>
+                {formatSessionTime(initial.session.startsAt, initial.session.endsAt, timeZone)}
+                <small>{initial.session.studentName}</small>
+              </h1>
+              <p>
+                <MapPin aria-hidden="true" />
+                {initial.session.location}
+                <span aria-hidden="true">·</span>
+                <span className={`state-indicator ${initial.session.status}`} />
+                {initial.session.status === 'completed'
+                  ? '已完成'
+                  : initial.session.status === 'cancelled'
+                    ? '已取消'
+                    : '進行中'}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={() => {
-              if (
-                recovery.schemaVersion === DRAFT_SCHEMA_VERSION &&
-                recovery.payload.recordVersion === initial.record.version &&
-                recovery.payload.sessionVersion === initial.session.version
-              ) {
-                setDraft(recovery.payload)
-                setRevision(recovery.revision)
-                setRecovery(null)
-              } else {
-                conflictRef.current = true
-                setSaveState('conflict')
-              }
-            }}
-          >
-            恢復草稿
-          </button>
-          <button onClick={() => void store.delete(recovery.key).then(() => setRecovery(null))}>
-            捨棄草稿
-          </button>
-        </section>
-      )}
-      {saveState === 'conflict' && (
-        <section className="conflict-banner">
-          <strong>紀錄已在其他裝置變更；你的草稿仍保留。</strong>
-          <button
-            onClick={() => {
-              onRefresh()
-              setNotice('已載入最新紀錄，草稿仍保留於此裝置。')
-            }}
-          >
-            保留草稿並檢視最新紀錄
-          </button>
-          <button
-            onClick={() => {
-              if (confirm('捨棄本機草稿？')) {
-                void store.delete(key).then(() => location.reload())
-              }
-            }}
-          >
-            捨棄草稿，載入最新紀錄
-          </button>
-        </section>
-      )}
-      {draft.exercises.length === 0 ? (
-        <section className="training-empty">
-          <Dumbbell />
-          <h3>尚未安排動作</h3>
-          <p>加入第一個動作，開始記錄這堂課的訓練。</p>
-          <button className="primary-button compact" onClick={() => setPicker(true)}>
-            <Plus />
-            加入動作
-          </button>
-        </section>
-      ) : (
-        <div className="exercise-stack">
-          {draft.exercises.map((exercise, index) => (
-            <ExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              summary={initial.exerciseSummaries.find((x) => x.occurrenceId === exercise.id)}
-              defaultUnit={initial.defaultWeightUnit}
-              onChange={(next) =>
-                change({
-                  ...draft,
-                  exercises: draft.exercises.map((x, i) => (i === index ? next : x)),
-                  operationId: crypto.randomUUID()
-                })
-              }
-              onRemove={() => {
-                if (!exercise.sets.length || confirm('移除這個動作與所有組數？'))
-                  change({
-                    ...draft,
-                    exercises: draft.exercises.filter((_, i) => i !== index),
-                    operationId: crypto.randomUUID()
-                  })
-              }}
-            />
-          ))}
-        </div>
-      )}
-      {draft.exercises.length > 0 && (
-        <button className="secondary-button add-exercise" onClick={() => setPicker(true)}>
-          <Plus />
-          加入動作
-        </button>
-      )}
-      <label className="training-note">
-        <span>教練私人筆記</span>
-        <small>僅供你查看。</small>
-        <textarea
-          maxLength={5000}
-          value={draft.privateNote}
-          onChange={(e) =>
-            change({ ...draft, privateNote: e.target.value, operationId: crypto.randomUUID() })
-          }
-        />
-        <small>{draft.privateNote.length} / 5000</small>
-      </label>
-      <div className="training-sticky-actions">
-        {offline && (
-          <span>
-            <WifiOff />
-            離線中
-          </span>
-        )}
-        <button
-          className="secondary-button"
-          disabled={mutations.save.isPending || offline}
-          onClick={() => void coordinator.flush()}
-        >
-          {saveState === 'saving' || mutations.save.isPending ? '儲存中…' : '儲存紀錄'}
-        </button>
-        {initial.allowedActions.canComplete && (
-          <button
-            className="primary-button compact"
-            disabled={mutations.save.isPending || offline}
-            onClick={() => void complete()}
-          >
-            <Check />
-            完成上課
-          </button>
-        )}
-        {initial.allowedActions.canReopen && (
-          <button
-            className="secondary-button"
-            disabled={scheduling.transitionSession.isPending || offline}
-            onClick={reopen}
-          >
-            <RotateCcw />
-            改回待上課
-          </button>
-        )}
+          <div className="context-stat">
+            <span>訓練動作</span>
+            <p>
+              {draft.exercises.length
+                ? draft.exercises.map((exercise) => exercise.definitionName).join(', ')
+                : '尚未安排動作'}
+              <small>共 {draft.exercises.length} 項</small>
+            </p>
+          </div>
+          <div className="context-divider" />
+          <label className="session-note-label" htmlFor="session-private-note">
+            NOTE
+          </label>
+          <textarea
+            id="session-private-note"
+            className="note-area"
+            maxLength={5000}
+            value={draft.privateNote}
+            onChange={(event) =>
+              change({
+                ...draft,
+                privateNote: event.target.value,
+                operationId: crypto.randomUUID()
+              })
+            }
+            placeholder="輸入本堂 Note…"
+          />
+          <small className="session-note-count">{draft.privateNote.length} / 5000</small>
+        </aside>
+        <main className="training-editor">
+          <header className="training-heading">
+            <div>
+              <span>TRAINING LOG</span>
+              <h2>訓練紀錄</h2>
+              <p>設定本組重量與目標次數，再記錄實際完成次數。</p>
+            </div>
+            <button className="primary-button compact" onClick={() => setPicker(true)}>
+              <Plus />
+              加入動作
+            </button>
+          </header>
+          {storageError && (
+            <p className="notice error">此裝置暫時無法保護尚未同步的內容，請保持頁面開啟。</p>
+          )}
+          {saveState === 'conflict' && (
+            <section className="conflict-banner">
+              <strong>這堂課在其他裝置已有較新的紀錄。</strong>
+              <p>目前輸入已安全保留。只有選擇採用目前內容時，才會更新伺服器紀錄。</p>
+              <button
+                onClick={async () => {
+                  const latestServer = await onRefresh()
+                  if (!latestServer) {
+                    setNotice('暫時無法取得最新紀錄，系統會繼續保留目前輸入。')
+                    return
+                  }
+                  versions.current = {
+                    record: latestServer.record.version,
+                    session: latestServer.session.version
+                  }
+                  conflictRef.current = false
+                  coordinator.abandonOutstanding()
+                  change({ ...draft, operationId: crypto.randomUUID() })
+                }}
+              >
+                採用目前內容
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('載入伺服器上的最新紀錄？目前尚未同步的輸入將被捨棄。')) {
+                    void store
+                      .deleteSession(session.user.id, initial.session.id)
+                      .then(() => location.reload())
+                  }
+                }}
+              >
+                載入最新紀錄
+              </button>
+            </section>
+          )}
+          {draft.exercises.length === 0 ? (
+            <section className="training-empty">
+              <Dumbbell />
+              <h3>尚未安排動作</h3>
+              <p>加入第一個動作，開始記錄這堂課的訓練。</p>
+              <button className="primary-button compact" onClick={() => setPicker(true)}>
+                <Plus />
+                加入動作
+              </button>
+            </section>
+          ) : (
+            <div className="exercise-stack">
+              {draft.exercises.map((exercise, index) => (
+                <ExerciseCard
+                  key={exercise.id}
+                  exercise={exercise}
+                  summary={initial.exerciseSummaries.find((x) => x.occurrenceId === exercise.id)}
+                  details={initial.record.exercises.find((x) => x.id === exercise.id)}
+                  defaultUnit={initial.defaultWeightUnit}
+                  index={index}
+                  onShowTrend={() => setTrendId(exercise.id)}
+                  onChange={(next) =>
+                    change({
+                      ...draft,
+                      exercises: draft.exercises.map((x, i) => (i === index ? next : x)),
+                      operationId: crypto.randomUUID()
+                    })
+                  }
+                  onRemove={() => {
+                    if (!exercise.sets.length || confirm('移除這個動作與所有組數？'))
+                      change({
+                        ...draft,
+                        exercises: draft.exercises.filter((_, i) => i !== index),
+                        operationId: crypto.randomUUID()
+                      })
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </main>
       </div>
+      <footer className="session-bottom">
+        <div>
+          <span>
+            {completedSets} / {totalSets}
+          </span>{' '}
+          組已記錄
+        </div>
+        <div>
+          {offline && (
+            <span>
+              <WifiOff />
+              離線中
+            </span>
+          )}
+          {initial.allowedActions.canComplete && (
+            <SessionLifecycleButton
+              action="complete"
+              pending={completing}
+              offline={offline}
+              onClick={() => void complete()}
+            />
+          )}
+          {initial.allowedActions.canReopen && (
+            <SessionLifecycleButton
+              action="reopen"
+              pending={scheduling.transitionSession.isPending}
+              offline={offline}
+              onClick={reopen}
+            />
+          )}
+        </div>
+      </footer>
       {notice && (
         <p className="form-notice" role="status">
           {notice}
@@ -487,20 +716,125 @@ function TrainingEditor({
       {picker && (
         <ExercisePicker session={session} onPick={addDefinition} onClose={() => setPicker(false)} />
       )}
+      {trend ? (
+        <PerformanceTrend
+          name={
+            initial.record.exercises.find((exercise) => exercise.id === trend.occurrenceId)
+              ?.definitionName ?? '成長軌跡'
+          }
+          summary={trend}
+          onClose={() => setTrendId(null)}
+        />
+      ) : null}
     </section>
+  )
+}
+
+export function SessionLifecycleButton({
+  action,
+  pending,
+  offline,
+  onClick
+}: {
+  action: 'complete' | 'reopen'
+  pending: boolean
+  offline: boolean
+  onClick: () => void
+}) {
+  const complete = action === 'complete'
+  return (
+    <button
+      className={`${complete ? 'primary-button compact' : 'secondary-button'} session-lifecycle-button${pending ? ' is-processing' : ''}`}
+      disabled={pending || offline}
+      aria-busy={pending}
+      onClick={onClick}
+    >
+      {pending ? <LoaderCircle className="button-spinner" /> : complete ? <Check /> : <RotateCcw />}
+      {pending ? '處理中…' : complete ? '完成上課' : '改回未完成'}
+    </button>
+  )
+}
+
+function PerformanceTrend({
+  name,
+  summary,
+  onClose
+}: {
+  name: string
+  summary: SessionTraining['exerciseSummaries'][number]
+  onClose: () => void
+}) {
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
+    focusDialog: true
+  })
+  const values = summary.history.map((point) => point.value)
+  const maximum = Math.max(...values, 1)
+  return (
+    <div className="dialog-backdrop" role="presentation" onPointerDown={onBackdropPointerDown}>
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="performance-trend"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="performance-trend-title"
+      >
+        <header>
+          <div>
+            <span>PERFORMANCE</span>
+            <h2 id="performance-trend-title">{name}成長軌跡</h2>
+          </div>
+          <button className="icon-button" aria-label="關閉" onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        {summary.history.length ? (
+          <>
+            <div className="trend-chart" aria-hidden="true">
+              {summary.history.map((point) => (
+                <i
+                  key={`${point.sessionId}-${point.startsAt}`}
+                  style={{ height: `${Math.max(8, (point.value / maximum) * 100)}%` }}
+                />
+              ))}
+            </div>
+            <ul className="trend-values">
+              {summary.history.map((point) => (
+                <li key={`${point.sessionId}-${point.startsAt}`}>
+                  <span>
+                    {new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium' }).format(
+                      new Date(point.startsAt)
+                    )}
+                  </span>
+                  <strong>{formatValue(point.value, summary.metric, point.unit)}</strong>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="empty-state">完成更多課程後，這裡會顯示成長軌跡。</p>
+        )}
+      </section>
+    </div>
   )
 }
 
 function ExerciseCard({
   exercise,
   summary,
+  details,
   defaultUnit,
+  index,
+  onShowTrend,
   onChange,
   onRemove
 }: {
   exercise: TrainingDraftPayload['exercises'][number]
   summary: SessionTraining['exerciseSummaries'][number] | undefined
+  details: SessionTraining['record']['exercises'][number] | undefined
   defaultUnit: 'kg' | 'lb'
+  index: number
+  onShowTrend: () => void
   onChange: (value: TrainingDraftPayload['exercises'][number]) => void
   onRemove: () => void
 }) {
@@ -525,44 +859,62 @@ function ExerciseCard({
   return (
     <article className="training-exercise-card">
       <header>
-        <div>
-          <span>{exercise.sets.length} SETS</span>
+        <span className="exercise-number">{String(index + 1).padStart(2, '0')}</span>
+        <div className="exercise-identity">
           <h3>{exercise.definitionName || '訓練動作'}</h3>
+          <small>
+            {details ? `${details.bodyParts.join('、')} · ${details.equipment}` : '訓練動作'}
+          </small>
         </div>
+        {summary ? (
+          <div className="exercise-performance-inline">
+            <div>
+              <span>本次 / 上次 最佳</span>
+              <strong>
+                {formatValue(summary.current, summary.metric, summary.unit)} /{' '}
+                {formatValue(summary.previous, summary.metric, summary.unit)}
+              </strong>
+            </div>
+            <div>
+              <span>個人最佳</span>
+              <strong>{formatValue(summary.personal, summary.metric, summary.unit)}</strong>
+            </div>
+            <button type="button" onClick={onShowTrend}>
+              <TrendingUp /> 成長軌跡
+            </button>
+          </div>
+        ) : null}
         <button className="icon-button" aria-label="移除動作" onClick={onRemove}>
-          <Trash2 />
+          <XCircle />
         </button>
       </header>
-      {summary && (
-        <div className="performance-strip">
-          <span>
-            本次最佳 <strong>{formatValue(summary.current, summary.metric, summary.unit)}</strong>
-          </span>
-          <span>
-            上次最佳 <strong>{formatValue(summary.previous, summary.metric, summary.unit)}</strong>
-          </span>
-          <span>
-            個人最佳 <strong>{formatValue(summary.personal, summary.metric, summary.unit)}</strong>
-          </span>
+      <div className="training-sets-scroll">
+        <div className="training-set-head" aria-hidden="true">
+          <span>組</span>
+          <span>重量 / 計畫次數</span>
+          <span>實際次數</span>
+          <span>RPE</span>
+          <span>結果</span>
+          <span />
         </div>
-      )}
-      {exercise.sets.map((set, index) => (
-        <SetCard
-          key={set.id}
-          index={index}
-          set={set}
-          onChange={(next) =>
-            onChange({ ...exercise, sets: exercise.sets.map((x, i) => (i === index ? next : x)) })
-          }
-          onRemove={() =>
-            onChange({ ...exercise, sets: exercise.sets.filter((_, i) => i !== index) })
-          }
-        />
-      ))}
-      <button className="text-button set-add" onClick={addSet}>
-        <Plus />
-        新增一組
-      </button>
+        {exercise.sets.map((set, index) => (
+          <SetCard
+            key={set.id}
+            index={index}
+            set={set}
+            onChange={(next) =>
+              onChange({ ...exercise, sets: exercise.sets.map((x, i) => (i === index ? next : x)) })
+            }
+            onRemove={() =>
+              onChange({ ...exercise, sets: exercise.sets.filter((_, i) => i !== index) })
+            }
+          />
+        ))}
+        <button className="text-button set-add" onClick={addSet}>
+          <Plus />
+          新增一組
+        </button>
+      </div>
     </article>
   )
 }
@@ -579,45 +931,42 @@ function SetCard({
 }) {
   const number = (value: string) => (value === '' ? null : Number(value))
   return (
-    <div className="training-set-card">
-      <strong>第 {index + 1} 組</strong>
-      <label>
-        工作重量
-        <input
-          inputMode="decimal"
-          type="number"
-          min="0"
-          max="10000"
-          step="0.001"
-          value={set.plannedWeight ?? ''}
-          onChange={(e) => onChange({ ...set, plannedWeight: number(e.target.value) })}
-        />
-      </label>
-      <label>
-        單位
-        <FormSelect
-          label="單位"
-          value={set.unit}
-          onChange={(value) => onChange({ ...set, unit: value as 'kg' | 'lb' })}
-          options={[
-            { value: 'kg', label: 'kg' },
-            { value: 'lb', label: 'lb' }
-          ]}
-        />
-      </label>
-      <label>
-        目標次數
-        <input
-          inputMode="numeric"
-          type="number"
-          min="0"
-          max="10000"
-          value={set.plannedReps ?? ''}
-          onChange={(e) => onChange({ ...set, plannedReps: number(e.target.value) })}
-        />
-      </label>
-      <label>
-        實際次數
+    <div className={`training-set-card ${set.result ?? ''}`}>
+      <strong>{index + 1}</strong>
+      <div className="planned-inputs">
+        <label aria-label="工作重量">
+          <input
+            inputMode="decimal"
+            type="number"
+            min="0"
+            max="10000"
+            step="0.001"
+            value={set.plannedWeight ?? ''}
+            onChange={(e) => onChange({ ...set, plannedWeight: number(e.target.value) })}
+          />
+          <FormSelect
+            label="單位"
+            value={set.unit}
+            onChange={(value) => onChange({ ...set, unit: value as 'kg' | 'lb' })}
+            options={[
+              { value: 'kg', label: 'kg' },
+              { value: 'lb', label: 'lb' }
+            ]}
+          />
+        </label>
+        <span>×</span>
+        <label aria-label="目標次數">
+          <input
+            inputMode="numeric"
+            type="number"
+            min="0"
+            max="10000"
+            value={set.plannedReps ?? ''}
+            onChange={(e) => onChange({ ...set, plannedReps: number(e.target.value) })}
+          />
+        </label>
+      </div>
+      <label aria-label="實際次數">
         <input
           inputMode="numeric"
           type="number"
@@ -639,8 +988,7 @@ function SetCard({
           }}
         />
       </label>
-      <label>
-        RPE（自覺用力程度，1–10）
+      <label aria-label="RPE（自覺用力程度，1–10）">
         <input
           inputMode="decimal"
           type="number"
@@ -662,6 +1010,7 @@ function SetCard({
             })
           }
         >
+          <Check />
           已完成
         </button>
         <button
@@ -674,11 +1023,12 @@ function SetCard({
             })
           }
         >
+          <XCircle />
           未完成
         </button>
       </div>
       <button className="icon-button" aria-label={`移除第 ${index + 1} 組`} onClick={onRemove}>
-        <X />
+        <XCircle />
       </button>
     </div>
   )
@@ -786,6 +1136,35 @@ function toDraft(value: SessionTraining): TrainingDraftPayload {
     operationId: crypto.randomUUID()
   }
 }
+function storedDraft({
+  key,
+  coachId,
+  sessionId,
+  tabId,
+  revision,
+  payload
+}: {
+  key: string
+  coachId: string
+  sessionId: string
+  tabId: string
+  revision: number
+  payload: TrainingDraftPayload
+}): StoredTrainingDraft {
+  const now = Date.now()
+  return {
+    key,
+    schemaVersion: DRAFT_SCHEMA_VERSION,
+    environment: import.meta.env.MODE,
+    coachId,
+    sessionId,
+    tabId,
+    revision,
+    savedAt: now,
+    expiresAt: now + DRAFT_TTL_MS,
+    payload
+  }
+}
 function valid(value: TrainingDraftPayload) {
   return (
     value.privateNote.length <= 5000 &&
@@ -813,4 +1192,47 @@ function valid(value: TrainingDraftPayload) {
 }
 function formatValue(value: number | null, metric: 'weight' | 'reps', unit: 'kg' | 'lb' | null) {
   return value === null ? '尚無紀錄' : `${value}${metric === 'weight' ? ` ${unit}` : ' 次'}`
+}
+
+function formatSessionRange(startsAt: string, endsAt: string, timeZone?: string) {
+  const date = new Intl.DateTimeFormat('zh-TW', {
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    timeZone
+  }).format(new Date(startsAt))
+  const time = (value: string) =>
+    new Intl.DateTimeFormat('zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone
+    }).format(new Date(value))
+  return `${addWeekdaySpace(date)} · ${time(startsAt)}–${time(endsAt)}`
+}
+
+function formatSessionDate(startsAt: string, timeZone: string) {
+  const date = new Intl.DateTimeFormat('zh-TW', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+    timeZone
+  }).format(new Date(startsAt))
+  return addWeekdaySpace(date)
+}
+
+function addWeekdaySpace(value: string) {
+  return value.replace(/日(?=(?:星期|週))/, '日 ')
+}
+
+function formatSessionTime(startsAt: string, endsAt: string, timeZone: string) {
+  const time = (value: string) =>
+    new Intl.DateTimeFormat('zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone
+    }).format(new Date(value))
+  return `${time(startsAt)}–${time(endsAt)}`
 }

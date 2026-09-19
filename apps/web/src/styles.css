@@ -671,6 +671,12 @@
 .recovery-banner div {
   margin-right: auto;
 }
+.recovery-banner .recovery-action {
+  min-height: 40px;
+  padding-inline: 14px;
+  font-size: 12px;
+  white-space: nowrap;
+}
 .dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -1124,9 +1130,6 @@
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
   padding: 9px 0;
-}
-.refresh-note {
-  color: var(--muted);
 }
 @media (max-width: 900px) {
   .library-grid {
@@ -4421,22 +4424,21 @@ textarea:focus {
 
 .danger-confirmation {
   position: fixed;
-  z-index: 60;
+  z-index: 90;
   inset: 0;
   display: grid;
   place-items: center;
   padding: 24px;
   background: rgba(32, 14, 10, 0.68);
-  backdrop-filter: blur(8px);
 }
 
 .danger-confirmation-card {
   width: min(430px, 100%);
   padding: 28px;
-  border: 1px solid rgba(183, 67, 47, 0.44);
-  border-radius: 18px;
-  background: #fffaf5;
-  box-shadow: 0 28px 90px rgba(34, 12, 8, 0.4);
+  border: 1px solid rgba(169, 54, 40, 0.28);
+  border-radius: 22px;
+  background: #faf9f4;
+  box-shadow: 0 28px 90px rgba(34, 12, 8, 0.34);
 }
 
 .danger-confirmation-card h2,
@@ -4447,6 +4449,15 @@ textarea:focus {
 
 .danger-confirmation-card p {
   color: #65433a;
+  line-height: 1.65;
+}
+
+.danger-confirmation-shortcuts {
+  margin-top: 14px;
+  display: block;
+  color: #857a72;
+  font-size: 10px;
+  letter-spacing: 0.02em;
 }
 
 .danger-confirmation-card form {
@@ -4474,9 +4485,22 @@ textarea:focus {
 }
 
 .danger-confirm-button {
-  border: 0;
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid #a93628;
+  border-radius: 9px;
   background: #a93628;
   color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.danger-confirm-button:hover:not(:disabled) {
+  background: #8f2b20;
+  transform: translateY(-1px);
 }
 
 .danger-confirm-button:disabled {
@@ -5092,6 +5116,1034 @@ textarea:focus {
   .security-action-row,
   .password-fields {
     grid-template-columns: 1fr;
+  }
+}
+
+/* M7.5 Session workspace: route-scoped FORM workbench convergence. */
+.session-workspace {
+  min-height: 100vh;
+  padding-bottom: 76px;
+  background: #eae8df;
+}
+
+.session-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  min-height: 74px;
+  padding: 0 30px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  background: #faf9f4;
+}
+
+.session-back-button {
+  justify-self: start;
+  padding: 1px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.session-back-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.session-title {
+  padding: 6px 9px 6px 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: 160ms ease;
+}
+
+.session-title:hover,
+.session-title:focus-visible {
+  border-color: rgba(151, 177, 39, 0.45);
+  outline: 0;
+  background: rgba(217, 255, 67, 0.16);
+  transform: translateY(-1px);
+}
+
+.session-title .mini-avatar {
+  width: 33px;
+  height: 33px;
+}
+
+.session-title > span:last-child,
+.session-title strong,
+.session-title small {
+  display: block;
+}
+
+.session-title strong {
+  font-size: 11px;
+}
+
+.session-title small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.session-top-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.session-top-actions button {
+  min-height: 36px;
+  padding: 0 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.session-top-actions button:hover:not(:disabled) {
+  border-color: #a8bd45;
+  background: rgba(217, 255, 67, 0.16);
+}
+
+.session-top-actions button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.session-top-actions .session-more-action {
+  padding-inline: 9px;
+  color: #9f4a3d;
+}
+
+.session-save-status {
+  min-width: 66px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  color: #85877d;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.session-save-status svg {
+  width: 12px;
+  height: 12px;
+  color: #718329;
+}
+
+.session-save-status.error,
+.session-save-status.conflict {
+  color: var(--red);
+}
+
+.session-feedback {
+  margin: 0;
+  padding: 9px 30px;
+  color: #363b24;
+  border-bottom: 1px solid #c9d58e;
+  background: #e4efb6;
+  font-size: 10px;
+  text-align: center;
+}
+
+.session-body {
+  min-height: calc(100vh - 150px);
+  display: grid;
+  grid-template-columns: clamp(320px, 29vw, 410px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.session-context {
+  position: sticky;
+  top: 74px;
+  height: calc(100vh - 150px);
+  padding: 29px 32px 26px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  color: #f2f2ec;
+  background: var(--ink);
+}
+
+.session-note-label {
+  color: #8b8f80;
+  font:
+    500 10px/1.2 'DM Mono',
+    monospace;
+  letter-spacing: 0.16em;
+}
+
+.session-context h1 {
+  margin: 12px 0 9px;
+  font-size: 29px;
+  letter-spacing: -0.05em;
+}
+
+.session-context-summary {
+  margin: 0 0 5px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.session-context-summary > svg {
+  width: 25px;
+  height: 25px;
+  margin-top: 22px;
+  color: var(--lime);
+}
+
+.session-context-summary > div > span {
+  color: #a9ad9f;
+  font-size: 13px;
+}
+
+.session-context-summary h1 {
+  margin: 7px 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  font-size: clamp(21px, 1.7vw, 25px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.session-context-summary h1 small {
+  color: #f2f2ec;
+  font-size: inherit;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.session-context-summary p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #a9ad9f;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.session-context-summary p svg {
+  width: 15px;
+  height: 15px;
+  color: var(--lime);
+}
+
+.session-context-summary p .state-indicator {
+  margin-left: 3px;
+}
+
+.session-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9a9e91;
+  font-size: 9px;
+}
+
+.state-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 4px rgba(240, 189, 77, 0.12);
+}
+
+.state-indicator.completed {
+  background: var(--lime);
+  box-shadow: 0 0 0 4px rgba(217, 255, 67, 0.12);
+}
+
+.state-indicator.cancelled {
+  background: var(--red);
+  box-shadow: 0 0 0 4px rgba(232, 91, 67, 0.12);
+}
+
+.context-stat {
+  margin-top: 20px;
+  padding-bottom: 15px;
+  display: grid;
+  gap: 7px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.context-stat > span {
+  color: #777c6e;
+  font-size: 9px;
+}
+
+.context-stat p {
+  margin: 0;
+  color: #d8dbcf;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.context-stat small {
+  margin-left: 8px;
+  color: #8b8f83;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.context-divider {
+  height: 28px;
+}
+
+.session-note-label {
+  margin-bottom: 10px;
+}
+
+.note-area {
+  width: 100%;
+  min-height: 260px;
+  flex: 1;
+  padding: 15px;
+  resize: vertical;
+  color: #d8dbcf;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.session-context .note-area:focus {
+  color: #f2f2ec;
+  border-color: rgba(217, 255, 67, 0.42);
+  outline: 0;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+
+.session-context .note-area::selection {
+  color: var(--ink);
+  background: var(--lime);
+}
+
+.session-note-count {
+  margin-top: 6px;
+  color: #777c6e;
+  font:
+    500 8px/1 'DM Mono',
+    monospace;
+}
+
+.training-editor {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 35px 38px 50px;
+}
+
+.session-workspace .training-heading {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.session-workspace .training-heading h2 {
+  margin: 0 0 5px;
+  font-size: 27px;
+  letter-spacing: -0.05em;
+}
+
+.session-workspace .training-heading > div > span {
+  display: block;
+  margin-bottom: 9px;
+  color: #838579;
+  font:
+    500 10px/1.2 'DM Mono',
+    monospace;
+  letter-spacing: 0.16em;
+}
+
+.session-workspace .training-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.session-workspace .training-heading .primary-button {
+  min-height: 42px;
+  padding-inline: 17px;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid #c6ea39;
+  border-radius: 7px;
+  box-shadow: 0 9px 24px rgba(173, 205, 42, 0.2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.training-status-detail {
+  margin: -10px 0 15px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.session-workspace .exercise-stack {
+  gap: 15px;
+}
+
+.session-workspace .training-exercise-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--white);
+  box-shadow: 0 11px 25px rgba(21, 23, 17, 0.055);
+}
+
+.session-workspace .training-exercise-card > header {
+  min-height: 72px;
+  padding: 0 18px;
+  display: grid;
+  grid-template-columns: 36px minmax(150px, 1fr) auto 35px;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.session-workspace .training-exercise-card > header > .icon-button {
+  width: 38px;
+  height: 38px;
+  background: transparent;
+}
+
+.session-workspace .exercise-number {
+  color: #9a9c93;
+  font:
+    500 9px/1 'DM Mono',
+    monospace;
+}
+
+.session-workspace .exercise-identity {
+  min-width: 0;
+  display: grid;
+}
+
+.session-workspace .exercise-identity h3 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-workspace .exercise-identity small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.exercise-performance-inline {
+  display: flex;
+  align-items: center;
+}
+
+.exercise-performance-inline > div {
+  min-width: 122px;
+  padding: 0 15px;
+  border-left: 1px solid var(--line);
+}
+
+.exercise-performance-inline span {
+  display: block;
+  color: #85887e;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.exercise-performance-inline strong {
+  display: block;
+  margin-top: 4px;
+  font:
+    600 10px/1.2 'DM Mono',
+    monospace;
+  white-space: nowrap;
+}
+
+.exercise-performance-inline button {
+  min-height: 33px;
+  margin-left: 8px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--ink);
+  border: 0;
+  border-radius: 99px;
+  background: #edf5c8;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.exercise-performance-inline button:hover {
+  background: var(--lime);
+}
+
+.exercise-performance-inline button svg {
+  width: 14px;
+}
+
+.training-sets-scroll {
+  overflow-x: auto;
+  padding: 5px 18px 13px;
+}
+
+.training-set-head,
+.session-workspace .training-set-card {
+  display: grid;
+  grid-template-columns: 35px 1.35fr 0.82fr 0.62fr minmax(150px, 1.2fr) 32px;
+  align-items: center;
+  gap: 11px;
+}
+
+.training-set-head {
+  min-height: 35px;
+  color: #9a9c94;
+  font-size: 8px;
+}
+
+.session-workspace .training-set-card {
+  min-height: 52px;
+  padding: 0;
+  border-bottom: 0;
+  border-top: 1px solid rgba(21, 23, 17, 0.08);
+}
+
+.session-workspace .training-set-card > strong {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--paper-2);
+  font:
+    500 10px/1 'DM Mono',
+    monospace;
+}
+
+.session-workspace .training-set-card label {
+  height: 34px;
+  margin: 0;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #f1efe9;
+}
+
+.session-workspace .training-set-card label:focus-within {
+  border-color: transparent;
+  background: #f1efe9;
+  box-shadow: none;
+}
+
+.session-workspace .training-set-card input {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font:
+    500 11px/1 'DM Mono',
+    monospace;
+}
+
+.session-workspace .planned-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.session-workspace .planned-inputs > span {
+  color: #9b9d95;
+  font-size: 9px;
+}
+
+.session-workspace .planned-inputs label:first-child {
+  padding-right: 3px;
+}
+
+.session-workspace .planned-inputs .form-select {
+  width: 18px;
+  flex: 0 0 18px;
+}
+
+.session-workspace .planned-inputs .form-select-trigger {
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 8px;
+}
+
+.session-workspace .planned-inputs .form-select-trigger svg {
+  display: none;
+}
+
+.session-workspace .result-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+}
+
+.session-workspace .result-toggle button {
+  min-height: 30px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #8b8e84;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.session-workspace .result-toggle button svg {
+  width: 11px;
+}
+
+.session-workspace .result-toggle button[aria-pressed='true']:first-child {
+  color: var(--ink);
+  border-color: #a9c920;
+  background: var(--lime);
+}
+
+.session-workspace .result-toggle button[aria-pressed='true']:last-child {
+  color: #9e3425;
+  border-color: #e8a99d;
+  background: #fff0ec;
+}
+
+.session-workspace .training-set-card > .icon-button {
+  width: 28px;
+  height: 28px;
+  color: #a6a8a0;
+  background: transparent;
+}
+
+.session-workspace .training-set-card > .icon-button svg {
+  width: 13px;
+}
+
+.session-workspace .training-set-card > .icon-button:hover {
+  color: var(--red);
+  background: transparent;
+}
+
+.session-workspace .training-exercise-card > header > .icon-button:hover,
+.session-workspace .training-exercise-card > header > .icon-button:focus-visible {
+  color: var(--red);
+  background: transparent;
+}
+
+.danger-text-button {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--red);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.danger-text-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.session-workspace .set-add {
+  width: 100%;
+  min-height: 36px;
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #71746a;
+  border: 1px dashed #c8c9c1;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.session-workspace .set-add:hover {
+  color: var(--ink);
+  border-color: #adc62f;
+  background: rgba(217, 255, 67, 0.12);
+}
+
+.session-workspace .set-add svg {
+  width: 12px;
+}
+
+.session-bottom {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 248px;
+  z-index: 17;
+  min-height: 76px;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  background: #faf9f4;
+}
+
+.session-bottom > div:first-child {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.session-bottom > div:first-child span {
+  color: var(--ink);
+  font:
+    500 14px/1 'DM Mono',
+    monospace;
+}
+
+.session-bottom > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-bottom .secondary-button,
+.session-bottom .primary-button {
+  min-height: 42px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.session-bottom .session-lifecycle-button.is-processing:disabled {
+  cursor: wait;
+  opacity: 0.62;
+  border-color: #c8d58e;
+  color: #667044;
+  background: #eef1df;
+  box-shadow: none;
+}
+
+.button-spinner {
+  animation: session-button-spin 850ms linear infinite;
+}
+
+@keyframes session-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.session-bottom .primary-button {
+  color: var(--ink);
+  background: var(--lime);
+}
+
+.session-bottom > .form-notice {
+  position: absolute;
+  right: 30px;
+  bottom: calc(100% + 8px);
+}
+
+@media (max-width: 1180px) {
+  .session-top-actions button {
+    padding-inline: 10px;
+  }
+
+  .session-top-actions button svg {
+    display: none;
+  }
+
+  .session-body {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .training-editor {
+    padding-inline: 25px;
+  }
+
+  .exercise-performance-inline > div {
+    min-width: 105px;
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 900px) {
+  .session-topbar {
+    grid-template-columns: auto 1fr;
+    padding: 10px 18px;
+  }
+
+  .session-title {
+    justify-self: start;
+  }
+
+  .session-top-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .session-top-actions button {
+    flex: 0 0 auto;
+  }
+
+  .session-body {
+    grid-template-columns: 1fr;
+  }
+
+  .session-context {
+    position: static;
+    height: auto;
+    padding: 20px 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .session-context .eyebrow,
+  .session-context h1,
+  .session-context .session-state {
+    grid-column: 1;
+  }
+
+  .session-context-summary {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .session-context .context-stat {
+    margin: 0;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+  }
+
+  .context-divider {
+    display: none;
+  }
+
+  .session-note-label,
+  .session-context .note-area,
+  .session-note-count {
+    grid-column: 1 / -1;
+  }
+
+  .session-context .note-area {
+    min-height: 170px;
+  }
+
+  .training-editor {
+    padding: 28px 25px 120px;
+  }
+
+  .session-bottom {
+    left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .session-workspace {
+    min-height: calc(100dvh - 58px);
+    padding-bottom: 126px;
+  }
+
+  .session-topbar {
+    top: 58px;
+    z-index: 18;
+  }
+
+  .session-back-button {
+    font-size: 0;
+  }
+
+  .session-back-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .session-save-status {
+    margin-left: auto;
+  }
+
+  .session-context {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .session-context .eyebrow,
+  .session-context h1,
+  .session-context .session-state {
+    grid-column: auto;
+  }
+
+  .session-context-summary {
+    grid-column: 1 / -1;
+  }
+
+  .session-context h1 {
+    grid-column: 1;
+    margin: 0;
+  }
+
+  .session-context .session-state {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .session-context .context-stat {
+    grid-column: 1 / -1;
+  }
+
+  .training-editor {
+    padding: 26px 14px 145px;
+  }
+
+  .session-workspace .training-heading {
+    align-items: flex-start;
+  }
+
+  .session-workspace .training-heading p {
+    max-width: 220px;
+    line-height: 1.5;
+  }
+
+  .session-workspace .training-heading .primary-button {
+    width: 42px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .session-workspace .training-heading .primary-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .session-workspace .training-exercise-card > header {
+    min-height: 112px;
+    padding: 12px 10px;
+    grid-template-columns: 28px minmax(0, 1fr) 30px;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .session-workspace .exercise-number,
+  .session-workspace .exercise-identity {
+    padding-top: 4px;
+  }
+
+  .session-workspace .training-exercise-card > header > .icon-button {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .exercise-performance-inline {
+    grid-column: 2 / 4;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    margin-top: 4px;
+  }
+
+  .exercise-performance-inline > div {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .exercise-performance-inline > div:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .exercise-performance-inline strong {
+    font-size: 8px;
+  }
+
+  .exercise-performance-inline button {
+    min-height: 32px;
+    margin-left: 4px;
+    padding-inline: 9px;
+    font-size: 8px;
+  }
+
+  .training-sets-scroll {
+    padding-inline: 10px;
+  }
+
+  .training-set-head,
+  .session-workspace .training-set-card {
+    min-width: 690px;
+  }
+
+  .session-bottom {
+    min-height: calc(116px + env(safe-area-inset-bottom));
+    padding: 12px 15px calc(70px + env(safe-area-inset-bottom));
+  }
+
+  .session-bottom > div:first-child {
+    display: none;
+  }
+
+  .session-bottom > div:last-child {
+    width: 100%;
+  }
+
+  .session-bottom button {
+    flex: 1;
   }
 }
 
@@ -6452,6 +7504,17 @@ textarea:focus {
   color: var(--ink);
   background: var(--lime);
 }
+.session-editor-form-body {
+  gap: 14px;
+  overflow: visible;
+}
+.session-editor-form-footer {
+  padding-top: 32px;
+}
+.session-editor-form-footer .scheduling-form-actions {
+  display: flex;
+  gap: 9px;
+}
 @media (max-width: 720px) {
   .scheduling-dialog {
     height: min(610px, calc(100dvh - 20px));
@@ -6531,6 +7594,15 @@ textarea:focus {
   .scheduling-form-actions > button {
     min-height: 44px;
     padding-inline: 10px;
+  }
+  .session-editor-form-body {
+    overflow: auto;
+  }
+  .session-editor-form-footer {
+    padding-top: 22px;
+  }
+  .session-editor-form-footer .scheduling-form-actions {
+    display: flex;
   }
   .scheduling-shortcut-hint {
     font-size: 7px;

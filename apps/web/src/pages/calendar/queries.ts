@@ -12,7 +12,9 @@ import {
   transitionSession,
   updateCalendarBlock,
   updateScheduleSeries,
-  updateSession
+  updateSession,
+  type CalendarSession,
+  type SessionTraining
 } from '../../api'
 import { queryKeys } from '../../query-keys'
 
@@ -37,8 +39,28 @@ export function invalidateSchedulingQueries(
     void queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSeries(coachId, studentId) })
     void queryClient.invalidateQueries({ queryKey: queryKeys.students(coachId) })
   }
-  if (sessionId)
+  if (sessionId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.session(coachId, sessionId) })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.sessionTraining(coachId, sessionId) })
+  }
+}
+
+function syncAcceptedSession(queryClient: QueryClient, coachId: string, accepted: CalendarSession) {
+  queryClient.setQueryData<SessionTraining>(
+    queryKeys.sessionTraining(coachId, accepted.id),
+    (current) =>
+      current
+        ? {
+            ...current,
+            session: { ...current.session, ...accepted } as SessionTraining['session'],
+            allowedActions: {
+              canEditTraining: accepted.status !== 'cancelled',
+              canComplete: accepted.status === 'scheduled',
+              canReopen: accepted.status === 'completed'
+            }
+          }
+        : current
+  )
 }
 
 export function useSchedulingMutations(session: Session) {
@@ -61,6 +83,7 @@ export function useSchedulingMutations(session: Session) {
         previousStudentId?: string
       }) => updateSession(session.access_token, sessionId, input),
       onSuccess: (accepted, variables) => {
+        syncAcceptedSession(queryClient, session.user.id, accepted.session)
         invalidate(accepted.session.studentId, accepted.session.id)
         if (
           variables.previousStudentId &&
@@ -77,7 +100,10 @@ export function useSchedulingMutations(session: Session) {
         sessionId: string
         input: Parameters<typeof transitionSession>[2]
       }) => transitionSession(session.access_token, sessionId, input),
-      onSuccess: (accepted) => invalidate(accepted.session.studentId, accepted.session.id)
+      onSuccess: (accepted) => {
+        syncAcceptedSession(queryClient, session.user.id, accepted.session)
+        invalidate(accepted.session.studentId, accepted.session.id)
+      }
     }),
     deleteSession: useMutation({
       mutationFn: ({ sessionId, version }: { sessionId: string; version: number }) =>

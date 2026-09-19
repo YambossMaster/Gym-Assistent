@@ -3,11 +3,61 @@ import { act, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SchedulingDialog } from './SchedulingDialog'
+import { Confirmation } from '../../shared/primitives'
 
 describe('SchedulingDialog focus', () => {
   afterEach(() => {
     document.body.innerHTML = ''
     vi.unstubAllGlobals()
+  })
+
+  it('restores page scrolling after nested confirmation and editor close together', async () => {
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    function Screen() {
+      const [state, setState] = useState<'editor' | 'confirm' | 'closed'>('editor')
+      if (state === 'closed') return <p>已關閉</p>
+      return (
+        <>
+          <SchedulingDialog title="變更課堂" onClose={() => setState('closed')}>
+            <button onClick={() => setState('confirm')}>刪除課堂</button>
+          </SchedulingDialog>
+          {state === 'confirm' ? (
+            <Confirmation
+              title="是否確認刪除此課堂？"
+              text="刪除後無法復原。"
+              onCancel={() => setState('editor')}
+              onConfirm={() => setState('closed')}
+              disabled={false}
+            />
+          ) : null}
+        </>
+      )
+    }
+    try {
+      await act(async () => root.render(<Screen />))
+      await act(async () =>
+        [...host.querySelectorAll<HTMLButtonElement>('.scheduling-dialog button')]
+          .find((button) => button.textContent?.includes('刪除課堂'))!
+          .click()
+      )
+      expect(document.body.style.overflow).toBe('hidden')
+      await act(async () =>
+        [...host.querySelectorAll<HTMLButtonElement>('button')]
+          .find((button) => button.textContent?.includes('永久刪除'))!
+          .click()
+      )
+      expect(document.body.style.overflow).toBe('')
+    } finally {
+      await act(async () => root.unmount())
+      document.body.style.overflow = ''
+    }
   })
 
   it('keeps focus in the edited text field when a controlled draft changes', async () => {

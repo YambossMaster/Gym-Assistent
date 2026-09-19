@@ -128,7 +128,6 @@ export class SchedulingModule {
       if (!current) return null
       if (current.version !== input.version) throw new SchedulingVersionConflictError(current)
       if (input.studentId !== current.studentId) {
-        if (current.seriesId) throw new SchedulingStudentChangeError('series_owned')
         if (current.status !== 'scheduled' || current.isLegacy)
           throw new SchedulingStudentChangeError('session_not_editable')
         if (!(await this.repository.hasStudent(workspaceId, input.studentId)))

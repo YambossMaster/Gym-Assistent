@@ -28,13 +28,11 @@ export type ChangedSession = {
 }
 
 export class SchedulingStudentChangeError extends Error {
-  constructor(readonly reason: 'student_not_found' | 'series_owned' | 'session_not_editable') {
+  constructor(readonly reason: 'student_not_found' | 'session_not_editable') {
     super(
       reason === 'student_not_found'
         ? 'Student was not found in this Workspace.'
-        : reason === 'series_owned'
-          ? 'A Series-owned Session cannot change Student.'
-          : 'Only a scheduled Session can change Student.',
+        : 'Only a scheduled Session can change Student.',
     )
     this.name = 'SchedulingStudentChangeError'
   }

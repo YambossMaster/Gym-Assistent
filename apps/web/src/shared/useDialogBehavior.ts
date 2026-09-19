@@ -1,17 +1,44 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 
 const dialogStack: symbol[] = []
+let scrollLockCount = 0
+let scrollLockPriorOverflow = ''
+
+function lockBodyScroll() {
+  if (scrollLockCount === 0) {
+    scrollLockPriorOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+  }
+  scrollLockCount += 1
+}
+
+function unlockBodyScroll() {
+  scrollLockCount = Math.max(0, scrollLockCount - 1)
+  if (scrollLockCount === 0) document.body.style.overflow = scrollLockPriorOverflow
+}
 
 export function useDialogBehavior(
   onClose: () => void,
-  { submitOnEnter = false, focusDialog = false, lockScroll = true } = {}
+  {
+    submitOnEnter = false,
+    focusDialog = false,
+    lockScroll = true,
+    onDeleteShortcut
+  }: {
+    submitOnEnter?: boolean
+    focusDialog?: boolean
+    lockScroll?: boolean
+    onDeleteShortcut?: () => void
+  } = {}
 ) {
   const dialogRef = useRef<HTMLElement>(null)
   const tokenRef = useRef(Symbol('dialog'))
   const lastFormRef = useRef<HTMLFormElement | null>(null)
   const restoreFocusFrameRef = useRef<number | null>(null)
   const onCloseRef = useRef(onClose)
+  const onDeleteShortcutRef = useRef(onDeleteShortcut)
   onCloseRef.current = onClose
+  onDeleteShortcutRef.current = onDeleteShortcut
   const openerRef = useRef<HTMLElement | null>(
     document.activeElement instanceof HTMLElement ? document.activeElement : null
   )
@@ -23,14 +50,25 @@ export function useDialogBehavior(
     }
     const token = tokenRef.current
     dialogStack.push(token)
-    const priorOverflow = document.body.style.overflow
-    if (lockScroll) document.body.style.overflow = 'hidden'
+    if (lockScroll) lockBodyScroll()
     if (focusDialog) dialogRef.current?.focus()
     const keydown = (event: KeyboardEvent) => {
       if (dialogStack.at(-1) !== token || event.defaultPrevented || event.isComposing) return
       if (event.key === 'Escape') {
         event.preventDefault()
         onCloseRef.current()
+        return
+      }
+      if (event.key === 'Delete' && onDeleteShortcutRef.current) {
+        const target = event.target
+        if (
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          (target instanceof HTMLElement && target.closest('[contenteditable="true"]'))
+        )
+          return
+        event.preventDefault()
+        onDeleteShortcutRef.current()
         return
       }
       if (event.key !== 'Enter' || !submitOnEnter) return
@@ -58,7 +96,7 @@ export function useDialogBehavior(
     return () => {
       const index = dialogStack.indexOf(token)
       if (index !== -1) dialogStack.splice(index, 1)
-      if (lockScroll) document.body.style.overflow = priorOverflow
+      if (lockScroll) unlockBodyScroll()
       window.removeEventListener('keydown', keydown)
       restoreFocusFrameRef.current = requestAnimationFrame(() => {
         if (openerRef.current?.isConnected) openerRef.current.focus({ preventScroll: true })

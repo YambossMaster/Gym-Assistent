@@ -51,7 +51,9 @@ export function Confirmation({
   onConfirm,
   disabled,
   requiredWord = 'DELETE',
-  confirmLabel = '永久刪除'
+  confirmLabel = '永久刪除',
+  confirmOnDelete = false,
+  shortcutHint
 }: {
   title: string
   text: string
@@ -62,11 +64,14 @@ export function Confirmation({
   disabled: boolean
   requiredWord?: string
   confirmLabel?: string
+  confirmOnDelete?: boolean
+  shortcutHint?: string
 }) {
   const requiresText = onConfirmationChange !== undefined
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onCancel, {
     focusDialog: true,
-    submitOnEnter: true
+    submitOnEnter: true,
+    onDeleteShortcut: confirmOnDelete && !requiresText && !disabled ? onConfirm : undefined
   })
   return (
     <div className="danger-confirmation" onPointerDown={onBackdropPointerDown}>
@@ -79,6 +84,9 @@ export function Confirmation({
       >
         <h2>{title}</h2>
         <p>{text}</p>
+        {shortcutHint ? (
+          <small className="danger-confirmation-shortcuts">{shortcutHint}</small>
+        ) : null}
         {requiresText && (
           <label>
             輸入 {requiredWord} 以確認

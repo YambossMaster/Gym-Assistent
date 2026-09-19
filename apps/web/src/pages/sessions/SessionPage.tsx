@@ -1,37 +1,35 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowLeft,
-  CalendarClock,
-  CheckCircle2,
-  Pencil,
-  RotateCcw,
-  Trash2,
-  XCircle
-} from 'lucide-react'
+import { CalendarClock, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ApiError, getSession } from '../../api'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ApiError, getSession, listStudents } from '../../api'
 import { queryKeys } from '../../query-keys'
-import { Page } from '../../shared/primitives'
+import { FormSelect } from '../../shared/FormSelect'
+import { Confirmation, Page } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from '../calendar/calendar-time'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
-import { Confirmation } from '../../shared/primitives'
 import { TrainingWorkspace } from '../training/TrainingWorkspace'
+import { useSessionTraining } from '../training/queries'
 import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
 
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [confirmation, setConfirmation] = useState('')
   const [notice, setNotice] = useState('')
   const query = useQuery({
     queryKey: queryKeys.session(session.user.id, sessionId),
     queryFn: () => getSession(session.access_token, sessionId)
   })
+  const studentsQuery = useQuery({
+    queryKey: queryKeys.students(session.user.id),
+    queryFn: () => listStudents(session.access_token)
+  })
+  const trainingQuery = useSessionTraining(session, sessionId)
   const mutations = useSchedulingMutations(session)
   if (query.isLoading)
     return (
@@ -86,115 +84,66 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
       </Page>
     )
   const pending = mutations.transitionSession.isPending
-  const transition = (action: 'complete' | 'reopen' | 'cancel') => {
-    setNotice('')
-    mutations.transitionSession.mutate(
-      {
-        sessionId: item.id,
-        input: { action, version: item.version! }
-      },
-      {
-        onSuccess: () =>
-          setNotice(
-            action === 'complete'
-              ? '課程已完成。'
-              : action === 'cancel'
-                ? '課程已取消。'
-                : '課程已改回待上課。'
-          ),
-        onError: (error) =>
-          setNotice(
-            error instanceof ApiError && error.status === 409
-              ? '課程已在其他裝置變更。請重新載入後再操作。'
-              : '操作失敗，請稍後再試。'
-          )
-      }
-    )
-  }
   return (
-    <Page className="session-page" title={item.studentName} eyebrow="課程">
-      <section className="session-overview">
-        <div className="session-time">
-          <CalendarClock />
-          <div>
-            <span>{formatDate(item.startsAt)}</span>
-            <strong>
-              {formatTime(item.startsAt)} — {formatTime(item.endsAt)}
-            </strong>
-            <small>{item.location || '未設定地點'}</small>
-          </div>
-        </div>
-        <div className="session-status">
-          <span>{statusLabel(item.status)}</span>
-          {detail.conflicts.length ? <small>有 {detail.conflicts.length} 個安排提醒</small> : null}
-        </div>
-      </section>
-      <section className="session-actions" aria-label="課程操作">
-        <Link className="secondary-button" to="/calendar">
-          <ArrowLeft /> 返回行事曆
-        </Link>
-        <button className="secondary-button" disabled={pending} onClick={() => setEditing(true)}>
-          <Pencil /> 編輯時間
-        </button>
-        {item.status === 'scheduled' ? (
+    <>
+      <TrainingWorkspace
+        session={session}
+        query={trainingQuery}
+        timeZone={timeZone}
+        onBack={() => navigate(-1)}
+        sessionNotice={notice}
+        headerActions={
           <>
             <button
-              className="danger-outline-button"
+              className="secondary-button"
               disabled={pending}
-              onClick={() => transition('cancel')}
+              onClick={() => setEditing(true)}
             >
-              <XCircle /> 取消課程
+              <CalendarClock /> 變更課堂
             </button>
+            <CapabilityLinkActions
+              session={session}
+              item={item}
+              compactLabels
+              initialPurpose={
+                searchParams.get('link') === 'reschedule' ? 'reschedule_session' : null
+              }
+              onClose={() => {
+                if (!searchParams.has('link')) return
+                const next = new URLSearchParams(searchParams)
+                next.delete('link')
+                setSearchParams(next, { replace: true })
+              }}
+            />
           </>
-        ) : item.status === 'completed' ? (
-          <button
-            className="secondary-button"
-            disabled={pending}
-            onClick={() => transition('reopen')}
-          >
-            <RotateCcw /> 改回待上課
-          </button>
-        ) : null}
-        {item.status === 'scheduled' && !item.seriesId ? (
-          <button
-            className="danger-outline-button"
-            disabled={pending}
-            onClick={() => setDeleting(true)}
-          >
-            <Trash2 /> 刪除
-          </button>
-        ) : null}
-        <CapabilityLinkActions
-          session={session}
-          item={item}
-          initialPurpose={searchParams.get('link') === 'reschedule' ? 'reschedule_session' : null}
-          onClose={() => {
-            if (!searchParams.has('link')) return
-            const next = new URLSearchParams(searchParams)
-            next.delete('link')
-            setSearchParams(next, { replace: true })
-          }}
-        />
-      </section>
-      {notice ? (
-        <p className="form-notice" role="status">
-          {notice}
-        </p>
-      ) : null}
-      <TrainingWorkspace session={session} sessionId={item.id} />
+        }
+      />
       {editing ? (
         <SessionEditor
           item={item}
+          students={studentsQuery.data ?? []}
           timeZone={timeZone}
           pending={mutations.updateSession.isPending}
           onClose={() => setEditing(false)}
+          onRequestDelete={() => {
+            setEditing(false)
+            setDeleting(true)
+          }}
           onSave={(input) =>
             mutations.updateSession.mutate(
-              { sessionId: item.id, input: { ...input, version: item.version! } },
+              {
+                sessionId: item.id,
+                previousStudentId: item.studentId,
+                input: {
+                  ...input,
+                  ...(input.studentId !== item.studentId ? { studentId: input.studentId } : {}),
+                  version: item.version!
+                }
+              },
               {
                 onSuccess: () => {
                   setEditing(false)
-                  setNotice('課程時間已更新。')
+                  setNotice('')
                 },
                 onError: (error) =>
                   setNotice(
@@ -209,51 +158,62 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
       ) : null}
       {deleting ? (
         <Confirmation
-          title="永久刪除這堂課？"
-          text="只有尚未完成、未連結固定課表的課程可以刪除。這堂課的訓練紀錄也會一併永久刪除。"
-          confirmation={confirmation}
-          onConfirmationChange={setConfirmation}
-          onCancel={() => {
-            setDeleting(false)
-            setConfirmation('')
-          }}
-          onConfirm={() =>
+          title="是否確認刪除此課堂？"
+          text="此課堂的所有內容變更將不被保存。刪除後無法復原。"
+          confirmLabel="刪除"
+          confirmOnDelete
+          shortcutHint="ESC 取消 · DELETE 刪除"
+          onCancel={() => setDeleting(false)}
+          onConfirm={() => {
+            const onSuccess = () => navigate(-1)
+            const onError = () => setNotice('刪除失敗；課程可能已被其他裝置變更。')
+            if (item.status === 'scheduled' && item.seriesId) {
+              mutations.transitionSession.mutate(
+                { sessionId: item.id, input: { action: 'cancel', version: item.version! } },
+                { onSuccess, onError }
+              )
+              return
+            }
             mutations.deleteSession.mutate(
               { sessionId: item.id, version: item.version! },
-              {
-                onSuccess: () => {
-                  window.location.assign('/calendar')
-                },
-                onError: () => {
-                  setConfirmation('')
-                  setNotice('刪除失敗；課程可能已被其他裝置變更。')
-                }
-              }
+              { onSuccess, onError }
             )
-          }
-          disabled={mutations.deleteSession.isPending}
+          }}
+          disabled={mutations.deleteSession.isPending || mutations.transitionSession.isPending}
         />
       ) : null}
-    </Page>
+    </>
   )
 }
 
-function SessionEditor({
+export function SessionEditor({
   item,
+  students,
   timeZone,
   pending,
   onClose,
-  onSave
+  onSave,
+  onRequestDelete
 }: {
-  item: { startsAt: string | null; endsAt: string | null; location: string | null }
+  item: {
+    studentId: string
+    studentName: string
+    startsAt: string | null
+    endsAt: string | null
+    location: string | null
+    status: 'scheduled' | 'completed' | 'cancelled'
+  }
+  students: Array<{ id: string; name: string; active: boolean }>
   timeZone: string
   pending: boolean
   onClose: () => void
-  onSave: (input: { startsAt: string; endsAt: string; location: string }) => void
+  onSave: (input: { studentId: string; startsAt: string; endsAt: string; location: string }) => void
+  onRequestDelete: () => void
 }) {
   const start = isoToLocalDateTime(item.startsAt!, timeZone)
   const end = isoToLocalDateTime(item.endsAt!, timeZone)
   const [date, setDate] = useState(start.date)
+  const [studentId, setStudentId] = useState(item.studentId)
   const [startTime, setStartTime] = useState(start.time)
   const [endTime, setEndTime] = useState(end.time)
   const [location, setLocation] = useState(item.location ?? '')
@@ -266,6 +226,7 @@ function SessionEditor({
     }
     try {
       onSave({
+        studentId,
         startsAt: localDateTimeToIso({ date, time: startTime }, timeZone),
         endsAt: localDateTimeToIso({ date, time: endTime }, timeZone),
         location
@@ -275,72 +236,89 @@ function SessionEditor({
     }
   }
   return (
-    <SchedulingDialog title="編輯課程時間" onClose={onClose}>
-      <form className="scheduling-form" onSubmit={submit}>
-        <div className="field-row">
+    <SchedulingDialog title="變更課堂" onClose={onClose} variant="session-edit">
+      <form className="scheduling-form session-editor-form" onSubmit={submit}>
+        <div className="scheduling-form-body session-editor-form-body">
           <label>
-            日期
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
+            學生
+            <FormSelect
+              label="學生"
+              value={studentId}
+              onChange={setStudentId}
               required
+              disabled={item.status !== 'scheduled'}
+              options={[
+                ...(!students.some((student) => student.id === item.studentId)
+                  ? [{ value: item.studentId, label: item.studentName }]
+                  : []),
+                ...students
+                  .filter((student) => student.active || student.id === item.studentId)
+                  .map((student) => ({ value: student.id, label: student.name }))
+              ]}
             />
           </label>
+          <div className="field-row">
+            <label>
+              日期
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                required
+                disabled={item.status !== 'scheduled'}
+              />
+            </label>
+            <label>
+              開始
+              <input
+                type="time"
+                step="900"
+                value={startTime}
+                onChange={(event) => setStartTime(event.target.value)}
+                required
+                disabled={item.status !== 'scheduled'}
+              />
+            </label>
+            <label>
+              結束
+              <input
+                type="time"
+                step="900"
+                value={endTime}
+                onChange={(event) => setEndTime(event.target.value)}
+                required
+                disabled={item.status !== 'scheduled'}
+              />
+            </label>
+          </div>
           <label>
-            開始
+            地點
             <input
-              type="time"
-              step="900"
-              value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
               required
+              disabled={item.status !== 'scheduled'}
+              maxLength={160}
             />
           </label>
-          <label>
-            結束
-            <input
-              type="time"
-              step="900"
-              value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
-              required
-            />
-          </label>
+          {error ? <p className="notice error">{error}</p> : null}
         </div>
-        <label>
-          地點
-          <input
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-            required
-            maxLength={160}
-          />
-        </label>
-        {error ? <p className="notice error">{error}</p> : null}
-        <div className="scheduling-form-actions">
-          <button type="button" className="secondary-button" onClick={onClose}>
-            取消
-          </button>
-          <button className="primary-button compact" disabled={pending}>
-            {pending ? '儲存中…' : '儲存變更'}
-          </button>
+        <div className="scheduling-form-footer session-editor-form-footer">
+          <div className="scheduling-form-actions">
+            <button type="button" className="danger-text-button" onClick={onRequestDelete}>
+              <Trash2 /> 刪除課堂
+            </button>
+            <button type="button" className="secondary-button" onClick={onClose}>
+              取消
+            </button>
+            {item.status === 'scheduled' ? (
+              <button className="primary-button compact" disabled={pending}>
+                {pending ? '儲存中…' : '儲存變更'}
+              </button>
+            ) : null}
+          </div>
         </div>
       </form>
     </SchedulingDialog>
   )
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('zh-TW', { dateStyle: 'full' }).format(new Date(value))
-}
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat('zh-TW', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(new Date(value))
-}
-function statusLabel(status: 'scheduled' | 'completed' | 'cancelled') {
-  return status === 'completed' ? '已完成' : status === 'cancelled' ? '已取消' : '即將開始'
 }

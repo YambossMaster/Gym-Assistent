@@ -273,7 +273,7 @@ describe('SchedulingModule', () => {
     expect(changedStudentId).toBe(nextStudentId)
   })
 
-  it('rejects cross-Workspace and Series-owned Student reassignment before persistence', async () => {
+  it('rejects cross-Workspace Student reassignment but allows one Series occurrence to change Student', async () => {
     const originalId = '00000000-0000-4000-8000-000000000010'
     const nextId = '00000000-0000-4000-8000-000000000011'
     const current = {
@@ -289,16 +289,25 @@ describe('SchedulingModule', () => {
       version: 3,
       isLegacy: false,
     }
-    let persisted = false
+    let persistedStudentId: string | undefined
     let seriesId: string | null = null
     const repository = {
       resolveWorkspace: async () => 'workspace-1',
       getSession: async () => ({ ...current, seriesId }),
-      hasStudent: async () => false,
-      updateSession: async () => {
-        persisted = true
-        return current
+      hasStudent: async (_workspaceId: string, studentId: string) => studentId === nextId,
+      updateSession: async (
+        _workspaceId: string,
+        _sessionId: string,
+        changed: Parameters<SchedulingRepository['updateSession']>[2],
+      ) => {
+        persistedStudentId = changed.studentId
+        return { ...current, seriesId, studentId: changed.studentId ?? originalId, version: 4 }
       },
+      listSessions: async () => [],
+      listBlocks: async () => [],
+      getTimeZone: async () => 'Asia/Taipei',
+      listAvailability: async () => [],
+      getAvailabilityOverride: async () => null,
     } as unknown as SchedulingRepository
     const module = new SchedulingModule(repository)
     const input = {
@@ -308,14 +317,16 @@ describe('SchedulingModule', () => {
       location: 'Studio',
       version: 3,
     }
+    repository.hasStudent = async () => false
     await expect(module.updateSession(identity, 'session-1', input)).rejects.toMatchObject({
       reason: 'student_not_found',
     })
+    repository.hasStudent = async (_workspaceId: string, studentId: string) => studentId === nextId
     seriesId = 'series-1'
-    await expect(module.updateSession(identity, 'session-1', input)).rejects.toMatchObject({
-      reason: 'series_owned',
+    await expect(module.updateSession(identity, 'session-1', input)).resolves.toMatchObject({
+      session: { studentId: nextId, seriesId: 'series-1', version: 4 },
     })
-    expect(persisted).toBe(false)
+    expect(persistedStudentId).toBe(nextId)
   })
 
   it('returns an outside-availability warning without rejecting Session creation', async () => {

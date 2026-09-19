@@ -446,11 +446,7 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
     if (!row) throw new PublicCapabilityError('invalid_link', 404)
     const originalStart = new Date(String(row.starts_at))
     const originalEnd = new Date(String(row.ends_at))
-    if (
-      row.status !== 'scheduled' ||
-      originalStart <= now ||
-      Number(row.version) !== Number(link.resource_version)
-    )
+    if (row.status !== 'scheduled' || Number(row.version) !== Number(link.resource_version))
       throw new PublicCapabilityError('expired_link', 410)
     const timeZone = String(row.time_zone)
     return {
@@ -503,8 +499,7 @@ function eligibilityVersion(row: Record<string, unknown>, purpose: CapabilityPur
       throw new PublicCapabilityError('not_eligible', 400)
     return Number(row.record_version)
   }
-  if (row.status !== 'scheduled' || new Date(String(row.starts_at)) <= now)
-    throw new PublicCapabilityError('not_eligible', 400)
+  if (row.status !== 'scheduled') throw new PublicCapabilityError('not_eligible', 400)
   return Number(row.version)
 }
 
@@ -563,8 +558,7 @@ async function availableSlots(
   timeZone: string,
   now: Date,
 ) {
-  const originalDate = localParts(originalStart, timeZone).date
-  const dates = Array.from({ length: 7 }, (_, index) => addLocalDays(originalDate, index - 3))
+  const dates = rescheduleCandidateDates(originalStart, timeZone, now)
   const rangeStart = localToInstant(dates[0]!, '00:00', timeZone)
   const rangeEnd = localToInstant(addLocalDays(dates.at(-1)!, 1), '00:00', timeZone)
   const [rules, overrides, sessions, blocks] = await Promise.all([
@@ -677,6 +671,15 @@ function addLocalDays(date: string, count: number) {
   const value = new Date(`${date}T12:00:00.000Z`)
   value.setUTCDate(value.getUTCDate() + count)
   return value.toISOString().slice(0, 10)
+}
+
+export function rescheduleCandidateDates(originalStart: Date, timeZone: string, now: Date) {
+  const originalDate = localParts(originalStart, timeZone).date
+  const overdue = originalStart <= now
+  const anchorDate = overdue ? localParts(now, timeZone).date : originalDate
+  return Array.from({ length: 7 }, (_, index) =>
+    addLocalDays(anchorDate, overdue ? index : index - 3),
+  )
 }
 
 function isoWeekday(date: string) {

@@ -31,6 +31,7 @@ import {
   type Student
 } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
+import { Confirmation } from '../../shared/primitives'
 import { useStudentsRouteQuery } from '../students/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from './calendar-time'
 import { useCalendarRouteQuery, useSchedulingMutations } from './queries'
@@ -358,6 +359,7 @@ function Editor({
 }) {
   const [error, setError] = useState(initialError)
   const [sessionMode, setSessionMode] = useState<'view' | 'edit'>(initialError ? 'edit' : 'view')
+  const [deleteTarget, setDeleteTarget] = useState<'session' | 'block' | null>(null)
   const quickEditRef = useRef<HTMLButtonElement>(null)
   const editDateRef = useRef<HTMLInputElement>(null)
   const pending = Object.values(mutations).some((mutation) => mutation.isPending)
@@ -367,11 +369,9 @@ function Editor({
         ? '此安排已在其他裝置變更。草稿已保留，請重新載入目前版本後再套用。'
         : value instanceof ApiError && value.details.error === 'student_not_found'
           ? '找不到選取的學生，請重新選擇。'
-          : value instanceof ApiError && value.details.error === 'series_owned'
-            ? '週期課程的學生無法只改這一堂；請保留原學生。'
-            : value instanceof Error
-              ? value.message
-              : '暫時無法儲存，草稿仍保留。'
+          : value instanceof Error
+            ? value.message
+            : '暫時無法儲存，草稿仍保留。'
     )
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -534,6 +534,21 @@ function Editor({
     setSessionMode('edit')
     requestAnimationFrame(() => editDateRef.current?.focus({ preventScroll: true }))
   }
+  if (deleteTarget)
+    return (
+      <Confirmation
+        title={deleteTarget === 'session' ? '是否確認刪除此課堂？' : '是否確認刪除此封鎖時段？'}
+        text={
+          deleteTarget === 'session'
+            ? '此課堂的所有內容變更將不被保存。刪除後無法復原。'
+            : '刪除後無法復原。'
+        }
+        confirmLabel="確認刪除"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteTarget === 'session' ? removeSession : removeBlock}
+        disabled={pending}
+      />
+    )
   if (draft.kind === 'session' && draft.current && sessionMode === 'view') {
     const current = draft.current
     const canRemove = current.status === 'scheduled'
@@ -547,7 +562,7 @@ function Editor({
       <SchedulingDialog
         title={current.studentName}
         onClose={onClose}
-        onDelete={canRemove && !pending ? removeSession : undefined}
+        onDelete={canRemove && !pending ? () => setDeleteTarget('session') : undefined}
         variant="quick"
       >
         <div className="calendar-session-quickview">
@@ -591,7 +606,7 @@ function Editor({
                 disabled={pending}
                 onClick={() => transition('complete')}
               >
-                完成上課
+                {mutations.transitionSession.isPending ? '處理中…' : '完成上課'}
               </button>
             ) : current.status === 'completed' ? (
               <button
@@ -608,15 +623,13 @@ function Editor({
                 type="button"
                 className="calendar-delete-button"
                 disabled={pending}
-                onClick={removeSession}
+                onClick={() => setDeleteTarget('session')}
               >
                 刪除
               </button>
             ) : null}
           </div>
-          {current.status === 'scheduled' &&
-          current.startsAt &&
-          new Date(current.startsAt) > new Date() ? (
+          {current.status === 'scheduled' && current.startsAt ? (
             <div className="calendar-quick-secondary">
               <Link className="text-button" to={`/sessions/${current.id}?link=reschedule`}>
                 建立改期連結
@@ -640,7 +653,11 @@ function Editor({
           : '安排這個時段'
       }
       onClose={draft.kind === 'session' && draft.current ? cancelEdit : onClose}
-      onDelete={draft.kind === 'block' && draft.current && !pending ? removeBlock : undefined}
+      onDelete={
+        draft.kind === 'block' && draft.current && !pending
+          ? () => setDeleteTarget('block')
+          : undefined
+      }
       variant={
         draft.kind === 'block' && draft.current
           ? 'block'
@@ -748,7 +765,6 @@ function Editor({
                 <FormSelect
                   label="學生"
                   value={draft.studentId}
-                  disabled={Boolean(draft.current?.seriesId)}
                   onChange={(value) => onChange({ ...draft, studentId: value })}
                   required
                   options={[
@@ -762,11 +778,6 @@ function Editor({
                   ]}
                 />
               </label>
-              {draft.current?.seriesId ? (
-                <p className="field-help">
-                  週期課程的學生由固定課程節奏決定；這裡可修改本堂時間與地點。
-                </p>
-              ) : null}
               <div className="field-row">
                 {!draft.current ? (
                   <label>
@@ -896,7 +907,7 @@ function Editor({
               <button
                 type="button"
                 className="calendar-delete-button"
-                onClick={removeBlock}
+                onClick={() => setDeleteTarget('block')}
                 disabled={pending}
               >
                 刪除封鎖

@@ -306,7 +306,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         )
         const session = sessionRow.rows[0]
         if (!session) return null
-        if (Number(session.version) !== input.sessionVersion)
+        if (complete && Number(session.version) !== input.sessionVersion)
           throw new TrainingVersionConflictError('version_conflict', {
             sessionVersion: Number(session.version),
           })
@@ -574,39 +574,61 @@ export class PostgresTrainingRepository implements TrainingRepository {
     sessionId: string,
   ): Promise<SessionTraining | null> {
     const sessionRows = await queryable.query(
-      `select cs.*,s.name student_name,coalesce((select sum(lesson_count)::int from app_private.lesson_purchase lp where lp.workspace_id=cs.workspace_id and lp.student_id=cs.student_id),0) purchased,(select count(*)::int from app_private.course_session x where x.workspace_id=cs.workspace_id and x.student_id=cs.student_id and x.status='completed') completed from app_private.course_session cs join app_private.student s on s.workspace_id=cs.workspace_id and s.id=cs.student_id where cs.workspace_id=$1 and cs.id=$2 and not cs.is_legacy`,
+      `select cs.*,s.name student_name,
+        coalesce((select sum(lesson_count)::int from app_private.lesson_purchase lp where lp.workspace_id=cs.workspace_id and lp.student_id=cs.student_id),0) purchased,
+        (select count(*)::int from app_private.course_session x where x.workspace_id=cs.workspace_id and x.student_id=cs.student_id and x.status='completed') completed,
+        tr.id training_record_id,tr.version training_record_version,
+        tr.private_note training_private_note,tr.updated_at training_updated_at,
+        coalesce(tp.default_weight_unit,'kg') default_weight_unit
+       from app_private.course_session cs
+       join app_private.student s on s.workspace_id=cs.workspace_id and s.id=cs.student_id
+       left join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id
+       left join app_private.training_preference tp on tp.workspace_id=cs.workspace_id
+       where cs.workspace_id=$1 and cs.id=$2 and not cs.is_legacy`,
       [workspaceId, sessionId],
     )
     const s = sessionRows.rows[0]
     if (!s) return null
-    const recordRows = await queryable.query(
-      `select * from app_private.training_record where workspace_id=$1 and session_id=$2`,
-      [workspaceId, sessionId],
-    )
-    const record = recordRows.rows[0]
-    const exerciseRows = record
+    const record = s.training_record_id
+      ? {
+          id: s.training_record_id,
+          version: s.training_record_version,
+          private_note: s.training_private_note,
+          updated_at: s.training_updated_at,
+        }
+      : null
+    const currentRows = record
       ? await queryable.query(
-          `select * from app_private.training_exercise where workspace_id=$1 and record_id=$2 order by position`,
+          `select te.*,
+            ts.id set_id,ts.planned_weight,ts.planned_reps,ts.actual_reps,
+            ts.rpe,ts.result,ts.unit
+           from app_private.training_exercise te
+           left join app_private.training_set ts
+             on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id
+           where te.workspace_id=$1 and te.record_id=$2
+           order by te.position,ts.position`,
           [workspaceId, record.id],
         )
       : { rows: [] }
-    const setRows = record
-      ? await queryable.query(
-          `select ts.* from app_private.training_set ts join app_private.training_exercise te on te.workspace_id=ts.workspace_id and te.id=ts.exercise_id where te.workspace_id=$1 and te.record_id=$2 order by te.position,ts.position`,
-          [workspaceId, record.id],
-        )
-      : { rows: [] }
-    const exercises = exerciseRows.rows.map((row) =>
-      mapExercise(
-        row,
-        setRows.rows.filter((set) => set.exercise_id === row.id),
-      ),
-    )
-    const prefRows = await queryable.query<{ default_weight_unit: WeightUnit }>(
-      `select default_weight_unit from app_private.training_preference where workspace_id=$1`,
-      [workspaceId],
-    )
-    const defaultUnit = prefRows.rows[0]?.default_weight_unit ?? 'kg'
+    const currentByExercise = new Map<string, { row: any; sets: any[] }>()
+    for (const row of currentRows.rows) {
+      const exerciseId = String(row.id)
+      const current = currentByExercise.get(exerciseId) ?? { row, sets: [] }
+      if (row.set_id)
+        current.sets.push({
+          id: row.set_id,
+          exercise_id: row.id,
+          planned_weight: row.planned_weight,
+          planned_reps: row.planned_reps,
+          actual_reps: row.actual_reps,
+          rpe: row.rpe,
+          result: row.result,
+          unit: row.unit,
+        })
+      currentByExercise.set(exerciseId, current)
+    }
+    const exercises = [...currentByExercise.values()].map(({ row, sets }) => mapExercise(row, sets))
+    const defaultUnit = (s.default_weight_unit ?? 'kg') as WeightUnit
     const historical = await this.performancePointsWith(
       queryable,
       workspaceId,

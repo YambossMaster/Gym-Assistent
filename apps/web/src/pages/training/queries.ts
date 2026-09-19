@@ -31,6 +31,7 @@ export function useSessionTraining(session: Session, sessionId: string) {
   return useQuery({
     queryKey: queryKeys.sessionTraining(session.user.id, sessionId),
     queryFn: () => getSessionTraining(session.access_token, sessionId),
+    enabled: Boolean(sessionId),
     retry: (count, error: any) => (error?.status === 404 ? false : count < 2)
   })
 }

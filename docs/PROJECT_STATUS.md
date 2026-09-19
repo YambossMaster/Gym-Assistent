@@ -5,16 +5,16 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                    |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                       |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                 |
-| Package state      | **Calendar quick actions, edit return flow, white Week background, and standalone Student reassignment local; review continues** |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                    |
-| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded                                                 |
-| Worktree           | Calendar view/composer and sidebar corrections verified locally; ready for authorized delivery                                   |
-| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                          |
-| Production         | Not configured; no real customer data                                                                                            |
+| Field              | Current value                                                                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                                          |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                    |
+| Package state      | **Calendar and Session workflow, autosave/draft coordination, lifecycle feedback, deletion-safety, and Demo-parity corrections verified locally; review continues** |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                       |
+| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded                                                                                    |
+| Worktree           | Session autosave sequencing, device-local recovery, and cross-tab ownership verified locally; existing Stage 1 changes preserved for review                         |
+| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                                             |
+| Production         | Not configured; no real customer data                                                                                                                               |
 
 ## Next handoff
 
@@ -108,7 +108,8 @@ Product Owner authorization; do not begin M8.
 - Private-schema Exercise Definition, Training Preference, Training Record, occurrence snapshot,
   Set, and seven-day mutation-receipt data now sit behind a tenant-scoped Training Module and
   dedicated API role. The formal 100-item catalog uses stable keys and bootstrap-once semantics.
-- Session Training supports coalesced autosave, identity/session/tab-scoped IndexedDB recovery,
+- Session Training supports coalesced autosave, one identity/Session/device-local IndexedDB recovery
+  slot, single-visible-tab editor ownership,
   immutable occurrence snapshots, explicit conflicts, atomic completion, completed-record edits,
   reopen, qualified current/previous/personal bests, and mixed-unit display conversion.
 - `/exercises`, Session Training, Student performance/trends, and Settings weight preference now
@@ -293,6 +294,201 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-19 — LOG-125 — M7.5 Session autosave and recovery coordination correction
+
+- **Scope:** corrected the Product Owner-reported same-tab false conflict, persistent draft prompts,
+  and periodic `儲存中…` feedback without weakening server-authoritative version checks or allowing
+  blind cross-device overwrites.
+- **Outcome:** queued same-tab edits now receive the latest accepted Record/Session versions only
+  when actually sent. Ambiguous failures replay the exact operation before newer input; temporary
+  transport/server failures retry in the background without flashing `儲存中…`. No-change idle
+  state sends nothing. Legacy per-tab drafts consolidate into one Coach/Session/browser-local slot;
+  accepted-equivalent residue is removed, matching-version recovery resumes automatically, and
+  successful acceptance clears the Session slot. A renewable local editor lease prevents two
+  visible same-browser tabs from writing concurrently and automatically hands ownership over when
+  the first page leaves; only genuine divergent server content exposes an explicit conflict choice.
+- **Verification:** red-first autosave tests reproduced stale version reuse and tab-key splitting,
+  then focused Training/Session tests passed 2 files/13 tests. Full Web check passed 31 files/127
+  tests; Web production build passed with only the existing >500-kB chunk advisory. Authenticated
+  browser acceptance verified consecutive same-tab edits, successful reload with no recovery banner,
+  eight seconds of idle `已儲存` without periodic saving, automatic second-tab waiting/takeover, and
+  restoration of the temporary Note to its original empty value.
+- **Boundary:** this remains M7.5 Stage 1 local work. No migration, linked-database administration,
+  Demo mutation, commit, push, or remote CI claim is included.
+- **Next:** continue Product Owner review of the corrected Session and Calendar flows. Stage 2 and M8
+  still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-124 — M7.5 Session background-refresh layout stability
+
+- **Scope:** removed the Product Owner-reported transient `正在更新紀錄…` Training workspace line
+  that inserted itself above the exercise cards during an otherwise non-blocking background fetch.
+- **Outcome:** background refresh continues to revalidate the Session Training projection, but it no
+  longer renders a layout-affecting status row. The visible loading, saving, conflict, offline, and
+  error boundaries remain unchanged.
+- **Verification:** focused Session/confirmation regressions passed 2 files/4 tests; Web typecheck
+  passed. A browser reload encountered the existing multi-tab editor lock and correctly showed its
+  non-mutating ownership boundary; no data was changed. No migration, commit, push, or remote CI
+  claim is included.
+- **Next:** continue Product Owner review of the corrected Session and Calendar flows. Stage 2 and M8
+  still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-123 — M7.5 Session destructive-action and recovery-control refinement
+
+- **Scope:** refined only the Product Owner-reported Session confirmation, recovery banner, and
+  context-label presentation. No Session lifecycle authority, deletion semantics, or draft data
+  handling changed.
+- **Outcome:** the Session delete confirmation now uses the formal rounded danger-action treatment,
+  labels its action `刪除`, and visibly offers `ESC 取消 · DELETE 刪除`. Delete is active only for this
+  no-text-confirmation Session dialog; Escape still closes it. Recovery actions now use the formal
+  secondary and danger-outline button styles. Session dates add a space before the weekday, while
+  date, location, status, and their location icon increase by two pixels for legibility.
+- **Verification:** red-first shortcut regression failed before the feature, then passed. Focused
+  Web tests passed 2 files/4 tests. Full Web check passed 31 files/121 tests; Web production build
+  passed with only the existing >500-kB chunk advisory. Authenticated desktop browser inspection
+  confirmed the refined recovery controls, larger context metadata, the visible shortcut hint, and
+  Escape dismissal without saving, deleting, or changing any Session data.
+- **Boundary:** this remains M7.5 Stage 1 local work. No migration, linked-database write, Demo
+  mutation, commit, push, or remote CI claim is included.
+- **Next:** continue Product Owner review of the corrected Session and Calendar flows. Stage 2 and M8
+  still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-122 — M7.5 Session editor proportion and lifecycle feedback correction
+
+- **Scope:** corrected the Product Owner-reported fixed-height `變更課堂` dialog and the incomplete
+  lifecycle pending treatment without changing another route's layout, scheduling authority, or
+  persisted Session data.
+- **Outcome:** the Session editor now opts into its existing content-height dialog variant, separates
+  fields from a dedicated footer, and gives the `刪除課堂` / `取消` / `儲存變更` row deliberate
+  breathing room without retaining the former unused lower half. `完成上課` and `改回未完成` now share
+  one lifecycle action component: both enter the same lighter disabled spinner state and read
+  `處理中…` while their mutation is pending.
+- **Verification:** red-first Session regressions reproduced the missing compact-editor structure
+  and asymmetric reopen state, then passed after correction. Focused Session/Scheduling dialog
+  regression passed 2 files/7 tests. Full root check passed API 22 files/78 tests and Web 30
+  files/120 tests. API and Web production builds passed with only the existing Web >500-kB chunk
+  advisory. Authenticated Chrome verified the compact desktop dialog, separated action footer, and
+  exact 390×844 content-height bottom sheet; the dialogs were closed without saving, deleting, or
+  changing Session data.
+- **Boundary:** this remains M7.5 Stage 1 local work. No migration, linked-database write, Demo
+  mutation, commit, push, or remote CI claim is included.
+- **Next:** continue Product Owner review of the corrected Session and Calendar flows. Stage 2 and M8
+  still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-121 — M7.5 Session interaction and autosave root-cause correction
+
+- **Scope:** corrected the Product Owner-reported Session completion feedback, context usefulness,
+  one-off Student editing, delete-confirmation interactivity, false autosave conflicts, duplicate
+  save feedback, and cross-route scrollbar loss. This supersedes the corresponding interaction
+  claims in LOG-120 where browser review exposed remaining defects.
+- **Outcome:** completion now enters a lighter non-interactive `處理中…` state instead of presenting
+  a forbidden cursor. The context panel removes `SESSION CONTEXT`, balances time and Student
+  typography, keeps location and state on one line, and lists exercise names followed by the total.
+  A generated Series occurrence may change Student without altering its Series. Delete confirmation
+  replaces the scheduling dialog instead of rendering beneath it, and the shared dialog scroll lock
+  now uses a reference count so closing nested overlays cannot leave `body` locked.
+- **Persistence:** ordinary Training autosave now contests the Training Record version only; Session
+  version remains required for the atomic completion transition. This prevents an unrelated
+  same-device Session time, location, or Student update from being misreported as a Training
+  conflict while retaining real concurrent-record conflict protection. Only the top-right status
+  presents `儲存中…`; genuine conflicts retain the single recovery panel.
+- **Verification:** red-first focused regressions passed Web 3 files/15 tests and API 3 files/15
+  tests. Full root check passed API 22 files/78 tests and Web 30 files/118 tests. API and Web
+  production builds passed with only the existing Web >500-kB chunk advisory; `git diff --check`
+  passed. Authenticated Chrome verified a non-Calendar Student page scrolls to its final cards,
+  Calendar delete confirmation is the only active overlay, a Series occurrence Student selector
+  opens with every active Student, and the Session page exposes the same editable Student field and
+  interactive delete confirmation without changing test data. The 390×844 preview retained the
+  revised context hierarchy, full exercise-name summary, internal scrolling, and usable
+  bottom-sheet editor without document-level horizontal overflow.
+- **Known issue:** the first full check hit the known Windows sandbox `spawn EPERM`; the approved
+  elevated rerun passed. No migration, linked-database write, Demo mutation, commit, push, or remote
+  CI claim is included.
+- **Next:** continue Product Owner review of the corrected Session and Calendar flows. Stage 2 and M8
+  still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-120 — M7.5 Session workflow and persistence corrections
+
+- **Scope:** corrected the Product Owner-reported Session context, lifecycle, autosave, deletion,
+  capability-action, icon, numeric-focus, and Note-focus defects without changing the shared App
+  Shell or importing Demo persistence. The supplied Demo remains the typography, scale, spacing,
+  and Lucide-icon reference for this route.
+- **Outcome:** the dark context panel now presents authoritative date, time, Student, and location
+  instead of a low-value lesson ordinal. Autosave waits for two seconds of idle input, accepted
+  scheduling writes synchronize the Session Training cache/version, and a genuine conflict is shown
+  once rather than repeated in three locations. Idle and saved states both show the Demo check icon;
+  reopening immediately restores the `完成上課` action without an extra success sentence. Exercise
+  and Set remove icons are transparent, numeric inputs no longer gain a misaligned pale-green frame,
+  and the private Note retains readable dark-focus and selection styling.
+- **Deletion and links:** `刪除課堂` now lives inside `變更課堂`; scheduled and completed Session
+  deletion requires a confirmation explaining that unsaved content will be lost, then returns to the
+  previous route. Calendar quick deletion now confirms both Sessions and Blocks; completed Sessions
+  expose no Calendar delete shortcut. Scheduled Sessions expose `改期連結` even when overdue; an
+  overdue link uses available future slots from today through the next six local dates, while a
+  future Session retains the original-date ±3-day window. Completed Sessions retain `分享結果`.
+- **Verification:** red-first focused regressions reproduced the 650-ms autosave, stale Training
+  cache after reopen, scheduled-only repository deletion, and immediate Calendar deletion, then
+  passed after correction (Web 3 files/15 tests; API 2 files/3 tests). Root check passed API 22
+  files/76 tests and Web 30 files/117 tests. API and Web production builds passed with only the
+  existing Web >500-kB chunk advisory; `git diff --check` passed. Authenticated desktop inspection
+  confirmed the new context, check icon, nested completed-Session delete action, transparent remove
+  controls, and readable Note focus; the 390×844 preview confirmed the revised context typography
+  and layout without document-level horizontal overflow.
+- **Boundary:** this remains M7.5 Stage 1 local work. The existing local recovery draft was preserved
+  rather than discarded. No migration, linked-database write, Demo mutation, commit, push, or remote
+  CI claim is included.
+- **Next:** continue Product Owner review of the corrected Session and Calendar flows. Stage 2 and M8
+  still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-119 — M7.5 Session page Demo visual convergence
+
+- **Scope:** corrected only the formal Course/Session route after the Product Owner rejected its
+  long generic form layout and required the Demo workbench's complete visual hierarchy, including
+  typography, scale, icons, spacing, card proportions, and responsive composition. Existing formal
+  API, authorization, Training mutations, conflict handling, and shared App Shell styling remain
+  intact.
+- **Outcome:** the ready Session route now uses the Demo's sticky context/workbench composition,
+  centered student header, compact action hierarchy, dark Session context and private Note panel,
+  numbered Exercise cards, inline performance summaries, table-like Set rows, and fixed completion
+  bar. Route-scoped CSS matches the Demo's measured font sizes, weights, vertical rhythm, button and
+  Lucide icon dimensions; the formal custom `FormSelect` remains the unit control while presenting
+  as the Demo's compact unit suffix. Longer formal values such as `72.5 kg` remain fully visible.
+- **Verification:** authenticated desktop browser comparison against the running Demo matched the
+  74-pixel top bar, 410-pixel context column, editor/card geometry, heading rhythm, control sizing,
+  and icon dimensions. Exact 390×844 inspection has no document-level horizontal overflow; Set rows
+  retain the Demo-equivalent internal horizontal scroller. Web check passed format, typecheck, and
+  29 files/116 tests. Web production build passed with only the existing >500-kB chunk advisory;
+  `git diff --check` passed.
+- **Boundary:** this is a route-scoped M7.5 Stage 1 correction. No schema, migration, Demo data,
+  unrelated route restyle, commit, push, or remote-CI claim is included.
+- **Next:** continue Product Owner review of the formal Session page and the remaining M7.5 Stage 1
+  flows. Stage 2 and M8 still require explicit Product Owner authorization.
+
+### 2026-09-19 — LOG-118 — M7.5 Session Training load-path hardening
+
+- **Scope:** investigated the Product Owner-reported delay after a Session header appeared while its
+  Training Record remained loading, then applied a bounded Stage 1 performance correction without a
+  schema, API response, authorization, cache-retention, or broad-prefetch change.
+- **Outcome:** Session detail and Training reads now start together on the first route render instead
+  of forming a client request waterfall. The Training repository retains its transaction-local
+  Workspace scope and complete route projection while batching Session/Record/preference and current
+  Exercise/Set reads; one workspace read now uses three data queries rather than six, reducing the
+  full scoped transaction from nine database calls to six. It adds no background polling, global
+  cache, or all-Session prefetch and returns the same three Exercises, nine Sets, and 33 history
+  points for the reported development Session.
+- **Verification:** red-first focused regressions observed the missing parallel Training request and
+  nine repository calls before the change, then passed with parallel reads and six calls. Full API
+  check passed 20 files/73 tests; full Web check passed 29 files/116 tests; API and Web production
+  builds passed with only the existing Web >500-kB advisory. Live old/new interleaved read-only
+  measurements showed the new path faster in three of four adjacent pairs (`1552/1192`, `699/712`,
+  `1440/1486`, and `611/865` ms as new/old after order normalization); Supabase network variance
+  prevents claiming a fixed multiplier, while the 33% lower database-call count is deterministic.
+- **Known issue:** authenticated browser timing could not be captured because the browser-control
+  surface failed to load its request-header policy. The live repository path and exact data shape
+  were verified; fresh in-browser Session navigation remains useful Product Owner acceptance.
+- **Next:** include this correction in the already authorized M7.5 Stage 1 delivery, then commit,
+  push, and confirm the exact commit's GitHub Actions Verify and migration-dry-run jobs. Stage 2 and
+  M8 remain separate Product Owner decisions.
 
 ### 2026-09-19 — LOG-117 — M7.5 Stage 1 accumulated local CI
 

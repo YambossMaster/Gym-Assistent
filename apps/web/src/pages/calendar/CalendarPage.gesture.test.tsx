@@ -281,7 +281,7 @@ describe('Calendar Day and Week gestures', () => {
     }
   })
 
-  it('opens the quick course view and supports Delete outside editable fields', async () => {
+  it('opens the quick course view and confirms Delete outside editable fields', async () => {
     const { host, root } = await mount(true)
     try {
       const item = host.querySelector('.calendar-session.positioned')!
@@ -292,20 +292,41 @@ describe('Calendar Day and Week gestures', () => {
       await act(async () =>
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
       )
-      expect(calls.deleteSession).toHaveBeenCalledWith(
-        { sessionId: 'course-1', version: 4 },
-        expect.any(Object)
-      )
+      expect(calls.deleteSession).not.toHaveBeenCalled()
+      expect(document.body.textContent).toContain('是否確認刪除此課堂？')
       await act(async () =>
-        dialog.querySelector<HTMLButtonElement>('.calendar-quick-edit')!.click()
+        [...document.querySelectorAll<HTMLButtonElement>('button')]
+          .find((button) => button.textContent?.includes('取消'))!
+          .click()
       )
-      const input = dialog.querySelector<HTMLInputElement>('input[type="date"]')!
+      const restoredDialog = host.querySelector('.scheduling-dialog')!
+      await act(async () =>
+        restoredDialog.querySelector<HTMLButtonElement>('.calendar-quick-edit')!.click()
+      )
+      const input = restoredDialog.querySelector<HTMLInputElement>('input[type="date"]')!
       input.focus()
       calls.deleteSession.mockClear()
       await act(async () =>
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
       )
       expect(calls.deleteSession).not.toHaveBeenCalled()
+      await act(async () =>
+        restoredDialog
+          .querySelector<HTMLButtonElement>('.scheduling-form-actions .secondary-button')!
+          .click()
+      )
+      await act(async () =>
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+      )
+      await act(async () =>
+        [...document.querySelectorAll<HTMLButtonElement>('button')]
+          .find((button) => button.textContent?.includes('確認刪除'))!
+          .click()
+      )
+      expect(calls.deleteSession).toHaveBeenCalledWith(
+        { sessionId: 'course-1', version: 4 },
+        expect.any(Object)
+      )
     } finally {
       await act(async () => root.unmount())
     }
@@ -388,6 +409,15 @@ describe('Calendar Day and Week gestures', () => {
       await act(async () =>
         dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
       )
+      expect(calls.deleteBlock).not.toHaveBeenCalled()
+      expect(host.textContent).toContain('是否確認刪除此封鎖時段？')
+      expect(host.querySelector('.scheduling-dialog')).toBeNull()
+      expect(host.querySelector('.danger-confirmation')).not.toBeNull()
+      await act(async () =>
+        [...host.querySelectorAll<HTMLButtonElement>('button')]
+          .find((button) => button.textContent?.includes('確認刪除'))!
+          .click()
+      )
       expect(calls.deleteBlock).toHaveBeenCalledWith(
         { blockId: 'block-1', input: { version: 2, scope: 'single' } },
         expect.any(Object)
@@ -410,6 +440,15 @@ describe('Calendar Day and Week gestures', () => {
       dialog.focus()
       await act(async () =>
         dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+      )
+      expect(calls.transitionSession).not.toHaveBeenCalled()
+      expect(host.textContent).toContain('是否確認刪除此課堂？')
+      expect(host.querySelector('.scheduling-dialog')).toBeNull()
+      expect(host.querySelector('.danger-confirmation')).not.toBeNull()
+      await act(async () =>
+        [...host.querySelectorAll<HTMLButtonElement>('button')]
+          .find((button) => button.textContent?.includes('確認刪除'))!
+          .click()
       )
       expect(calls.transitionSession).toHaveBeenCalledWith(
         { sessionId: 'course-1', input: { action: 'cancel', version: 4 } },
