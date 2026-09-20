@@ -1,25 +1,25 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-19. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-20. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                                                       |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                                          |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                    |
-| Package state      | **Calendar and Session workflow, autosave/draft coordination, lifecycle feedback, deletion-safety, and Demo-parity corrections verified locally; review continues** |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                       |
-| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded                                                                                    |
-| Worktree           | Session autosave sequencing, device-local recovery, and cross-tab ownership verified locally; existing Stage 1 changes preserved for review                         |
-| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                                             |
-| Production         | Not configured; no real customer data                                                                                                                               |
+| Field              | Current value                                                                                                                           |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                              |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                        |
+| Package state      | **Full-range growth charts and pre-completion accepted-record updates passed the complete local CI gate; Stage 1 review continues**     |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                           |
+| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded                                                        |
+| Worktree           | Complete desktop 10/20 and mobile 5/10 trajectories, compact summaries, and saved-set performance updates ready for authorized delivery |
+| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                 |
+| Production         | Not configured; no real customer data                                                                                                   |
 
 ## Next handoff
 
-Continue M7.5 Stage 1 Product Owner review of the Calendar quick view, Student reassignment, Day/Week
-touch gestures, and Block editor on a physical phone if available. Stage 2 begins only after explicit
+Continue M7.5 Stage 1 Product Owner review of the redesigned Session/Student growth trajectory.
+Keep Calendar touch/Block physical-phone acceptance in the review queue. Stage 2 begins only after explicit
 Product Owner authorization; do not begin M8.
 
 ## M7.5 Stage 2 backlog
@@ -294,6 +294,76 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-20 — LOG-128 — M7.5 growth-trajectory local CI gate
+
+- **Scope:** ran the complete authorized delivery gate for the accumulated M7.5 Stage 1
+  growth-trajectory work before committing or pushing it to `main`.
+- **Verification:** a clean `npm ci` completed after pausing the local API/Web development
+  processes that held Windows native-module locks. Root formatting passed; API typecheck and 22
+  test files / 78 tests passed; Web formatting/typecheck and 32 test files / 131 tests passed;
+  API and Web production builds passed. The only build output was the existing Web over-500-kB
+  chunk advisory. `npm run db:push:dry` against the linked development project reported
+  `upToDate: true` with no pending migrations; `git diff --check` passed.
+- **Next:** commit and push this authorized M7.5 Stage 1 checkpoint, then record only the observed
+  exact-SHA GitHub Actions result. Continue Stage 1 review afterward; do not enter Stage 2 or M8.
+
+### 2026-09-20 — LOG-127 — M7.5 full-range chart and accepted-record updates
+
+- **Scope / Contract:** follow-up Product Owner review replaces chart pagination with complete
+  desktop 10/20 and mobile 5/10 ranges, Student-name titles, compact desktop summaries, and
+  accepted-record updates before class completion. The bounded override of M5 private performance
+  membership is frozen in [`M7.5-GROWTH-TRAJECTORY-CONTRACT.md`](M7.5-GROWTH-TRAJECTORY-CONTRACT.md).
+- **Outcome:** the selected range now drives every plotted point, summary, and history row. Removed
+  all-records mode and chart paging; dense ranges stagger all value/date/year labels. Desktop
+  summary numbers and range selector share one row. Both routes show Student name — Exercise name.
+  Private performance now includes saved completed sets in scheduled and completed non-legacy
+  Sessions; cancelled Sessions and missing numeric values do not contribute. Previous completed
+  Session defaults/previous-best and lesson deductions remain unchanged. Training/Scheduling
+  acceptance invalidates affected Student trend and directory queries; pending/recovery changes
+  remain clearly identified and never become unsaved chart facts. No polling or schema change.
+- **Reproduction:** the original Web test expected 20 nodes but received 8 at its test width.
+  The isolated live save expected a scheduled Session history point of 91.5 but received none.
+  Root causes were the chart capacity/pagination cap, completed-only persistence query, and missing
+  Student-trend invalidation after saves.
+- **Verification:** focused Web tests passed (3 chart tests plus 6 Training/Scheduling query tests);
+  focused API tests passed (2 files/11 tests). Live regression passed scheduled save, value correction,
+  removal of completed status, null weight, completion/reopening/cancellation, no early lesson
+  deduction, private-note exclusion, and two-Coach isolation; all isolated Students were deleted.
+  Browser fixtures at 1440×731 verified 20 value/date/year labels with no pairwise overlaps or
+  horizontal overflow and a 163px independent history viewport. Exact 390×844 verified full 5/10
+  node ranges, no value-label overlap or horizontal overflow, and a 175px history viewport in
+  10-point mode. Temporary fixture pages were removed. Web/API builds passed; Web retains the
+  existing over-500-kB advisory.
+- **Known boundary:** a combined Web fork-worker run hit startup timeout for the chart file;
+  the query files passed, and a dedicated single-thread chart rerun passed. Responsive browser
+  checks do not claim physical-phone touch acceptance.
+- **Next:** continue Product Owner Stage 1 review of the full-range/dynamic trajectory. No push,
+  remote CI, Stage 2, or M8 transition.
+
+### 2026-09-20 — LOG-126 — M7.5 shared growth-trajectory presentation
+
+- **Scope / Contract:** Product Owner authorized a Stage 1 redesign of both Session and Student
+  growth-trajectory dialogs: action-specific empty copy, separated exercise title, labeled line
+  chart with automatic bounds, recent 10 / 20 / all ranges, newest-first compact history, and
+  independently scrolling history on desktop and exact 390×844.
+- **Outcome:** both routes use one Training-owned dialog with FORM paper/ink/lime styling,
+  latest/range-high/range-change summaries, per-node values and dates including year, adaptive
+  chart paging (up to 10 points; 4 at 390px), and bounds based on the visible chart segment.
+  All selected records remain in the history list. Loading, retryable error, cached refresh,
+  empty, single, and flat-series states are explicit. Server projections, qualification rules,
+  API rounding, persistence, Auth, and query/cache behavior remain unchanged; no chart dependency
+  or polling was added.
+- **Verification:** Web typecheck and production build passed (existing 500-kB advisory only).
+  Focused Vitest tests passed (2): small 91.25 / 91.5 / 91.75 changes, flat/zero/single bounds,
+  125-record reverse ordering, range/paging, Escape, and error-versus-empty copy. Authenticated
+  Session desktop and exact 390×844 browser checks verified real data, empty copy, range menu,
+  paging, and no horizontal overflow; the 760px mobile dialog had no internal overflow, while
+  history alone had a 204px viewport over 440px of records. Student-page live loading/ready states also passed. Temporary browser fixtures checked
+  125 cross-year records without writing database data.
+- **Known boundary:** viewport verification is not physical touch-device acceptance. Initial
+  sandbox test startup hit Windows spawn EPERM; the elevated focused rerun passed.
+- **Next:** continue Product Owner Stage 1 visual review; no Stage 2, push, or remote CI.
 
 ### 2026-09-19 — LOG-125 — M7.5 Session autosave and recovery coordination correction
 

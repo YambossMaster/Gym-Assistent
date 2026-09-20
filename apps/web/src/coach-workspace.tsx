@@ -1,3 +1,4 @@
+import { PerformanceTrend as TrendDialog } from './pages/training/PerformanceTrend'
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from './shared/FormSelect'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -352,7 +353,11 @@ export function StudentDetailPage({
           timeZone={timeZone}
           schedule={detail.schedule}
         />
-        <StudentPerformance session={session} studentId={studentId} />
+        <StudentPerformance
+          session={session}
+          studentId={studentId}
+          studentName={detail.student.name}
+        />
         <form className="detail-section" onSubmit={save}>
           <h2>基本資料</h2>
           <label>
@@ -1493,7 +1498,15 @@ function formatMoney(amountMinor: number, currency: string) {
   }).format(amountMinor)
 }
 
-function StudentPerformance({ session, studentId }: { session: Session; studentId: string }) {
+function StudentPerformance({
+  session,
+  studentId,
+  studentName
+}: {
+  session: Session
+  studentId: string
+  studentName: string
+}) {
   const query = useStudentPerformance(session, studentId)
   const [selected, setSelected] = useState<PerformanceEntry | null>(null)
   return (
@@ -1537,11 +1550,12 @@ function StudentPerformance({ session, studentId }: { session: Session; studentI
       ) : (
         <div className="empty-state">
           <strong>尚無紀錄</strong>
-          <p>完成課堂並標記已完成的組別後，表現會顯示在這裡。</p>
+          <p>記錄動作並標記已完成的組別後，表現會顯示在這裡。</p>
         </div>
       )}
       {selected && (
         <PerformanceTrend
+          studentName={studentName}
           session={session}
           studentId={studentId}
           entry={selected}
@@ -1553,76 +1567,34 @@ function StudentPerformance({ session, studentId }: { session: Session; studentI
 }
 
 function PerformanceTrend({
+  studentName,
   session,
   studentId,
   entry,
   onClose
 }: {
+  studentName: string
   session: Session
   studentId: string
   entry: PerformanceEntry
   onClose: () => void
 }) {
   const query = useStudentTrend(session, studentId, entry.definitionId, entry.metric)
-  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, { focusDialog: true })
   return (
-    <div className="dialog-backdrop" onPointerDown={onBackdropPointerDown}>
-      <section
-        ref={dialogRef}
-        tabIndex={-1}
-        className="performance-trend"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="trend-title"
-      >
-        <header>
-          <div>
-            <span>PERFORMANCE TREND</span>
-            <h2 id="trend-title">{entry.name}</h2>
-          </div>
-          <button className="icon-button" aria-label="關閉" onClick={onClose}>
-            ×
-          </button>
-        </header>
-        {query.isLoading ? (
-          <p>載入趨勢中…</p>
-        ) : query.data?.points.length ? (
-          <>
-            <div className="trend-chart" aria-hidden="true">
-              {query.data.points.map((point, index, all) => (
-                <i
-                  key={point.sessionId}
-                  style={{
-                    height: `${Math.max(12, (point.value / Math.max(...all.map((x) => x.value))) * 100)}%`
-                  }}
-                />
-              ))}
-            </div>
-            <ol className="trend-values">
-              {query.data.points.map((point) => (
-                <li key={point.sessionId}>
-                  <time>{new Date(point.startsAt).toLocaleDateString('zh-TW')}</time>
-                  <strong>
-                    {point.value}
-                    {entry.metric === 'weight' ? ` ${point.unit}` : ' 次'}
-                  </strong>
-                </li>
-              ))}
-            </ol>
-          </>
-        ) : (
-          <div className="empty-state">
-            <strong>還沒有可繪製的最佳表現</strong>
-            <p>只有標記為已完成的組別會進入最佳表現紀錄。</p>
-          </div>
-        )}
-        <button className="secondary-button" onClick={onClose}>
-          返回動作列表
-        </button>
-      </section>
-    </div>
+    <TrendDialog
+      studentName={studentName}
+      name={entry.name}
+      points={query.data?.points ?? []}
+      metric={entry.metric}
+      loading={query.isLoading}
+      error={query.isError}
+      refreshing={query.isFetching && !query.isLoading}
+      onRetry={() => void query.refetch()}
+      onClose={onClose}
+    />
   )
 }
+
 function readError(error: unknown) {
   if (error instanceof ApiError && error.status === 401) return '登入已失效，請重新登入。'
   return error instanceof Error ? error.message : '目前無法完成這項操作。'

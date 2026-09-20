@@ -509,7 +509,9 @@ export class PostgresTrainingRepository implements TrainingRepository {
       (x) => x.definitionId === definitionId && x.metric === metric,
     )
     const entry = directory.find((x: any) => x.definitionId === definitionId && x.metric === metric)
-    return entry ? { ...entry, points } : { definitionId, metric, points: [] }
+    return entry
+      ? { ...entry, points: points.map(({ sessionStatus: _status, ...point }) => point) }
+      : { definitionId, metric, points: [] }
   }
 
   private async performancePoints(workspaceId: string, studentId: string) {
@@ -526,7 +528,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     defaultUnit: WeightUnit,
   ) {
     const rows = await queryable.query(
-      `select cs.id session_id,cs.starts_at,te.definition_id,te.definition_name,te.performance_metric,ts.planned_weight,ts.actual_reps,ts.unit from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where cs.workspace_id=$1 and cs.student_id=$2 and cs.status='completed' and not cs.is_legacy and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
+      `select cs.id session_id,cs.status session_status,cs.starts_at,te.definition_id,te.definition_name,te.performance_metric,ts.planned_weight,ts.actual_reps,ts.unit from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where cs.workspace_id=$1 and cs.student_id=$2 and cs.status in ('scheduled','completed') and not cs.is_legacy and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
       [workspaceId, studentId],
     )
     const groups = new Map<string, any[]>()
@@ -538,11 +540,16 @@ export class PostgresTrainingRepository implements TrainingRepository {
       const first = sets[0]
       const value =
         first.performance_metric === 'reps'
-          ? Math.max(...sets.map((x) => Number(x.actual_reps)).filter(Number.isFinite))
+          ? Math.max(
+              ...sets
+                .filter((x) => x.actual_reps !== null)
+                .map((x) => Number(x.actual_reps))
+                .filter(Number.isFinite),
+            )
           : qualifiedBest(
               'weight',
               sets.map((x) => ({
-                plannedWeight: Number(x.planned_weight),
+                plannedWeight: x.planned_weight === null ? null : Number(x.planned_weight),
                 plannedReps: null,
                 actualReps: null,
                 rpe: null,
@@ -557,6 +564,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         : [
             {
               sessionId: first.session_id,
+              sessionStatus: first.session_status,
               startsAt: first.starts_at,
               definitionId: first.definition_id,
               name: first.definition_name,
@@ -645,7 +653,9 @@ export class PostgresTrainingRepository implements TrainingRepository {
       )
       const previous = history
         .filter(
-          (point) => new Date(point.startsAt).getTime() < new Date(String(s.starts_at)).getTime(),
+          (point) =>
+            point.sessionStatus === 'completed' &&
+            new Date(point.startsAt).getTime() < new Date(String(s.starts_at)).getTime(),
         )
         .at(-1)
       const displayedCurrent =

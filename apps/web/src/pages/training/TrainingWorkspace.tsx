@@ -1,3 +1,4 @@
+import { PerformanceTrend } from './PerformanceTrend'
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
 import {
@@ -718,11 +719,23 @@ function TrainingEditor({
       )}
       {trend ? (
         <PerformanceTrend
+          studentName={initial.session.studentName}
           name={
             initial.record.exercises.find((exercise) => exercise.id === trend.occurrenceId)
               ?.definitionName ?? '成長軌跡'
           }
-          summary={trend}
+          updateNotice={
+            saveState === 'pending' || saveState === 'saving'
+              ? '正在儲存，成長軌跡將自動更新…'
+              : saveState === 'error' ||
+                  saveState === 'retrying' ||
+                  saveState === 'conflict' ||
+                  offline
+                ? '尚有未同步的紀錄，儲存成功後會更新成長軌跡。'
+                : undefined
+          }
+          points={trend.history}
+          metric={trend.metric}
           onClose={() => setTrendId(null)}
         />
       ) : null}
@@ -752,70 +765,6 @@ export function SessionLifecycleButton({
       {pending ? <LoaderCircle className="button-spinner" /> : complete ? <Check /> : <RotateCcw />}
       {pending ? '處理中…' : complete ? '完成上課' : '改回未完成'}
     </button>
-  )
-}
-
-function PerformanceTrend({
-  name,
-  summary,
-  onClose
-}: {
-  name: string
-  summary: SessionTraining['exerciseSummaries'][number]
-  onClose: () => void
-}) {
-  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
-    focusDialog: true
-  })
-  const values = summary.history.map((point) => point.value)
-  const maximum = Math.max(...values, 1)
-  return (
-    <div className="dialog-backdrop" role="presentation" onPointerDown={onBackdropPointerDown}>
-      <section
-        ref={dialogRef}
-        tabIndex={-1}
-        className="performance-trend"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="performance-trend-title"
-      >
-        <header>
-          <div>
-            <span>PERFORMANCE</span>
-            <h2 id="performance-trend-title">{name}成長軌跡</h2>
-          </div>
-          <button className="icon-button" aria-label="關閉" onClick={onClose}>
-            <X />
-          </button>
-        </header>
-        {summary.history.length ? (
-          <>
-            <div className="trend-chart" aria-hidden="true">
-              {summary.history.map((point) => (
-                <i
-                  key={`${point.sessionId}-${point.startsAt}`}
-                  style={{ height: `${Math.max(8, (point.value / maximum) * 100)}%` }}
-                />
-              ))}
-            </div>
-            <ul className="trend-values">
-              {summary.history.map((point) => (
-                <li key={`${point.sessionId}-${point.startsAt}`}>
-                  <span>
-                    {new Intl.DateTimeFormat('zh-TW', { dateStyle: 'medium' }).format(
-                      new Date(point.startsAt)
-                    )}
-                  </span>
-                  <strong>{formatValue(point.value, summary.metric, point.unit)}</strong>
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="empty-state">完成更多課程後，這裡會顯示成長軌跡。</p>
-        )}
-      </section>
-    </div>
   )
 }
 

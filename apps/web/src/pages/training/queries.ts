@@ -265,6 +265,7 @@ export function useTrainingMutations(session: Session) {
         void client.invalidateQueries({ queryKey: ['training-preference', session.user.id] })
         void client.invalidateQueries({ queryKey: ['training-defaults', session.user.id] })
         void client.invalidateQueries({ queryKey: ['student-performance', session.user.id] })
+        void client.invalidateQueries({ queryKey: ['student-trend', session.user.id] })
       }
     }),
     save: useMutation({
@@ -283,9 +284,6 @@ export function useTrainingMutations(session: Session) {
           accepted
         )
         void client.invalidateQueries({ queryKey: ['training-defaults', session.user.id] })
-        void client.invalidateQueries({
-          queryKey: queryKeys.studentPerformance(session.user.id, accepted.session.studentId)
-        })
         invalidateSchedulingQueries(
           client,
           session.user.id,

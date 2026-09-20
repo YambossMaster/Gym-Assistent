@@ -13,7 +13,8 @@ const requests = vi.hoisted(() => ({
   getLibrary: vi.fn(),
   remove: vi.fn(),
   create: vi.fn(),
-  update: vi.fn()
+  update: vi.fn(),
+  save: vi.fn()
 }))
 vi.mock('../../api', async (original) => ({
   ...(await original<typeof import('../../api')>()),
@@ -21,7 +22,8 @@ vi.mock('../../api', async (original) => ({
   setExerciseFavorite: requests.favorite,
   removeExercise: requests.remove,
   createExercise: requests.create,
-  updateExercise: requests.update
+  updateExercise: requests.update,
+  saveSessionTraining: requests.save
 }))
 
 const definition: ExerciseDefinition = {
@@ -45,6 +47,7 @@ afterEach(() => {
   requests.remove.mockReset()
   requests.create.mockReset()
   requests.update.mockReset()
+  requests.save.mockReset()
   vi.unstubAllGlobals()
 })
 
@@ -308,6 +311,56 @@ it('refreshes an outdated favorite version and retries the latest choice', async
       favorite: true,
       version: 3
     })
+  } finally {
+    await act(async () => root.unmount())
+    client.clear()
+  }
+})
+
+it('refreshes an already cached Student trend after an accepted autosave without completing class', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  const affected = queryKeys.studentTrend('coach', 'student', 'squat', 'weight')
+  const other = queryKeys.studentTrend('coach', 'other-student', 'squat', 'weight')
+  client.setQueryData(affected, { points: [] })
+  client.setQueryData(other, { points: [] })
+  const accepted = {
+    session: { id: 'lesson', studentId: 'student', status: 'scheduled' },
+    record: { version: 2 },
+    exerciseSummaries: [{ history: [{ value: 91.5 }] }]
+  }
+  requests.save.mockResolvedValue(accepted)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  let mutations!: ReturnType<typeof useTrainingMutations>
+  function Harness() {
+    mutations = useTrainingMutations(session)
+    return null
+  }
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <Harness />
+        </QueryClientProvider>
+      )
+    )
+    await act(async () => {
+      await mutations.save.mutateAsync({
+        sessionId: 'lesson',
+        payload: {
+          recordVersion: 1,
+          sessionVersion: 1,
+          operationId: 'save-test',
+          privateNote: '',
+          exercises: []
+        }
+      })
+    })
+    expect(client.getQueryState(affected)?.isInvalidated).toBe(true)
+    expect(client.getQueryState(other)?.isInvalidated).toBe(false)
+    expect(client.getQueryData(queryKeys.sessionTraining('coach', 'lesson'))).toEqual(accepted)
   } finally {
     await act(async () => root.unmount())
     client.clear()

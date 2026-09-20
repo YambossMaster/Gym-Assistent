@@ -33,6 +33,13 @@ export function invalidateSchedulingQueries(
   sessionId?: string
 ) {
   void queryClient.invalidateQueries({ queryKey: ['calendar', coachId] })
+  // Training edits, cancellation, reassignment, and deletion all change these projections.
+  void queryClient.invalidateQueries({
+    queryKey: ['student-performance', coachId, ...(studentId ? [studentId] : [])]
+  })
+  void queryClient.invalidateQueries({
+    queryKey: ['student-trend', coachId, ...(studentId ? [studentId] : [])]
+  })
   void queryClient.invalidateQueries({ queryKey: queryKeys.today(coachId) })
   if (studentId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.student(coachId, studentId) })
