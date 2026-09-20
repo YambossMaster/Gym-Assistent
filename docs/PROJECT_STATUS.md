@@ -11,7 +11,7 @@
 | Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                        |
 | Package state      | **Full-range growth charts and pre-completion accepted-record updates passed the complete local CI gate; Stage 1 review continues**     |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                           |
-| Branch baseline    | Local and `origin/main` at `6f42cfc`; GitHub Actions run `35205978389` succeeded                                                        |
+| Branch baseline    | Local and `origin/main` at `a63f731`; GitHub Actions CI #31 / run `35514885492` succeeded                                               |
 | Worktree           | Complete desktop 10/20 and mobile 5/10 trajectories, compact summaries, and saved-set performance updates ready for authorized delivery |
 | Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                 |
 | Production         | Not configured; no real customer data                                                                                                   |
@@ -294,6 +294,16 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-20 — LOG-129 — M7.5 growth-trajectory CI delivery confirmed
+
+- **Delivery:** commit `a63f7316fb1c8c5ee5282ee60217f37785b652ae` was pushed to
+  `origin/main`; the remote ref resolved to that exact SHA.
+- **Remote verification:** GitHub Actions CI #31 / run `35514885492` completed successfully
+  in 1m 51s, including `verify` and `migration-dry-run`.
+- **Next:** continue the M7.5 Stage 1 Product Owner review. Keep Calendar touch/Block
+  physical-phone acceptance in the review queue; do not enter Stage 2 or M8 without explicit
+  Product Owner authorization.
 
 ### 2026-09-20 — LOG-128 — M7.5 growth-trajectory local CI gate
 
