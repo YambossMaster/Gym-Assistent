@@ -5,16 +5,16 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                    |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                       |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                 |
-| Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**                |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                    |
-| Branch baseline    | `d288e3d` is on `origin/main`; CI #34 exposed one Calendar gesture-test focus race after the successful `1e9fd4d` feature run    |
-| Worktree           | Calendar quick-view focus regression is corrected and locally verified; local browser evidence remains under untracked `output/` |
-| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                              |
-| Production         | Not configured; no real customer data                                                                                            |
+| Field              | Current value                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                            |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                      |
+| Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**     |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                         |
+| Branch baseline    | `37c9be1` is on `origin/main`; GitHub Actions CI #35 / run `35698934366` succeeded                                    |
+| Worktree           | Recording checkpoint and Calendar CI-race fix are delivered; local browser evidence remains under untracked `output/` |
+| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                   |
+| Production         | Not configured; no real customer data                                                                                 |
 
 ## Next handoff
 
@@ -307,6 +307,20 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-22 — LOG-150 — Calendar CI-race fix delivered
+
+- **Scope:** delivered the Calendar quick-view test synchronization correction discovered by the
+  failed documentation follow-up run.
+- **Outcome:** commit `37c9be154d6bfb4e415d89eef73535da96e7c761` is on `origin/main`; the
+  restored quick-view now has deterministic test coverage for focus-aware Delete handling without
+  changing product behaviour. The earlier CI #34 failure remains recorded rather than rewritten.
+- **Verification:** remote `origin/main` resolved to the exact fix SHA. GitHub Actions CI #35 / run
+  `35698934366` completed successfully in 1m13s: `verify` passed in 49s with API 23 files/84 tests
+  and Web 35 files/138 tests, and `migration-dry-run` passed in 17s. Only the existing Node action
+  deprecation and future Ubuntu runner-image notices remain.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review from the existing Next handoff; do not
+  enter Stage 2 or M8 without explicit authorization.
 
 ### 2026-09-22 — LOG-149 — Calendar quick-view CI race corrected
 
