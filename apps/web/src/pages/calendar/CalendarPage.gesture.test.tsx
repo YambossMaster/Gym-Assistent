@@ -315,6 +315,10 @@ describe('Calendar Day and Week gestures', () => {
           .querySelector<HTMLButtonElement>('.scheduling-form-actions .secondary-button')!
           .click()
       )
+      await act(async () => {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      })
+      expect(restoredDialog.contains(document.activeElement)).toBe(true)
       await act(async () =>
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
       )

@@ -5,16 +5,16 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                                                              |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                                                 |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                           |
-| Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**                                                          |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                              |
-| Branch baseline    | `1e9fd4d` delivers the M7.5 recording checkpoint; GitHub Actions CI #33 / run `35697896707` succeeded                                                                      |
-| Worktree           | Recording types, unit conventions, dynamic inputs, summaries, and persistent line/bar trajectories are delivered; local browser evidence remains under untracked `output/` |
-| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                                                                        |
-| Production         | Not configured; no real customer data                                                                                                                                      |
+| Field              | Current value                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                       |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                 |
+| Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**                |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                    |
+| Branch baseline    | `d288e3d` is on `origin/main`; CI #34 exposed one Calendar gesture-test focus race after the successful `1e9fd4d` feature run    |
+| Worktree           | Calendar quick-view focus regression is corrected and locally verified; local browser evidence remains under untracked `output/` |
+| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                              |
+| Production         | Not configured; no real customer data                                                                                            |
 
 ## Next handoff
 
@@ -307,6 +307,22 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-22 — LOG-149 — Calendar quick-view CI race corrected
+
+- **Scope:** the documentation follow-up at `d288e3d` reran unchanged product tests in GitHub
+  Actions CI #34 / run `35698183500`; API passed, but one Calendar gesture test failed because it
+  tried to click a missing confirmation action immediately after returning from edit mode.
+- **Outcome:** the test now waits for the product's existing animation-frame focus restoration and
+  asserts that focus is inside the restored quick-view dialog before sending the Delete shortcut.
+  This preserves the safety rule that Delete inside editable fields does nothing and does not
+  weaken product behaviour or assertions.
+- **Verification:** the focused Calendar gesture file passed 20/20 isolated repetitions. Exact root
+  `npm run check` passed API 23 files/84 tests and Web 35 files/138 tests; root build passed with the
+  existing bundle-size advisory; linked migration dry-run reported `upToDate:true`; and
+  `git diff --check` passed with line-ending notices only.
+- **Next:** push the Calendar synchronization fix to `main`, confirm its exact-SHA Verify and
+  migration-dry-run jobs, and record final delivery evidence before resuming Stage 1 review.
 
 ### 2026-09-22 — LOG-148 — M7.5 recording checkpoint delivered
 
