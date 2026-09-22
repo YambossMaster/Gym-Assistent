@@ -11,8 +11,8 @@
 | Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                           |
 | Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**                                                          |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                              |
-| Branch baseline    | Local `df7c644` documents delivered `a63f731`; preserved GitHub Actions CI #31 / run `35514885492` evidence                                                                |
-| Worktree           | Eight recording types, convention-based unit preferences, dynamic set inputs, primary-only Session summaries, and persistent line/bar trajectories; local changes, no push |
+| Branch baseline    | `1e9fd4d` delivers the M7.5 recording checkpoint; GitHub Actions CI #33 / run `35697896707` succeeded                                                                      |
+| Worktree           | Recording types, unit conventions, dynamic inputs, summaries, and persistent line/bar trajectories are delivered; local browser evidence remains under untracked `output/` |
 | Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                                                                        |
 | Production         | Not configured; no real customer data                                                                                                                                      |
 
@@ -307,6 +307,22 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-22 — LOG-148 — M7.5 recording checkpoint delivered
+
+- **Scope:** delivered the Product Owner-authorized interim M7.5 recording package after correcting
+  its formatting and autosave repository CI regressions.
+- **Outcome:** commit `1e9fd4d6c8e315731bd327e1d61878060b149c2c` is on `origin/main` with the
+  eight recording types, per-record unit scales, Training inputs, Exercise/Session/Student/public
+  summaries, persistent primary metrics and trajectories, brand assets, migrations, and focused
+  regression coverage. M7.5 Stage 1 remains open; this checkpoint does not authorize Stage 2 or M8.
+- **Verification:** remote `origin/main` resolved to the exact feature SHA. GitHub Actions CI #33 /
+  run `35697896707` completed successfully in 1m45s: `verify` passed in 47s with API 23 files/84
+  tests and Web 35 files/138 tests, and `migration-dry-run` passed in 27s. The run retains the known
+  Node 20 action deprecation warning and adds an informational future `ubuntu-latest` runner-image
+  migration notice; neither job reported a product or migration failure.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review from the existing Next handoff; do not
+  enter Stage 2 or M8 without explicit authorization.
 
 ### 2026-09-22 — LOG-147 — Recording delivery CI regression corrected
 
