@@ -9,8 +9,20 @@ import {
   updateDefinitionSchema,
 } from './training.js'
 import type { TrainingRepository } from './training-repository.js'
+import { z } from 'zod'
+import { progressMetricSchema } from './recording.js'
 
 export class TrainingModule {
+  async setProgressMetrics(identity: AuthenticatedIdentity, id: string, raw: unknown) {
+    const input = z
+      .object({
+        metrics: z.array(progressMetricSchema).min(1).max(2),
+        version: z.number().int().positive(),
+        operationId: z.string().uuid(),
+      })
+      .parse(raw)
+    return this.repository.setProgressMetrics(await this.workspace(identity), id, input)
+  }
   constructor(private readonly repository: TrainingRepository) {}
   private async workspace(identity: AuthenticatedIdentity) {
     const id = await this.repository.resolveWorkspace(identity)

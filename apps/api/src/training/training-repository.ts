@@ -12,7 +12,11 @@ import type {
 
 export class TrainingVersionConflictError extends Error {
   constructor(
-    readonly reason: 'version_conflict' | 'definition_conflict' | 'operation_mismatch',
+    readonly reason:
+      | 'version_conflict'
+      | 'definition_conflict'
+      | 'unit_conflict'
+      | 'operation_mismatch',
     readonly current?: unknown,
   ) {
     super(reason)
@@ -21,6 +25,15 @@ export class TrainingVersionConflictError extends Error {
 }
 
 export interface TrainingRepository {
+  setProgressMetrics(
+    workspaceId: string,
+    id: string,
+    input: {
+      metrics: import('./recording.js').ProgressMetric[]
+      version: number
+      operationId: string
+    },
+  ): Promise<ExerciseDefinition | null>
   resolveWorkspace(identity: AuthenticatedIdentity): Promise<string>
   bootstrapCatalog(workspaceId: string): Promise<void>
   listDefinitions(
@@ -52,11 +65,20 @@ export interface TrainingRepository {
     id: string,
     input: { version: number; operationId: string },
   ): Promise<boolean | null>
-  getPreference(workspaceId: string): Promise<{ defaultWeightUnit: WeightUnit; version: number }>
+  getPreference(workspaceId: string): Promise<{
+    defaultWeightUnit: WeightUnit
+    defaultDistanceUnit: 'km' | 'mi'
+    version: number
+  }>
   setPreference(
     workspaceId: string,
-    input: { defaultWeightUnit: WeightUnit; version: number; operationId: string },
-  ): Promise<{ defaultWeightUnit: WeightUnit; version: number }>
+    input: {
+      defaultWeightUnit: WeightUnit
+      defaultDistanceUnit: 'km' | 'mi'
+      version: number
+      operationId: string
+    },
+  ): Promise<{ defaultWeightUnit: WeightUnit; defaultDistanceUnit: 'km' | 'mi'; version: number }>
   getSessionTraining(workspaceId: string, sessionId: string): Promise<SessionTraining | null>
   todayTrainingPlans(
     workspaceId: string,

@@ -39,8 +39,10 @@ export type PublicTrainingResult = {
   session: { startsAt: Date; endsAt: Date; timeZone: string; durationMinutes: number }
   exercises: Array<{
     position: number
+    recording?: import('../training/recording.js').RecordingConfig
     definitionName: string
     sets: Array<{
+      measurements?: import('../training/recording.js').Measurements
       position: number
       plannedWeight: number | null
       actualReps: number | null

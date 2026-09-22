@@ -46,7 +46,11 @@ export function CoachWorkspace({ session }: { session: Session }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <Brand />
+        <img
+          className="sidebar-brand-logo"
+          src="/brand/form-horizontal.png"
+          alt="FORM Coach Desk"
+        />
         <nav aria-label="主要導覽">
           {navigation.map((item) => (
             <NavLink key={item.to} to={item.to}>

@@ -634,6 +634,23 @@ export function buildServer({
       const identity = await identityVerifier.verify(request.headers.authorization)
       return { preference: await training.getPreference(identity) }
     })
+    server.put<{ Params: { definitionId: string }; Body: unknown }>(
+      '/v1/exercises/:definitionId/metrics',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const definition = await training.setProgressMetrics(
+          identity,
+          request.params.definitionId,
+          request.body,
+        )
+        if (!definition)
+          return reply
+            .status(404)
+            .send({ error: 'exercise_not_found', message: 'Exercise was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return { definition }
+      },
+    )
     server.put<{ Body: unknown }>('/v1/training/preferences', async (request) => {
       const identity = await identityVerifier.verify(request.headers.authorization)
       const preference = await training.setPreference(identity, request.body)

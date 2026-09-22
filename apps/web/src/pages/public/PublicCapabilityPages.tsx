@@ -1,3 +1,4 @@
+import { formatMeasurements } from '../training/recording'
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, Download, Dumbbell, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -106,10 +107,16 @@ function TrainingResultPage() {
                   {exercise.sets.map((set) => (
                     <div className="public-set" key={set.position}>
                       <strong>SET {set.position}</strong>
-                      <span>
-                        {value(set.plannedWeight)} {set.plannedWeight === null ? '' : set.unit}
-                      </span>
-                      <span>{set.actualReps === null ? '—' : `× ${set.actualReps}`}</span>
+                      {exercise.recording && set.measurements ? (
+                        <span>{formatMeasurements(exercise.recording, set.measurements)}</span>
+                      ) : (
+                        <>
+                          <span>
+                            {value(set.plannedWeight)} {set.plannedWeight === null ? '' : set.unit}
+                          </span>
+                          <span>{set.actualReps === null ? '—' : `× ${set.actualReps}`}</span>
+                        </>
+                      )}
                       {set.rpe !== null ? <span>RPE {set.rpe}</span> : <span>RPE —</span>}
                       <em data-result={set.result ?? 'none'}>{setResult(set.result)}</em>
                     </div>
@@ -580,7 +587,7 @@ async function downloadResult(
       context.font = '22px sans-serif'
       for (const set of exercise.sets) {
         context.fillText(
-          `SET ${set.position}    ${value(set.plannedWeight)} ${set.plannedWeight === null ? '' : set.unit}    ${set.actualReps === null ? '—' : `× ${set.actualReps}`}    ${set.rpe === null ? 'RPE —' : `RPE ${set.rpe}`}    ${setResult(set.result)}`,
+          `SET ${set.position}    ${exercise.recording && set.measurements ? formatMeasurements(exercise.recording, set.measurements) : `${value(set.plannedWeight)} ${set.plannedWeight === null ? '' : set.unit}    ${set.actualReps === null ? '—' : `× ${set.actualReps}`}`}    ${set.rpe === null ? 'RPE —' : `RPE ${set.rpe}`}    ${setResult(set.result)}`,
           100,
           y
         )

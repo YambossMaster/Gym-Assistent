@@ -33,6 +33,7 @@ const completedTraining = {
   lessonSummary: { purchased: 10, completed: 4, remaining: 6 },
   record: { id: 'record-1', version: 2, privateNote: '', exercises: [], updatedAt: null },
   defaultWeightUnit: 'kg',
+  defaultDistanceUnit: 'km',
   exerciseSummaries: [],
   allowedActions: { canEditTraining: true, canComplete: false, canReopen: true }
 } satisfies SessionTraining

@@ -259,10 +259,19 @@ export function useTrainingMutations(session: Session) {
       onSettled: settleLibrary
     }),
     preference: useMutation({
-      mutationFn: ({ unit, version }: { unit: 'kg' | 'lb'; version: number }) =>
-        setTrainingPreference(session.access_token, unit, version),
-      onSuccess: () => {
+      mutationFn: ({
+        unit,
+        version,
+        ...units
+      }: {
+        unit: 'kg' | 'lb'
+        version: number
+        defaultDistanceUnit: 'km' | 'mi'
+      }) => setTrainingPreference(session.access_token, unit, version, units),
+      onSuccess: (accepted) => {
+        client.setQueryData(queryKeys.trainingPreference(session.user.id), accepted)
         void client.invalidateQueries({ queryKey: ['training-preference', session.user.id] })
+        void client.invalidateQueries({ queryKey: ['session-training', session.user.id] })
         void client.invalidateQueries({ queryKey: ['training-defaults', session.user.id] })
         void client.invalidateQueries({ queryKey: ['student-performance', session.user.id] })
         void client.invalidateQueries({ queryKey: ['student-trend', session.user.id] })

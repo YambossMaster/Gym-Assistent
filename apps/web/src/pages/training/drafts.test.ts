@@ -19,6 +19,44 @@ const payload = (privateNote: string, recordVersion = 1) => ({
 })
 
 describe('Training autosave coordinator', () => {
+  it('recognizes database JSON key order as identical but preserves changed measurements and format', () => {
+    const exercise = {
+      id: 'exercise',
+      definitionId: 'definition',
+      formatVersion: 2 as const,
+      sets: [
+        {
+          id: 'set',
+          plannedWeight: null,
+          plannedReps: null,
+          actualReps: null,
+          rpe: null,
+          result: null,
+          unit: 'kg' as const,
+          measurements: {
+            weight: 50,
+            reps: 10,
+            duration: null,
+            distance: null,
+            rounds: null,
+            weightUnit: 'kg' as const,
+            durationUnit: 'sec' as const,
+            distanceUnit: 'm' as const
+          }
+        }
+      ]
+    }
+    const first = { ...payload('note'), exercises: [exercise] }
+    const reordered = structuredClone(first)
+    reordered.exercises[0]!.sets[0]!.measurements = Object.fromEntries(
+      Object.entries(exercise.sets[0]!.measurements).reverse()
+    ) as (typeof exercise.sets)[0]['measurements']
+    expect(sameTrainingContent(first, reordered)).toBe(true)
+    reordered.exercises[0]!.sets[0]!.measurements.weight = 55
+    expect(sameTrainingContent(first, reordered)).toBe(false)
+    const legacy = { ...first, exercises: [{ ...exercise, formatVersion: undefined }] }
+    expect(sameTrainingContent(first, legacy)).toBe(false)
+  })
   it('does not save on a timer when nothing changed and stops after acknowledgement', async () => {
     vi.useFakeTimers()
     const send = vi.fn(async () => {})

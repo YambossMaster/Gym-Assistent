@@ -1,3 +1,5 @@
+import { MultiMetricTrend } from './pages/training/MultiMetricTrend'
+import { metricLabels, recordingTypes } from './pages/training/recording'
 import { PerformanceTrend as TrendDialog } from './pages/training/PerformanceTrend'
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from './shared/FormSelect'
@@ -1527,20 +1529,46 @@ function StudentPerformance({
         <div className="performance-list">
           {query.data.map((entry) => (
             <button
-              key={`${entry.definitionId}:${entry.metric}`}
+              key={`${entry.definitionId}:${entry.recording?.type ?? entry.metric}`}
               onClick={() => setSelected(entry)}
             >
               <span>
                 <strong>{entry.name}</strong>
                 <small>
-                  {entry.sessionCount} 堂 · {entry.metric === 'weight' ? '重量' : '次數'}
+                  {entry.sessionCount} 堂 ·{' '}
+                  {entry.recording
+                    ? recordingTypes[entry.recording.type].label
+                    : entry.metric === 'weight'
+                      ? '重量'
+                      : '次數'}
                 </small>
               </span>
               <span>
                 個人最佳{' '}
                 <strong>
-                  {entry.personal}
-                  {entry.metric === 'weight' ? ` ${entry.unit}` : ' 次'}
+                  {entry.recording ? (
+                    entry.series
+                      ?.filter((s) => entry.recording!.metrics.includes(s.metric))
+                      .map((s) => {
+                        const best = s.points.length
+                          ? (s.direction === 'lower' ? Math.min : Math.max)(
+                              ...s.points.map((p) => p.value)
+                            )
+                          : null
+                        return (
+                          <span key={s.metric + ':' + (s.distanceMetres ?? '')}>
+                            {metricLabels[s.metric]}{' '}
+                            {s.distanceMetres !== undefined ? `(${s.distanceMetres} m) ` : ''}
+                            {best === null ? '—' : Number(best.toFixed(3))} {s.unit}{' '}
+                          </span>
+                        )
+                      })
+                  ) : (
+                    <>
+                      {entry.personal}
+                      {entry.metric === 'weight' ? ` ${entry.unit}` : ' 次'}
+                    </>
+                  )}
                 </strong>
               </span>
               <ArrowRight />
@@ -1553,14 +1581,34 @@ function StudentPerformance({
           <p>記錄動作並標記已完成的組別後，表現會顯示在這裡。</p>
         </div>
       )}
-      {selected && (
-        <PerformanceTrend
-          studentName={studentName}
+      {selected?.recording ? (
+        <MultiMetricTrend
           session={session}
-          studentId={studentId}
-          entry={selected}
+          definitionId={selected.definitionId}
+          recording={selected.recording}
+          name={selected.name}
+          studentName={studentName}
+          series={
+            query.data?.find(
+              (e) =>
+                e.definitionId === selected.definitionId &&
+                e.recording?.type === selected.recording!.type
+            )?.series ??
+            selected.series ??
+            []
+          }
           onClose={() => setSelected(null)}
         />
+      ) : (
+        selected && (
+          <PerformanceTrend
+            studentName={studentName}
+            session={session}
+            studentId={studentId}
+            entry={selected}
+            onClose={() => setSelected(null)}
+          />
+        )
       )}
     </section>
   )

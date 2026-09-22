@@ -1,24 +1,26 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-20. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-22. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                              |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                        |
-| Package state      | **Full-range growth charts and pre-completion accepted-record updates passed the complete local CI gate; Stage 1 review continues**     |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                           |
-| Branch baseline    | Local and `origin/main` at `a63f731`; GitHub Actions CI #31 / run `35514885492` succeeded                                               |
-| Worktree           | Complete desktop 10/20 and mobile 5/10 trajectories, compact summaries, and saved-set performance updates ready for authorized delivery |
-| Linked database    | Development only; Today migrations through `20260916151038` applied; dry-run up to date                                                 |
-| Production         | Not configured; no real customer data                                                                                                   |
+| Field              | Current value                                                                                                                                                              |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                                                 |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                                                                           |
+| Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**                                                          |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                                              |
+| Branch baseline    | Local `df7c644` documents delivered `a63f731`; preserved GitHub Actions CI #31 / run `35514885492` evidence                                                                |
+| Worktree           | Eight recording types, convention-based unit preferences, dynamic set inputs, primary-only Session summaries, and persistent line/bar trajectories; local changes, no push |
+| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                                                                        |
+| Production         | Not configured; no real customer data                                                                                                                                      |
 
 ## Next handoff
 
-Continue M7.5 Stage 1 Product Owner review of the redesigned Session/Student growth trajectory.
+Continue M7.5 Stage 1 Product Owner review of Exercise recording types, Training unit settings,
+Session inputs, and persistent growth-trajectory metric selection under
+[`M7.5-EXERCISE-RECORDING-CONTRACT.md`](M7.5-EXERCISE-RECORDING-CONTRACT.md).
 Keep Calendar touch/Block physical-phone acceptance in the review queue. Stage 2 begins only after explicit
 Product Owner authorization; do not begin M8.
 
@@ -274,6 +276,17 @@ Product Owner authorization; do not begin M8.
   files/66 tests and Web 19 files/80 tests; elevated root build passed with the existing chunk-size
   advisory; `git diff --check` passed. No authenticated data read, linked migration, push, or remote
   CI is claimed for this local correction.
+- M7.5 Stage 1 trajectory hierarchy correction: each Definition now has exactly one ordered primary
+  metric. A second stored metric means comparison is unlocked; one metric means the primary is
+  locked. The shared selector is used by both the custom-Exercise editor and trajectory dialog.
+  The chart now renders only the primary as a labeled upper-region line and constrains the quiet,
+  borderless secondary bars to the bottom 20–30%; it has no right-side scale and labels a secondary
+  bar only when its value changes. Focused tests passed 8/8; complete single-worker checks passed
+  API 23 files/84 tests and Web 35 files/137 tests; root production build passed with the existing
+  chunk-size advisory; `git diff --check` passed. Authenticated desktop and exact 390×844 browser
+  checks covered lock, unlock, primary switching, one changed secondary label, no horizontal
+  overflow, and zero console warnings/errors. The development setting was restored to its original
+  unlocked weight-primary state. No schema change, migration, push, or remote CI is claimed.
 
 Current development validation commands:
 
@@ -294,6 +307,360 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-22 — LOG-147 — Recording delivery CI regression corrected
+
+- **Scope:** Product Owner requested an interim M7.5 delivery and authorized correction of every
+  blocking CI finding. The first root check found one formatting mismatch; after formatting, the
+  API repository regression isolated an unconditional Training-preference read during an empty or
+  note-only autosave.
+- **Outcome:** formatting is normalized and `saveSessionTraining` now loads the Workspace unit
+  preference lazily only when it must validate the units of a new measurement. Existing-set unit
+  immutability and new-measurement convention validation remain unchanged, while empty and
+  note-only autosaves avoid an unnecessary database round trip.
+- **Verification:** the original focused repository repro passed 2/2. Exact root `npm run check`
+  passed API 23 files/84 tests and Web 35 files/138 tests; root production build passed with the
+  existing over-500-kB advisory; linked migration dry-run reported `upToDate:true`; linked
+  `app_private` lint reported no schema errors; and `git diff --check` passed with line-ending
+  notices only.
+- **Next:** create and push the cohesive M7.5 recording checkpoint to `main`, then confirm the
+  remote ref and exact-SHA GitHub Actions Verify plus migration-dry-run jobs. Stage 1 remains open.
+
+### 2026-09-22 — LOG-146 — Recording-summary presentation normalization
+
+- **Scope:** Product Owner found a remaining visual exception above legacy `重量×次數` rows:
+  when a primary progress series existed, its current/previous/personal values were compressed into
+  one summary block while other recording types used separate current/previous and personal-best
+  blocks. This remains an M7.5 Stage 1 presentation-only correction.
+- **Outcome:** primary-series summaries now use the same two fixed blocks for every recording type:
+  `本次／上次最佳` and `個人最佳`. Metric labels and distance context stay with each value, without
+  changing the stored measurements or progress calculation.
+- **Verification:** Web TypeScript and `git diff --check` passed. The exact 390×844 mobile preview
+  verified the legacy 高背槓深蹲 summary as separate `重量：—／76.25 kg` current/previous and
+  `重量：119 kg` personal-best blocks, followed by the normalized weight/reps input row. No
+  full-suite, push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-145 — Legacy weight-times-reps recording normalization
+
+- **Scope:** Product Owner found that legacy `重量×次數` occurrences still rendered the retired
+  planned-weight/actual-reps controls on mobile, unlike all configured recording types. This is an
+  M7.5 Stage 1 compatibility and presentation correction.
+- **Outcome:** absent recording snapshots now infer `weight_reps` for legacy weight-based
+  exercises and `reps` for legacy repetition exercises. Their historical planned values are mapped
+  into the common measurement structure for display; the first edit or added set upgrades the
+  whole occurrence to a version-2 recording snapshot with normalized measurements. All recording
+  types therefore share the same measurement inputs, RPE, result, and delete layout.
+- **Verification:** Web TypeScript and `git diff --check` passed; focused `MeasurementInputs`
+  tests passed 2/2 after the approved elevated Windows rerun. The existing exact 390×844 mobile
+  preview read a legacy 高背槓深蹲 occurrence as separate 重量 and 次數 controls followed by RPE,
+  result actions, and remove action, matching the configured 重量×時間 row. No full-suite, push,
+  or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-144 — Training-record balanced desktop RPE correction
+
+- **Scope:** Product Owner clarified that the desktop RPE field must be visually balanced between
+  the measurement group and fixed right-side result group; it must not consume the measurement
+  gap on the left and leave all flexible whitespace on the right. This remains an M7.5 Stage 1
+  presentation-only correction.
+- **Outcome:** the desktop recording grid now uses equal flexible tracks on each side of the fixed
+  RPE field: `measurement group | equal space | RPE | equal space | result group | remove`.
+  Result and remove actions remain fixed and right-aligned; the existing single-metric full-lane
+  rule and compact mobile grid remain unchanged.
+- **Verification:** Web TypeScript and `git diff --check` passed. The authenticated training tab
+  reported active editing ownership from another open local Training tab, so this correction does
+  not claim a second browser screenshot while preserving that tab's draft ownership. No full-suite,
+  push, or remote-CI claim is made.
+- **Next:** after the active Training editor releases ownership, browser-check the balanced desktop
+  RPE layout; otherwise continue Product Owner-led M7.5 Stage 1 review without entering Stage 2 or
+  M8.
+
+### 2026-09-22 — LOG-143 — Training-record RPE grid invariant correction
+
+- **Scope:** Product Owner rejected the prior superficial fixed-position treatment: the visible RPE
+  field had to follow the final measurement field at the exact same gap as two adjacent measurement
+  fields, including single-metric types. The RPE field also had to be a plain numeric input without
+  focus halo or native number steppers. This remains an M7.5 Stage 1 presentation-only correction.
+- **Outcome:** a one-metric measurement now occupies the full 256px desktop measurement group, so
+  its right edge and the second field's right edge both sit 16px before RPE. At 390px a one-metric
+  measurement occupies the complete measurement lane; both its RPE gap and the two-metric internal
+  gap are 6px. RPE now explicitly suppresses the inherited focus shadow and browser spin controls.
+- **Verification:** Web TypeScript and `git diff --check` passed; focused `MeasurementInputs` tests
+  passed 2/2 after the approved elevated Windows rerun. Browser DOM geometry measured desktop
+  two-metric `120px → 16px → RPE` and one-metric `256px → 16px → RPE`; at exact 390×844 it
+  measured two-metric `6px → RPE` and one-metric full-lane width with the same 6px gap. The mobile
+  content viewport remained 375px wide without horizontal overflow. No full-suite, push, or
+  remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-142 — Training-record fixed-column and mobile hierarchy correction
+
+- **Scope:** Product Owner required that narrow Training rows retain their field names and one-line
+  scanning order rather than stacking two measurements, and that status/delete icons cannot be
+  mistaken for one another. Desktop RPE also had to use the same physical gap as the measurement
+  inputs. This remains an M7.5 Stage 1 presentation-only correction.
+- **Outcome:** desktop now derives both measurement and measurement-to-RPE spacing from one 16px
+  layout token; every individual metric control remains 120px whether a recording type has one or
+  two metrics. At 390px each exercise shows a compact field-label row followed by one set row:
+  smaller set number, parallel metric controls, fixed RPE, a wider result group with check/X
+  actions, then a trash-can remove action. The mobile exercise header keeps the current/previous
+  and personal-best summaries side by side, while growth uses its recognisable icon-only control.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 after the approved elevated
+  Windows rerun; Web TypeScript and `git diff --check` passed. Authenticated desktop review
+  confirmed the fixed field/RPE rhythm. Exact 390×844 browser review confirmed parallel dual
+  metrics, visible label row, one set row, non-overflowing 375px content viewport, no console
+  warnings/errors, and distinct X versus trash affordances. No full-suite, push, or remote-CI
+  claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-141 — Training-record compact mobile-row correction
+
+- **Scope:** Product Owner requested one mobile row per set, unambiguous compact result actions,
+  a fixed middle RPE column, and a side-by-side header split between record summary and growth
+  action. This remains an M7.5 Stage 1 presentation-only correction.
+- **Outcome:** desktop preserves a 16px inter-group rhythm from the two measurement fields through
+  fixed RPE. At 390px each set is one row: set number, one/two measurement inputs, RPE, compact
+  result icons, and remove-set action. A single metric gets 105px; a two-metric group divides its
+  available width evenly. Mobile hides visual field labels but retains accessible input names. The
+  completed check and incomplete `CircleOff` icon are distinct from the remove-set `XCircle` icon.
+  The exercise header now uses its wider left section for record summaries and a right section for
+  the growth action.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2, Web TypeScript passed, and
+  `git diff --check` passed. Authenticated desktop acceptance verified group spacing; exact
+  390×844 acceptance verified one row per set, distinct outcome/delete icons, left/right header
+  split, and no horizontal overflow. No full-suite, push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-140 — Training-record group and mobile reflow correction
+
+- **Scope:** Product Owner requested that Training rows use three explicit layout groups instead of
+  unconstrained, per-type stretching: measurement inputs, RPE, and result actions. This remains an
+  M7.5 Stage 1 presentation-only correction.
+- **Outcome:** every desktop measurement control now uses the same 120px width, whether its type
+  has one or two dimensions. The measurement group is fixed at 256px, RPE at 75px, and results at
+  a right-aligned fixed 157px; only the deliberate gap between groups can absorb remaining row
+  width. At 390px, up to two 115px measurement inputs share row one, while the 75px RPE and fixed
+  result group share row two. A single metric remains left-aligned in the first row.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 and Web TypeScript passed.
+  Authenticated desktop acceptance verified fixed one/two-metric widths and separate groups;
+  exact 390×844 acceptance verified two-row reflow, same-row RPE/results, and no horizontal
+  overflow. No full-suite, push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-139 — Training-record input sizing correction
+
+- **Scope:** Product Owner requested centered values, 1.5× two-metric input and RPE widths, and a
+  doubled single-metric input width. This remains an M7.5 Stage 1 visual correction only.
+- **Outcome:** two-metric entries are now fixed at 141px each; a one-metric entry is 188px. Numeric
+  values are centered. RPE is 75px and remains in its fixed column before the right-side result
+  group. To retain the fixed measurement sizes without a desktop horizontal scroller, result
+  actions are compact, fixed 78px controls with an 8px row gap; the complete row fits its desktop
+  container while preserving the right-aligned result/removal position.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 and Web TypeScript passed.
+  Authenticated desktop acceptance verified the requested widths, centered value, fixed right-side
+  controls, and no Training-row horizontal scrollbar; exact 390×844 acceptance retained its inline
+  labels and had no horizontal overflow. No full-suite, push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-138 — Training-record column alignment correction
+
+- **Scope:** Product Owner requested that measurement fields use fixed positions without duplicate
+  desktop labels, while RPE, result actions, and set removal align to the right. This remains a
+  local M7.5 Stage 1 presentation-only correction.
+- **Outcome:** desktop measurement headings are the sole field labels; the two fixed 94px
+  measurement positions use a 24px column gap regardless of recording type. The row now reserves
+  a flexible middle region before its fixed 50px RPE, 201px result group, and 28px removal action,
+  placing those controls at the right edge. Mobile retains inline measurement labels because its
+  table heading is hidden. Number steppers no longer render browser increment/decrement arrows;
+  focus keeps the input background unchanged and uses only a thin border.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 and Web TypeScript passed.
+  Authenticated desktop and exact 390×844 browser acceptance confirmed fixed field positions,
+  right-aligned result/removal controls, label treatment by breakpoint, no number arrows, stable
+  focus background, and no 390px horizontal overflow. No full-suite, push, or remote-CI claim is
+  made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-137 — Training-record fixed-row correction
+
+- **Scope:** Product Owner rejected the still-inconsistent record-row geometry during M7.5 Stage 1.
+  This local correction changes only the Training-record presentation and preserves the approved
+  one-click, same-convention scale conversion.
+- **Outcome:** the header now names every rendered measurement column rather than showing a combined
+  recording-type label. Each measurement control is 94px, RPE is 50px, and the two result actions
+  are fixed at 98px each; no record-row column uses remaining-width stretching. A time/distance
+  unit is now the input's right-side text button (`sec`, `min`, `m`, `km`, `ft`, or `mi`), so one
+  click both converts the entered value and shows the replacement scale in the same location as a
+  static unit suffix.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 and Web TypeScript passed.
+  Authenticated desktop and exact 390×844 browser acceptance confirmed matching headers, fixed
+  result-action widths, input-contained one-click scale buttons, and no 390px horizontal overflow.
+  No full-suite, push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-136 — Training-record compact measurement flow correction
+
+- **Scope:** Product Owner identified that the prior visual correction still stretched numeric fields
+  across the set row and gave scale controls too much visual weight. This is an M7.5 Stage 1
+  presentation correction only; recording behaviour and the direct scale-toggle decision remain
+  unchanged.
+- **Outcome:** measurement controls now have a 94px value width and no longer flex to fill their
+  grid cell. The set row uses a content-sized measurement column so values follow the set number on
+  the left. `sec`/`min` and distance-scale controls are separate 26px subdued pills, rather than
+  height-matched joined segments; static unit suffixes remain inside their short value field.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 and Web TypeScript passed.
+  Authenticated desktop and exact 390×844 browser acceptance confirmed the compact left-aligned
+  value flow, direct scale controls, and no 390px horizontal overflow. No full-suite, push, or
+  remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-135 — Training-record measurement input hierarchy correction
+
+- **Scope:** Product Owner requested a visual correction to the compact numeric-entry flow during
+  M7.5 Stage 1. This is presentation-only: no recording semantics, API contract, or stored data
+  changed.
+- **Outcome:** each measurement now places its label above a 38px numeric input group. Fixed units
+  (`kg`, `次`, and `回合`) are quiet right-aligned suffixes inside that group. Time and distance
+  keep their direct scale controls, but those controls are now a compact, border-sharing segment
+  joined to the input instead of floating inside an oversized field.
+- **Verification:** focused `MeasurementInputs` tests passed 2/2 and Web TypeScript passed.
+  Authenticated browser acceptance passed on desktop and exact 390×844: labels, inputs, suffixes,
+  and `sec`/`min` controls remain grouped; the 390px page had no horizontal overflow. No full-suite,
+  push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-134 — Local Web HMR recovery
+
+- **Scope:** Product Owner reported the local formal site could not open during M7.5 Stage 1.
+- **Cause and recovery:** API health and both local Web ports returned HTTP 200, but the browser
+  reproduced a blank page because the port-5173 Vite process served an empty transformed
+  `TrainingWorkspace` module while `SessionPage` imported its named export. The source file itself
+  retained the export. Restarted only the verified stale port-5173 Web process; no API, database,
+  record, migration, or source change was made for this recovery.
+- **Verification:** the direct Vite module request again contains `export function
+TrainingWorkspace`; authenticated Chrome reloaded `/today` and displayed the completed Today
+  projection. API `/health` remained `200 {"status":"ok"}`.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-133 — M7.5 unit-convention correction
+
+- **Scope:** Product Owner corrected the recording-type unit model during Stage 1: unit preference
+  is a weight/distance convention, not a choice of measurement scale; time and counts have no
+  Workspace preference. This remains local review work and does not start Stage 2 or delivery.
+- **Outcome:** Settings now contains only `重量單位習慣` (`kg` / `lb`) and `距離單位習慣`
+  (metric `km` / imperial `mi`). New Session sets lock weight to that preference; distance offers
+  direct same-convention `m` / `km` or `ft` / `mi` scale buttons, and time offers `sec` / `min`
+  buttons. A scale click converts the entered value instead of merely relabelling it. The API also
+  rejects a new set outside the current convention and prevents an existing set's stored units from
+  being changed. Existing records retain their entered units and are normalized for presentation.
+- **Database:** new linked-development migration `20260921181944_recording_unit_preferences`
+  removes the unused duration preference, upgrades the distance preference from scale to
+  convention (`m` → `km`), and accepts `ft` / `mi` in preserved set measurements. Dry-run listed
+  only this migration; after apply, migration history aligned and a read-only database check
+  confirmed the validation function accepts feet and miles.
+- **Verification:** API and Web TypeScript checks passed. Focused API recording tests passed 6/6;
+  focused Web measurement-input tests passed 2/2, including semantic conversion after a unit click.
+  Authenticated desktop acceptance showed static weight units and direct time/distance controls;
+  exact 390×844 Settings acceptance showed only the two convention selectors with no time setting.
+  The temporary browser viewport was reset. No full-suite, push, or remote-CI claim is made.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review of the remaining Training-record
+  corrections; do not enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-21 — LOG-132 — M7.5 recording hierarchy and spatial-layout correction
+
+- **Scope:** refined the Product Owner-rejected presentation of the already-authorized recording
+  hierarchy. This remains a local M7.5 Stage 1 correction; it neither changes the data contract nor
+  starts a delivery gate.
+- **Outcome:** Session exercise headers now show only the primary metric and reserve proportionate
+  room for the record summary. Exercise Library and Growth Trajectory use one shared selector: two
+  metrics use a selected surface plus lock/unlock icon, while a single metric is a static fact rather
+  than a disabled-looking button. The trajectory selector, latest record, range best, and range
+  control now share a compact top row. It removes explanatory/tutoring copy, secondary summaries,
+  secondary history values, and the chart footer; the remaining left scale is moved farther from
+  point labels.
+- **Follow-up refinement:** increased the usable chart height, moved the history panel lower,
+  increased secondary-bar opacity and restored a quiet label on every bar. The top summary now
+  uses dark, larger numerals on the light toolbar with wider spacing; its previous light-on-light
+  contrast defect is removed.
+- **Final polish:** secondary-bar labels now use a legible, restrained blue-grey instead of the
+  bar-fill colour. The metric selector avoids a prohibited cursor during a pending transition and
+  uses a waiting lock animation; summary values are separated by a fine vertical rule, and the
+  visible history-sort caption is removed. Their final opacity is 82%, retaining readability while
+  sitting below the primary line's visual priority.
+- **Verification:** Web formatting and TypeScript checks passed. Focused `MultiMetricTrend` Vitest
+  regression passed (1 file / 1 test). Authenticated local browser checks confirmed the shared
+  dual-metric selector, static one-metric presentation, and exact 390×844 document width with no
+  horizontal overflow. The broader Web test command was also started through the elevated Windows
+  path after the sandbox's `spawn EPERM`; its runner did not return a final aggregate in this turn,
+  so this log makes no full-suite count claim.
+- **Known boundary:** the 390×844 browser preview is not physical-phone acceptance. No migration,
+  commit, push, or remote CI was requested or run.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review; do not enter Stage 2 or M8 without
+  explicit authorization.
+
+### 2026-09-21 — LOG-131 — M7.5 trajectory primary/secondary hierarchy correction
+
+- **Scope:** corrected the Product Owner-rejected dual-line/dual-primary presentation without
+  removing the broader recording-type work. Updated the frozen Stage 1 recording Contract to make
+  the metric order authoritative: first is the only primary, second is optional comparison context.
+- **Outcome:** custom Exercise setup and the trajectory dialog share one lock/unlock transition.
+  Clicking the current primary toggles comparison; clicking the other metric makes it primary and
+  unlocks comparison. The trajectory is now a spatially separated primary line and low-opacity
+  secondary bar layer, with only the left primary scale and change-only secondary labels.
+- **Verification:** focused chart/editor/selection tests passed 8/8; complete single-worker API
+  tests passed 23 files/84 tests and Web tests passed 35 files/137 tests. Root build and
+  `git diff --check` passed; Vite retains only the existing large-chunk advisory. Authenticated
+  desktop and exact 390×844 browser acceptance passed with no horizontal overflow or console
+  warnings/errors. The tested server setting was restored after lock/unlock verification.
+- **Known boundary:** exact 390×844 is the desktop mobile-preview surface, not physical-phone
+  acceptance. This is local Stage 1 work; no migration, push, or remote CI was requested or run.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review; do not enter Stage 2 or M8 without
+  explicit authorization.
+
+### 2026-09-21 — LOG-130 — M7.5 exercise-owned recording formats
+
+- **Scope:** Product Owner authorized eight recording types across Exercise Library, Session
+  Training, shared growth trajectories, and Training unit settings. Confirmed duration + rounds,
+  same-distance shortest-time comparison, and lower-is-better pace. Contract frozen before implementation;
+  no broader Student/Settings review, Stage 2 transition, or push.
+- **Outcome:** versioned server-owned recording configuration and primary metric selection; all
+  100 builtin definitions classified in `M7.5-RECORDING-CATALOG.md`; dynamic one/two-field input;
+  kg/lb, sec/min, m/km preferences; independent metric histories and chart axes with persistent
+  visibility controls. RPE/results remain; new records have no separate actual-reps input.
+  Public results and shared Student performance consume compatible projections. Old snapshots retain
+  their original quantities; old clients cannot erase modern measurements. Stable JSON comparison
+  prevents JSONB key ordering from causing false dirty state or unnecessary record revisions.
+- **Verification:** complete `npm run check` passed (API 23 files / 84 tests; Web 34 files / 134
+  tests), and both production builds passed. Live eight-type acceptance passed round trips,
+  unchanged saves, exact replay, conflicts, old-client rejection, two-Coach isolation, same-distance
+  grouping, persistent metric selection, and public allowlists. Desktop and exact 390×844 browser
+  checks covered custom creation/type menus, units, dynamic inputs, save/reload, dual charts,
+  metric toggles/reopen, and distance selection. Mobile card and row scroll widths equal their
+  visible widths after removing inherited legacy table minimum width. Evidence: local
+  `output/playwright/recording-*.png`.
+- **Database:** migration `20260920172553_exercise_recording_types.sql` applied only to linked
+  development; final dry-run up to date. All isolated fixtures cleaned and test units restored.
+  Original 146 occurrences remain legacy; 427 sets retain fingerprint
+  `3dd5e56d09369b8f7313d2e3f33241b3`, identical before/after. Security advisor retains only the
+  pre-existing leaked-password-protection warning.
+- **Known boundary:** browser viewport checks are not physical-phone acceptance. Vite's existing
+  large-chunk warning remains. Development watcher restarts caused transient 502/stale-module
+  responses during edits; final reload and persisted input verification succeeded. No remote CI
+  claim for this uncommitted change.
+- **Next:** continue Stage 1 Product Owner review of this local implementation; retain the explicit
+  Stage 2 authorization boundary.
 
 ### 2026-09-20 — LOG-129 — M7.5 growth-trajectory CI delivery confirmed
 

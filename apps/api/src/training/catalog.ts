@@ -1,4 +1,5 @@
 import type { DefinitionFields, PerformanceMetric } from './training.js'
+import { recordingMetrics, type RecordingConfig, type RecordingType } from './recording.js'
 
 type ExerciseSeed = [
   name: string,
@@ -112,6 +113,23 @@ const seeds: ExerciseSeed[] = [
 
 const repetitionEquipment = new Set(['徒手', '單槓', '雙槓', '懸吊訓練帶', '戰繩'])
 
+export function catalogRecording(name: string, equipment: string): RecordingConfig {
+  const type: RecordingType =
+    name === '平板支撐' || name === '側平板支撐'
+      ? 'duration'
+      : name === '壺鈴農夫走路'
+        ? 'weight_distance'
+        : name === '戰繩交替甩動' || name === '波比跳'
+          ? 'duration_rounds'
+          : repetitionEquipment.has(equipment) ||
+              equipment === '彈力帶' ||
+              name === '輔助引體向上' ||
+              name === '羅馬椅背部伸展'
+            ? 'reps'
+            : 'weight_reps'
+  return { type, metrics: [...recordingMetrics[type]] }
+}
+
 export const trainingCatalog: Array<DefinitionFields & { catalogKey: string }> = seeds.map(
   ([name, equipment, bodyParts, movementType], index) => ({
     catalogKey: `builtin-${String(index + 1).padStart(3, '0')}`,
@@ -119,6 +137,7 @@ export const trainingCatalog: Array<DefinitionFields & { catalogKey: string }> =
     equipment,
     bodyParts,
     movementType,
+    recording: catalogRecording(name, equipment),
     performanceMetric: (repetitionEquipment.has(equipment) || name === '輔助引體向上'
       ? 'reps'
       : 'weight') as PerformanceMetric,

@@ -1,6 +1,15 @@
+import { MeasurementInputs } from './MeasurementInputs'
+import {
+  emptyMeasurements,
+  recordingTypes,
+  metricLabels,
+  validMeasurements,
+  type Measurements,
+  type RecordingConfig
+} from './recording'
+import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
 import type { Session } from '@supabase/supabase-js'
-import { FormSelect } from '../../shared/FormSelect'
 import {
   Check,
   CalendarClock,
@@ -11,6 +20,7 @@ import {
   MapPin,
   Plus,
   RotateCcw,
+  Trash2,
   TrendingUp,
   WifiOff,
   X,
@@ -439,6 +449,9 @@ function TrainingEditor({
           definitionId: definition.id,
           definitionName: definition.name,
           definitionVersion: definition.version,
+          ...(definition.recording
+            ? { recording: definition.recording, formatVersion: 2 as const }
+            : {}),
           sets: []
         }
       ],
@@ -590,7 +603,7 @@ function TrainingEditor({
             <div>
               <span>TRAINING LOG</span>
               <h2>訓練紀錄</h2>
-              <p>設定本組重量與目標次數，再記錄實際完成次數。</p>
+              <p>依動作類型填寫本組數值，再標記完成結果。</p>
             </div>
             <button className="primary-button compact" onClick={() => setPicker(true)}>
               <Plus />
@@ -654,6 +667,7 @@ function TrainingEditor({
                   summary={initial.exerciseSummaries.find((x) => x.occurrenceId === exercise.id)}
                   details={initial.record.exercises.find((x) => x.id === exercise.id)}
                   defaultUnit={initial.defaultWeightUnit}
+                  preference={initial}
                   index={index}
                   onShowTrend={() => setTrendId(exercise.id)}
                   onChange={(next) =>
@@ -717,7 +731,27 @@ function TrainingEditor({
       {picker && (
         <ExercisePicker session={session} onPick={addDefinition} onClose={() => setPicker(false)} />
       )}
-      {trend ? (
+      {trend && trend.recording ? (
+        <MultiMetricTrend
+          session={session}
+          definitionId={trend.definitionId}
+          recording={trend.recording}
+          name={initial.record.exercises.find((e) => e.id === trend.occurrenceId)!.definitionName}
+          studentName={initial.session.studentName}
+          series={trend.series ?? []}
+          updateNotice={
+            saveState === 'pending' || saveState === 'saving'
+              ? '正在儲存，成長軌跡將自動更新…'
+              : saveState === 'error' ||
+                  saveState === 'retrying' ||
+                  saveState === 'conflict' ||
+                  offline
+                ? '尚有未同步的紀錄，儲存成功後會更新成長軌跡。'
+                : undefined
+          }
+          onClose={() => setTrendId(null)}
+        />
+      ) : trend ? (
         <PerformanceTrend
           studentName={initial.session.studentName}
           name={
@@ -773,6 +807,7 @@ function ExerciseCard({
   summary,
   details,
   defaultUnit,
+  preference,
   index,
   onShowTrend,
   onChange,
@@ -782,19 +817,33 @@ function ExerciseCard({
   summary: SessionTraining['exerciseSummaries'][number] | undefined
   details: SessionTraining['record']['exercises'][number] | undefined
   defaultUnit: 'kg' | 'lb'
+  preference: SessionTraining
   index: number
   onShowTrend: () => void
   onChange: (value: TrainingDraftPayload['exercises'][number]) => void
   onRemove: () => void
 }) {
+  const recording =
+    details?.recording ??
+    exercise.recording ??
+    legacyRecording(details?.performanceMetric ?? summary?.metric ?? 'weight')
+  const progressRecording = summary?.recording ?? recording
+  const primarySummary =
+    progressRecording && summary?.series
+      ? summary.series.find((series) => series.metric === progressRecording.metrics[0])
+      : undefined
   const addSet = () => {
-    const previous = exercise.sets.at(-1)
+    const existingSets = exercise.sets.map((set) => normalizeSet(set, recording, preference))
+    const previous = existingSets.at(-1)
     onChange({
       ...exercise,
+      recording,
+      formatVersion: 2,
       sets: [
-        ...exercise.sets,
+        ...existingSets,
         {
           id: crypto.randomUUID(),
+          measurements: previous?.measurements ?? emptyMeasurements(preference, recording.type),
           plannedWeight: previous?.plannedWeight ?? null,
           plannedReps: previous?.plannedReps ?? null,
           actualReps: null,
@@ -806,7 +855,7 @@ function ExerciseCard({
     })
   }
   return (
-    <article className="training-exercise-card">
+    <article className="training-exercise-card recording-v2">
       <header>
         <span className="exercise-number">{String(index + 1).padStart(2, '0')}</span>
         <div className="exercise-identity">
@@ -817,17 +866,45 @@ function ExerciseCard({
         </div>
         {summary ? (
           <div className="exercise-performance-inline">
-            <div>
-              <span>本次 / 上次 最佳</span>
-              <strong>
-                {formatValue(summary.current, summary.metric, summary.unit)} /{' '}
-                {formatValue(summary.previous, summary.metric, summary.unit)}
-              </strong>
-            </div>
-            <div>
-              <span>個人最佳</span>
-              <strong>{formatValue(summary.personal, summary.metric, summary.unit)}</strong>
-            </div>
+            {primarySummary ? (
+              <>
+                <div>
+                  <span>本次 / 上次 最佳</span>
+                  <strong>
+                    {metricLabels[primarySummary.metric]}
+                    {primarySummary.distanceMetres !== undefined
+                      ? `（${primarySummary.distanceMetres} m）`
+                      : ''}
+                    ：{formatSeriesValue(primarySummary.current, primarySummary.unit)} /{' '}
+                    {formatSeriesValue(primarySummary.previous, primarySummary.unit)}
+                  </strong>
+                </div>
+                <div>
+                  <span>個人最佳</span>
+                  <strong>
+                    {metricLabels[primarySummary.metric]}
+                    {primarySummary.distanceMetres !== undefined
+                      ? `（${primarySummary.distanceMetres} m）`
+                      : ''}
+                    ：{formatSeriesValue(primarySummary.personal, primarySummary.unit)}
+                  </strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <span>本次 / 上次 最佳</span>
+                  <strong>
+                    {formatValue(summary.current, summary.metric, summary.unit)} /{' '}
+                    {formatValue(summary.previous, summary.metric, summary.unit)}
+                  </strong>
+                </div>
+                <div>
+                  <span>個人最佳</span>
+                  <strong>{formatValue(summary.personal, summary.metric, summary.unit)}</strong>
+                </div>
+              </>
+            )}
             <button type="button" onClick={onShowTrend}>
               <TrendingUp /> 成長軌跡
             </button>
@@ -840,8 +917,22 @@ function ExerciseCard({
       <div className="training-sets-scroll">
         <div className="training-set-head" aria-hidden="true">
           <span>組</span>
-          <span>重量 / 計畫次數</span>
-          <span>實際次數</span>
+          <span
+            className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+          >
+            {recordingTypes[recording.type].dimensions.map((dimension) => (
+              <span
+                className={
+                  dimension === 'duration' || dimension === 'distance'
+                    ? 'has-unit-toggle'
+                    : undefined
+                }
+                key={dimension}
+              >
+                {metricLabels[dimension]}
+              </span>
+            ))}
+          </span>
           <span>RPE</span>
           <span>結果</span>
           <span />
@@ -851,8 +942,17 @@ function ExerciseCard({
             key={set.id}
             index={index}
             set={set}
+            recording={recording}
+            values={measurementValues(set, recording, preference)}
             onChange={(next) =>
-              onChange({ ...exercise, sets: exercise.sets.map((x, i) => (i === index ? next : x)) })
+              onChange({
+                ...exercise,
+                recording,
+                formatVersion: 2,
+                sets: exercise.sets.map((current, i) =>
+                  normalizeSet(i === index ? next : current, recording, preference)
+                )
+              })
             }
             onRemove={() =>
               onChange({ ...exercise, sets: exercise.sets.filter((_, i) => i !== index) })
@@ -869,11 +969,15 @@ function ExerciseCard({
 }
 function SetCard({
   set,
+  recording,
+  values,
   index,
   onChange,
   onRemove
 }: {
   set: TrainingSet
+  recording: RecordingConfig
+  values: Measurements
   index: number
   onChange: (set: TrainingSet) => void
   onRemove: () => void
@@ -882,61 +986,11 @@ function SetCard({
   return (
     <div className={`training-set-card ${set.result ?? ''}`}>
       <strong>{index + 1}</strong>
-      <div className="planned-inputs">
-        <label aria-label="工作重量">
-          <input
-            inputMode="decimal"
-            type="number"
-            min="0"
-            max="10000"
-            step="0.001"
-            value={set.plannedWeight ?? ''}
-            onChange={(e) => onChange({ ...set, plannedWeight: number(e.target.value) })}
-          />
-          <FormSelect
-            label="單位"
-            value={set.unit}
-            onChange={(value) => onChange({ ...set, unit: value as 'kg' | 'lb' })}
-            options={[
-              { value: 'kg', label: 'kg' },
-              { value: 'lb', label: 'lb' }
-            ]}
-          />
-        </label>
-        <span>×</span>
-        <label aria-label="目標次數">
-          <input
-            inputMode="numeric"
-            type="number"
-            min="0"
-            max="10000"
-            value={set.plannedReps ?? ''}
-            onChange={(e) => onChange({ ...set, plannedReps: number(e.target.value) })}
-          />
-        </label>
-      </div>
-      <label aria-label="實際次數">
-        <input
-          inputMode="numeric"
-          type="number"
-          min="0"
-          max="10000"
-          value={set.actualReps ?? ''}
-          onChange={(e) => {
-            const actual = number(e.target.value)
-            onChange({
-              ...set,
-              actualReps: actual,
-              result:
-                actual === null || set.plannedReps === null
-                  ? null
-                  : actual < set.plannedReps
-                    ? 'incomplete'
-                    : 'completed'
-            })
-          }}
-        />
-      </label>
+      <MeasurementInputs
+        config={recording}
+        values={values}
+        onChange={(measurements) => onChange({ ...set, measurements })}
+      />
       <label aria-label="RPE（自覺用力程度，1–10）">
         <input
           inputMode="decimal"
@@ -972,15 +1026,46 @@ function SetCard({
             })
           }
         >
-          <XCircle />
+          <X />
           未完成
         </button>
       </div>
       <button className="icon-button" aria-label={`移除第 ${index + 1} 組`} onClick={onRemove}>
-        <XCircle />
+        <Trash2 />
       </button>
     </div>
   )
+}
+
+function legacyRecording(
+  metric: SessionTraining['record']['exercises'][number]['performanceMetric']
+): RecordingConfig {
+  return metric === 'reps'
+    ? { type: 'reps', metrics: ['reps'] }
+    : { type: 'weight_reps', metrics: ['weight', 'reps'] }
+}
+
+function measurementValues(
+  set: TrainingSet,
+  recording: RecordingConfig,
+  preference: Pick<SessionTraining, 'defaultWeightUnit' | 'defaultDistanceUnit'>
+): Measurements {
+  if (set.measurements) return set.measurements
+  const values = emptyMeasurements(preference, recording.type)
+  if (recordingTypes[recording.type].dimensions.includes('weight'))
+    values.weight = set.plannedWeight
+  if (recordingTypes[recording.type].dimensions.includes('reps')) {
+    values.reps = set.plannedReps ?? set.actualReps
+  }
+  return values
+}
+
+function normalizeSet(
+  set: TrainingSet,
+  recording: RecordingConfig,
+  preference: Pick<SessionTraining, 'defaultWeightUnit' | 'defaultDistanceUnit'>
+): TrainingSet {
+  return { ...set, measurements: measurementValues(set, recording, preference) }
 }
 
 function ExercisePicker({
@@ -1078,6 +1163,7 @@ function toDraft(value: SessionTraining): TrainingDraftPayload {
       id: exercise.id,
       definitionId: exercise.definitionId,
       definitionName: exercise.definitionName,
+      ...(exercise.recording ? { recording: exercise.recording, formatVersion: 2 as const } : {}),
       sets: exercise.sets
     })),
     recordVersion: value.record.version,
@@ -1123,6 +1209,7 @@ function valid(value: TrainingDraftPayload) {
         exercise.sets.length <= 100 &&
         exercise.sets.every(
           (set) =>
+            (!set.measurements || validMeasurements(set.measurements)) &&
             (set.plannedWeight === null ||
               (set.plannedWeight >= 0 && set.plannedWeight <= 10000)) &&
             (set.plannedReps === null ||
@@ -1141,6 +1228,10 @@ function valid(value: TrainingDraftPayload) {
 }
 function formatValue(value: number | null, metric: 'weight' | 'reps', unit: 'kg' | 'lb' | null) {
   return value === null ? '尚無紀錄' : `${value}${metric === 'weight' ? ` ${unit}` : ' 次'}`
+}
+
+function formatSeriesValue(value: number | null | undefined, unit: string) {
+  return value == null ? '—' : `${Number(value.toFixed(3))} ${unit}`
 }
 
 function formatSessionRange(startsAt: string, endsAt: string, timeZone?: string) {

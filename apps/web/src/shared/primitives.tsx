@@ -33,11 +33,8 @@ export function Page({
 
 export function Brand() {
   return (
-    <div className="brand">
-      <span className="brand-mark">F</span>
-      <span>
-        FORM<small>COACH DESK</small>
-      </span>
+    <div className="brand" aria-label="FORM Coach Desk">
+      <img className="brand-logo" src="/brand/form-horizontal.png" alt="" />
     </div>
   )
 }

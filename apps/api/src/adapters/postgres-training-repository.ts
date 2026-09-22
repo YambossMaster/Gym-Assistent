@@ -1,3 +1,10 @@
+import {
+  buildProgressSeries,
+  measurementsMatchType,
+  recordingConfigSchema,
+  recordingDimensions,
+  type RecordingConfig,
+} from '../training/recording.js'
 import { createHash, randomUUID } from 'node:crypto'
 import type { Pool, PoolClient, QueryResult } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
@@ -30,6 +37,35 @@ type Queryable = {
 export class PostgresTrainingRepository implements TrainingRepository {
   constructor(private readonly pool: Pool) {}
 
+  async setProgressMetrics(
+    workspaceId: string,
+    id: string,
+    input: Parameters<TrainingRepository['setProgressMetrics']>[2],
+  ) {
+    return this.withReceipt(
+      workspaceId,
+      input.operationId,
+      `exercise:${id}:metrics`,
+      input,
+      async (client) => {
+        const current = await lockDefinition(client, workspaceId, id)
+        if (!current) return null
+        if (Number(current.version) !== input.version)
+          throw new TrainingVersionConflictError('version_conflict', mapDefinition(current))
+        const recording = recordingConfigSchema.parse({
+          ...((current.recording_config as RecordingConfig | null) ??
+            legacyDefinitionRecording(current.performance_metric)),
+          metrics: input.metrics,
+        })
+        const row = await client.query(
+          `update app_private.exercise_definition set recording_config=$3,version=version+1,updated_at=now() where workspace_id=$1 and id=$2 returning *`,
+          [workspaceId, id, JSON.stringify(recording)],
+        )
+        return mapDefinition(row.rows[0])
+      },
+    )
+  }
+
   async resolveWorkspace(identity: AuthenticatedIdentity) {
     const row = await this.pool.query<{ id: string }>(
       'select id from app_private.workspace where owner_user_id=$1',
@@ -43,7 +79,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     await this.scoped(workspaceId, async (client) => {
       const values: unknown[] = []
       const tuples = trainingCatalog.map((item, index) => {
-        const offset = index * 8
+        const offset = index * 9
         values.push(
           randomUUID(),
           workspaceId,
@@ -53,11 +89,12 @@ export class PostgresTrainingRepository implements TrainingRepository {
           item.bodyParts,
           item.movementType,
           item.performanceMetric,
+          JSON.stringify(item.recording),
         )
-        return `($${offset + 1},$${offset + 2},$${offset + 3},$${offset + 4},$${offset + 5},$${offset + 6},$${offset + 7},$${offset + 8},true)`
+        return `($${offset + 1},$${offset + 2},$${offset + 3},$${offset + 4},$${offset + 5},$${offset + 6},$${offset + 7},$${offset + 8},$${offset + 9},true)`
       })
       await client.query(
-        `insert into app_private.exercise_definition (id,workspace_id,catalog_key,name,equipment,body_parts,movement_type,performance_metric,is_system) values ${tuples.join(',')} on conflict (workspace_id,catalog_key) do nothing`,
+        `insert into app_private.exercise_definition (id,workspace_id,catalog_key,name,equipment,body_parts,movement_type,performance_metric,recording_config,is_system) values ${tuples.join(',')} on conflict (workspace_id,catalog_key) do nothing`,
         values,
       )
       await client.query(
@@ -110,7 +147,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
       input,
       async (client) => {
         const row = await client.query(
-          `insert into app_private.exercise_definition(id,workspace_id,name,equipment,body_parts,movement_type,performance_metric,is_system) values($1,$2,$3,$4,$5,$6,$7,false) returning *`,
+          `insert into app_private.exercise_definition(id,workspace_id,name,equipment,body_parts,movement_type,performance_metric,recording_config,is_system) values($1,$2,$3,$4,$5,$6,$7,$8,false) returning *`,
           [
             randomUUID(),
             workspaceId,
@@ -119,6 +156,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
             input.bodyParts,
             input.movementType,
             input.performanceMetric,
+            input.recording ? JSON.stringify(input.recording) : null,
           ],
         )
         return mapDefinition(row.rows[0])
@@ -142,7 +180,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         if (Number(current.version) !== input.version)
           throw new TrainingVersionConflictError('version_conflict', mapDefinition(current))
         const row = await client.query(
-          `update app_private.exercise_definition set name=$3,equipment=$4,body_parts=$5,movement_type=$6,performance_metric=$7,version=version+1,updated_at=now() where workspace_id=$1 and id=$2 and deleted_at is null returning *`,
+          `update app_private.exercise_definition set name=$3,equipment=$4,body_parts=$5,movement_type=$6,performance_metric=$7,recording_config=coalesce($8,recording_config),version=version+1,updated_at=now() where workspace_id=$1 and id=$2 and deleted_at is null returning *`,
           [
             workspaceId,
             id,
@@ -151,6 +189,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
             input.bodyParts,
             input.movementType,
             input.performanceMetric,
+            input.recording ? JSON.stringify(input.recording) : null,
           ],
         )
         return row.rows[0] ? mapDefinition(row.rows[0]) : null
@@ -207,15 +246,29 @@ export class PostgresTrainingRepository implements TrainingRepository {
   }
 
   async getPreference(workspaceId: string) {
-    const row = await this.scoped(workspaceId, (client) =>
-      client.query<{ default_weight_unit: WeightUnit; version: number }>(
-        `select default_weight_unit,version from app_private.training_preference where workspace_id=$1`,
-        [workspaceId],
-      ),
+    return this.scoped(workspaceId, (client) => this.getPreferenceWith(client, workspaceId))
+  }
+
+  private async getPreferenceWith(client: Queryable, workspaceId: string) {
+    const row = await client.query<{
+      default_weight_unit: WeightUnit
+      default_distance_unit: 'km' | 'mi'
+      version: number
+    }>(
+      `select default_weight_unit,default_distance_unit,version from app_private.training_preference where workspace_id=$1`,
+      [workspaceId],
     )
     return row.rows[0]
-      ? { defaultWeightUnit: row.rows[0].default_weight_unit, version: Number(row.rows[0].version) }
-      : { defaultWeightUnit: 'kg' as const, version: 0 }
+      ? {
+          defaultWeightUnit: row.rows[0].default_weight_unit,
+          defaultDistanceUnit: row.rows[0].default_distance_unit,
+          version: Number(row.rows[0].version),
+        }
+      : {
+          defaultWeightUnit: 'kg' as const,
+          defaultDistanceUnit: 'km' as const,
+          version: 0,
+        }
   }
 
   async setPreference(
@@ -223,8 +276,12 @@ export class PostgresTrainingRepository implements TrainingRepository {
     input: Parameters<TrainingRepository['setPreference']>[1],
   ) {
     return this.withReceipt(workspaceId, input.operationId, 'preference', input, async (client) => {
-      const current = await client.query<{ default_weight_unit: WeightUnit; version: number }>(
-        `select default_weight_unit,version from app_private.training_preference where workspace_id=$1 for update`,
+      const current = await client.query<{
+        default_weight_unit: WeightUnit
+        default_distance_unit: 'km' | 'mi'
+        version: number
+      }>(
+        `select default_weight_unit,default_distance_unit,version from app_private.training_preference where workspace_id=$1 for update`,
         [workspaceId],
       )
       const version = Number(current.rows[0]?.version ?? 0)
@@ -233,12 +290,17 @@ export class PostgresTrainingRepository implements TrainingRepository {
           'version_conflict',
           current.rows[0] && { defaultWeightUnit: current.rows[0].default_weight_unit, version },
         )
-      const row = await client.query<{ default_weight_unit: WeightUnit; version: number }>(
-        `insert into app_private.training_preference(workspace_id,default_weight_unit,version) values($1,$2,1) on conflict(workspace_id) do update set default_weight_unit=excluded.default_weight_unit,version=app_private.training_preference.version+1,updated_at=now() returning default_weight_unit,version`,
-        [workspaceId, input.defaultWeightUnit],
+      const row = await client.query<{
+        default_weight_unit: WeightUnit
+        default_distance_unit: 'km' | 'mi'
+        version: number
+      }>(
+        `insert into app_private.training_preference(workspace_id,default_weight_unit,default_distance_unit,version) values($1,$2,$3,1) on conflict(workspace_id) do update set default_weight_unit=excluded.default_weight_unit,default_distance_unit=excluded.default_distance_unit,version=app_private.training_preference.version+1,updated_at=now() returning default_weight_unit,default_distance_unit,version`,
+        [workspaceId, input.defaultWeightUnit, input.defaultDistanceUnit],
       )
       return {
         defaultWeightUnit: row.rows[0]!.default_weight_unit,
+        defaultDistanceUnit: row.rows[0]!.default_distance_unit,
         version: Number(row.rows[0]!.version),
       }
     })
@@ -264,8 +326,9 @@ export class PostgresTrainingRepository implements TrainingRepository {
           count(distinct te.id)::int exercise_count,
           count(distinct te.id) filter (where ts.id is not null)::int exercises_with_sets,
           count(ts.id)::int set_count,
-          count(ts.id) filter (where ts.planned_reps is not null and
-            (te.performance_metric='reps' or ts.planned_weight is not null))::int planned_set_count
+          count(ts.id) filter (where case when te.recording_config is null then ts.planned_reps is not null and
+            (te.performance_metric='reps' or ts.planned_weight is not null)
+            else app_private.training_measurements_complete(te.recording_config->>'type',ts.measurements) end)::int planned_set_count
          from app_private.course_session cs
          left join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id
          left join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id
@@ -341,6 +404,12 @@ export class PostgresTrainingRepository implements TrainingRepository {
         const setParents = new Map(
           existingSets.rows.map((row) => [String(row.id), String(row.exercise_id)]),
         )
+        const existingMeasurements = new Map(
+          existingSets.rows.map((row) => [String(row.id), row.measurements]),
+        )
+        let preference: Awaited<
+          ReturnType<PostgresTrainingRepository['getPreferenceWith']>
+        > | null = null
         for (const exercise of input.exercises) {
           const existing = existingById.get(exercise.id)
           if (existing && String(existing.definition_id) !== exercise.definitionId)
@@ -366,15 +435,51 @@ export class PostgresTrainingRepository implements TrainingRepository {
             Number(definition.version) !== occurrence.definitionVersion
           )
             throw new TrainingVersionConflictError('definition_conflict', mapDefinition(definition))
+          if (!definition.recording_config)
+            definition.recording_config = legacyDefinitionRecording(definition.performance_metric)
           definitions.set(definitionId, definition)
         }
 
+        for (const exercise of input.exercises) {
+          const existing = existingById.get(exercise.id)
+          const config = existing
+            ? existing.recording_config
+            : exercise.formatVersion === 2
+              ? definitions.get(exercise.definitionId)?.recording_config
+              : null
+          if (exercise.formatVersion === 2 && !config)
+            throw new TrainingVersionConflictError('definition_conflict')
+          if (config) {
+            const recording = recordingConfigSchema.parse(config)
+            if (
+              exercise.formatVersion !== 2 ||
+              exercise.sets.some(
+                (set) =>
+                  !set.measurements || !measurementsMatchType(recording.type, set.measurements),
+              )
+            )
+              throw new TrainingVersionConflictError('definition_conflict')
+            for (const set of exercise.sets) {
+              const previousMeasurements = existingMeasurements.get(set.id)
+              if (!previousMeasurements)
+                preference ??= await this.getPreferenceWith(client, workspaceId)
+              if (
+                previousMeasurements
+                  ? !sameMeasurementUnits(previousMeasurements, set.measurements!)
+                  : !measurementUnitsMatchPreference(set.measurements!, preference!)
+              )
+                throw new TrainingVersionConflictError('unit_conflict')
+            }
+          } else if (exercise.sets.some((set) => set.measurements)) {
+            throw new TrainingVersionConflictError('definition_conflict')
+          }
+        }
         const recordId = String(currentRecord?.id ?? randomUUID())
-        const nextContent = JSON.stringify({
+        const nextContent = stableJson({
           privateNote: input.privateNote,
           exercises: input.exercises.map(({ definitionVersion: _, ...x }) => x),
         })
-        const currentContent = JSON.stringify({
+        const currentContent = stableJson({
           privateNote: String(currentRecord?.private_note ?? ''),
           exercises: existingInput(existingExercises.rows, existingSets.rows),
         })
@@ -397,7 +502,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
           for (const [position, exercise] of input.exercises.entries()) {
             const source = existingById.get(exercise.id) ?? definitions.get(exercise.definitionId)!
             await client.query(
-              `insert into app_private.training_exercise(id,workspace_id,record_id,position,definition_id,definition_name,equipment,body_parts,movement_type,performance_metric) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+              `insert into app_private.training_exercise(id,workspace_id,record_id,position,definition_id,definition_name,equipment,body_parts,movement_type,performance_metric,recording_config) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
               [
                 exercise.id,
                 workspaceId,
@@ -409,11 +514,15 @@ export class PostgresTrainingRepository implements TrainingRepository {
                 source.body_parts,
                 source.movement_type,
                 source.performance_metric,
+                source.recording_config &&
+                (existingById.has(exercise.id) || exercise.formatVersion === 2)
+                  ? JSON.stringify(source.recording_config)
+                  : null,
               ],
             )
             for (const [setPosition, set] of exercise.sets.entries())
               await client.query(
-                `insert into app_private.training_set(id,workspace_id,exercise_id,position,planned_weight,planned_reps,actual_reps,rpe,result,unit) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+                `insert into app_private.training_set(id,workspace_id,exercise_id,position,planned_weight,planned_reps,actual_reps,rpe,result,unit,measurements) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
                 [
                   set.id,
                   workspaceId,
@@ -425,6 +534,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
                   set.rpe,
                   set.result,
                   set.unit,
+                  set.measurements ? JSON.stringify(set.measurements) : null,
                 ],
               )
           }
@@ -475,7 +585,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
       const key = `${point.definitionId}:${point.metric}`
       groups.set(key, [...(groups.get(key) ?? []), point])
     }
-    return [...groups.entries()]
+    const legacy = [...groups.entries()]
       .map(([key, series]) => {
         const latest = series.at(-1)!
         return {
@@ -495,6 +605,62 @@ export class PostgresTrainingRepository implements TrainingRepository {
           String(b.latestAt).localeCompare(String(a.latestAt)) ||
           a.name.localeCompare(b.name),
       )
+    const preference = await this.getPreference(workspaceId)
+    const rows = await this.scoped(workspaceId, (client) =>
+      this.measurementRows(client, workspaceId, studentId),
+    )
+    const configs = new Map<
+      string,
+      { definitionId: string; name: string; recording: RecordingConfig }
+    >()
+    for (const row of rows.rows)
+      if (
+        row.recording_config ||
+        ['weight_reps', 'reps'].includes(
+          (row.current_recording as RecordingConfig | null)?.type ?? '',
+        )
+      ) {
+        const snapshot = (row.recording_config ?? row.current_recording) as RecordingConfig
+        const definition = row.current_recording as RecordingConfig | null
+        const recording = definition?.type === snapshot.type ? definition : snapshot
+        configs.set(`${row.definition_id}:${snapshot.type}`, {
+          definitionId: String(row.definition_id),
+          name: String(row.definition_name),
+          recording,
+        })
+      }
+    const modern = [...configs.values()]
+      .map((config) => {
+        const series = this.seriesFor(rows.rows, config.definitionId, config.recording, preference)
+        const first = series.find((s) => config.recording.metrics.includes(s.metric))
+        const latest = first?.points.at(-1)
+        return {
+          ...config,
+          series,
+          metric: 'reps' as PerformanceMetric,
+          unit: null,
+          latest: latest?.value ?? 0,
+          personal: first?.points.length
+            ? (first.direction === 'lower' ? Math.min : Math.max)(
+                ...first.points.map((p) => p.value),
+              )
+            : 0,
+          latestAt: latest?.startsAt ?? '',
+          sessionCount: new Set(series.flatMap((s) => s.points.map((p) => p.sessionId))).size,
+        }
+      })
+      .filter((entry) => entry.sessionCount > 0)
+    return [
+      ...modern,
+      ...legacy.filter(
+        (entry) =>
+          !modern.some(
+            (m) =>
+              m.definitionId === entry.definitionId &&
+              (m.recording.type === 'weight_reps' || m.recording.type === 'reps'),
+          ),
+      ),
+    ]
   }
 
   async getStudentTrend(
@@ -528,7 +694,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     defaultUnit: WeightUnit,
   ) {
     const rows = await queryable.query(
-      `select cs.id session_id,cs.status session_status,cs.starts_at,te.definition_id,te.definition_name,te.performance_metric,ts.planned_weight,ts.actual_reps,ts.unit from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where cs.workspace_id=$1 and cs.student_id=$2 and cs.status in ('scheduled','completed') and not cs.is_legacy and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
+      `select cs.id session_id,cs.status session_status,cs.starts_at,te.definition_id,te.definition_name,te.performance_metric,ts.planned_weight,ts.actual_reps,ts.unit from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where cs.workspace_id=$1 and cs.student_id=$2 and cs.status in ('scheduled','completed') and not cs.is_legacy and te.recording_config is null and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
       [workspaceId, studentId],
     )
     const groups = new Map<string, any[]>()
@@ -576,6 +742,62 @@ export class PostgresTrainingRepository implements TrainingRepository {
     })
   }
 
+  private async measurementRows(queryable: Queryable, workspaceId: string, studentId: string) {
+    return queryable.query(
+      `select cs.id session_id,cs.status session_status,cs.starts_at,te.definition_id,te.definition_name,te.recording_config,
+      d.recording_config current_recording,ts.measurements,ts.result,ts.planned_weight,ts.actual_reps,ts.unit
+      from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id
+      join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id
+      join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id
+      left join app_private.exercise_definition d on d.workspace_id=te.workspace_id and d.id=te.definition_id
+      where cs.workspace_id=$1 and cs.student_id=$2 and cs.status in ('scheduled','completed')
+      and not cs.is_legacy and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
+      [workspaceId, studentId],
+    )
+  }
+  private seriesFor(
+    rows: Record<string, unknown>[],
+    definitionId: string,
+    config: RecordingConfig,
+    pref: import('../training/recording.js').MeasurementPreference,
+  ) {
+    return buildProgressSeries(
+      rows.flatMap((row) => {
+        if (row.definition_id !== definitionId) return []
+        const snapshot = row.recording_config as RecordingConfig | null
+        if (snapshot && snapshot.type !== config.type) return []
+        // Legacy kg/reps are comparable only as kg/reps, never seconds or metres.
+        if (!snapshot && config.type !== 'weight_reps' && config.type !== 'reps') return []
+        const measurements = row.measurements ?? {
+          weight:
+            config.type === 'reps'
+              ? null
+              : row.planned_weight === null
+                ? null
+                : Number(row.planned_weight),
+          reps: row.actual_reps === null ? null : Number(row.actual_reps),
+          duration: null,
+          distance: null,
+          rounds: null,
+          weightUnit: row.unit,
+          durationUnit: 'sec',
+          distanceUnit: 'm',
+        }
+        return [
+          {
+            sessionId: String(row.session_id),
+            startsAt: new Date(String(row.starts_at)).toISOString(),
+            type: config.type,
+            measurements: measurements as any,
+            result: 'completed' as const,
+            legacy: !snapshot,
+          },
+        ]
+      }),
+      pref,
+    )
+  }
+
   private async readSessionTraining(
     queryable: Queryable,
     workspaceId: string,
@@ -587,7 +809,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         (select count(*)::int from app_private.course_session x where x.workspace_id=cs.workspace_id and x.student_id=cs.student_id and x.status='completed') completed,
         tr.id training_record_id,tr.version training_record_version,
         tr.private_note training_private_note,tr.updated_at training_updated_at,
-        coalesce(tp.default_weight_unit,'kg') default_weight_unit
+        coalesce(tp.default_weight_unit,'kg') default_weight_unit, coalesce(tp.default_distance_unit,'km') default_distance_unit
        from app_private.course_session cs
        join app_private.student s on s.workspace_id=cs.workspace_id and s.id=cs.student_id
        left join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id
@@ -607,10 +829,11 @@ export class PostgresTrainingRepository implements TrainingRepository {
       : null
     const currentRows = record
       ? await queryable.query(
-          `select te.*,
+          `select te.*,d.recording_config current_recording,
             ts.id set_id,ts.planned_weight,ts.planned_reps,ts.actual_reps,
-            ts.rpe,ts.result,ts.unit
+            ts.rpe,ts.result,ts.unit,ts.measurements
            from app_private.training_exercise te
+           left join app_private.exercise_definition d on d.workspace_id=te.workspace_id and d.id=te.definition_id
            left join app_private.training_set ts
              on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id
            where te.workspace_id=$1 and te.record_id=$2
@@ -632,10 +855,16 @@ export class PostgresTrainingRepository implements TrainingRepository {
           rpe: row.rpe,
           result: row.result,
           unit: row.unit,
+          measurements: row.measurements,
         })
       currentByExercise.set(exerciseId, current)
     }
-    const exercises = [...currentByExercise.values()].map(({ row, sets }) => mapExercise(row, sets))
+    const exercises = [...currentByExercise.values()].map(({ row, sets }) => {
+      const exercise = mapExercise(row, sets)
+      if (exercise.recording && row.current_recording?.type === exercise.recording.type)
+        exercise.recording = row.current_recording
+      return exercise
+    })
     const defaultUnit = (s.default_weight_unit ?? 'kg') as WeightUnit
     const historical = await this.performancePointsWith(
       queryable,
@@ -643,7 +872,19 @@ export class PostgresTrainingRepository implements TrainingRepository {
       String(s.student_id),
       defaultUnit,
     )
+    const progressRows = exercises.some(
+      (e) =>
+        e.recording ||
+        ['weight_reps', 'reps'].includes(currentByExercise.get(e.id)?.row.current_recording?.type),
+    )
+      ? await this.measurementRows(queryable, workspaceId, String(s.student_id))
+      : { rows: [] }
     const summaries = exercises.map((exercise) => {
+      const liveConfig = currentByExercise.get(exercise.id)?.row
+        .current_recording as RecordingConfig | null
+      const progressRecording =
+        exercise.recording ??
+        (liveConfig && ['weight_reps', 'reps'].includes(liveConfig.type) ? liveConfig : undefined)
       const unit = defaultUnit as WeightUnit
       const current = qualifiedBest(exercise.performanceMetric, exercise.sets, unit)
       const history = historical.filter(
@@ -669,6 +910,28 @@ export class PostgresTrainingRepository implements TrainingRepository {
         ...(displayedCurrent === null ? [] : [displayedCurrent]),
       ]
       return {
+        ...(progressRecording
+          ? {
+              recording: progressRecording,
+              series: this.seriesFor(progressRows.rows, exercise.definitionId, progressRecording, {
+                defaultWeightUnit: defaultUnit,
+                defaultDistanceUnit: s.default_distance_unit as any,
+              }).map((series) => ({
+                ...series,
+                current: series.points.find((p) => p.sessionId === sessionId)?.value ?? null,
+                previous:
+                  series.points
+                    .filter(
+                      (p) =>
+                        p.startsAt < new Date(String(s.starts_at)).toISOString() &&
+                        progressRows.rows.some(
+                          (r) => r.session_id === p.sessionId && r.session_status === 'completed',
+                        ),
+                    )
+                    .at(-1)?.value ?? null,
+              })),
+            }
+          : {}),
         occurrenceId: exercise.id,
         definitionId: exercise.definitionId,
         metric: exercise.performanceMetric,
@@ -707,6 +970,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         updatedAt: record ? new Date(String(record.updated_at)) : null,
       },
       defaultWeightUnit: defaultUnit,
+      defaultDistanceUnit: s.default_distance_unit as any,
       exerciseSummaries: summaries,
       allowedActions: {
         canEditTraining: s.status !== 'cancelled',
@@ -776,6 +1040,11 @@ export class PostgresTrainingRepository implements TrainingRepository {
   }
 }
 
+function legacyDefinitionRecording(metric: unknown): RecordingConfig {
+  return metric === 'reps'
+    ? { type: 'reps', metrics: ['reps'] }
+    : { type: 'weight_reps', metrics: ['weight'] }
+}
 function mapDefinition(row: any): ExerciseDefinition {
   return {
     id: String(row.id),
@@ -785,6 +1054,9 @@ function mapDefinition(row: any): ExerciseDefinition {
     bodyParts: row.body_parts as string[],
     movementType: row.movement_type,
     performanceMetric: row.performance_metric,
+    recording:
+      (row.recording_config as RecordingConfig | null) ??
+      legacyDefinitionRecording(row.performance_metric),
     isSystem: Boolean(row.is_system),
     favorite: Boolean(row.favorite),
     version: Number(row.version),
@@ -801,6 +1073,7 @@ function mapExercise(row: any, sets: any[]): TrainingExercise {
     bodyParts: row.body_parts as string[],
     movementType: row.movement_type,
     performanceMetric: row.performance_metric,
+    ...(row.recording_config ? { recording: row.recording_config as RecordingConfig } : {}),
     sets: sets.map((set) => ({
       id: String(set.id),
       plannedWeight: set.planned_weight === null ? null : Number(set.planned_weight),
@@ -809,6 +1082,7 @@ function mapExercise(row: any, sets: any[]): TrainingExercise {
       rpe: set.rpe === null ? null : Number(set.rpe),
       result: set.result,
       unit: set.unit,
+      ...(set.measurements ? { measurements: set.measurements } : {}),
     })),
   }
 }
@@ -818,6 +1092,7 @@ function existingInput(exercises: any[], sets: any[]) {
     .map((exercise) => ({
       id: String(exercise.id),
       definitionId: String(exercise.definition_id),
+      ...(exercise.recording_config ? { formatVersion: 2 } : {}),
       sets: sets
         .filter((set) => set.exercise_id === exercise.id)
         .sort((a, b) => Number(a.position) - Number(b.position))
@@ -829,8 +1104,34 @@ function existingInput(exercises: any[], sets: any[]) {
           rpe: set.rpe === null ? null : Number(set.rpe),
           result: set.result,
           unit: set.unit,
+          ...(set.measurements ? { measurements: set.measurements } : {}),
         })),
     }))
+}
+
+function sameMeasurementUnits(
+  previous: unknown,
+  next: { weightUnit: string; durationUnit: string; distanceUnit: string },
+) {
+  if (!previous || typeof previous !== 'object') return false
+  const values = previous as Record<string, unknown>
+  return (
+    values.weightUnit === next.weightUnit &&
+    values.durationUnit === next.durationUnit &&
+    values.distanceUnit === next.distanceUnit
+  )
+}
+
+function measurementUnitsMatchPreference(
+  values: { weightUnit: 'kg' | 'lb'; distanceUnit: 'm' | 'km' | 'ft' | 'mi' },
+  preference: { defaultWeightUnit: WeightUnit; defaultDistanceUnit: 'km' | 'mi' },
+) {
+  return (
+    values.weightUnit === preference.defaultWeightUnit &&
+    (preference.defaultDistanceUnit === 'km'
+      ? values.distanceUnit === 'm' || values.distanceUnit === 'km'
+      : values.distanceUnit === 'ft' || values.distanceUnit === 'mi')
+  )
 }
 async function lockDefinition(client: Queryable, workspaceId: string, id: string) {
   const row = await client.query(

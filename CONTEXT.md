@@ -34,3 +34,13 @@ _Avoid_: Student login, share token
 **Training Record**:
 The exercises and set outcomes recorded for one Course Session.
 _Avoid_: Workout plan, health record
+
+**Recording Type**:
+The combination of measurements used to record a set of one Exercise, such as weight and
+repetitions, duration, or distance and duration.
+_Avoid_: Best-performance metric, intensity
+
+**Primary Progress Metric**:
+A measurement selected for an Exercise's progress summaries and growth trajectory. An Exercise
+can have one or two primary progress metrics allowed by its Recording Type.
+_Avoid_: Recording type, RPE

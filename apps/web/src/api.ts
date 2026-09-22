@@ -1,3 +1,9 @@
+import type {
+  RecordingConfig,
+  Measurements,
+  ProgressMetric,
+  ProgressSeries
+} from './pages/training/recording'
 export interface Student {
   id: string
   name: string
@@ -160,6 +166,7 @@ export interface ExerciseDefinition {
   bodyParts: string[]
   movementType: '系統動作' | '局部動作'
   performanceMetric: PerformanceMetric
+  recording?: RecordingConfig
   isSystem: boolean
   favorite: boolean
   version: number
@@ -170,6 +177,7 @@ export interface ExerciseLibrary {
   totals: { all: number; favorite: number; custom: number }
 }
 export interface TrainingSet {
+  measurements?: Measurements
   id: string
   plannedWeight: number | null
   plannedReps: number | null
@@ -186,6 +194,7 @@ export interface TrainingExercise {
   bodyParts: string[]
   movementType: '系統動作' | '局部動作'
   performanceMetric: PerformanceMetric
+  recording?: RecordingConfig
   sets: TrainingSet[]
 }
 export interface SessionTraining {
@@ -204,8 +213,11 @@ export interface SessionTraining {
     exercises: TrainingExercise[]
     updatedAt: string | null
   }
+  defaultDistanceUnit: 'km' | 'mi'
   defaultWeightUnit: WeightUnit
   exerciseSummaries: Array<{
+    recording?: RecordingConfig
+    series?: ProgressSeries[]
     occurrenceId: string
     definitionId: string
     metric: PerformanceMetric
@@ -224,6 +236,8 @@ export type TrainingDraftPayload = {
     definitionId: string
     definitionName?: string
     definitionVersion?: number
+    recording?: RecordingConfig
+    formatVersion?: 2
     sets: TrainingSet[]
   }>
   recordVersion: number
@@ -231,6 +245,8 @@ export type TrainingDraftPayload = {
   operationId: string
 }
 export interface PerformanceEntry {
+  recording?: RecordingConfig
+  series?: ProgressSeries[]
   definitionId: string
   metric: PerformanceMetric
   name: string
@@ -274,8 +290,10 @@ export interface PublicTrainingResult {
   exercises: Array<{
     position: number
     definitionName: string
+    recording?: RecordingConfig
     sets: Array<{
       position: number
+      measurements?: Measurements
       plannedWeight: number | null
       actualReps: number | null
       unit: WeightUnit
@@ -576,22 +594,32 @@ export async function removeExercise(accessToken: string, id: string, version: n
 }
 export async function getTrainingPreference(accessToken: string) {
   return (
-    await request<{ preference: { defaultWeightUnit: WeightUnit; version: number } }>(
-      '/api/v1/training/preferences',
-      accessToken
-    )
+    await request<{
+      preference: {
+        defaultWeightUnit: WeightUnit
+        defaultDistanceUnit: 'km' | 'mi'
+        version: number
+      }
+    }>('/api/v1/training/preferences', accessToken)
   ).preference
 }
 export async function setTrainingPreference(
   accessToken: string,
   defaultWeightUnit: WeightUnit,
-  version: number
+  version: number,
+  units: { defaultDistanceUnit: 'km' | 'mi' }
 ) {
   return (
-    await request<{ preference: { defaultWeightUnit: WeightUnit; version: number } }>(
+    await request<{
+      preference: {
+        defaultWeightUnit: WeightUnit
+        defaultDistanceUnit: 'km' | 'mi'
+        version: number
+      }
+    }>(
       '/api/v1/training/preferences',
       accessToken,
-      json('PUT', { defaultWeightUnit, version, operationId: crypto.randomUUID() })
+      json('PUT', { defaultWeightUnit, ...units, version, operationId: crypto.randomUUID() })
     )
   ).preference
 }
@@ -1125,4 +1153,18 @@ async function capabilityRequest<T>(
     referrerPolicy: 'no-referrer',
     headers: { ...init.headers, 'x-capability-token': token }
   })
+}
+
+export async function setProgressMetrics(
+  accessToken: string,
+  id: string,
+  input: { metrics: ProgressMetric[]; version: number; operationId: string }
+) {
+  return (
+    await request<{ definition: ExerciseDefinition }>(
+      `/api/v1/exercises/${id}/metrics`,
+      accessToken,
+      json('PUT', input)
+    )
+  ).definition
 }

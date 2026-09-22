@@ -225,14 +225,15 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
     <section className="settings-panel training-preference">
       <SettingsPanelHeading eyebrow="TRAINING" title="訓練設定" />
       <label>
-        預設重量單位
+        重量單位習慣
         <FormSelect
-          label="預設重量單位"
+          label="重量單位習慣"
           value={query.data.defaultWeightUnit}
           disabled={mutations.preference.isPending}
           onChange={(value) =>
             mutations.preference.mutate({
               unit: value as 'kg' | 'lb',
+              defaultDistanceUnit: query.data!.defaultDistanceUnit,
               version: query.data!.version
             })
           }
@@ -242,7 +243,33 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
           ]}
         />
       </label>
-      <p>只影響新增組別與表現顯示，不會改寫既有重量。</p>
+      <label>
+        距離單位習慣
+        <FormSelect
+          label="距離單位習慣"
+          value={query.data.defaultDistanceUnit}
+          disabled={mutations.preference.isPending}
+          options={[
+            { value: 'km', label: '公制（公里／公尺）' },
+            { value: 'mi', label: '英制（英里／英尺）' }
+          ]}
+          onChange={(value) =>
+            mutations.preference.mutate({
+              unit: query.data!.defaultWeightUnit,
+              version: query.data!.version,
+              defaultDistanceUnit: value as 'km' | 'mi'
+            })
+          }
+        />
+      </label>
+      <p>
+        重量與距離習慣會套用至新增紀錄與表現顯示；既有紀錄保留原始數值與單位。時間可在每組以秒／分切換，距離可在同一制式內快速切換尺度。
+      </p>
+      {mutations.preference.isError && (
+        <p role="alert">
+          單位儲存失敗，請重新選取。<button onClick={() => void query.refetch()}>重新載入</button>
+        </p>
+      )}
     </section>
   )
 }

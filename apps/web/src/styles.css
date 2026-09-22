@@ -1057,6 +1057,9 @@
   color: #fff;
   background: #292d23;
 }
+.editor-segmented button[data-locked='true'] {
+  box-shadow: inset 0 0 0 1px #d9ff43;
+}
 .editor-segmented button:focus-visible {
   outline: 2px solid #697d16;
   outline-offset: 2px;
@@ -1068,6 +1071,90 @@
 }
 .editor-segmented button[aria-pressed='true'] small {
   color: #d1d5c9;
+}
+.progress-metric-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #efeee8;
+}
+.progress-metric-selector button,
+.progress-metric-static {
+  min-height: 47px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #5e6358;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 750;
+}
+.progress-metric-selector button {
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.progress-metric-selector button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.progress-metric-selector button:not(:disabled):hover .metric-lock-icon {
+  transform: rotate(-12deg) scale(1.08);
+}
+.progress-metric-selector button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+.progress-metric-selector button:disabled .metric-lock-icon {
+  animation: progress-metric-pulse 900ms ease-in-out infinite;
+}
+.progress-metric-selector button[aria-pressed='true'] {
+  color: #fff;
+  border-color: #292d23;
+  background: #292d23;
+}
+.progress-metric-selector button[data-locked='true'] {
+  box-shadow: inset 0 0 0 1px #d9ff43;
+}
+.progress-metric-selector button:focus-visible {
+  outline: 2px solid #697d16;
+  outline-offset: 2px;
+}
+.metric-lock-icon {
+  width: 14px;
+  height: 14px;
+  color: #d9ff43;
+  transition: transform 160ms ease;
+}
+@keyframes progress-metric-pulse {
+  50% {
+    opacity: 0.42;
+    transform: scale(0.84);
+  }
+}
+.progress-metric-static {
+  justify-content: flex-start;
+  background: #292d23;
+  color: #fff;
+  cursor: default;
+}
+.progress-metric-static span {
+  color: #c8cdc0;
+  font-size: 10px;
+  font-weight: 600;
+}
+.progress-metric-static strong {
+  font-size: 14px;
 }
 .editor-note {
   margin: 0;
@@ -1522,16 +1609,10 @@ svg {
   letter-spacing: 0.25em;
 }
 
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  color: var(--ink);
-  background: var(--lime);
-  border-radius: 4px 15px 4px 4px;
-  font-size: 21px;
-  letter-spacing: 0;
+.brand-logo {
+  width: 168px;
+  height: auto;
+  display: block;
 }
 
 .auth-copy {
@@ -2927,6 +3008,18 @@ textarea:focus {
   box-shadow:
     0 0 0 45px rgba(217, 255, 67, 0.025),
     0 0 0 90px rgba(217, 255, 67, 0.02);
+}
+
+.sidebar-brand-logo {
+  position: relative;
+  z-index: 1;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-inline: auto;
+  object-fit: contain;
+  transform: translate(-6px, 8px);
 }
 
 .sidebar nav {
@@ -4702,6 +4795,9 @@ textarea:focus {
   .mobile-header .brand small {
     color: var(--muted);
   }
+  .mobile-header .brand-logo {
+    width: 142px;
+  }
   .mobile-header a {
     width: 42px;
     height: 42px;
@@ -5527,7 +5623,7 @@ textarea:focus {
   min-height: 72px;
   padding: 0 18px;
   display: grid;
-  grid-template-columns: 36px minmax(150px, 1fr) auto 35px;
+  grid-template-columns: 36px minmax(120px, 0.72fr) minmax(255px, 1.35fr) 35px;
   align-items: center;
   gap: 15px;
   border-bottom: 1px solid var(--line);
@@ -5572,8 +5668,8 @@ textarea:focus {
 }
 
 .exercise-performance-inline > div {
-  min-width: 122px;
-  padding: 0 15px;
+  min-width: 0;
+  padding: 0 12px;
   border-left: 1px solid var(--line);
 }
 
@@ -5591,6 +5687,9 @@ textarea:focus {
     600 10px/1.2 'DM Mono',
     monospace;
   white-space: nowrap;
+}
+.exercise-performance-inline .recording-summary {
+  max-width: 280px;
 }
 
 .exercise-performance-inline button {
@@ -6075,7 +6174,7 @@ textarea:focus {
   }
 
   .session-workspace .training-exercise-card > header {
-    min-height: 112px;
+    min-height: 94px;
     padding: 12px 10px;
     grid-template-columns: 28px minmax(0, 1fr) 30px;
     align-items: start;
@@ -6095,13 +6194,16 @@ textarea:focus {
   .exercise-performance-inline {
     grid-column: 2 / 4;
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) 48px;
+    grid-template-rows: auto;
+    align-items: stretch;
     margin-top: 4px;
   }
 
   .exercise-performance-inline > div {
+    grid-column: auto;
     min-width: 0;
-    padding-inline: 10px;
+    padding-right: 8px;
   }
 
   .exercise-performance-inline > div:first-child {
@@ -6114,10 +6216,17 @@ textarea:focus {
   }
 
   .exercise-performance-inline button {
-    min-height: 32px;
-    margin-left: 4px;
-    padding-inline: 9px;
-    font-size: 8px;
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 38px;
+    margin-left: 0;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .exercise-performance-inline button svg {
+    width: 15px;
+    height: 15px;
   }
 
   .training-sets-scroll {
@@ -7703,7 +7812,7 @@ textarea:focus {
 .trajectory-chart > svg {
   display: block;
   width: 100%;
-  height: 200px;
+  height: 272px;
   overflow: visible;
   font-variant-numeric: tabular-nums;
 }
@@ -7794,7 +7903,7 @@ textarea:focus {
   scrollbar-width: thin;
   scrollbar-color: #b9bbad transparent;
   list-style: none;
-  margin: -8px 0 0;
+  margin: 0;
   padding: 0 6px 0 0;
 }
 .trajectory-history li {
@@ -7946,7 +8055,7 @@ textarea:focus {
   font-size: 23px;
 }
 .trajectory-chart > svg {
-  height: 224px;
+  height: 272px;
 }
 .trajectory-chart-note {
   margin: 0;
@@ -8037,4 +8146,532 @@ textarea:focus {
   .trajectory-toolbar .form-select {
     width: 142px;
   }
+}
+
+.exercise-recording-label {
+  margin: 4px 0 12px;
+  color: #626a57;
+  font-size: 12px;
+}
+.session-workspace .recording-v2 .training-set-head,
+.session-workspace .recording-v2 .training-set-card,
+.session-workspace .recording-legacy .training-set-head,
+.session-workspace .recording-legacy .training-set-card {
+  --recording-input-gap: 16px;
+  grid-template-columns: 30px 256px minmax(0, 1fr) 75px minmax(0, 1fr) 157px 28px;
+  column-gap: var(--recording-input-gap);
+  row-gap: 8px;
+}
+.measurement-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, 120px);
+  align-items: flex-start;
+  column-gap: var(--recording-input-gap, 16px);
+  row-gap: 8px;
+  min-width: 0;
+}
+.session-workspace .measurement-inputs label {
+  flex: 0 0 auto;
+  min-width: 0;
+  height: auto;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.measurement-inputs .measurement-control {
+  width: 120px;
+  height: 38px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8d7cf;
+  border-radius: 7px;
+  background: #f7f7f3;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.measurement-inputs--1 {
+  grid-template-columns: 256px;
+}
+.measurement-inputs--1 .measurement-control {
+  width: 256px;
+}
+.measurement-inputs .measurement-field:focus-within .measurement-control {
+  border-color: #aeca35;
+  box-shadow: none;
+}
+.measurement-inputs .measurement-label {
+  display: block;
+  color: #6a705e;
+  font-size: 10px;
+  padding: 0 0 4px 2px;
+}
+.measurement-inputs input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  height: 36px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+  box-shadow: none;
+}
+.measurement-inputs input:focus {
+  outline: 0;
+}
+.measurement-inputs input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.measurement-inputs input[type='number']::-webkit-inner-spin-button,
+.measurement-inputs input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.session-workspace .recording-v2 .training-set-card > label > input:focus,
+.session-workspace .recording-legacy .training-set-card > label > input:focus {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.session-workspace .recording-v2 .training-set-card > label > input[type='number'],
+.session-workspace .recording-legacy .training-set-card > label > input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.session-workspace
+  .recording-v2
+  .training-set-card
+  > label
+  > input[type='number']::-webkit-inner-spin-button,
+.session-workspace
+  .recording-v2
+  .training-set-card
+  > label
+  > input[type='number']::-webkit-outer-spin-button,
+.session-workspace
+  .recording-legacy
+  .training-set-card
+  > label
+  > input[type='number']::-webkit-inner-spin-button,
+.session-workspace
+  .recording-legacy
+  .training-set-card
+  > label
+  > input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.measurement-unit-suffix {
+  flex: 0 0 auto;
+  padding: 0 10px 0 6px;
+  color: #8a907e;
+  font:
+    500 11px/1 'DM Mono',
+    monospace;
+}
+.measurement-entry {
+  display: block;
+}
+.measurement-unit-toggle {
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-width: 31px;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 0;
+  border-left: 1px solid #d8d7cf;
+  border-radius: 0;
+  color: #838977;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+.measurement-unit-toggle:hover {
+  color: #586436;
+  background: #f0f4e1;
+}
+.measurement-unit-toggle:focus-visible {
+  outline: 2px solid #aeca35;
+  outline-offset: -2px;
+}
+.measurement-head {
+  display: grid;
+  grid-template-columns: repeat(2, 120px);
+  column-gap: var(--recording-input-gap, 16px);
+}
+.measurement-head > span {
+  width: 120px;
+}
+.session-workspace .recording-v2 .result-toggle,
+.session-workspace .recording-legacy .result-toggle {
+  width: 157px;
+  grid-template-columns: repeat(2, 76px);
+}
+.session-workspace .recording-v2 .result-toggle button,
+.session-workspace .recording-legacy .result-toggle button {
+  width: 76px;
+}
+@media (min-width: 601px) {
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(1),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(1),
+  .session-workspace .recording-v2 .training-set-card > strong,
+  .session-workspace .recording-legacy .training-set-card > strong {
+    grid-column: 1;
+  }
+  .session-workspace .recording-v2 .training-set-head > .measurement-head,
+  .session-workspace .recording-legacy .training-set-head > .measurement-head,
+  .session-workspace .recording-v2 .training-set-card > .measurement-inputs,
+  .session-workspace .recording-legacy .training-set-card > .planned-inputs {
+    grid-column: 2;
+  }
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(3),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(3),
+  .session-workspace .recording-v2 .training-set-card > label,
+  .session-workspace .recording-legacy .training-set-card > label {
+    grid-column: 4;
+  }
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(4),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(4),
+  .session-workspace .recording-v2 .training-set-card > .result-toggle,
+  .session-workspace .recording-legacy .training-set-card > .result-toggle {
+    grid-column: 6;
+  }
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(5),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(5),
+  .session-workspace .recording-v2 .training-set-card > .icon-button,
+  .session-workspace .recording-legacy .training-set-card > .icon-button {
+    grid-column: 7;
+  }
+  .measurement-inputs .measurement-label {
+    display: none;
+  }
+}
+.recording-summary {
+  display: grid;
+  gap: 3px;
+}
+.metric-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.metric-controls button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #d6dacb;
+  border-radius: 8px;
+  background: white;
+  padding: 9px 12px;
+  color: #626958;
+  font-size: 12px;
+}
+.metric-controls button > span:last-child {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+.metric-controls button small {
+  color: #858c7a;
+  font-size: 9px;
+  font-weight: 500;
+}
+.metric-controls button[aria-pressed='true'] {
+  background: #f0f5e2;
+  color: #303d21;
+  border-color: #839562;
+}
+.metric-controls button[aria-pressed='true'] small {
+  color: #617046;
+}
+.metric-controls button[data-locked='true'] {
+  box-shadow: inset 0 0 0 1px #607b19;
+}
+.metric-controls button:disabled {
+  opacity: 0.7;
+}
+.metric-swatch {
+  width: 14px;
+  border-top: 3px solid #607b19;
+}
+.metric-swatch.swatch-1 {
+  border-color: #3579a0;
+  border-top-style: dashed;
+}
+.metric-toolbar {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin: 8px 0;
+}
+.trajectory-control-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.trajectory-control-row .progress-metric-selector,
+.trajectory-control-row .progress-metric-static {
+  flex: 0 1 190px;
+  min-width: 136px;
+}
+.progress-metric-selector.is-compact,
+.progress-metric-static.is-compact {
+  border-radius: 10px;
+}
+.progress-metric-selector.is-compact button,
+.progress-metric-static.is-compact {
+  min-height: 42px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.trajectory-primary-summary {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  min-width: 0;
+}
+.trajectory-primary-summary > div {
+  display: grid;
+  gap: 3px;
+  min-width: max-content;
+}
+.trajectory-primary-summary > div + div {
+  padding-left: 28px;
+  border-left: 1px solid #cfd2c8;
+}
+.trajectory-primary-summary span {
+  color: #687061;
+  font-size: 11px;
+  font-weight: 650;
+}
+.trajectory-primary-summary strong {
+  color: #1e251a;
+  font:
+    700 16px/1.15 'DM Mono',
+    monospace;
+  white-space: nowrap;
+}
+.trajectory-control-row .metric-toolbar {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
+}
+.metric-series-stats {
+  display: flex;
+  gap: 24px;
+  padding: 12px 0;
+}
+.metric-series-stats > div {
+  flex: 1;
+  display: grid;
+  gap: 5px;
+}
+.metric-series-stats > .is-secondary {
+  opacity: 0.62;
+}
+.metric-series-stats > .is-secondary strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.metric-series-stats span,
+.metric-series-stats small {
+  color: #667159;
+  font-size: 11px;
+}
+.metric-series-stats strong {
+  font-size: 21px;
+}
+.metric-history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.metric-history li > div {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.multi-metric-trend .trajectory-status {
+  margin: 6px 0;
+}
+.multi-metric-trend .secondary-bar {
+  shape-rendering: geometricPrecision;
+}
+@media (max-width: 600px) {
+  .session-workspace .recording-v2 .training-set-head,
+  .session-workspace .recording-legacy .training-set-head {
+    --recording-input-gap: 6px;
+    min-width: 0;
+    min-height: 20px;
+    grid-template-columns: 18px minmax(0, 1fr) 36px 64px 24px;
+    gap: var(--recording-input-gap);
+    align-items: end;
+    font-size: 7px;
+  }
+  .session-workspace .recording-v2 .training-set-card,
+  .session-workspace .recording-legacy .training-set-card {
+    --recording-input-gap: 6px;
+    min-width: 0;
+    grid-template-columns: 18px minmax(0, 1fr) 36px 64px 24px;
+    gap: var(--recording-input-gap);
+    padding: 8px 0;
+  }
+  .measurement-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 6px;
+    row-gap: 0;
+  }
+  .measurement-inputs .measurement-control {
+    width: 100%;
+  }
+  .measurement-inputs .measurement-label {
+    display: none;
+  }
+  .measurement-inputs--1 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .measurement-inputs--1 .measurement-control {
+    width: 100%;
+  }
+  .session-workspace .recording-v2 .training-set-card > strong,
+  .session-workspace .recording-legacy .training-set-card > strong {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+  .recording-v2 .training-set-card > .measurement-inputs,
+  .recording-legacy .training-set-card > .planned-inputs {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .recording-v2 .training-set-card > label,
+  .recording-legacy .training-set-card > label {
+    grid-column: 3;
+    grid-row: 1;
+    width: 36px;
+    max-width: 36px;
+    height: 38px;
+    padding: 0 5px;
+  }
+  .recording-v2 .training-set-card > label::before,
+  .recording-legacy .training-set-card > label::before {
+    display: none;
+  }
+  .recording-v2 .training-set-card > .result-toggle,
+  .recording-legacy .training-set-card > .result-toggle {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .session-workspace .recording-v2 .result-toggle,
+  .session-workspace .recording-legacy .result-toggle {
+    width: 64px;
+    grid-template-columns: repeat(2, 30px);
+    gap: 4px;
+  }
+  .session-workspace .recording-v2 .result-toggle button,
+  .session-workspace .recording-legacy .result-toggle button {
+    width: 30px;
+    min-height: 38px;
+    padding: 0;
+    font-size: 0;
+  }
+  .session-workspace .recording-v2 .result-toggle button svg,
+  .session-workspace .recording-legacy .result-toggle button svg {
+    width: 13px;
+    height: 13px;
+  }
+  .session-workspace .recording-v2 .training-set-card > .icon-button,
+  .session-workspace .recording-legacy .training-set-card > .icon-button {
+    grid-column: 5;
+    grid-row: 1;
+    align-self: center;
+  }
+  .session-workspace .recording-v2 .training-set-card > strong,
+  .session-workspace .recording-legacy .training-set-card > strong {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    font-size: 8px;
+  }
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(1),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(1) {
+    grid-column: 1;
+  }
+  .session-workspace .recording-v2 .training-set-head > .measurement-head,
+  .session-workspace .recording-legacy .training-set-head > .measurement-head {
+    grid-column: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 6px;
+  }
+  .session-workspace .recording-v2 .training-set-head > .measurement-head > span,
+  .session-workspace .recording-legacy .training-set-head > .measurement-head > span {
+    width: auto;
+  }
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(3),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(3) {
+    grid-column: 3;
+  }
+  .session-workspace .recording-v2 .training-set-head > span:nth-child(4),
+  .session-workspace .recording-legacy .training-set-head > span:nth-child(4) {
+    grid-column: 4;
+  }
+  .recording-v2 .training-sets-scroll,
+  .recording-legacy .training-sets-scroll {
+    overflow: visible;
+    min-width: 0;
+  }
+  .metric-series-stats {
+    gap: 12px;
+  }
+  .metric-series-stats strong {
+    font-size: 17px;
+  }
+  .metric-history li > div {
+    display: grid;
+    gap: 4px;
+  }
+  .trajectory-control-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .trajectory-control-row .progress-metric-selector,
+  .trajectory-control-row .progress-metric-static {
+    flex: 1 1 150px;
+  }
+  .trajectory-primary-summary {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    padding: 2px 2px 0;
+  }
+  .trajectory-control-row .metric-toolbar {
+    flex: 1 1 148px;
+    justify-content: flex-end;
+  }
+}
+
+.multi-metric-trend .trajectory-chart .metric-series-stats span,
+.multi-metric-trend .trajectory-chart .metric-series-stats small {
+  color: #c3cbb7;
 }

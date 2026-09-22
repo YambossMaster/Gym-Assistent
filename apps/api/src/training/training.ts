@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import {
+  measurementsSchema,
+  recordingConfigSchema,
+  type RecordingConfig,
+  type ProgressSeries,
+} from './recording.js'
 
 export const metricSchema = z.enum(['weight', 'reps'])
 export const unitSchema = z.enum(['kg', 'lb'])
@@ -18,6 +24,7 @@ export const definitionFieldsSchema = z.object({
     .refine((v) => new Set(v).size === v.length, 'Body parts must be unique.'),
   movementType: movementTypeSchema,
   performanceMetric: metricSchema,
+  recording: recordingConfigSchema.optional(),
 })
 
 export const createDefinitionSchema = definitionFieldsSchema.extend({ operationId: uuid })
@@ -37,6 +44,7 @@ export const deleteDefinitionSchema = z.object({
 })
 export const preferenceSchema = z.object({
   defaultWeightUnit: unitSchema,
+  defaultDistanceUnit: z.enum(['km', 'mi']),
   version: z.number().int().nonnegative(),
   operationId: uuid,
 })
@@ -49,10 +57,12 @@ export const trainingSetInputSchema = z.object({
   rpe: z.number().min(1).max(10).multipleOf(0.5).nullable(),
   result: resultSchema,
   unit: unitSchema,
+  measurements: measurementsSchema.optional(),
 })
 export const trainingExerciseInputSchema = z.object({
   id: uuid,
   definitionId: uuid,
+  formatVersion: z.literal(2).optional(),
   definitionVersion: z.number().int().positive().optional(),
   sets: z.array(trainingSetInputSchema).max(100),
 })
@@ -109,6 +119,7 @@ export type TrainingExercise = {
   bodyParts: string[]
   movementType: '系統動作' | '局部動作'
   performanceMetric: PerformanceMetric
+  recording?: RecordingConfig
   sets: TrainingSet[]
 }
 export type PerformancePoint = {
@@ -126,6 +137,8 @@ export type ExerciseSummary = {
   previous: number | null
   personal: number | null
   history: PerformancePoint[]
+  recording?: RecordingConfig
+  series?: ProgressSeries[]
 }
 export type SessionTraining = {
   session: {
@@ -148,6 +161,7 @@ export type SessionTraining = {
     updatedAt: Date | null
   }
   defaultWeightUnit: WeightUnit
+  defaultDistanceUnit: 'km' | 'mi'
   exerciseSummaries: ExerciseSummary[]
   allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
 }

@@ -24,10 +24,25 @@ export function sameTrainingContent(left: TrainingDraftPayload, right: TrainingD
     exercises: value.exercises.map((exercise) => ({
       id: exercise.id,
       definitionId: exercise.definitionId,
+      ...(exercise.formatVersion ? { formatVersion: exercise.formatVersion } : {}),
       sets: exercise.sets
     }))
   })
-  return JSON.stringify(content(left)) === JSON.stringify(content(right))
+  const canonical = (value: unknown): string => {
+    if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']'
+    if (value && typeof value === 'object')
+      return (
+        '{' +
+        Object.entries(value)
+          .filter(([, item]) => item !== undefined)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, item]) => JSON.stringify(key) + ':' + canonical(item))
+          .join(',') +
+        '}'
+      )
+    return JSON.stringify(value)
+  }
+  return canonical(content(left)) === canonical(content(right))
 }
 
 export function draftKey(environment: string, coachId: string, sessionId: string, _tabId?: string) {

@@ -1,3 +1,4 @@
+import { measurementsSchema, recordingConfigSchema } from '../training/recording.js'
 import { randomUUID } from 'node:crypto'
 import type { Pool, PoolClient, QueryResult } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
@@ -217,12 +218,12 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       )
         throw new PublicCapabilityError('revoked_link', 410)
       const exercises = await client.query(
-        `select te.id,te.position,te.definition_name from app_private.training_exercise te
+        `select te.id,te.position,te.definition_name,te.recording_config from app_private.training_exercise te
          where te.workspace_id=$1 and te.record_id=$2 order by te.position,te.id`,
         [link.workspace_id, row.record_id],
       )
       const sets = await client.query(
-        `select ts.exercise_id,ts.position,ts.planned_weight,ts.actual_reps,ts.unit,ts.rpe,ts.result
+        `select ts.exercise_id,ts.position,ts.planned_weight,ts.actual_reps,ts.unit,ts.rpe,ts.result,ts.measurements
          from app_private.training_set ts join app_private.training_exercise te
            on te.workspace_id=ts.workspace_id and te.id=ts.exercise_id
          where te.workspace_id=$1 and te.record_id=$2 order by te.position,ts.position,ts.id`,
@@ -242,10 +243,16 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
         exercises: exercises.rows.map((exercise) => ({
           position: Number(exercise.position),
           definitionName: String(exercise.definition_name),
+          ...(exercise.recording_config
+            ? { recording: recordingConfigSchema.parse(exercise.recording_config) }
+            : {}),
           sets: sets.rows
             .filter((set) => String(set.exercise_id) === String(exercise.id))
             .map((set) => ({
               position: Number(set.position),
+              ...(set.measurements
+                ? { measurements: measurementsSchema.parse(set.measurements) }
+                : {}),
               plannedWeight: set.planned_weight === null ? null : Number(set.planned_weight),
               actualReps: set.actual_reps === null ? null : Number(set.actual_reps),
               unit: set.unit as 'kg' | 'lb',

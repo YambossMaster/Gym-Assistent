@@ -14,6 +14,7 @@ import {
   verifySignupEmail
 } from './account-auth'
 import { CoachWorkspace } from './app-shell/CoachWorkspace'
+import { Brand } from './shared/primitives'
 import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
 import { createAppQueryClient } from './query-client'
 import { supabase } from './supabase'
@@ -355,16 +356,6 @@ function Recovery({ onComplete }: { onComplete: () => void }) {
         </form>
       </section>
     </main>
-  )
-}
-function Brand() {
-  return (
-    <div className="brand">
-      <span className="brand-mark">F</span>
-      <span>
-        FORM<small>COACH DESK</small>
-      </span>
-    </div>
   )
 }
 function Loading() {

@@ -1,7 +1,15 @@
+import {
+  choosePrimaryMetric,
+  metricLabels,
+  recordingTypes,
+  type RecordingConfig,
+  type RecordingType
+} from '../training/recording'
+import { ProgressMetricSelector } from '../training/ProgressMetricSelector'
 import type { Session } from '@supabase/supabase-js'
 import { Check, ChevronDown, Dumbbell, Heart, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import type { ExerciseDefinition, PerformanceMetric } from '../../api'
+import type { ExerciseDefinition } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
 import { Confirmation, Page } from '../../shared/primitives'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
@@ -11,7 +19,7 @@ import { EquipmentGlyph } from './EquipmentGlyph'
 
 type DefinitionFields = Pick<
   ExerciseDefinition,
-  'name' | 'equipment' | 'bodyParts' | 'movementType' | 'performanceMetric'
+  'name' | 'equipment' | 'bodyParts' | 'movementType' | 'performanceMetric' | 'recording'
 >
 
 export function ExercisesPage({ session }: { session: Session }) {
@@ -177,6 +185,15 @@ export function ExercisesPage({ session }: { session: Session }) {
                     {definition.equipment} · {definition.movementType}
                   </p>
                 </div>
+                {definition.recording && (
+                  <p className="exercise-recording-label">
+                    {recordingTypes[definition.recording.type].label} · 主要：
+                    {metricLabels[definition.recording.metrics[0]]}
+                    {definition.recording.metrics[1]
+                      ? ` · 次要：${metricLabels[definition.recording.metrics[1]]}`
+                      : ' · 已鎖定'}
+                  </p>
+                )}
                 <div className="tag-row">
                   {definition.bodyParts.map((part) => (
                     <span key={part}>{part}</span>
@@ -300,7 +317,9 @@ export function DefinitionEditor({
   const [movement, setMovement] = useState<'系統動作' | '局部動作'>(
     definition?.movementType ?? '系統動作'
   )
-  const [metric, setMetric] = useState<PerformanceMetric>(definition?.performanceMetric ?? 'weight')
+  const [recording, setRecording] = useState<RecordingConfig>(
+    definition?.recording ?? { type: 'weight_reps', metrics: ['weight', 'reps'] }
+  )
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
     submitOnEnter: true,
     focusDialog: true
@@ -343,7 +362,8 @@ export function DefinitionEditor({
         equipment: equipment.trim(),
         bodyParts: parts,
         movementType: movement,
-        performanceMetric: metric
+        performanceMetric: recording.metrics.includes('weight') ? 'weight' : 'reps',
+        recording
       })
     } catch {
       setSaveError('儲存失敗，輸入內容已保留。請確認後重試。')
@@ -547,26 +567,27 @@ export function DefinitionEditor({
                 ))}
               </div>
             </div>
-            <div className="editor-field" role="group" aria-label="最佳表現指標">
-              <strong className="editor-field-label">最佳表現指標</strong>
-              <div className="editor-segmented">
-                <button
-                  type="button"
-                  aria-pressed={metric === 'weight'}
-                  onClick={() => setMetric('weight')}
-                >
-                  <span>重量</span>
-                  <small>最高工作重量</small>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={metric === 'reps'}
-                  onClick={() => setMetric('reps')}
-                >
-                  <span>次數</span>
-                  <small>最高實際次數</small>
-                </button>
-              </div>
+            <div className="editor-field">
+              <strong className="editor-field-label">紀錄類型</strong>
+              <FormSelect
+                label="紀錄類型"
+                value={recording.type}
+                options={Object.entries(recordingTypes).map(([value, item]) => ({
+                  value,
+                  label: item.label
+                }))}
+                onChange={(value) =>
+                  setRecording({
+                    type: value as RecordingType,
+                    metrics: [...recordingTypes[value as RecordingType].metrics]
+                  })
+                }
+              />
+              <strong className="editor-field-label">主要進步指標</strong>
+              <ProgressMetricSelector
+                recording={recording}
+                onChoose={(metric) => setRecording(choosePrimaryMetric(recording, metric))}
+              />
             </div>
           </div>
           {saveError && (
