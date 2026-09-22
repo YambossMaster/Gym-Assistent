@@ -9,6 +9,18 @@ import {
 } from './recording'
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
+import {
+  boundedDragScroll,
+  clampDragTop,
+  compactListHeight,
+  compactRowTop,
+  compactScrollCorrection,
+  edgeScrollVelocity,
+  ExerciseReorderBuffer,
+  moveItem,
+  shouldSwapAdjacent
+} from './exercise-reorder'
+import { consumeStartAnchor, startAnchorSpace } from './exercise-drag-start-anchor'
 import type { Session } from '@supabase/supabase-js'
 import {
   Check,
@@ -16,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Dumbbell,
+  GripVertical,
   LoaderCircle,
   MapPin,
   Plus,
@@ -26,7 +39,16 @@ import {
   X,
   XCircle
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode
+} from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -60,6 +82,14 @@ import {
 } from '../../local-resilience'
 
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'retrying' | 'conflict'
+type DragLayout = {
+  compactHeight: number
+  leading: number
+  trailing: number
+  overlayTop: number
+  offsetY: number
+  ready: boolean
+}
 
 export function TrainingWorkspace({
   session,
@@ -192,6 +222,16 @@ function ExclusiveTrainingEditor(props: Parameters<typeof TrainingEditor>[0]) {
 const EDITOR_LEASE_TTL_MS = 10_000
 const EDITOR_LEASE_HEARTBEAT_MS = 2_000
 
+function findScrollContainer(source: HTMLElement) {
+  let node = source.parentElement
+  while (node && node !== document.body) {
+    const overflowY = getComputedStyle(node).overflowY
+    if (/(auto|scroll)/.test(overflowY) && node.scrollHeight > node.clientHeight) return node
+    node = node.parentElement
+  }
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement
+}
+
 function TrainingEditor({
   session,
   initial,
@@ -219,7 +259,11 @@ function TrainingEditor({
     [storageError, setStorageError] = useState(false),
     [notice, setNotice] = useState(''),
     [trendId, setTrendId] = useState<string | null>(null),
-    [completing, setCompleting] = useState(false)
+    [completing, setCompleting] = useState(false),
+    [dragOrder, setDragOrder] = useState<string[] | null>(null),
+    [draggingId, setDraggingId] = useState<string | null>(null),
+    [pressedDragId, setPressedDragId] = useState<string | null>(null),
+    [dragLayout, setDragLayout] = useState<DragLayout | null>(null)
   const localStore = useMemo(() => new CoachLocalStore(), []),
     store = useMemo(() => new TrainingDraftStore(localStore), [localStore]),
     tabId = useRef(crypto.randomUUID()),
@@ -229,6 +273,31 @@ function TrainingEditor({
     conflictRef = useRef(false)
   const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id)
   const latest = useRef(draft)
+  const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)
+  const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dragPointer = useRef<number | null>(null)
+  const dragCapture = useRef<HTMLElement | null>(null)
+  const dragPoint = useRef({ x: 0, y: 0 })
+  const dragScrollTarget = useRef<HTMLElement | null>(null)
+  const dragFrame = useRef<number | null>(null)
+  const dragLastFrameTime = useRef<number | null>(null)
+  const dragViewportBottom = useRef<number | null>(null)
+  const dragViewportTop = useRef(0)
+  const dragHeading = useRef<{
+    element: HTMLElement
+    bottomOffset: number
+    visibility: string
+    passed: boolean
+  } | null>(null)
+  const dropAnchor = useRef<{ id: string; top: number; scrollTarget: HTMLElement } | null>(null)
+  const dragMotionPending = useRef(false)
+  const dragScheduleFrame = useRef<(() => void) | null>(null)
+  const dragReleaseCleanup = useRef<(() => void) | null>(null)
+  const dragDirection = useRef<-1 | 0 | 1>(0)
+  const dragLayoutRef = useRef<DragLayout | null>(null)
+  const dragShellRef = useRef<HTMLDivElement | null>(null)
+  const dragStackRef = useRef<HTMLDivElement | null>(null)
+  const dragOverlayRef = useRef<HTMLDivElement | null>(null)
   latest.current = draft
   revisionRef.current = revision
   saveMutationRef.current = mutations.save
@@ -439,6 +508,434 @@ function TrainingEditor({
     setRevision(revisionRef.current)
     setSaveState('pending')
   }
+  const clearDragTimer = () => {
+    if (dragTimer.current) clearTimeout(dragTimer.current)
+    dragTimer.current = null
+  }
+  const restoreDragHeading = () => {
+    const heading = dragHeading.current
+    if (heading) heading.element.style.visibility = heading.visibility
+    dragHeading.current = null
+  }
+  const trackDragHeading = (shellTop: number) => {
+    const heading = dragHeading.current
+    if (!heading || heading.passed || shellTop + heading.bottomOffset > dragViewportTop.current)
+      return
+    // Initial-space retirement compensates scrollTop. Never let that bring the
+    // heading back into this gesture; visibility preserves all list geometry.
+    heading.passed = true
+    heading.element.style.visibility = 'hidden'
+  }
+  const resetDrag = () => {
+    clearDragTimer()
+    restoreDragHeading()
+    dragReleaseCleanup.current?.()
+    dragReleaseCleanup.current = null
+    if (dragPointer.current !== null && dragCapture.current?.hasPointerCapture(dragPointer.current))
+      dragCapture.current.releasePointerCapture(dragPointer.current)
+    dragCapture.current = null
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current)
+    dragFrame.current = null
+    dragLastFrameTime.current = null
+    dragViewportBottom.current = null
+    dragMotionPending.current = false
+    dragScheduleFrame.current = null
+    dragPointer.current = null
+    dragBuffer.current = null
+    dragScrollTarget.current = null
+    dragDirection.current = 0
+    dragLayoutRef.current = null
+    setPressedDragId(null)
+    setDraggingId(null)
+    setDragOrder(null)
+    setDragLayout(null)
+    document.body.classList.remove('is-reordering-exercise')
+    document.body.style.removeProperty('--training-drag-footer-space')
+  }
+  useEffect(
+    () => () => {
+      clearDragTimer()
+      restoreDragHeading()
+      dragReleaseCleanup.current?.()
+      if (
+        dragPointer.current !== null &&
+        dragCapture.current?.hasPointerCapture(dragPointer.current)
+      )
+        dragCapture.current.releasePointerCapture(dragPointer.current)
+      if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current)
+      document.body.classList.remove('is-reordering-exercise')
+      document.body.style.removeProperty('--training-drag-footer-space')
+    },
+    []
+  )
+  const commitExerciseOrder = (order: string[]) => {
+    const current = latest.current
+    const next = order
+      .map((id) => current.exercises.find((exercise) => exercise.id === id))
+      .filter((exercise): exercise is TrainingDraftPayload['exercises'][number] =>
+        Boolean(exercise)
+      )
+    if (
+      next.length === current.exercises.length &&
+      next.some((exercise, index) => exercise.id !== current.exercises[index]?.id)
+    )
+      change({ ...current, exercises: next, operationId: crypto.randomUUID() })
+  }
+  const moveExercise = (exerciseId: string, targetIndex: number) => {
+    const ids = draft.exercises.map((exercise) => exercise.id)
+    commitExerciseOrder(moveItem(ids, ids.indexOf(exerciseId), targetIndex))
+  }
+  const compactCards = () => [
+    ...(dragStackRef.current?.querySelectorAll<HTMLElement>('[data-exercise-id]') ?? [])
+  ]
+  const animateExchangedCards = (exerciseIds: Set<string>, direction: -1 | 1) => {
+    const buffer = dragBuffer.current
+    requestAnimationFrame(() => {
+      if (!buffer || dragBuffer.current !== buffer) return
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+      // Every crossed neighbour moves exactly one compact row. No layout reads
+      // or one query/animation-frame per neighbour are needed for a fast jump.
+      for (const card of compactCards()) {
+        if (!exerciseIds.has(card.dataset.exerciseId!)) continue
+        card.classList.add('is-swap-target')
+        if (!reduceMotion) {
+          card.getAnimations().forEach((animation) => animation.cancel())
+          card.animate(
+            [{ transform: `translateY(${direction * 66}px)` }, { transform: 'translateY(0)' }],
+            { duration: 180, easing: 'cubic-bezier(.2,.8,.2,1)' }
+          )
+        }
+        window.setTimeout(() => card.classList.remove('is-swap-target'), 190)
+      }
+    })
+  }
+  const advanceCompactOrder = (
+    activeId: string,
+    direction: -1 | 1,
+    activeTop: number,
+    activeHeight: number,
+    shellTop: number
+  ) => {
+    const buffer = dragBuffer.current
+    if (!buffer) return
+    const order = buffer.order
+    let index = order.indexOf(activeId)
+    if (index < 0) return
+    const exchanged = new Set<string>()
+    while (order[index + direction]) {
+      const neighbourIndex = index + direction
+      const neighbourTop = compactRowTop(shellTop, neighbourIndex, activeHeight, 8)
+      if (!shouldSwapAdjacent(direction, activeTop, activeHeight, neighbourTop, activeHeight)) break
+      exchanged.add(order[neighbourIndex]!)
+      buffer.step(activeId, direction)
+      index = neighbourIndex
+    }
+    if (!exchanged.size) return
+    // Catch up to the latest pointer in one render, without a per-row frame lock.
+    setDragOrder(buffer.order)
+    animateExchangedCards(exchanged, direction)
+  }
+  const updateDragOverlayPosition = (measuredRect?: DOMRect) => {
+    const layout = dragLayoutRef.current
+    const shell = dragShellRef.current
+    const overlay = dragOverlayRef.current
+    if (!layout || !shell || !overlay) return null
+    const shellRect = measuredRect ?? shell.getBoundingClientRect()
+    const shellTop = shellRect.top
+    const listTop = shellTop + layout.leading
+    const activeTop = clampDragTop(
+      dragPoint.current.y - layout.offsetY,
+      listTop,
+      listTop + layout.compactHeight,
+      dragViewportTop.current,
+      dragViewportBottom.current ?? window.innerHeight,
+      58
+    )
+    const nextTop = activeTop - shellTop
+    overlay.style.setProperty('--drag-y', `${nextTop - layout.overlayTop}px`)
+    return { activeTop, shellTop: listTop }
+  }
+  useLayoutEffect(() => {
+    const anchor = dropAnchor.current
+    if (draggingId || !anchor) return
+    dropAnchor.current = null
+    const card = compactCards().find((item) => item.dataset.exerciseId === anchor.id)
+    if (!card) return
+    const rect = card.getBoundingClientRect()
+    const visibleTop = Math.max(
+      dragViewportTop.current + 12,
+      Math.min(
+        anchor.top,
+        (document.querySelector<HTMLElement>('.session-bottom')?.getBoundingClientRect().top ??
+          window.innerHeight) -
+          rect.height -
+          12
+      )
+    )
+    anchor.scrollTarget.scrollTop += rect.top - visibleTop
+    card.querySelector<HTMLButtonElement>('.exercise-drag-handle')?.focus({ preventScroll: true })
+  }, [draggingId])
+  useLayoutEffect(() => {
+    if (!draggingId || !dragLayout || dragLayout.ready) return
+    const scrollTarget = dragScrollTarget.current
+    const shell = dragShellRef.current
+    const order = dragBuffer.current?.order
+    if (!order || !scrollTarget || !shell) return
+    const activeTop = compactRowTop(
+      shell.getBoundingClientRect().top,
+      order.indexOf(draggingId),
+      58,
+      8
+    )
+    const correction = compactScrollCorrection(activeTop, dragPoint.current.y, dragLayout.offsetY)
+    if (Math.abs(correction) >= 0.5) scrollTarget.scrollTop += correction
+    const remainingCorrection = compactScrollCorrection(
+      compactRowTop(shell.getBoundingClientRect().top, order.indexOf(draggingId), 58, 8),
+      dragPoint.current.y,
+      dragLayout.offsetY
+    )
+    const space = startAnchorSpace(remainingCorrection)
+    shell.style.paddingTop = `${space.leading}px`
+    shell.style.paddingBottom = `${space.trailing}px`
+    shell.style.height = `${dragLayout.compactHeight + space.leading + space.trailing}px`
+    if (space.trailing) scrollTarget.scrollTop += space.trailing
+    const shellRect = shell.getBoundingClientRect()
+    trackDragHeading(shellRect.top)
+    const positionedTop = clampDragTop(
+      dragPoint.current.y - dragLayout.offsetY,
+      shellRect.top + space.leading,
+      shellRect.top + space.leading + dragLayout.compactHeight,
+      dragViewportTop.current,
+      dragViewportBottom.current ?? window.innerHeight,
+      58
+    )
+    const positioned = {
+      ...dragLayout,
+      ...space,
+      overlayTop: positionedTop - shellRect.top,
+      ready: true
+    }
+    dragLayoutRef.current = positioned
+    setDragLayout(positioned)
+    dragMotionPending.current = true
+    dragScheduleFrame.current?.()
+  }, [dragLayout, draggingId])
+  const beginDrag = (exerciseId: string, event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 || dragPointer.current !== null) return
+    clearDragTimer()
+    dragPointer.current = event.pointerId
+    dragPoint.current = { x: event.clientX, y: event.clientY }
+    setPressedDragId(exerciseId)
+    const handle = event.currentTarget
+    const card = handle.closest<HTMLElement>('[data-exercise-id]')
+    const rect = card?.getBoundingClientRect()
+    const shell = handle.closest<HTMLElement>('.exercise-stack-shell')
+    if (!shell) return resetDrag()
+    // The handle's keyed card moves during reconciliation; capturing there can
+    // lose the pointer. This shell stays mounted and stationary in the DOM.
+    shell.setPointerCapture(event.pointerId)
+    dragCapture.current = shell
+    const offsetY = rect ? event.clientY - rect.top : 0
+    const trackPoint = (moveEvent: globalThis.PointerEvent) => {
+      const deltaY = moveEvent.clientY - dragPoint.current.y
+      dragPoint.current = { x: moveEvent.clientX, y: moveEvent.clientY }
+      if (Math.abs(deltaY) >= 1) dragDirection.current = deltaY > 0 ? 1 : -1
+    }
+    const move = (moveEvent: globalThis.PointerEvent) => {
+      if (moveEvent.pointerId !== dragPointer.current) return
+      trackPoint(moveEvent)
+      if (!dragBuffer.current) return
+      moveEvent.preventDefault()
+      dragMotionPending.current = true
+      dragScheduleFrame.current?.()
+    }
+    const release = (releaseEvent: globalThis.PointerEvent) => {
+      if (releaseEvent.pointerId !== dragPointer.current) return
+      trackPoint(releaseEvent)
+      // pointerup can precede the queued animation frame: include its final point.
+      const position = updateDragOverlayPosition()
+      if (position && dragDirection.current)
+        advanceCompactOrder(
+          exerciseId,
+          dragDirection.current,
+          position.activeTop,
+          58,
+          position.shellTop
+        )
+      dragBuffer.current?.commit()
+      if (position && dragScrollTarget.current)
+        dropAnchor.current = {
+          id: exerciseId,
+          top: position.activeTop,
+          scrollTarget: dragScrollTarget.current
+        }
+      resetDrag()
+    }
+    const cancel = (cancelEvent: globalThis.PointerEvent) => {
+      if (cancelEvent.pointerId === dragPointer.current) resetDrag()
+    }
+    const escape = (keyEvent: globalThis.KeyboardEvent) => {
+      if (keyEvent.key === 'Escape') {
+        keyEvent.preventDefault()
+        resetDrag()
+      }
+    }
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') resetDrag()
+    }
+    window.addEventListener('pointermove', move, { capture: true, passive: false })
+    window.addEventListener('pointerup', release, true)
+    window.addEventListener('pointercancel', cancel, true)
+    window.addEventListener('blur', resetDrag)
+    window.addEventListener('keydown', escape)
+    document.addEventListener('visibilitychange', hidden)
+    dragReleaseCleanup.current = () => {
+      window.removeEventListener('pointermove', move, true)
+      window.removeEventListener('pointerup', release, true)
+      window.removeEventListener('pointercancel', cancel, true)
+      window.removeEventListener('blur', resetDrag)
+      window.removeEventListener('keydown', escape)
+      document.removeEventListener('visibilitychange', hidden)
+    }
+    dragTimer.current = setTimeout(() => {
+      const order = latest.current.exercises.map((exercise) => exercise.id)
+      const rowHeight = 58
+      const rowGap = 8
+      const compactOffset = Math.min(offsetY, 48)
+      const layout = {
+        compactHeight: compactListHeight(order.length, rowHeight, rowGap),
+        leading: 0,
+        trailing: 0,
+        overlayTop: 0,
+        offsetY: compactOffset,
+        ready: false
+      }
+      dragBuffer.current = new ExerciseReorderBuffer(order, commitExerciseOrder)
+      dragLayoutRef.current = layout
+      dragScrollTarget.current = findScrollContainer(shell)
+      dragViewportBottom.current =
+        document.querySelector<HTMLElement>('.session-bottom')?.getBoundingClientRect().top ?? null
+      dragViewportTop.current =
+        8 +
+        Math.max(
+          0,
+          document.querySelector<HTMLElement>('.session-topbar')?.getBoundingClientRect().bottom ??
+            0
+        )
+      const heading = shell
+        .closest('.training-editor')
+        ?.querySelector<HTMLElement>('.training-heading')
+      if (heading)
+        dragHeading.current = {
+          element: heading,
+          bottomOffset: heading.getBoundingClientRect().bottom - shell.getBoundingClientRect().top,
+          visibility: heading.style.visibility,
+          passed: false
+        }
+      document.body.style.setProperty(
+        '--training-drag-footer-space',
+        `${window.innerHeight - (dragViewportBottom.current ?? window.innerHeight)}px`
+      )
+      setDragOrder(order)
+      setDraggingId(exerciseId)
+      setPressedDragId(null)
+      setDragLayout(layout)
+      document.body.classList.add('is-reordering-exercise')
+      const runDragFrame = (timestamp: number) => {
+        dragFrame.current = null
+        const scrollTarget = dragScrollTarget.current
+        if (!scrollTarget || !dragBuffer.current) return
+        const documentScroll =
+          scrollTarget === document.documentElement ||
+          scrollTarget === document.body ||
+          scrollTarget === document.scrollingElement
+        const rawBounds = documentScroll
+          ? { top: 0, bottom: window.innerHeight, height: window.innerHeight }
+          : scrollTarget.getBoundingClientRect()
+        const bounds = {
+          top: Math.max(rawBounds.top, dragViewportTop.current),
+          bottom: Math.min(rawBounds.bottom, dragViewportBottom.current ?? rawBounds.bottom)
+        }
+        const velocity = edgeScrollVelocity(
+          dragPoint.current.y,
+          bounds.top,
+          bounds.bottom,
+          104,
+          480
+        )
+        let shellRect = shell.getBoundingClientRect()
+        const currentLayout = dragLayoutRef.current!
+        let scrolled = false
+        if (velocity) {
+          const previousTime = dragLastFrameTime.current ?? timestamp - 16
+          const elapsed = Math.min(32, Math.max(0, timestamp - previousTime))
+          const previousScrollTop = scrollTarget.scrollTop
+          scrollTarget.scrollTop += boundedDragScroll(
+            (velocity * elapsed) / 1000,
+            shellRect.top + currentLayout.leading,
+            shellRect.top + currentLayout.leading + currentLayout.compactHeight,
+            bounds.top,
+            bounds.bottom
+          )
+          scrolled = Math.abs(scrollTarget.scrollTop - previousScrollTop) >= 0.5
+          if (scrolled) shellRect = shell.getBoundingClientRect()
+        }
+        trackDragHeading(shellRect.top)
+        if (scrolled && (currentLayout.leading || currentLayout.trailing)) {
+          const space = consumeStartAnchor(
+            currentLayout,
+            shellRect.top + currentLayout.leading,
+            shellRect.top + currentLayout.leading + currentLayout.compactHeight,
+            bounds.top,
+            bounds.bottom
+          )
+          if (
+            space.leading !== currentLayout.leading ||
+            space.trailing !== currentLayout.trailing
+          ) {
+            // Capture before shrinking: a layout flush may clamp native scrollTop.
+            // Subtracting from that clamped value would compensate twice.
+            const restoredScrollTop = scrollTarget.scrollTop - currentLayout.leading + space.leading
+            shell.style.paddingTop = `${space.leading}px`
+            shell.style.paddingBottom = `${space.trailing}px`
+            shell.style.height = `${currentLayout.compactHeight + space.leading + space.trailing}px`
+            scrollTarget.scrollTop = restoredScrollTop
+            const nextLayout = { ...currentLayout, ...space }
+            dragLayoutRef.current = nextLayout
+            setDragLayout(nextLayout)
+            shellRect = shell.getBoundingClientRect()
+          }
+        }
+        dragLastFrameTime.current = velocity ? timestamp : null
+        const position = updateDragOverlayPosition(shellRect)
+        const direction = velocity ? (Math.sign(velocity) as -1 | 1) : dragDirection.current
+        if (position !== null && direction && (dragMotionPending.current || scrolled))
+          advanceCompactOrder(
+            exerciseId,
+            direction,
+            position.activeTop,
+            rowHeight,
+            position.shellTop
+          )
+        dragMotionPending.current = false
+        if (velocity && scrolled) dragFrame.current = requestAnimationFrame(runDragFrame)
+      }
+      const scheduleDragFrame = () => {
+        if (dragFrame.current === null && dragBuffer.current)
+          dragFrame.current = requestAnimationFrame(runDragFrame)
+      }
+      dragScheduleFrame.current = scheduleDragFrame
+    }, 120)
+  }
+  const handleDragKey = (
+    exerciseId: string,
+    index: number,
+    event: KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+    event.preventDefault()
+    moveExercise(exerciseId, index + (event.key === 'ArrowUp' ? -1 : 1))
+  }
   const addDefinition = (definition: ExerciseDefinition) => {
     change({
       ...draft,
@@ -605,10 +1102,6 @@ function TrainingEditor({
               <h2>訓練紀錄</h2>
               <p>依動作類型填寫本組數值，再標記完成結果。</p>
             </div>
-            <button className="primary-button compact" onClick={() => setPicker(true)}>
-              <Plus />
-              加入動作
-            </button>
           </header>
           {storageError && (
             <p className="notice error">此裝置暫時無法保護尚未同步的內容，請保持頁面開啟。</p>
@@ -659,34 +1152,93 @@ function TrainingEditor({
               </button>
             </section>
           ) : (
-            <div className="exercise-stack">
-              {draft.exercises.map((exercise, index) => (
-                <ExerciseCard
-                  key={exercise.id}
-                  exercise={exercise}
-                  summary={initial.exerciseSummaries.find((x) => x.occurrenceId === exercise.id)}
-                  details={initial.record.exercises.find((x) => x.id === exercise.id)}
-                  defaultUnit={initial.defaultWeightUnit}
-                  preference={initial}
-                  index={index}
-                  onShowTrend={() => setTrendId(exercise.id)}
-                  onChange={(next) =>
-                    change({
-                      ...draft,
-                      exercises: draft.exercises.map((x, i) => (i === index ? next : x)),
-                      operationId: crypto.randomUUID()
-                    })
+            <div
+              ref={dragShellRef}
+              className={`exercise-stack-shell${draggingId ? ' is-reordering' : ''}`}
+              style={
+                dragLayout
+                  ? {
+                      height: dragLayout.compactHeight + dragLayout.leading + dragLayout.trailing,
+                      paddingTop: dragLayout.leading,
+                      paddingBottom: dragLayout.trailing
+                    }
+                  : undefined
+              }
+            >
+              <div
+                ref={dragStackRef}
+                className={`exercise-stack${draggingId ? ' is-reordering' : ''}`}
+                role="list"
+              >
+                {(dragOrder ?? draft.exercises.map((exercise) => exercise.id)).map(
+                  (exerciseId, index) => {
+                    const exercise = draft.exercises.find((item) => item.id === exerciseId)!
+                    return (
+                      <ExerciseCard
+                        key={exercise.id}
+                        exercise={exercise}
+                        summary={initial.exerciseSummaries.find(
+                          (x) => x.occurrenceId === exercise.id
+                        )}
+                        details={initial.record.exercises.find((x) => x.id === exercise.id)}
+                        defaultUnit={initial.defaultWeightUnit}
+                        preference={initial}
+                        index={index}
+                        dragging={draggingId === exercise.id}
+                        dragPressed={pressedDragId === exercise.id}
+                        onDragPointerDown={(event) => beginDrag(exercise.id, event)}
+                        onDragKeyDown={(event) => handleDragKey(exercise.id, index, event)}
+                        onShowTrend={() => setTrendId(exercise.id)}
+                        onChange={(next) =>
+                          change({
+                            ...draft,
+                            exercises: draft.exercises.map((item) =>
+                              item.id === exercise.id ? next : item
+                            ),
+                            operationId: crypto.randomUUID()
+                          })
+                        }
+                        onRemove={() => {
+                          if (!exercise.sets.length || confirm('移除這個動作與所有組數？'))
+                            change({
+                              ...draft,
+                              exercises: draft.exercises.filter((item) => item.id !== exercise.id),
+                              operationId: crypto.randomUUID()
+                            })
+                        }}
+                      />
+                    )
                   }
-                  onRemove={() => {
-                    if (!exercise.sets.length || confirm('移除這個動作與所有組數？'))
-                      change({
-                        ...draft,
-                        exercises: draft.exercises.filter((_, i) => i !== index),
-                        operationId: crypto.randomUUID()
-                      })
+                )}
+                <button className="training-add-exercise" onClick={() => setPicker(true)}>
+                  <Plus />
+                  加入動作
+                </button>
+              </div>
+              {dragLayout && draggingId ? (
+                <div
+                  ref={dragOverlayRef}
+                  className="exercise-drag-overlay"
+                  style={{
+                    top: dragLayout.overlayTop,
+                    height: 58,
+                    visibility: dragLayout.ready ? 'visible' : 'hidden'
                   }}
-                />
-              ))}
+                  aria-hidden="true"
+                >
+                  <GripVertical />
+                  <span>
+                    {String(
+                      (dragOrder ?? draft.exercises.map((exercise) => exercise.id)).indexOf(
+                        draggingId
+                      ) + 1
+                    ).padStart(2, '0')}
+                  </span>
+                  <strong>
+                    {draft.exercises.find((exercise) => exercise.id === draggingId)?.definitionName}
+                  </strong>
+                </div>
+              ) : null}
             </div>
           )}
         </main>
@@ -809,6 +1361,10 @@ function ExerciseCard({
   defaultUnit,
   preference,
   index,
+  dragging,
+  dragPressed,
+  onDragPointerDown,
+  onDragKeyDown,
   onShowTrend,
   onChange,
   onRemove
@@ -819,6 +1375,10 @@ function ExerciseCard({
   defaultUnit: 'kg' | 'lb'
   preference: SessionTraining
   index: number
+  dragging: boolean
+  dragPressed: boolean
+  onDragPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void
+  onDragKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
   onShowTrend: () => void
   onChange: (value: TrainingDraftPayload['exercises'][number]) => void
   onRemove: () => void
@@ -855,9 +1415,24 @@ function ExerciseCard({
     })
   }
   return (
-    <article className="training-exercise-card recording-v2">
+    <article
+      className={`training-exercise-card recording-v2${dragging ? ' is-dragging' : ''}${dragPressed ? ' is-drag-pending' : ''}`}
+      data-exercise-id={exercise.id}
+      role="listitem"
+    >
       <header>
-        <span className="exercise-number">{String(index + 1).padStart(2, '0')}</span>
+        <div className="exercise-order-control">
+          <button
+            type="button"
+            className="exercise-drag-handle"
+            aria-label={`${exercise.definitionName || '訓練動作'}排序，第 ${index + 1} 項`}
+            onPointerDown={onDragPointerDown}
+            onKeyDown={onDragKeyDown}
+          >
+            <GripVertical aria-hidden="true" />
+          </button>
+          <span className="exercise-number">{String(index + 1).padStart(2, '0')}</span>
+        </div>
         <div className="exercise-identity">
           <h3>{exercise.definitionName || '訓練動作'}</h3>
           <small>

@@ -1,20 +1,20 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-22. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-23. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                            |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                                      |
-| Package state      | **Recording-type review continues; Training units now distinguish convention preferences from per-record scales**     |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                         |
-| Branch baseline    | `37c9be1` is on `origin/main`; GitHub Actions CI #35 / run `35698934366` succeeded                                    |
-| Worktree           | Recording checkpoint and Calendar CI-race fix are delivered; local browser evidence remains under untracked `output/` |
-| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply                   |
-| Production         | Not configured; no real customer data                                                                                 |
+| Field              | Current value                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                              |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                        |
+| Package state      | **Training reorder corrections passed the full local CI gate; remote delivery pending**                 |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                           |
+| Branch baseline    | `74e4f9a` is on `origin/main`; Training reorder delivery is pending                                     |
+| Worktree           | Training reorder corrections are ready for delivery; untracked `output/` screenshots are local evidence |
+| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply     |
+| Production         | Not configured; no real customer data                                                                   |
 
 ## Next handoff
 
@@ -23,6 +23,12 @@ Session inputs, and persistent growth-trajectory metric selection under
 [`M7.5-EXERCISE-RECORDING-CONTRACT.md`](M7.5-EXERCISE-RECORDING-CONTRACT.md).
 Keep Calendar touch/Block physical-phone acceptance in the review queue. Stage 2 begins only after explicit
 Product Owner authorization; do not begin M8.
+
+The Product Owner accepted retaining Training drag-start neighbour anchoring on 2026-09-23. If the Product Owner asks
+to remove only the third experiment, set `ENABLE_DRAG_START_ANCHOR = false` in
+`apps/web/src/pages/training/exercise-drag-start-anchor.ts`; retain drop restoration, drag-only footer
+spacing, and viewport/list scroll bounds. The disabled-anchor editor regression verifies that drop
+restoration still works. Do not revert the entire reorder correction.
 
 ## M7.5 Stage 2 backlog
 
@@ -287,6 +293,24 @@ Product Owner authorization; do not begin M8.
   checks covered lock, unlock, primary switching, one changed secondary label, no horizontal
   overflow, and zero console warnings/errors. The development setting was restored to its original
   unlocked weight-primary state. No schema change, migration, push, or remote CI is claimed.
+- M7.5 Stage 1 Training exercise-order correction: the heading-level duplicate add control is
+  removed; the no-exercise state retains its primary action, while a non-empty record ends with one
+  black append action. Each Exercise card now has an icon-only reorder handle with pointer/touch
+  lift and a list-local compact exchange layer. Reorder now collapses the document to the real
+  compact-list height, so the page scrollbar reflects the visible rows instead of retaining an empty
+  expanded-card shell. The active row stays inside both the list and the usable viewport above the
+  fixed footer while the compact list scrolls beneath it. A 72px edge zone uses a time-based quadratic
+  ramp capped at 480px/s, stops immediately in the neutral area, reverses from either edge, and keeps
+  no idle animation-frame loop. Pointer events are coalesced into one animation-frame update; row
+  positions are computed from fixed compact geometry, React updates only after a real adjacent
+  exchange, and crossing requires actual overlap. Intermediate positions stay in a browser-only
+  buffer, and only pointer release enters the existing draft/autosave path once. Arrow Up/Down
+  provides keyboard parity without rendered guidance text. Focused reorder tests pass 8/8; Web
+  typecheck passes. Authenticated nine-Exercise desktop acceptance covered down/up adjacent exchange,
+  original-order restoration, persisted reload, and zero console warnings/errors. Exact 390×844
+  physical touch remains unclaimed. Complete single-worker Web tests pass 36 files/146 tests; the
+  production build passes with the existing chunk-size advisory. No schema, migration, push, or
+  remote CI is claimed.
 
 Current development validation commands:
 
@@ -307,6 +331,176 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-23 — LOG-157 — Training reorder local CI gate
+
+- **Scope:** deliver the current M7.5 Stage 1 Training exercise reorder, append-action, drag-boundary,
+  and gesture-regression corrections after the Product Owner requested a complete CI run and Main
+  push if clean. Preserve the untracked `output/` screenshots as local evidence.
+- **Outcome:** no additional product behaviour or schema change; the current corrections are ready
+  for a bounded Main delivery while Stage 1 Product Owner review remains active.
+- **Verification:** `npm ci` succeeded after pausing the active formal Web/Vite process that locked
+  Rolldown; `npm run check` passed Prettier, TypeScript, API **23 files / 84 tests**, and Web **38 files /
+  169 tests**; `npm run build` passed API and Web with the existing >500-kB chunk advisory;
+  `npm run db:push:dry` found the linked development database up to date; `git diff --check` passed.
+  `origin/main` matched local HEAD `74e4f9a` before delivery. Remote Actions evidence is pending.
+- **Known issue:** physical-phone touch acceptance for Calendar and Training remains open in Stage 1.
+- **Next:** push this verified correction to Main, confirm the exact remote SHA's `verify` and
+  `migration-dry-run` jobs, then continue the existing M7.5 Stage 1 Next handoff.
+
+### 2026-09-23 — LOG-156 — Prevent native-scroll double compensation at the drag boundary
+
+- **Scope:** fix the remaining list jump in the 18:37 recording and add the requested small top
+  gap. Keep the accepted initial-neighbour anchoring and all prior drag/drop corrections.
+- **Diagnosis:** reducing shell height can clamp native scrollTop before the following compound
+  subtraction reads it. Subtracting the retired leading space again moves the entire list backwards.
+  A gesture regression with native-clamp simulation reproduced first-row movement back to 200px
+  instead of continuing past about 120px. The previous heading-only fix could not correct this.
+- **Outcome:** capture the absolute compensated scroll position before any shell shrink and assign
+  that saved position afterwards. The upper drag boundary includes an 8px inset below the sticky
+  header; initial-space retirement and upward scroll limits use that same boundary.
+- **Verification:** reviewed the supplied recording contact sheet; focused tests pass **3 files /
+  31 tests**, including bounded movement across spacer retirement, an exact 8px resting gap, and
+  existing drop/heading/cancellation regressions. TypeScript and production build pass with the
+  existing bundle-size advisory. No new live browser or physical-phone acceptance is claimed.
+  No new animation loop or per-frame layout read was introduced.
+- **Next:** Product Owner reviews the corrected boundary transition in M7.5 Stage 1. This remains
+  local; no push, remote CI, Stage 2, or M8 transition.
+
+### 2026-09-23 — LOG-155 — Keep the Training heading out after it leaves the drag viewport
+
+- **Scope:** the Product Owner accepted the three drag corrections and requested only the remaining
+  heading reappearance fix shown in the 18:10 recording. Retain the independently withdrawable
+  initial-neighbour anchor and all previous drop/scroll corrections.
+- **Diagnosis:** retiring the initial leading space compensates scrollTop, which can bring the
+  already-departed Training heading back into view. Two new gesture regressions failed before the fix.
+- **Outcome:** measure the heading's offset once on activation and track it using the existing shell
+  rectangle. Once it passes above the usable viewport, keep it hidden for the rest of that gesture.
+  Preserve its layout space and restore its original visibility on drop, cancellation, or cleanup.
+  This adds no per-frame layout read or idle animation loop.
+- **Verification:** focused gesture/reorder/start-anchor checks pass **3 files / 29 tests**, including
+  heading re-entry after scroll compensation and visibility restoration on pointerup/pointercancel.
+  Web production build (including TypeScript) passes with the existing bundle-size advisory.
+  Browser inspection found a pre-existing save conflict in the test session. A short drag did not
+  reach the heading-hidden condition before release; its exercise order remained unchanged. The
+  conflict was not resolved or overwritten, and the extra test tab was closed. Complete live
+  heading-transition acceptance remains with Product Owner review; automated geometry checks are
+  not physical-phone evidence.
+- **Next:** continue M7.5 Stage 1 review of this local correction. No push, remote CI, Stage 2, or M8.
+
+### 2026-09-23 — LOG-154 — Drop visibility, scroll boundaries, and isolated start-anchor trial
+
+- **Scope:** implemented the Product Owner's three follow-ups from the 17:18, 17:25, and 17:26
+  recordings. Keep the now-smooth gesture lifecycle; preserve the current nine-exercise order and
+  existing uncommitted work. The third behaviour is an explicitly optional, independently withdrawable
+  trial; Stage 1 remains active.
+- **Diagnosis:** four new editor geometry cases initially failed: expanded drop target below the
+  viewport, upward scroll not activating below the sticky header, scroll continuing into footer
+  padding after the final row, and initial second-row placement at 266px instead of its held 460px.
+  Compaction could exhaust the browser's available scroll correction; expansion had no corresponding
+  target-position restoration. Normal editor reading padding was also retained during dragging.
+- **Outcome:** on release, a layout effect restores the expanded target into the usable viewport
+  before paint, showing the whole card when it fits and its heading when it is taller than the view.
+  Capture the real sticky-header bottom and fixed-footer top, lower the upward activation threshold,
+  bound each scroll step by the first/last actual row, and reserve the fixed controls only once in
+  drag-mode CSS. The optional `exercise-drag-start-anchor.ts` module supplies only the initial space
+  that native scrolling cannot provide, keeping the held row between its original neighbours. Each
+  temporary edge is retired when the corresponding real row reaches the viewport boundary; leading
+  removal compensates scrollTop to avoid a jump. The space never grows again during that gesture.
+- **Independent withdrawal:** change only `ENABLE_DRAG_START_ANCHOR` to `false` in that module. Do not
+  remove the always-on drop restoration, `boundedDragScroll`, or drag-only CSS padding correction.
+  Integration coverage runs drop restoration with the experiment both enabled and disabled.
+- **Verification:** focused tests pass 27/27; complete Web regression passes **38 files / 165 tests**;
+  typecheck and production build pass with the existing >500-kB bundle advisory. Authenticated desktop
+  and exact 390×844 browser drags both moved item 2 to item 5 and retained the expanded target in view.
+  At 390×844, the target occupied about y=458–709 above the footer at y=719; upward dragging at y=230
+  worked beneath the sticky-header bottom at y=181. Concurrent read-only inspection during desktop
+  activation found the held second row between rows 1 and 3 with about 171px initial leading space.
+  Drag-mode space after the final row measured 75.7px desktop / 124.1px mobile against fixed controls
+  of 75.7px / 124.7px, eliminating the extra editor-bottom region. The burst-event/no-idle-loop and
+  final-only-save regressions remain green. Original order and normal viewport size were restored;
+  a fresh reload showed that same order and `已儲存`.
+  These are real browser pointer and simulated touch checks, not physical-phone acceptance.
+- **Next:** Product Owner tests all three behaviours; withdraw only the isolated third experiment if
+  requested. Continue Stage 1 without push, remote CI, Stage 2, or M8 transition.
+
+### 2026-09-23 — LOG-153 — Training drag lifecycle and skipped-row recovery
+
+- **Scope:** M7.5 Stage 1 correction of the Product Owner's two recordings showing desktop and
+  mobile-preview exercise dragging freezing after activation. Preserved prior uncommitted reorder,
+  append-action, and CSS work; no schema, API, or persistence-contract change.
+- **Diagnosis:** pointer capture and movement handlers belonged to the keyed handle that moves with
+  its card. Once capture is lost, subsequent hit-tested movement outside that handle was ignored.
+  The overlap-only neighbour test also rejected a pointer that had already crossed a complete row;
+  a frame lock could discard motion instead of catching up. A separate lifecycle defect treated
+  `pointercancel` as a successful drop. Earlier pure-order tests did not exercise these editor paths.
+- **Outcome:** capture now belongs to the stable list shell, with gesture-scoped window listeners
+  from pointerdown through release. Directional threshold crossing catches up across every passed
+  row in one render without a frame lock. Neighbour animations use one batch and fixed row offsets,
+  without per-card layout reads. Drop includes its final pointer position and commits once against
+  the latest draft. Cancellation, Escape, window blur, hidden document, and unmount clean up without
+  committing a partial order; a second pointer cannot replace the active gesture. Calendar's related
+  capture was inspected: it belongs to a stable grid and does not reorder its captured element.
+- **Verification:** `npm test --workspace @gym-assistant/web -- TrainingWorkspace.gesture.test.tsx
+--maxWorkers=1` initially failed all four original repro cases: mouse/touch off-handle movement,
+  skipped rows, and pointer cancellation. The final full Web run passes **37 files / 156 tests**,
+  including ten editor gesture cases and eight reorder-rule cases. A deterministic burst of 100
+  pointer moves produces one geometry read, one batched exchange-animation callback, no save before
+  release, and no idle frame loop. Web typecheck and production build pass; the existing >500-kB
+  bundle advisory remains. Browser checks used the authenticated nine-exercise record: desktop
+  first-to-sixth then sixth-to-second, and exact 390×844 iframe second-to-sixth then sixth-to-third
+  dragging succeed. Keyboard restoration and a fresh editor load confirm the original nine-item
+  order; inspected desktop console has no warnings/errors. These are browser/simulated-pointer
+  checks, not physical-phone touch or a device CPU/FPS benchmark.
+- **Next:** continue Product Owner-led Stage 1 review from the existing handoff. No commit, push,
+  remote CI, Stage 2 transition, or M8 work is claimed for this correction.
+
+### 2026-09-22 — LOG-152 — Training reorder scroll and mobile-frame correction
+
+- **Scope:** corrected the Product Owner-recorded desktop runaway/blank-space auto-scroll, blocked
+  reverse exchange, and mobile drag stall without changing Training persistence or adding UI copy.
+- **Outcome:** compact mode now owns its real 58px-row document height, so browser scrollbar geometry
+  changes with the visible list and cannot continue through the old expanded-card blank area. The
+  held row is clamped above the fixed footer and within the list while rows scroll beneath it. Edge
+  scrolling uses a bounded time-based quadratic ramp with a true neutral zone and immediate direction
+  reversal. Pointermove only records the newest point; one requestAnimationFrame performs transform,
+  optional scroll, and at most one adjacent exchange. Idle drag performs no frame loop, and each
+  exchange waits for one rendered frame before another. Fixed row geometry replaces per-move card
+  queries, and both directions require real overlap before exchange. Final release remains the sole
+  entry into the existing draft/autosave path.
+- **Verification:** focused reorder regression tests pass 8/8 for sequential/final-only commit,
+  bidirectional real-overlap thresholds, compact document height, pointer anchoring, viewport/list
+  clamping, and neutral/reversible edge speed. Web typecheck passes; complete single-worker Web tests
+  pass 36 files/146 tests; production build passes with the existing chunk-size advisory.
+  Authenticated desktop browser verification restored the original nine-Exercise order, reloaded it
+  as saved, and found zero console warnings/errors. Physical-device touch is not claimed.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review from the existing Next handoff; do not
+  enter Stage 2 or M8 without explicit authorization.
+
+### 2026-09-22 — LOG-151 — Training exercise reorder and tail-action correction
+
+- **Scope:** corrected the Product Owner-reported duplicate/misplaced add-Exercise actions and the
+  inability to rearrange Exercises without deleting and recreating their Sets. This remains local
+  M7.5 Stage 1 work and preserves the delivered Training schema, API, autosave, conflict, offline,
+  and recovery contracts.
+- **Outcome:** empty Training Records keep only the centered lime first-use action. Non-empty records
+  keep only one black append action after the final card. Exercise cards expose a compact grip and
+  reorder through a browser-local buffer. Press-hold turns rows into a compact layer clipped inside
+  the Training list, centered on the active row's unchanged pointer position instead of forcing all
+  rows into the viewport. Crossing 32% of an adjacent row exchanges those two positions, so moving
+  1→3 visibly performs 1↔2 and then 2↔3. Document-edge auto-scroll exposes offscreen neighbours.
+  Pointer motion writes only one CSS transform; it no longer updates React state each frame, queries
+  every card, or applies a whole-panel filter. React updates only for an actual exchange, while only
+  final release enters the coalesced autosave once. Keyboard arrows provide the same adjacent
+  operation without explanatory UI copy.
+- **Verification:** focused reorder tests pass 5/5 and Web typecheck passes. Authenticated desktop
+  acceptance on the nine-Exercise development fixture covered an adjacent pointer exchange, clean
+  release, original-order restoration, and zero retained drag layers. Existing exact 390×844 evidence
+  still covers handle/tail-action layout. Complete single-worker Web tests pass 36 files/143 tests;
+  the Web production build passes with the existing chunk-size advisory. No physical-device touch,
+  migration, linked-database change, commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner-led M7.5 Stage 1 review from the existing Next handoff; do not
+  enter Stage 2 or M8 without explicit authorization.
 
 ### 2026-09-22 — LOG-150 — Calendar CI-race fix delivered
 

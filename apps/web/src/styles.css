@@ -5611,19 +5611,189 @@ textarea:focus {
   gap: 15px;
 }
 
+.training-add-exercise {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #fff;
+  border: 1px solid var(--ink);
+  border-radius: 9px;
+  background: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.training-add-exercise:hover,
+.training-add-exercise:focus-visible {
+  outline: 0;
+  background: #292c23;
+  box-shadow: 0 8px 18px rgba(21, 23, 17, 0.14);
+  transform: translateY(-1px);
+}
+
+.training-add-exercise svg {
+  width: 17px;
+  height: 17px;
+}
+
 .session-workspace .training-exercise-card {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 13px;
   background: var(--white);
   box-shadow: 0 11px 25px rgba(21, 23, 17, 0.055);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 160ms ease,
+    box-shadow 180ms ease,
+    opacity 160ms ease;
+}
+
+.session-workspace .training-exercise-card.is-drag-pending {
+  border-color: #aeb794;
+  transform: scale(0.997);
+}
+
+.session-workspace .training-exercise-card.is-dragging {
+  border-color: #9fa78a;
+  box-shadow: inset 0 0 0 1px rgba(127, 143, 66, 0.18);
+  opacity: 0.24;
+  transform: scale(0.992);
+}
+
+.session-workspace .exercise-stack-shell.is-reordering {
+  position: relative;
+  overflow: hidden;
+  contain: layout paint;
+  isolation: isolate;
+}
+
+/* Drag-only geometry: reserve the fixed controls once, not the editor's normal
+   reading space as well. The list itself bounds automatic scrolling. */
+body.is-reordering-exercise .session-workspace {
+  padding-bottom: var(--training-drag-footer-space, 76px);
+  overflow-anchor: none;
+}
+
+body.is-reordering-exercise .training-editor {
+  padding-bottom: 0;
+}
+
+body.is-reordering-exercise .session-body {
+  min-height: 0;
+}
+
+.session-workspace .exercise-stack-shell {
+  overflow-anchor: none;
+}
+
+.session-workspace .exercise-stack.is-reordering {
+  position: relative;
+  z-index: 1;
+  gap: 8px;
+  grid-auto-rows: 58px;
+}
+
+.session-workspace .exercise-stack.is-reordering .training-exercise-card {
+  height: 58px;
+  min-height: 58px;
+  border-color: #c8c9bf;
+  border-radius: 10px;
+  box-shadow: 0 5px 14px rgba(21, 23, 17, 0.045);
+}
+
+.session-workspace .exercise-stack.is-reordering .training-exercise-card > header {
+  min-height: 58px;
+  padding: 0 16px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  border-bottom: 0;
+}
+
+.session-workspace .exercise-stack.is-reordering .exercise-performance-inline,
+.session-workspace .exercise-stack.is-reordering .training-exercise-card > header > .icon-button,
+.session-workspace .exercise-stack.is-reordering .training-sets-scroll,
+.session-workspace .exercise-stack.is-reordering .training-add-exercise {
+  display: none;
+}
+
+.session-workspace .exercise-stack.is-reordering .exercise-identity {
+  align-content: center;
+}
+
+.session-workspace .exercise-stack.is-reordering .exercise-identity h3 {
+  font-size: 13px;
+}
+
+.session-workspace .exercise-stack.is-reordering .exercise-identity small {
+  margin-top: 2px;
+}
+
+.session-workspace .exercise-stack.is-reordering .training-exercise-card.is-swap-target {
+  border-color: #a4bc3a;
+  background: #f7f9eb;
+  box-shadow: 0 0 0 2px rgba(164, 188, 58, 0.17);
+}
+
+.session-workspace .exercise-stack.is-reordering .training-exercise-card.is-dragging {
+  border-color: #7d8b3d;
+  opacity: 0.2;
+}
+
+.exercise-drag-overlay {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  padding: 0 22px;
+  display: grid;
+  grid-template-columns: 24px 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  overflow: hidden;
+  color: var(--ink);
+  border: 1px solid #778437;
+  border-radius: 13px;
+  background: rgba(255, 255, 252, 0.97);
+  box-shadow: 0 14px 28px rgba(21, 23, 17, 0.2);
+  pointer-events: none;
+  transform: translate3d(0, var(--drag-y, 0), 0) scale(1.006);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.exercise-drag-overlay svg {
+  width: 18px;
+  height: 18px;
+  color: #69752d;
+}
+
+.exercise-drag-overlay span {
+  color: #8d9182;
+  font:
+    500 9px/1 'DM Mono',
+    monospace;
+}
+
+.exercise-drag-overlay strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .session-workspace .training-exercise-card > header {
   min-height: 72px;
   padding: 0 18px;
   display: grid;
-  grid-template-columns: 36px minmax(120px, 0.72fr) minmax(255px, 1.35fr) 35px;
+  grid-template-columns: 48px minmax(120px, 0.72fr) minmax(255px, 1.35fr) 35px;
   align-items: center;
   gap: 15px;
   border-bottom: 1px solid var(--line);
@@ -5640,6 +5810,56 @@ textarea:focus {
   font:
     500 9px/1 'DM Mono',
     monospace;
+}
+
+.exercise-order-control {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 2px;
+}
+
+.exercise-drag-handle {
+  width: 28px;
+  height: 38px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #a4a69d;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.exercise-drag-handle:hover,
+.exercise-drag-handle:focus-visible,
+.is-dragging .exercise-drag-handle {
+  color: var(--ink);
+  outline: 0;
+  background: #eef0e5;
+}
+
+.exercise-drag-handle:active,
+.is-dragging .exercise-drag-handle {
+  cursor: grabbing;
+  transform: scale(1.06);
+}
+
+.exercise-drag-handle svg {
+  width: 17px;
+  height: 17px;
+}
+
+body.is-reordering-exercise,
+body.is-reordering-exercise * {
+  cursor: grabbing !important;
+  user-select: none !important;
 }
 
 .session-workspace .exercise-identity {
@@ -6176,14 +6396,24 @@ textarea:focus {
   .session-workspace .training-exercise-card > header {
     min-height: 94px;
     padding: 12px 10px;
-    grid-template-columns: 28px minmax(0, 1fr) 30px;
+    grid-template-columns: 38px minmax(0, 1fr) 30px;
     align-items: start;
     gap: 8px;
   }
 
-  .session-workspace .exercise-number,
+  .session-workspace .exercise-order-control,
   .session-workspace .exercise-identity {
     padding-top: 4px;
+  }
+
+  .exercise-order-control {
+    grid-template-columns: 24px 1fr;
+    gap: 0;
+  }
+
+  .exercise-drag-handle {
+    width: 24px;
+    height: 30px;
   }
 
   .session-workspace .training-exercise-card > header > .icon-button {
