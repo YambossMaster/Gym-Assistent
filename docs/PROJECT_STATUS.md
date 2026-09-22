@@ -5,16 +5,16 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                              |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                        |
-| Package state      | **Training reorder corrections passed the full local CI gate; remote delivery pending**                 |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                           |
-| Branch baseline    | `74e4f9a` is on `origin/main`; Training reorder delivery is pending                                     |
-| Worktree           | Training reorder corrections are ready for delivery; untracked `output/` screenshots are local evidence |
-| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply     |
-| Production         | Not configured; no real customer data                                                                   |
+| Field              | Current value                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
+| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                    |
+| Package state      | **Training reorder corrections delivered; Stage 1 Product Owner review continues**                  |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
+| Branch baseline    | `9f5d25f` reached `origin/main`; CI run `35775467730` passed both jobs                              |
+| Worktree           | Training reorder changes committed; untracked `output/` screenshots remain local evidence           |
+| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply |
+| Production         | Not configured; no real customer data                                                               |
 
 ## Next handoff
 
@@ -343,10 +343,11 @@ local pass or successful push is not a remote CI completion claim.
   Rolldown; `npm run check` passed Prettier, TypeScript, API **23 files / 84 tests**, and Web **38 files /
   169 tests**; `npm run build` passed API and Web with the existing >500-kB chunk advisory;
   `npm run db:push:dry` found the linked development database up to date; `git diff --check` passed.
-  `origin/main` matched local HEAD `74e4f9a` before delivery. Remote Actions evidence is pending.
+  `origin/main` matched local HEAD `74e4f9a` before delivery. Commit
+  `9f5d25f3170051629a7e1fc7970f2cd7de67d4b6` reached `origin/main`; GitHub Actions run
+  `35775467730` passed `verify` and `migration-dry-run` for that exact SHA.
 - **Known issue:** physical-phone touch acceptance for Calendar and Training remains open in Stage 1.
-- **Next:** push this verified correction to Main, confirm the exact remote SHA's `verify` and
-  `migration-dry-run` jobs, then continue the existing M7.5 Stage 1 Next handoff.
+- **Next:** continue the existing M7.5 Stage 1 Next handoff. Stage 2 and M8 remain unauthorized.
 
 ### 2026-09-23 — LOG-156 — Prevent native-scroll double compensation at the drag boundary
 
