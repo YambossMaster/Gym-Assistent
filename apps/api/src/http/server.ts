@@ -48,6 +48,21 @@ export interface ServerDependencies {
   logger?: boolean | Record<string, unknown>
 }
 
+const studentAgeRangeBodySchema = {
+  type: 'string',
+  enum: [
+    'UNDER_18',
+    'AGE_18_24',
+    'AGE_25_34',
+    'AGE_35_44',
+    'AGE_45_54',
+    'AGE_55_64',
+    'AGE_65_PLUS',
+    null,
+  ],
+  nullable: true,
+} as const
+
 const createStudentBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -57,6 +72,7 @@ const createStudentBodySchema = {
     phone: { type: 'string', maxLength: 40 },
     goal: { type: 'string', maxLength: 1000 },
     privateNote: { type: 'string', maxLength: 4000 },
+    ageRange: studentAgeRangeBodySchema,
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
   },
@@ -71,6 +87,7 @@ const updateStudentBodySchema = {
     phone: { type: 'string', maxLength: 40 },
     goal: { type: 'string', maxLength: 1000 },
     privateNote: { type: 'string', maxLength: 4000 },
+    ageRange: studentAgeRangeBodySchema,
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
     version: { type: 'integer', minimum: 1 },
@@ -419,6 +436,23 @@ export function buildServer({
             .send({ error: 'schedule_series_not_found', message: 'Schedule Series was not found.' })
         await accountLifecycle.recordActivity(identity)
         return series
+      },
+    )
+    server.delete<{ Params: { seriesId: string }; Body: unknown }>(
+      '/v1/schedule-series/:seriesId',
+      async (request, reply) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        const deleted = await scheduling.deleteSeries(
+          identity,
+          request.params.seriesId,
+          request.body,
+        )
+        if (!deleted)
+          return reply
+            .status(404)
+            .send({ error: 'schedule_series_not_found', message: 'Schedule Series was not found.' })
+        await accountLifecycle.recordActivity(identity)
+        return deleted
       },
     )
     server.post<{ Params: { studentId: string } }>(

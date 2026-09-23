@@ -156,6 +156,23 @@ describe('SchedulingModule', () => {
     expect(calls).toEqual(['00000000-0000-4000-8000-000000000010'])
   })
 
+  it('deletes a Series only through the versioned Workspace operation', async () => {
+    const calls: unknown[][] = []
+    const module = new SchedulingModule({
+      resolveWorkspace: async () => 'workspace-1',
+      deleteSeries: async (...args: unknown[]) => {
+        calls.push(args)
+        return { studentId: 'student-1' }
+      },
+    } as unknown as SchedulingRepository)
+    await expect(
+      module.deleteSeries(identity, 'series-1', { confirmation: 'DELETE', version: 3 }),
+    ).resolves.toEqual({ studentId: 'student-1' })
+    expect(calls).toEqual([['workspace-1', 'series-1', 3]])
+    await expect(module.deleteSeries(identity, 'series-1', { version: 3 })).rejects.toThrow()
+    expect(calls).toHaveLength(1)
+  })
+
   it('passes the optional effective Session boundary to Series persistence', async () => {
     let effectiveFromSessionId: string | undefined
     const module = new SchedulingModule({

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import {
   createCalendarBlock,
   createScheduleSeries,
+  deleteScheduleSeries,
   createSession,
   deleteCalendarBlock,
   deleteSession,
@@ -41,10 +42,10 @@ export function invalidateSchedulingQueries(
     queryKey: ['student-trend', coachId, ...(studentId ? [studentId] : [])]
   })
   void queryClient.invalidateQueries({ queryKey: queryKeys.today(coachId) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.students(coachId) })
   if (studentId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.student(coachId, studentId) })
     void queryClient.invalidateQueries({ queryKey: queryKeys.scheduleSeries(coachId, studentId) })
-    void queryClient.invalidateQueries({ queryKey: queryKeys.students(coachId) })
   }
   if (sessionId) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.session(coachId, sessionId) })
@@ -136,6 +137,11 @@ export function useSchedulingMutations(session: Session) {
         input: Parameters<typeof updateScheduleSeries>[2]
       }) => updateScheduleSeries(session.access_token, seriesId, input),
       onSuccess: (accepted) => invalidate(accepted.series.studentId)
+    }),
+    deleteSeries: useMutation({
+      mutationFn: ({ seriesId, version }: { seriesId: string; version: number }) =>
+        deleteScheduleSeries(session.access_token, seriesId, version),
+      onSuccess: (accepted) => invalidate(accepted.studentId)
     }),
     reconcileSeries: useMutation({
       mutationFn: (studentId: string) => reconcileScheduleSeries(session.access_token, studentId),

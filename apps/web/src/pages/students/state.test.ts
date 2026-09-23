@@ -8,6 +8,7 @@ const student = (overrides: Partial<Student> = {}): Student => ({
   phone: '',
   goal: '提升肌力',
   privateNote: '',
+  ageRange: null,
   lineLinked: false,
   active: true,
   version: 1,

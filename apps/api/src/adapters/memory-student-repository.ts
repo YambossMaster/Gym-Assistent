@@ -113,6 +113,7 @@ export class MemoryStudentRepository
       (this.#studentsByWorkspace.get(workspaceId) ?? []).map(async (student) => ({
         ...student,
         lessonSummary: (await this.lessonSummary(workspaceId, student.id))!,
+        nextSessionAt: null,
       })),
     )
   }
@@ -128,6 +129,7 @@ export class MemoryStudentRepository
       phone: input.phone,
       goal: input.goal,
       privateNote: input.privateNote,
+      ageRange: input.ageRange,
       active: input.active,
       lineLinked: input.lineLinked,
       version: 1,
@@ -213,6 +215,7 @@ export class MemoryStudentRepository
       phone: input.phone,
       goal: input.goal,
       privateNote: input.privateNote,
+      ageRange: input.ageRange === undefined ? current.ageRange : input.ageRange,
       active: input.active,
       lineLinked: input.lineLinked,
       version: current.version + 1,

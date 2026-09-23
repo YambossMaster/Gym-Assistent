@@ -16,12 +16,14 @@ export interface NewStudent {
   phone: string
   goal: string
   privateNote: string
+  ageRange: Student['ageRange']
   active: boolean
   lineLinked: boolean
   now: Date
 }
 
-export interface UpdatedStudent extends Omit<NewStudent, 'id'> {
+export interface UpdatedStudent extends Omit<NewStudent, 'id' | 'ageRange'> {
+  ageRange?: Student['ageRange'] | undefined
   expectedVersion: number
 }
 

@@ -2,7 +2,11 @@ import type { Pool } from 'pg'
 import { randomUUID } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { LessonSummary } from '../students/student.js'
-import { planSeriesReconciliation } from '../scheduling/series-reconciliation.js'
+import {
+  monthlyOccurrence,
+  planSeriesReconciliation,
+  rebaseSeriesAnchor,
+} from '../scheduling/series-reconciliation.js'
 import type {
   AvailabilityWindow,
   CalendarBlock,
@@ -189,6 +193,35 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       client.release()
     }
   }
+  async deleteSeries(workspaceId: string, seriesId: string, expectedVersion: number) {
+    const client = await this.pool.connect()
+    try {
+      await client.query('begin')
+      const current = await client.query(
+        `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
+          interval_weeks,auto_schedule_horizon,location,active,version
+         from app_private.schedule_series where workspace_id=$1 and id=$2 for update`,
+        [workspaceId, seriesId],
+      )
+      if (!current.rows[0]) {
+        await client.query('rollback')
+        return null
+      }
+      const existing = mapSeries(current.rows[0])
+      if (existing.version !== expectedVersion) throw new SchedulingVersionConflictError(existing)
+      await client.query(
+        'delete from app_private.schedule_series where workspace_id=$1 and id=$2',
+        [workspaceId, seriesId],
+      )
+      await client.query('commit')
+      return { studentId: existing.studentId }
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
   async updateSeries(
     workspaceId: string,
     seriesId: string,
@@ -199,6 +232,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       now: Date
     },
   ) {
+    const timeZone = await this.getTimeZone(workspaceId)
     const client = await this.pool.connect()
     try {
       await client.query('begin')
@@ -222,10 +256,18 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           : [workspaceId, seriesId, input.now],
       )
       if (input.effectiveFromSessionId && !pivot.rows[0]) return null
+      const effectiveAnchor = pivot.rows[0]
+        ? rebaseSeriesAnchor(
+            input.anchorStartsAt,
+            existing.anchorStartsAt,
+            new Date(pivot.rows[0].starts_at),
+            timeZone,
+          )
+        : input.anchorStartsAt
       const updated = await client.query(
         `update app_private.schedule_series set local_weekday=$4,local_start_time=$5,
           duration_minutes=$6,interval_weeks=$7,auto_schedule_horizon=$8,location=$9,active=$10,
-          version=version+1,updated_at=$11 where workspace_id=$1 and id=$2 and version=$3
+          version=version+1,updated_at=$11,anchor_starts_at=$12 where workspace_id=$1 and id=$2 and version=$3
          returning id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
           interval_weeks,auto_schedule_horizon,location,active,version`,
         [
@@ -240,6 +282,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           input.location,
           input.active,
           input.now,
+          effectiveAnchor,
         ],
       )
       if (pivot.rows[0]) {
@@ -249,12 +292,16 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
             and status='scheduled' and not is_legacy and starts_at >= $3 order by starts_at,id for update`,
           [workspaceId, seriesId, originalStart],
         )
-        for (const occurrence of affected.rows) {
+        for (const [index, occurrence] of affected.rows.entries()) {
           const offsetWeeks = Math.round(
             (new Date(occurrence.starts_at).getTime() - originalStart.getTime()) / 604_800_000,
           )
-          const startsAt = new Date(input.anchorStartsAt)
-          startsAt.setUTCDate(startsAt.getUTCDate() + offsetWeeks * 7)
+          const startsAt =
+            input.intervalWeeks === 0
+              ? monthlyOccurrence(effectiveAnchor, index, timeZone)
+              : new Date(effectiveAnchor)
+          if (input.intervalWeeks !== 0)
+            startsAt.setUTCDate(startsAt.getUTCDate() + offsetWeeks * 7)
           const endsAt = new Date(startsAt.getTime() + input.durationMinutes * 60_000)
           await client.query(
             `update app_private.course_session set starts_at=$4,ends_at=$5,location=$6,
@@ -299,12 +346,19 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
         ),
       ])
       const summary = summaryRows.rows[0]!
+      const timeZone = await this.getTimeZone(workspaceId)
       const remainingLessons = summary.purchased - summary.completed
       const sessions = sessionRows.rows.map(mapSession)
       const generated: CourseSession[] = []
       for (const seriesRow of seriesRows.rows) {
         const series = mapSeries(seriesRow)
-        const starts = planSeriesReconciliation({ series, remainingLessons, sessions, now })
+        const starts = planSeriesReconciliation({
+          series,
+          remainingLessons,
+          sessions,
+          now,
+          timeZone,
+        })
         for (const startsAt of starts) {
           const endsAt = new Date(startsAt.getTime() + series.durationMinutes * 60_000)
           const id = randomUUID()

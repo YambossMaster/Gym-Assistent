@@ -1,26 +1,26 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-23. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-24. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
-| Current package    | **M7.5 Stage 2 — Contract preparation**                                                             |
-| Package state      | **Training and trajectory Stage 1 checkpoint delivered; Stage 2 Contract is next**                  |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
-| Branch baseline    | `09f9eaf` reached `origin/main`; CI run `35840171334` passed both jobs                              |
-| Worktree           | Training checkpoint committed; untracked `output/` screenshots stay local                           |
-| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply |
-| Production         | Not configured; no real customer data                                                               |
+| Field              | Current value                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                     |
+| Current package    | **M7.5 Student introduction wording correction**                                               |
+| Package state      | **Desktop/390×844 review passed; Stage 1 review continues**                                    |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                  |
+| Branch baseline    | `09f9eaf` reached `origin/main`; CI run `35840171334` passed both jobs                         |
+| Worktree           | Student, Series, monthly migration, and Training picker edits local; `output/` stays local     |
+| Linked database    | Development only; migrations through `20260923172115` applied and linked dry-run is up-to-date |
+| Production         | Not configured; no real customer data                                                          |
 
 ## Next handoff
 
-Begin the M7.5 Stage 2 Contract: freeze the deferred backlog, route-by-route regression matrix,
-and release-readiness evidence before implementation. Keep Calendar touch/Block physical-phone
-acceptance in scope; do not begin M8.
+Continue M7.5 Stage 1 Product Owner review: take the next reported issue, reproduce and correct it
+locally with focused evidence. Begin the Stage 2 Contract only after the Product Owner explicitly
+ends Stage 1. Keep Calendar touch/Block physical-phone acceptance in scope; do not begin M8.
 
 The Product Owner accepted retaining Training drag-start neighbour anchoring on 2026-09-23. If the Product Owner asks
 to remove only the third experiment, set `ENABLE_DRAG_START_ANCHOR = false` in
@@ -329,6 +329,297 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-24 — LOG-186 — Stage 1 checkpoint local CI gate
+
+- **Scope:** Product Owner requested full CI and delivery of the current M7.5 Stage 1 corrections to `main`; Stage 1 review remains open.
+- **Outcome:** the Student, Series, monthly scheduling, and Training picker changes are ready as one checkpoint. Keep `output/` local and outside the commit.
+- **Verification:** clean `npm ci` passed with zero vulnerabilities. Root `npm run check` passed formatting, API typecheck and 23 files/90 tests, and Web typecheck and 40 files/174 tests. Root API/Web production builds passed with only the existing Vite >500-kB chunk advisory. Linked migration dry-run is up to date; `app_private` lint found no schema errors. Linked advisors returned the accepted development leaked-password warning and existing capability-link permissive-policy performance warnings, with no errors. `git diff --check` passed. Earlier Stage 1 logs contain the focused authenticated desktop and 390×844 browser evidence for the changed surfaces.
+- **Known issue:** remote commit/ref and exact-SHA Actions remain to be verified.
+- **Next:** commit and push this checkpoint to `main`, confirm Verify and migration-dry-run for the delivered SHA, then resume Stage 1 Product Owner review.
+
+### 2026-09-24 — LOG-185 — Student introduction wording correction
+
+- **Scope:** make the former training-goal field a flexible, recognizable Student introduction in
+  Coach-facing create, edit, roster, detail, and search copy; keep longer aims and context in Notes.
+- **Outcome:** `學生簡介` now accepts concise traits such as occupation or labels, and the create form
+  uses the same `備註` label as edit/detail. Existing values remain intact and searchable. The
+  existing `goal` API/storage key is retained for compatibility; no schema or data migration occurred.
+  The product terms are recorded in `CONTEXT.md`.
+- **Verification:** authenticated desktop detail/edit and 390×844 create views showed the new label,
+  optional example, existing value, and separate Note. Web format, typecheck, and 40 files/174 tests,
+  production build, documentation formatting, and `git diff --check` passed. No create/edit
+  submission or live data mutation was needed.
+- **Known issue:** Stage 1 Product Owner review continues; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-184 — Mobile Student roster without next-session row
+
+- **Scope:** trial a shorter mobile Student card by hiding its next-session row.
+- **Outcome:** cards at the mobile breakpoint show identity, training goal, and lesson balance with
+  progress only. The desktop roster and Student detail still show the existing next-session data.
+- **Verification:** authenticated 390×844 Chrome preview showed more Student cards per viewport,
+  retained readable lesson counts, and no visible horizontal overflow. Web production build,
+  targeted formatting, and `git diff --check` passed; no new tests were needed for this CSS-only
+  presentation trial.
+- **Known issue:** Stage 1 Product Owner review continues; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-183 — Mobile Student roster density correction
+
+- **Scope:** reduce the height of each Student card on the mobile roster without removing its
+  identity, goal, remaining/purchased lessons, progress track, or next-session entry.
+- **Outcome:** the mobile-only card uses a smaller avatar and tighter card, balance, progress-track,
+  and next-session spacing. Desktop card layout and Student data are unchanged.
+- **Verification:** authenticated 390×844 Chrome preview showed the first card about one-fifth
+  shorter while its facts and navigation remained legible; no horizontal overflow was visible.
+  Web production build and `git diff --check` passed. This CSS-only Stage 1 correction did not
+  require new tests.
+- **Known issue:** Stage 1 review continues; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-182 — Student record controls and feedback correction
+
+- **Scope:** remove redundant course-card counts and footer treatment; bring purchase add controls,
+  date selection, numeric inputs, and feedback into line with the existing Student interface.
+- **Outcome:** course history ends after its final white row without a shaded summary footer. Fixed
+  Schedule and Purchase now share the same add-button styles and responsive short label. The purchase
+  form reuses the fixed-schedule calendar with its own label, keeps numeric input semantics without
+  visible spinner arrows, and omits the private-note placeholder. Successful Student/Purchase
+  mutations no longer print a status line in the page; actionable errors remain visible.
+- **Verification:** Web format, typecheck, and 40 files/174 tests passed; Web production build passed
+  with its existing >500-kB chunk advisory; `git diff --check` passed. Authenticated desktop and
+  exact 390×844 Chrome views confirmed the card ending, matched add buttons, reusable date picker,
+  mobile calendar fit, and focus returning to the add trigger after closing.
+- **Known issue:** Stage 1 review continues; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-181 — Student course and purchase records presentation
+
+- **Scope:** align the Student course history with the surrounding page, compress each course row,
+  and bring the purchase ledger and add flow closer to the Demo reference.
+- **Outcome:** course history now uses a white card and page-scale heading, one-line desktop
+  time/location rows, compact spacing, and a centered completed count without the redundant next
+  lesson footer. The purchase ledger has the Demo's labeled header and date, lessons, amount, note,
+  and icon-action columns with slightly larger text. Add opens a focused `新增購課紀錄` dialog and
+  preserves the existing server mutation.
+- **Verification:** Web format, typecheck, and 40 files/174 tests passed; Web production build passed
+  with the existing >500-kB chunk advisory; `git diff --check` passed. Authenticated desktop and
+  390×844 Chrome views confirmed the layout, purchase dialog, and focus returning to its trigger.
+  The initial sandbox Vite `spawn EPERM` was resolved by the elevated rerun.
+- **Known issue:** local Stage 1 review continues; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-180 — Student detail card and management placement
+
+- **Scope:** group the student identity, remaining lessons, and basic profile into one card; add the
+  desktop age/note divider and centered note content; move Archive/Restore to the page bottom.
+- **Outcome:** the existing identity and profile layout now sits within one bordered card on desktop
+  and mobile. Remaining lessons occupies the far-right identity position with slightly larger type.
+  Desktop facts have evenly positioned column dividers, and note content is centered. Archive or
+  Restore, plus permanent deletion when archived, follows the purchase history at page bottom.
+- **Verification:** authenticated desktop and 390×844 browser views confirmed the shared card and
+  right-aligned balance; desktop view confirmed both dividers, centered note, and bottom Archive.
+  Web format, typecheck, and 40 files/174 tests passed; Web production build passed with its existing
+  > 500-kB chunk advisory. `git diff --check` passed.
+- **Known issue:** local Stage 1 review continues; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-179 — Student profile dialog and age range
+
+- **Scope:** move basic-profile editing into a dialog; move remaining lessons to the identity row;
+  replace its profile fact with a selectable age range; refine 390×844 alignment and the fixed
+  schedule add button.
+- **Outcome:** profile editing uses a scrollable dialog and shared `FormSelect` with optional age
+  bands. The age range is validated and stored in the Workspace-scoped Student record, with existing
+  Students left unset. Mobile facts have a centered divider and values, while labels stay left;
+  remaining lessons appear beside the name and the schedule button reads `新增`.
+- **Verification:** linked development migration `20260923172115` applied; subsequent dry-run was
+  up-to-date. Authenticated desktop and 390×844 review confirmed the dialog, dropdown, placement,
+  and a saved age range after a fresh route load. The isolated test student's age range was restored
+  to unset. API typecheck and 23 files/90 tests passed; Web format, typecheck, and 40 files/174 tests
+  passed; API and Web builds passed. `git diff --check` passed.
+- **Known issue:** local Stage 1 work only; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-178 — Student detail responsive hierarchy
+
+- **Scope:** refine the Student detail header, profile facts, fixed-schedule row, and performance
+  entrance after Product Owner desktop and mobile review.
+- **Outcome:** Archive/Restore sits beside the student name at 390 px. Mobile profile facts now use a
+  compact two-column layout with a separate note row and visible edit heading. The fixed-schedule
+  status shares the row with the time while the schedule item is shorter. The performance entrance
+  keeps its English eyebrow and uses the same title size and outer spacing as the schedule card on
+  desktop and mobile.
+- **Verification:** authenticated desktop and 390×844 browser reviews confirmed the requested
+  placement and matching section hierarchy. Web format, typecheck, and 40 files/174 tests passed;
+  Web production build passed with its existing >500-kB chunk advisory. `git diff --check` passed.
+- **Known issue:** local Stage 1 presentation work only; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-177 — Performance entrance and directory sorting refinement
+
+- **Scope:** remove the Student performance entrance icon, shorten personal-best summaries, and
+  offer count or recency ordering inside the complete movement directory.
+- **Outcome:** the entrance now begins with its title and supporting copy. Best values show only
+  numbers and units, such as `102.5 kg / 5 次`. The directory introduction keeps only the action
+  instruction, and its shared custom selector offers `最多筆數` and `最新紀錄` in descending order.
+- **Verification:** authenticated desktop review confirmed the icon-free entrance, compact best
+  values, and a real four-movement ordering change when switching to latest records. The 390×844
+  preview confirmed the modal and opened selector fit without horizontal overflow. Web format,
+  typecheck, and 40 files/174 tests passed; Web production build passed with the existing >500-kB
+  chunk advisory. `git diff --check` passed.
+- **Known issue:** this is local Stage 1 presentation work; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-176 — Student facts, fixed schedule deletion, and performance entry
+
+- **Scope:** refine Student profile facts and edit focus; allow confirmed fixed-schedule deletion
+  from its editor with a Delete shortcut; replace the inline performance preview with one designed
+  entrance and a complete directory ordered by record count.
+- **Outcome:** Phone, remaining lessons, and notes now use three evenly spaced desktop columns.
+  Leaving profile edit by pointer clears the lingering button focus. The Series editor opens a
+  deletion warning from its button or Delete key; a versioned, Workspace-scoped API operation
+  removes the Series while the existing foreign key detaches and preserves its Course Sessions.
+  The Student page has one compact performance entrance; its modal shows every movement in
+  descending valid-record count with count, latest record, and a single-line best summary.
+- **Verification:** root check passed API 23 files/88 tests and Web 40 files/174 tests. Root
+  production build passed with the existing >500-kB chunk advisory. Authenticated desktop review
+  confirmed the three facts, no persistent pointer focus after edit, the single performance
+  entrance and directory, and both button and Delete-key routes to the Series warning. The
+  390×844 preview showed the entrance and modal without horizontal overflow. `git diff --check`
+  passed. The sandboxed test attempt hit the known Windows `spawn EPERM`; the elevated run passed.
+- **Known issue:** the deletion confirmation was verified without deleting the existing test
+  Series, so no live deletion or restoration of that fixture is claimed. The physical-phone
+  acceptance remains open. This Stage 1 change is local; no push or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-23 — LOG-175 — Monthly fixed schedules and editor control correction
+
+- **Scope:** apply the Product Owner's annotated Series-editor corrections and confirmed monthly rule: repeat on the same local calendar date, clamping to month end when needed.
+- **Outcome:** narrowed the automatic scheduling field, gave the adjacent status switch more space, reduced the explanatory copy, replaced the editable start-time field with 15-minute choices, and replaced the browser date input with a calendar that closes on the next trigger click. Added `每一個月` frequency; Series uses `intervalWeeks=0` as the monthly marker while existing 1/2-week rows retain their meaning. Reconciliation computes months from the original local date, so 31 January leads to 28 February then 31 March in a non-leap year. The editor and API now cap new automatic scheduling at two weeks; the migration converts existing `MAX_WINDOW` rows to `2_WEEKS` and tightens the database check. Existing future Sessions retain their date when an edit leaves the historical start date untouched.
+- **Verification:** authenticated desktop Chrome and 390×844 preview showed the smaller copy, spacing, non-editable time options, monthly choice, and deterministic date-picker open/close. Linked development migration `20260923153034` applied, database constraints queried, and linked dry-run reported up-to-date. API/Web typechecks and production builds passed; API 23 files/86 tests and Web 40 files/174 tests passed. Targeted Prettier and `git diff --check` passed. Web build retained its existing >500-kB advisory.
+- **Known issue:** physical-phone touch acceptance remains open. This is local Stage 1 work; no push or remote CI claim.
+- **Next:** continue the Product Owner's stepwise Student-detail review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-174 — Student detail facts and fixed-series editor layout
+
+- **Scope:** apply the Product Owner's two annotated Student-detail corrections to balance placement, archive copy, fixed-time grid, and the Series editor fields.
+- **Outcome:** replaced the visible Profile heading with the remaining-lesson count, removed its duplicate beside the name, shortened the action to bold `封存`, and removed the redundant manual future-course recheck action. Fixed-time cards now occupy two columns on desktop and wrap in reading order. The editor aligns date/time, duration/location, then frequency/automatic range/status with deliberate gaps; its status switch is compact and aligned. Duration uses 30–180 minute choices in 30-minute steps, defaulting to 60 for new Series while preserving an existing out-of-range value on edit. Start time uses the Calendar's 15-minute picker.
+- **Verification:** authenticated desktop Chrome and 390×844 preview showed the layout and editor without a visible horizontal overflow. Browser accessibility tree confirmed the duration choices and 15-minute time sequence. Web TypeScript, production build, 39 test files/173 tests, targeted Prettier, and `git diff --check` passed. The build retained its existing >500-kB bundle advisory.
+- **Known issue:** physical-phone touch acceptance remains open. This is local Stage 1 work; no push or remote CI claim.
+- **Next:** continue the Product Owner's stepwise Student-detail review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-173 — Student header facts and fixed-series switch
+
+- **Scope:** refine the Student detail page from the Product Owner's annotated screenshots: move remaining lessons beside the name, remove the unwanted stats row, align phone before a labelled note, reduce the fixed-course panel, and clarify the fixed-series editor controls.
+- **Outcome:** the header shows only remaining lessons; the profile facts read `電話` then `備註`, with `[ 無備註 ]` when blank. The fixed-course panel uses a smaller header and row. Editing an existing Series now shows one `使用中／已停用` switch. Removed the `從下一堂課開始套用新時間` checkbox because omitting its optional pivot already updates the first future scheduled Session linked to that Series under the M4 contract; no API behavior changed.
+- **Verification:** authenticated desktop Chrome and the 390×844 preview showed the new placement and compact panel. The Series editor exposed one accessible switch, toggled its state, and was cancelled without saving. Web production build and 39 test files/173 tests passed. Prettier and `git diff --check` passed. The build retained its existing >500-kB bundle advisory.
+- **Known issue:** physical-phone touch acceptance remains open. This is local Stage 1 work; no push or remote CI claim.
+- **Next:** continue the Product Owner's stepwise Student-detail review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-172 — Compact Student detail header and lesson statistics
+
+- **Scope:** address the Product Owner's finding that the Student detail page uses oversized type and large, mostly empty cards.
+- **Outcome:** reduced the avatar and name to header scale, integrated the personal facts and edit action into that header, and replaced the large dark lesson card with one compact row for purchased, completed, and remaining lessons. The remaining count has a subtle lime tint; low and negative balances keep their existing attention text. No attendance rate was added because the current projection does not establish attendance as a metric.
+- **Verification:** authenticated desktop Chrome and the 390×844 preview showed the consolidated header, readable three-column stats, no visible horizontal overflow, and the fixed-time section directly below. Web production build and targeted Prettier passed; `git diff --check` passed. The build retained the existing >500-kB bundle advisory. No test behavior changed; the prior Web suite passed 39 files/173 tests before this visual correction.
+- **Known issue:** physical-phone touch acceptance remains open. This is local Stage 1 work; no push or remote CI claim.
+- **Next:** continue the Product Owner's stepwise Student-detail review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-171 — Training picker button style and copy
+
+- **Scope:** give the no-results `清除篩選` action the shared secondary-button style. In the
+  Training picker only, change the toolbar action to black with white text and label it
+  `＋自訂動作`; the Exercise Library page keeps its own action style.
+- **Outcome:** no browser-default button remains in the picker's empty state. The action remains
+  distinct from the selected filter tab on desktop and at 390×844.
+- **Verification:** authenticated Chrome reached zero results through combined filters and
+  confirmed computed styles: secondary button 46px with site border, toolbar action black/white;
+  exact 390×844 had no horizontal overflow. Focused picker tests passed 2/2, Web typecheck,
+  targeted Prettier, and `git diff --check` passed. No data mutation, push, or remote CI.
+- **Next:** continue Stage 1 Product Owner review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-170 — Student detail header, overview, and fixed course time
+
+- **Scope:** follow the Product Owner's Demo-guided visual review of the Student detail header, remaining lessons and personal details, and fixed course time. Remove the lesson formula copy, LINE line, and `不會分享` badge; put back navigation at top left and editing by the profile card.
+- **Outcome:** the header now has the Student avatar, status, name, and goal. Remaining lessons and a read-only personal-details card sit side by side on desktop; `編輯` opens the existing fields and closes after a successful save. `固定課程時間` displays weekday/time, frequency, duration, location, and active status; the weekday badge is lime only for active rows and gray otherwise. `新增時段` uses a dark button; the existing future-course reconciliation remains a secondary action.
+- **Verification:** authenticated Chrome checked desktop layout, profile-edit toggle, fixed-time editor, and the 390×844 preview including the fixed-time card and editor. Web typecheck, production build, and 39 test files/173 tests passed. Prettier and `git diff --check` passed. The build retained the existing >500-kB bundle advisory.
+- **Known issue:** physical-phone touch acceptance remains open. This is local Stage 1 work; no push or remote CI claim.
+- **Next:** continue the Product Owner's stepwise Student-detail review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-169 — Compact Training picker controls
+
+- **Scope:** place search, All/Favorite/Custom tabs, and the renamed `新增動作` action in one desktop
+  toolbar; keep the action beside the tabs on mobile with search above. Move `清除篩選` beside the
+  body-part choices and make the row's favorite/edit/delete button backgrounds transparent.
+- **Outcome:** the picker retains its fixed height and independent result scrolling. At 390×844,
+  the controls stay within 390px, the three row actions remain 44px touch targets, and the clear
+  action stays inside the filter's existing row.
+- **Verification:** authenticated Chrome checked desktop 1440×675 and exact 390×844 placement,
+  filter selection, picker height, no horizontal overflow, and computed transparent backgrounds.
+  Focused picker tests passed 2/2; Web typecheck, targeted Prettier, and `git diff --check` passed.
+  No data mutation, push, or remote CI was performed.
+- **Next:** continue Stage 1 Product Owner review; Stage 2 remains Product Owner-gated.
+
+### 2026-09-23 — LOG-168 — Training picker uses the Exercise Library controls
+
+- **Scope:** the Session Training `加入動作` dialog now uses the Exercise Library's Coach-scoped
+  search, equipment/type/body-part filters, favorite toggle, definition create/edit/delete flows,
+  and shared `FormSelect`. Creating a definition here adds it to the current Training record.
+- **Outcome:** the picker has a fixed viewport-bounded height, with its result list scrolling
+  independently. The 390×844 layout keeps all body-part choices visible and uses 44px action
+  targets. The underlying Training draft and existing library authority remain unchanged.
+- **Verification:** the picker regression was red before the fix and now passes, including combined
+  filters, nested editor return, and create-to-add. Focused Web tests passed 4 files/29 tests;
+  TypeScript, Prettier, Web production build, and `git diff --check` passed. Authenticated Chrome
+  checked desktop 1440×675 and exact 390×844: 108 results and zero matches kept the same picker
+  height; the result area alone scrolled, custom select opened, and editor focus/Escape returned
+  to the picker. The create mutation was verified with a mocked response; no live definition was
+  created or deleted. Build retained the existing >500-kB chunk advisory.
+- **Next:** continue Stage 1 issue review; Stage 2 remains Product Owner-gated. No push or remote CI
+  was run for this correction.
+
+### 2026-09-23 — LOG-167 — Student detail hierarchy and archive-first action
+
+- **Scope:** reorder the Student detail page as remaining lessons and personal details, fixed course rhythm, performance, course records, then purchase records. Place purchase registration under `購課紀錄` → `新增`, and offer permanent Student deletion only after archiving.
+- **Outcome:** the personal-details form no longer uses an active-state checkbox; it offers `封存學生` or `恢復學生`, with `永久刪除` appearing only in the archived state. The purchase form opens within its record section and closes after successful registration. No API or schema contract changed.
+- **Verification:** authenticated Chrome confirmed the section order and purchase-form toggle on desktop and in the 390×844 preview. An isolated fictional Student was archived, the deletion action appeared, and the Student was restored with that action gone. Web typecheck, production build, and 39 test files/172 tests passed; Vite/Vitest required the approved elevated Windows path after sandbox `spawn EPERM`.
+- **Known issue:** archive-only deletion is a UI hierarchy change in this local correction; server policy is unchanged. Physical-phone touch acceptance remains open. No push or remote CI claim.
+- **Next:** continue the Product Owner's Student-detail review, then the M7.5 Stage 2 Contract handoff; do not enter M8.
+
+### 2026-09-23 — LOG-166 — Student-card goal text clearance
+
+- **Scope:** add a little breathing room between the training-goal line and the balance divider on desktop Student cards.
+- **Outcome:** the goal line now leaves 12px beneath it before the following balance section; the existing mobile grid keeps its prior margin.
+- **Verification:** authenticated desktop Chrome showed the goal and divider visibly separated across the four-card row. Targeted CSS Prettier check and `git diff --check` passed. This visual-only nudge did not warrant another test or build run.
+- **Known issue:** physical-phone touch acceptance remains open. This is local work with no push or remote CI claim.
+- **Next:** begin the M7.5 Stage 2 Contract preparation from the current handoff; do not enter M8.
+
+### 2026-09-23 — LOG-165 — Ease Student-card spacing and keep refresh status out of the switch
+
+- **Scope:** respond to the Product Owner's Student-roster visual review and the report that `更新中` shifts the active/archive control.
+- **Outcome:** reduced the desktop card's avatar, name, and balance number; increased the spacing around the balance divider, progress bar, and next-course block; darkened secondary card text. The roster refresh label is absolutely positioned in the toolbar so it no longer participates in the control row's flex layout. Mobile keeps its 54px avatar and sticky toolbar.
+- **Verification:** authenticated desktop Chrome showed four cards per row with less crowded sections; the 390×844 preview showed readable stacked cards without visible horizontal clipping. Web typecheck and production build passed with the existing bundle-size advisory; targeted Prettier and `git diff --check` passed. No additional tests were added for this CSS-only correction.
+- **Known issue:** physical-phone touch acceptance remains open. This is local work with no push or remote CI claim.
+- **Next:** begin the M7.5 Stage 2 Contract preparation from the current handoff; do not enter M8.
+
+### 2026-09-23 — LOG-164 — Student roster compact cards and income-page entry
+
+- **Scope:** apply the Product Owner's limited Student-page review: active/archive counts, four-across desktop cards, lesson progress, next scheduled Course Session or `尚未安排`, and a bottom `每月收支` entry containing the former cumulative-received summary. Omit the Demo's presence dot.
+- **Outcome:** the existing Student roster projection now adds the nearest future scheduled Session under the verified Workspace, using the existing course-session index; schedule writes invalidate the roster. The Student page no longer loads income in the background. The new income route retains the prior cumulative total and makes no monthly calculation or expense claim.
+- **Verification:** API and Web typechecks passed; API tests 23 files/84 tests and Web tests 38 files/171 tests passed with one worker using the approved Windows elevated path after sandbox `spawn EPERM`; root production build passed with the existing chunk-size advisory; targeted Prettier and `git diff --check` passed. Authenticated desktop Chrome showed four cards per row, counts, scheduled and unarranged next-course states, and the income route. The 390×844 desktop preview showed the compact Student card and income route without visible horizontal clipping.
+- **Known issue:** physical-phone touch acceptance and Stage 2 backlog remain open. This local correction has no push or remote CI claim; `output/` remains untracked.
+- **Next:** continue M7.5 Stage 2 Contract preparation and the route-by-route review; do not enter M8.
 
 ### 2026-09-23 — LOG-163 — Training and trajectory Stage 1 checkpoint local CI gate
 

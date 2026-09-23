@@ -38,6 +38,7 @@ describe('StudentModule', () => {
       phone: '',
       goal: '',
       privateNote: '',
+      ageRange: null,
       active: true,
       lineLinked: false,
       version: 1,
@@ -99,6 +100,31 @@ describe('StudentModule', () => {
       name: 'StudentVersionConflictError',
     })
     await expect(students.delete(coachA, created.id, 2)).resolves.toBe(true)
+  })
+
+  it('saves an age range, preserves it on other edits, and allows clearing it', async () => {
+    const students = new StudentModule({
+      repository: new MemoryStudentRepository(),
+      createId: () => 'student-age-range',
+    })
+    const created = await students.create(coachA, {
+      name: 'Alice',
+      ageRange: 'AGE_25_34',
+    })
+    expect(created.ageRange).toBe('AGE_25_34')
+
+    const renamed = await students.update(coachA, created.id, {
+      name: 'Alice Chen',
+      version: created.version,
+    })
+    expect(renamed?.ageRange).toBe('AGE_25_34')
+
+    const cleared = await students.update(coachA, created.id, {
+      name: 'Alice Chen',
+      ageRange: null,
+      version: renamed!.version,
+    })
+    expect(cleared?.ageRange).toBeNull()
   })
 
   it('returns roster summaries and rejects stale lesson-purchase corrections', async () => {

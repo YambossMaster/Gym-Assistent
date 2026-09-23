@@ -29,10 +29,13 @@ import {
   ChevronRight,
   Dumbbell,
   GripVertical,
+  Heart,
   LoaderCircle,
   MapPin,
+  Pencil,
   Plus,
   RotateCcw,
+  Search,
   Trash2,
   TrendingUp,
   WifiOff,
@@ -70,8 +73,11 @@ import {
 } from './drafts'
 import { useExerciseLibrary, useTrainingMutations } from './queries'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
+import { FormSelect } from '../../shared/FormSelect'
+import { Confirmation } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { filterExerciseDefinitions } from '../exercises/filter'
+import { DefinitionEditor } from '../exercises/ExercisesPage'
 import {
   CoachLocalStore,
   OperationQueue,
@@ -1671,7 +1677,7 @@ function normalizeSet(
   return { ...set, measurements: measurementValues(set, recording, preference) }
 }
 
-function ExercisePicker({
+export function ExercisePicker({
   session,
   onPick,
   onClose
@@ -1681,16 +1687,36 @@ function ExercisePicker({
   onClose: () => void
 }) {
   const [q, setQ] = useState(''),
-    [view, setView] = useState<'all' | 'favorite' | 'custom'>('all')
+    [view, setView] = useState<'all' | 'favorite' | 'custom'>('all'),
+    [equipment, setEquipment] = useState(''),
+    [movementType, setMovementType] = useState(''),
+    [bodyParts, setBodyParts] = useState<string[]>([]),
+    [editing, setEditing] = useState<ExerciseDefinition | null | undefined>(undefined),
+    [deleting, setDeleting] = useState<ExerciseDefinition | null>(null),
+    [message, setMessage] = useState('')
   const query = useExerciseLibrary(session)
+  const mutations = useTrainingMutations(session)
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
     submitOnEnter: true,
     focusDialog: true
   })
   const definitions = useMemo(
-    () => filterExerciseDefinitions(query.data?.definitions ?? [], { q, view }),
-    [q, query.data?.definitions, view]
+    () =>
+      filterExerciseDefinitions(query.data?.definitions ?? [], {
+        q,
+        view,
+        equipment,
+        movementType,
+        bodyParts
+      }),
+    [q, view, equipment, movementType, bodyParts, query.data?.definitions]
   )
+  const clear = () => {
+    setQ('')
+    setEquipment('')
+    setMovementType('')
+    setBodyParts([])
+  }
   return (
     <div className="dialog-backdrop" role="presentation" onPointerDown={onBackdropPointerDown}>
       <section
@@ -1698,7 +1724,8 @@ function ExercisePicker({
         tabIndex={-1}
         className="exercise-picker"
         role="dialog"
-        aria-modal="true"
+        aria-modal={editing === undefined && !deleting}
+        aria-hidden={editing !== undefined || Boolean(deleting)}
         aria-labelledby="picker-title"
       >
         <header>
@@ -1710,52 +1737,225 @@ function ExercisePicker({
             <X />
           </button>
         </header>
-        <input
-          type="search"
-          placeholder="搜尋動作、器材或部位"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <div className="library-tabs">
-          {(
-            [
-              ['all', '全部'],
-              ['favorite', '常用'],
-              ['custom', '自訂']
-            ] as const
-          ).map(([key, label]) => (
-            <button key={key} aria-pressed={view === key} onClick={() => setView(key)}>
-              {label}
-            </button>
-          ))}
-        </div>
-        {query.isLoading ? (
-          <p>載入動作庫中…</p>
-        ) : query.isError ? (
-          <p>
-            無法載入動作庫。 <button onClick={() => void query.refetch()}>重試</button>
-          </p>
-        ) : definitions.length ? (
-          <div className="picker-list">
-            {definitions.map((definition) => (
-              <button key={definition.id} onClick={() => onPick(definition)}>
-                <span>
-                  <strong>{definition.name}</strong>
-                  <small>
-                    {definition.equipment} · {definition.bodyParts.join('、')}
-                  </small>
-                </span>
-                <ChevronRight />
+        <div className="picker-toolbar">
+          <label className="library-search picker-search">
+            <Search aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="搜尋名稱、器材、類型或部位"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </label>
+          <div className="library-tabs picker-tabs">
+            {(
+              [
+                ['all', '全部'],
+                ['favorite', '常用'],
+                ['custom', '自訂']
+              ] as const
+            ).map(([key, label]) => (
+              <button key={key} aria-pressed={view === key} onClick={() => setView(key)}>
+                {label}
+                <small>{query.data?.totals[key] ?? 0}</small>
               </button>
             ))}
           </div>
+          <button
+            className="primary-button picker-create"
+            onClick={() => {
+              setMessage('')
+              setEditing(null)
+            }}
+          >
+            <Plus aria-hidden="true" />
+            自訂動作
+          </button>
+        </div>
+        {query.data && (
+          <section className="filter-shelf picker-filters" aria-label="篩選動作">
+            <FormSelect
+              label="器材"
+              value={equipment}
+              onChange={setEquipment}
+              options={[
+                { value: '', label: '所有器材' },
+                ...query.data.filters.equipment.map((value) => ({ value, label: value }))
+              ]}
+            />
+            <FormSelect
+              label="動作類型"
+              value={movementType}
+              onChange={setMovementType}
+              options={[
+                { value: '', label: '所有類型' },
+                ...query.data.filters.movementTypes.map((value) => ({ value, label: value }))
+              ]}
+            />
+            <div className="picker-filter-bottom">
+              <div className="body-part-filters" aria-label="部位">
+                {query.data.filters.bodyParts.map((part) => (
+                  <button
+                    key={part}
+                    aria-pressed={bodyParts.includes(part)}
+                    onClick={() =>
+                      setBodyParts((items) =>
+                        items.includes(part)
+                          ? items.filter((item) => item !== part)
+                          : [...items, part]
+                      )
+                    }
+                  >
+                    {part}
+                  </button>
+                ))}
+              </div>
+              {(q || equipment || movementType || bodyParts.length > 0) && (
+                <button className="text-button picker-clear" onClick={clear}>
+                  <X />
+                  清除篩選
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+        {message && (
+          <p className="form-notice" role="status">
+            {message}
+          </p>
+        )}
+        {query.isLoading ? (
+          <div className="picker-results">
+            <p>載入動作庫中…</p>
+          </div>
+        ) : query.isError ? (
+          <div className="picker-results">
+            <p>
+              無法載入動作庫。 <button onClick={() => void query.refetch()}>重試</button>
+            </p>
+          </div>
+        ) : definitions.length ? (
+          <div className="picker-results">
+            <div className="picker-list">
+              {definitions.map((definition) => {
+                const busy =
+                  definition.version === 0 ||
+                  (mutations.updateExercise.isPending &&
+                    mutations.updateExercise.variables?.id === definition.id) ||
+                  (mutations.remove.isPending && mutations.remove.variables?.id === definition.id)
+                return (
+                  <div className="picker-item" key={definition.id}>
+                    <button
+                      className="picker-item-main"
+                      disabled={busy}
+                      onClick={() => onPick(definition)}
+                    >
+                      <span>
+                        <strong>{definition.name}</strong>
+                        <small>
+                          {definition.equipment} · {definition.movementType} ·{' '}
+                          {definition.bodyParts.join('、')}
+                        </small>
+                      </span>
+                      <ChevronRight aria-hidden="true" />
+                    </button>
+                    <button
+                      className="icon-button favorite-button"
+                      aria-label={`${definition.favorite ? '取消常用' : '加入常用'}：${definition.name}`}
+                      aria-pressed={definition.favorite}
+                      disabled={busy}
+                      onClick={() =>
+                        mutations.favorite.toggle(definition.id, () =>
+                          setMessage('常用更新失敗，已恢復原狀。')
+                        )
+                      }
+                    >
+                      <Heart />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label={`編輯：${definition.name}`}
+                      disabled={busy}
+                      onClick={() => setEditing(definition)}
+                    >
+                      <Pencil />
+                    </button>
+                    <button
+                      className="icon-button danger"
+                      aria-label={`刪除：${definition.name}`}
+                      disabled={busy}
+                      onClick={() => setDeleting(definition)}
+                    >
+                      <Trash2 />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         ) : (
-          <div className="empty-state">
-            <strong>沒有符合的動作</strong>
-            <button onClick={() => setQ('')}>清除篩選</button>
+          <div className="picker-results">
+            <div className="empty-state">
+              <strong>沒有符合的動作</strong>
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  clear()
+                  setView('all')
+                }}
+              >
+                清除篩選
+              </button>
+            </div>
           </div>
         )}
       </section>
+      {editing !== undefined && (
+        <DefinitionEditor
+          key={editing?.id ?? 'new'}
+          definition={editing}
+          filters={query.data?.filters}
+          onClose={() => setEditing(undefined)}
+          onSave={async (fields) => {
+            if (editing) {
+              await mutations.updateExercise.mutateAsync({
+                id: editing.id,
+                input: {
+                  ...fields,
+                  version:
+                    query.data?.definitions.find((item) => item.id === editing.id)?.version ??
+                    editing.version,
+                  operationId: crypto.randomUUID()
+                }
+              })
+              setEditing(undefined)
+            } else {
+              const created = await mutations.createExercise.mutateAsync({
+                ...fields,
+                operationId: crypto.randomUUID()
+              })
+              onPick(created)
+            }
+          }}
+        />
+      )}
+      {deleting && (
+        <Confirmation
+          title="刪除動作？"
+          text={`「${deleting.name}」將從動作庫移除，已保存的課堂紀錄仍會保留。`}
+          disabled={mutations.remove.isPending}
+          confirmLabel="刪除動作"
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => {
+            const target = deleting
+            setDeleting(null)
+            mutations.remove.mutate(
+              { id: target.id, version: target.version },
+              { onError: () => setMessage('刪除失敗，動作已還原。') }
+            )
+          }}
+        />
+      )}
     </div>
   )
 }

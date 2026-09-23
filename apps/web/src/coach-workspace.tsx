@@ -13,12 +13,14 @@ import {
   KeyRound,
   LogOut,
   Menu,
+  Pencil,
   Plus,
   Search,
   Settings,
   TimerReset,
   Trash2,
-  UserRound
+  UserRound,
+  XCircle
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
@@ -31,7 +33,8 @@ import {
   listScheduleSeries,
   type LessonPurchase,
   type ScheduleSeries,
-  type Student
+  type Student,
+  type StudentAgeRange
 } from './api'
 import { changePassword, signOutCurrentDevice, updatePassword } from './account-auth'
 import {
@@ -46,6 +49,7 @@ import { queryKeys } from './query-keys'
 import { useSchedulingMutations } from './pages/calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from './pages/calendar/calendar-time'
 import { SchedulingDialog } from './pages/calendar/SchedulingDialog'
+import { SeriesDatePicker } from './pages/students/SeriesDatePicker'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
 import { useDialogBehavior } from './shared/useDialogBehavior'
@@ -53,14 +57,36 @@ import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
 import type { PerformanceEntry } from './api'
 
-export function StudentsPage({ session }: { session: Session }) {
+const studentAgeRangeOptions: { value: StudentAgeRange | ''; label: string }[] = [
+  { value: '', label: '未設定' },
+  { value: 'UNDER_18', label: '未滿 18 歲' },
+  { value: 'AGE_18_24', label: '18–24 歲' },
+  { value: 'AGE_25_34', label: '25–34 歲' },
+  { value: 'AGE_35_44', label: '35–44 歲' },
+  { value: 'AGE_45_54', label: '45–54 歲' },
+  { value: 'AGE_55_64', label: '55–64 歲' },
+  { value: 'AGE_65_PLUS', label: '65 歲以上' }
+]
+
+function studentAgeRangeLabel(value: StudentAgeRange | null) {
+  return studentAgeRangeOptions.find((option) => option.value === (value ?? ''))?.label ?? '未設定'
+}
+
+export function StudentsPage({
+  session,
+  timeZone = 'Asia/Taipei'
+}: {
+  session: Session
+  timeZone?: string
+}) {
   const queryClient = useQueryClient()
   const [query, setQuery] = useState('')
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [createOpen, setCreateOpen] = useState(false)
-  const { students: studentsQuery, income: incomeQuery } = useStudentsRouteQuery(session)
+  const { students: studentsQuery } = useStudentsRouteQuery(session)
   const students = studentsQuery.data ?? []
-  const income = incomeQuery.data ?? []
+  const activeCount = students.filter((student) => student.active).length
+  const archivedCount = students.length - activeCount
   const routeState = selectCollectionRouteState({
     data: studentsQuery.data,
     isLoading: studentsQuery.isLoading,
@@ -90,19 +116,19 @@ export function StudentsPage({ session }: { session: Session }) {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜尋姓名或訓練目標"
+            placeholder="搜尋姓名或學生簡介"
           />
         </label>
         <div className="student-view-switch" role="group" aria-label="學生狀態">
           <button type="button" onClick={() => setView('active')} aria-pressed={view === 'active'}>
-            進行中
+            進行中 <span>{activeCount}</span>
           </button>
           <button
             type="button"
             onClick={() => setView('archived')}
             aria-pressed={view === 'archived'}
           >
-            已封存
+            已封存 <span>{archivedCount}</span>
           </button>
         </div>
         {studentsQuery.isFetching && (
@@ -117,21 +143,6 @@ export function StudentsPage({ session }: { session: Session }) {
           <button onClick={() => void studentsQuery.refetch()}>重試</button>
         </div>
       )}
-      {studentsQuery.isSuccess && (
-        <section className="income-summary" aria-label="累計實收">
-          <span>累計實收</span>
-          <div>
-            {income.length ? (
-              income.map((item) => (
-                <strong key={item.currency}>{formatMoney(item.amountMinor, item.currency)}</strong>
-              ))
-            ) : (
-              <strong>尚無紀錄</strong>
-            )}
-          </div>
-          <small>依購課時登錄的實收金額整理。</small>
-        </section>
-      )}
       {routeState === 'loading' ? (
         <StudentListSkeleton />
       ) : routeState === 'error' ? (
@@ -140,7 +151,7 @@ export function StudentsPage({ session }: { session: Session }) {
         <section className="empty-state">
           <UserRound />
           <h2>建立第一位學生</h2>
-          <p>先留下姓名與訓練目標，之後隨時補齊資料。</p>
+          <p>先留下姓名，學生簡介與備註之後可再補上。</p>
           <button className="text-button" onClick={() => setCreateOpen(true)}>
             建立學生 <ArrowRight />
           </button>
@@ -164,10 +175,15 @@ export function StudentsPage({ session }: { session: Session }) {
               index={index}
               accessToken={session.access_token}
               coachId={session.user.id}
+              timeZone={timeZone}
             />
           ))}
         </section>
       )}
+      <Link className="student-finance-entry" to="/students/finances">
+        <span>每月收支</span>
+        <ArrowRight aria-hidden="true" />
+      </Link>
       {createOpen && (
         <CreateStudentDialog
           accessToken={session.access_token}
@@ -191,12 +207,14 @@ function StudentCard({
   student,
   index,
   accessToken,
-  coachId
+  coachId,
+  timeZone
 }: {
   student: Student
   index: number
   accessToken: string
   coachId: string
+  timeZone: string
 }) {
   const queryClient = useQueryClient()
   const prefetch = () =>
@@ -214,24 +232,45 @@ function StudentCard({
       <span className="student-index">{String(index + 1).padStart(2, '0')}</span>
       <div className="large-avatar">{student.name.slice(-2)}</div>
       <h2>{student.name}</h2>
-      <p>{student.goal || '尚未設定訓練目標'}</p>
-      <div className="student-meta">
-        <span>{student.active ? '進行中' : '已封存'}</span>
-        {student.lessonSummary && (
-          <span className={student.lessonSummary.remaining <= 2 ? 'lesson-attention' : undefined}>
-            {student.lessonSummary.remaining < 0
-              ? `尚欠 ${Math.abs(student.lessonSummary.remaining)} 堂`
-              : student.lessonSummary.remaining === 0
-                ? '堂數不足'
-                : student.lessonSummary.remaining <= 2
-                  ? `堂數偏低 · 剩餘 ${student.lessonSummary.remaining}`
-                  : `剩餘 ${student.lessonSummary.remaining} / ${student.lessonSummary.purchased}`}
-          </span>
-        )}
+      <p>{student.goal || '尚未填寫學生簡介'}</p>
+      <div className="student-balance">
+        <div>
+          <span>剩餘堂數</span>
+          <strong
+            className={
+              student.lessonSummary && student.lessonSummary.remaining <= 2
+                ? 'lesson-attention'
+                : undefined
+            }
+          >
+            {student.lessonSummary?.remaining ?? '—'}
+            <small> / {student.lessonSummary?.purchased ?? '—'}</small>
+          </strong>
+        </div>
+        <div
+          className="student-balance-track"
+          role="img"
+          aria-label={`剩餘 ${student.lessonSummary?.remaining ?? '未知'} 堂，共購買 ${student.lessonSummary?.purchased ?? '未知'} 堂`}
+        >
+          <span
+            style={{
+              width: `${student.lessonSummary?.purchased ? Math.min(100, Math.max(0, (student.lessonSummary.remaining / student.lessonSummary.purchased) * 100)) : 0}%`
+            }}
+          />
+        </div>
       </div>
-      <span className="student-card-action">
-        查看學生資料 <ArrowRight />
-      </span>
+      <div className="roster-next-session">
+        <CalendarClock aria-hidden="true" />
+        <span>
+          下次課程
+          <strong>
+            {student.nextSessionAt
+              ? `${formatScheduleDateInTimeZone(student.nextSessionAt, timeZone)}・${formatScheduleTimeInTimeZone(student.nextSessionAt, timeZone)}`
+              : '尚未安排'}
+          </strong>
+        </span>
+        <ArrowRight aria-hidden="true" />
+      </div>
     </Link>
   )
 }
@@ -247,6 +286,11 @@ export function StudentDetailPage({
   const navigate = useNavigate()
   const [notice, setNotice] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [purchaseCreateOpen, setPurchaseCreateOpen] = useState(false)
+  const [purchaseDate, setPurchaseDate] = useState(() =>
+    new Date().toLocaleDateString('sv-SE', { timeZone })
+  )
+  const [profileEditing, setProfileEditing] = useState(false)
   const [purchaseToDelete, setPurchaseToDelete] = useState<{ id: string; version: number } | null>(
     null
   )
@@ -289,15 +333,23 @@ export function StudentDetailPage({
     event.preventDefault()
     setNotice('')
     const values = new FormData(event.currentTarget)
-    saveMutation.mutate({
-      name: String(values.get('name') || '').trim(),
-      phone: String(values.get('phone') || '').trim(),
-      goal: String(values.get('goal') || '').trim(),
-      privateNote: String(values.get('privateNote') || '').trim(),
-      active: values.get('active') === 'on',
-      lineLinked: detail.student.lineLinked,
-      version: detail.student.version
-    })
+    saveMutation.mutate(
+      {
+        name: String(values.get('name') || '').trim(),
+        phone: String(values.get('phone') || '').trim(),
+        goal: String(values.get('goal') || '').trim(),
+        privateNote: String(values.get('privateNote') || '').trim(),
+        ageRange: (String(values.get('ageRange') || '') || null) as StudentAgeRange | null,
+        active: detail.student.active,
+        lineLinked: detail.student.lineLinked,
+        version: detail.student.version
+      },
+      {
+        onSuccess: () => {
+          setProfileEditing(false)
+        }
+      }
+    )
   }
   const purchase = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -312,42 +364,159 @@ export function StudentDetailPage({
         currency: 'TWD',
         privateNote: String(values.get('purchaseNote') || '').trim()
       },
-      { onSuccess: () => form.reset() }
+      {
+        onSuccess: () => {
+          form.reset()
+          setPurchaseCreateOpen(false)
+        }
+      }
     )
+  }
+  const changeActive = (active: boolean) => {
+    setNotice('')
+    saveMutation.mutate({
+      name: detail.student.name,
+      phone: detail.student.phone,
+      goal: detail.student.goal,
+      privateNote: detail.student.privateNote,
+      ageRange: detail.student.ageRange,
+      active,
+      lineLinked: detail.student.lineLinked,
+      version: detail.student.version
+    })
   }
   const remove = async () => {
     deleteMutation.mutate(detail.student.version)
   }
   return (
-    <Page
-      className="student-detail-page"
-      title={detail.student.name}
-      eyebrow="學生資料"
-      actions={
-        <button className="secondary-button" onClick={() => navigate('/students')}>
-          <ArrowLeft />
-          返回學生
-        </button>
-      }
-    >
-      <section className="detail-page-grid">
-        <div className="lesson-balance">
-          <span>剩餘堂數</span>
-          <strong className={detail.lessonSummary.remaining <= 2 ? 'low-balance' : ''}>
-            {detail.lessonSummary.remaining}
-          </strong>
-          <small>
-            已購 {detail.lessonSummary.purchased} · 已完成 {detail.lessonSummary.completed}
-          </small>
+    <section className="page student-detail-page">
+      <Link className="student-detail-back" to="/students">
+        <ArrowLeft aria-hidden="true" />
+        回到學生列表
+      </Link>
+      <header className="student-detail-hero">
+        <div className="student-detail-heading">
+          <div className="student-detail-identity">
+            <div className="student-detail-avatar" aria-hidden="true">
+              {detail.student.name.slice(-2)}
+            </div>
+            <div className="student-detail-name">
+              <span className="eyebrow dark">
+                STUDENT / {detail.student.active ? 'ACTIVE' : 'ARCHIVED'}
+              </span>
+              <div className="student-detail-title-row">
+                <h1>{detail.student.name}</h1>
+                <div
+                  className={`student-hero-balance${detail.lessonSummary.remaining <= 2 ? ' is-low' : ''}`}
+                >
+                  <span>剩餘堂數</span>
+                  <strong>
+                    {detail.lessonSummary.remaining}
+                    <small> 堂</small>
+                  </strong>
+                </div>
+              </div>
+              <p>{detail.student.goal || '尚未填寫學生簡介'}</p>
+            </div>
+          </div>
         </div>
-        <p className="security-footnote">
-          {detail.lessonSummary.remaining <= 0
-            ? '堂數不足，請先與學生確認新的購課安排。'
-            : detail.lessonSummary.remaining <= 2
-              ? '堂數偏低，可以提早與學生確認補課。'
-              : '堂數依購課與已完成課堂自動計算。'}
-        </p>
-        <StudentCourseRecord schedule={detail.schedule} />
+        <section className="student-detail-profile" aria-label="學生個人資料">
+          <div className="student-detail-profile-heading">
+            <span>基本資料</span>
+            <button
+              type="button"
+              className="secondary-button compact"
+              onClick={() => {
+                saveMutation.reset()
+                setProfileEditing(true)
+              }}
+            >
+              <Pencil aria-hidden="true" />
+              編輯
+            </button>
+          </div>
+          <div className="student-detail-profile-facts">
+            <div className="student-detail-contact">
+              <span>電話</span>
+              <strong>{detail.student.phone || '—'}</strong>
+            </div>
+            <div className="student-detail-age-range">
+              <span>年齡區間</span>
+              <strong>{studentAgeRangeLabel(detail.student.ageRange)}</strong>
+            </div>
+            <div className="student-detail-note-field">
+              <span>備註</span>
+              <p className="student-detail-note">{detail.student.privateNote || '[ 無備註 ]'}</p>
+            </div>
+          </div>
+        </section>
+        {profileEditing && (
+          <SchedulingDialog
+            title="編輯基本資料"
+            variant="profile"
+            onClose={() => setProfileEditing(false)}
+          >
+            <form className="student-detail-profile-form" onSubmit={save}>
+              <label>
+                姓名
+                <input name="name" defaultValue={detail.student.name} required maxLength={120} />
+              </label>
+              <div className="field-row">
+                <label>
+                  電話
+                  <input name="phone" defaultValue={detail.student.phone} maxLength={40} />
+                </label>
+                <label>
+                  年齡區間
+                  <FormSelect
+                    label="年齡區間"
+                    name="ageRange"
+                    options={studentAgeRangeOptions}
+                    defaultValue={detail.student.ageRange ?? ''}
+                  />
+                </label>
+              </div>
+              <label>
+                學生簡介
+                <input
+                  name="goal"
+                  defaultValue={detail.student.goal}
+                  maxLength={1000}
+                  placeholder="例如：設計師、晨型人、喜歡跑步"
+                />
+              </label>
+              <label>
+                備註
+                <textarea
+                  name="privateNote"
+                  defaultValue={detail.student.privateNote}
+                  maxLength={4000}
+                />
+              </label>
+              {saveMutation.isError && (
+                <p className="form-error" role="alert">
+                  {saveMutation.error instanceof Error
+                    ? saveMutation.error.message
+                    : '暫時無法儲存，請重試。'}
+                </p>
+              )}
+              <footer>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setProfileEditing(false)}
+                >
+                  取消
+                </button>
+                <button className="primary-button compact" disabled={submitting}>
+                  {saveMutation.isPending ? '儲存中…' : '儲存資料'}
+                </button>
+              </footer>
+            </form>
+          </SchedulingDialog>
+        )}
+      </header>
+      <section className="detail-page-grid">
         <StudentSchedule
           session={session}
           studentId={studentId}
@@ -360,69 +529,27 @@ export function StudentDetailPage({
           studentId={studentId}
           studentName={detail.student.name}
         />
-        <form className="detail-section" onSubmit={save}>
-          <h2>基本資料</h2>
-          <label>
-            姓名
-            <input name="name" defaultValue={detail.student.name} required maxLength={120} />
-          </label>
-          <div className="field-row">
-            <label>
-              電話
-              <input name="phone" defaultValue={detail.student.phone} maxLength={40} />
-            </label>
-            <label>
-              訓練目標
-              <input name="goal" defaultValue={detail.student.goal} maxLength={1000} />
-            </label>
-          </div>
-          <label>
-            私人備註
-            <textarea
-              name="privateNote"
-              defaultValue={detail.student.privateNote}
-              maxLength={4000}
-            />
-          </label>
-          <label className="checkbox-label">
-            <input name="active" type="checkbox" defaultChecked={detail.student.active} />
-            進行中的學生
-          </label>
-          <button className="secondary-button" disabled={submitting}>
-            {saveMutation.isPending ? '儲存中…' : '儲存資料'}
-          </button>
-        </form>
-        <form className="detail-section purchase-form" onSubmit={purchase}>
-          <h2>登錄購課</h2>
-          <div className="field-row">
-            <label>
-              購買日期
-              <input
-                name="purchasedAt"
-                type="date"
-                defaultValue={new Date().toISOString().slice(0, 10)}
-                required
-              />
-            </label>
-            <label>
-              堂數
-              <input name="lessonCount" type="number" min="1" max="10000" required />
-            </label>
-            <label>
-              實收金額（TWD）
-              <input name="amountMinor" type="number" min="0" step="1" required />
-            </label>
-          </div>
-          <label>
-            教練備註
-            <textarea name="purchaseNote" maxLength={4000} placeholder="僅供自己查看" />
-          </label>
-          <button className="primary-button compact" disabled={submitting}>
-            {purchaseMutation.isPending ? '登錄中…' : '登錄購課'} <ArrowRight />
-          </button>
-        </form>
+        <StudentCourseRecord schedule={detail.schedule} />
         <section className="detail-section purchase-history">
-          <h2>購課紀錄</h2>
+          <div className="purchase-history-heading">
+            <div>
+              <span className="eyebrow dark">PURCHASE LEDGER</span>
+              <h2>購課紀錄</h2>
+            </div>
+            <button
+              type="button"
+              className="detail-add-button"
+              onClick={() => {
+                purchaseMutation.reset()
+                setPurchaseDate(new Date().toLocaleDateString('sv-SE', { timeZone }))
+                setPurchaseCreateOpen(true)
+              }}
+            >
+              <Plus aria-hidden="true" />
+              <span className="detail-add-button-full">新增購課</span>
+              <span className="detail-add-button-short">新增</span>
+            </button>
+          </div>
           {detail.purchases.length ? (
             detail.purchases.map((item) => (
               <div className="purchase-ledger-row" key={item.id}>
@@ -433,24 +560,28 @@ export function StudentDetailPage({
                 <span className="purchase-ledger-money">
                   {formatMoney(item.amountMinor, item.currency)}
                 </span>
+                <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
                 <span className="purchase-ledger-actions">
                   <button
                     type="button"
+                    className="purchase-ledger-icon"
+                    aria-label={`編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
                     onClick={() => {
                       setPurchaseConflict(null)
                       setPurchaseEditor(item)
                     }}
                     disabled={submitting}
                   >
-                    編輯
+                    <Pencil aria-hidden="true" />
                   </button>
                   <button
-                    className="danger-button"
+                    className="purchase-ledger-icon danger-button"
                     type="button"
+                    aria-label={`刪除 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
                     onClick={() => setPurchaseToDelete({ id: item.id, version: item.version })}
                     disabled={submitting}
                   >
-                    刪除
+                    <XCircle aria-hidden="true" />
                   </button>
                 </span>
               </div>
@@ -459,20 +590,81 @@ export function StudentDetailPage({
             <p>尚無購課紀錄。</p>
           )}
         </section>
-        <section className="detail-section student-delete">
-          <h2>刪除學生</h2>
-          <p>刪除後，相關購課與課堂資料無法復原。</p>
-          <button
-            className="text-button danger-button"
-            disabled={submitting}
-            onClick={() => setDeleteOpen(true)}
-          >
-            永久刪除
-          </button>
-        </section>
-        {notice && <p className="form-notice">{notice}</p>}
+        {notice && (
+          <p className="form-error" role="alert">
+            {notice}
+          </p>
+        )}
       </section>
-      {deleteOpen && (
+      <div className="student-detail-management" aria-label="學生狀態管理">
+        <div className="student-detail-hero-actions">
+          <button
+            type="button"
+            className="secondary-button compact"
+            disabled={submitting}
+            onClick={() => changeActive(!detail.student.active)}
+          >
+            {detail.student.active ? '封存' : '恢復'}
+          </button>
+          {!detail.student.active && (
+            <button
+              type="button"
+              className="text-button danger-button"
+              disabled={submitting}
+              onClick={() => setDeleteOpen(true)}
+            >
+              永久刪除
+            </button>
+          )}
+        </div>
+      </div>
+      {purchaseCreateOpen && (
+        <SchedulingDialog
+          title="新增購課紀錄"
+          onClose={() => setPurchaseCreateOpen(false)}
+          variant="profile"
+        >
+          <form className="purchase-create-form" onSubmit={purchase}>
+            <div className="field-row">
+              <SeriesDatePicker label="購買日期" value={purchaseDate} onChange={setPurchaseDate} />
+              <input type="hidden" name="purchasedAt" value={purchaseDate} />
+              <label>
+                堂數
+                <input name="lessonCount" type="number" min="1" max="10000" required />
+              </label>
+              <label>
+                實收金額（TWD）
+                <input name="amountMinor" type="number" min="0" step="1" required />
+              </label>
+            </div>
+            <label>
+              教練備註
+              <textarea name="purchaseNote" maxLength={4000} />
+            </label>
+            {purchaseMutation.isError && (
+              <p className="form-error" role="alert">
+                {purchaseMutation.error instanceof Error
+                  ? purchaseMutation.error.message
+                  : '暫時無法新增，請重試。'}
+              </p>
+            )}
+            <footer>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setPurchaseCreateOpen(false)}
+                disabled={submitting}
+              >
+                取消
+              </button>
+              <button className="primary-button compact" disabled={submitting}>
+                {purchaseMutation.isPending ? '登錄中…' : '新增購課紀錄'}
+              </button>
+            </footer>
+          </form>
+        </SchedulingDialog>
+      )}
+      {deleteOpen && !detail.student.active && (
         <Confirmation
           title={`永久刪除 ${detail.student.name}？`}
           text="這項操作無法復原。"
@@ -554,7 +746,7 @@ export function StudentDetailPage({
           }
         />
       )}
-    </Page>
+    </section>
   )
 }
 
@@ -568,23 +760,17 @@ function StudentCourseRecord({
 }) {
   if (!schedule) return null
   const records = selectStudentCourseRecords(schedule)
-  const completedCount = records.filter((item) => item.status === 'completed').length
   return (
     <section className="student-course-record" aria-labelledby="student-course-record-title">
       <header className="student-course-record-heading">
         <div>
           <span className="eyebrow">SESSION HISTORY</span>
           <h2 id="student-course-record-title">課程紀錄</h2>
-          <p>距今最近的未上課課堂，以及之前已完成的所有課堂。</p>
-        </div>
-        <div className="student-course-record-total" aria-label={`顯示 ${records.length} 堂課程`}>
-          <strong>{String(records.length).padStart(2, '0')}</strong>
-          <span>堂顯示中</span>
         </div>
       </header>
       {records.length ? (
         <div className="student-course-record-list">
-          {records.map((item, index) => {
+          {records.map((item) => {
             const isNext = item.status === 'scheduled'
             return (
               <Link
@@ -596,18 +782,12 @@ function StudentCourseRecord({
                   {isNext ? <CalendarClock /> : <Check />}
                 </span>
                 <span className="student-course-record-date">
-                  <small>
-                    {isNext
-                      ? 'NEXT SESSION'
-                      : String(index + (schedule.nearestFuture ? 0 : 1)).padStart(2, '0')}
-                  </small>
                   <strong>{formatScheduleDate(item.startsAt)}</strong>
                 </span>
                 <span className="student-course-record-meta">
-                  <strong>
-                    {formatScheduleTime(item.startsAt)}–{formatScheduleTime(item.endsAt)}
-                  </strong>
-                  <small>{item.location || '未設定地點'}</small>
+                  {formatScheduleTime(item.startsAt)}–{formatScheduleTime(item.endsAt)}
+                  <span aria-hidden="true">・</span>
+                  {item.location || '未設定地點'}
                 </span>
                 <span className="student-course-record-status">
                   {isNext ? '最近未上課' : '已完成'}
@@ -626,10 +806,6 @@ function StudentCourseRecord({
           </div>
         </div>
       )}
-      <footer className="student-course-record-footer">
-        <span>{completedCount} 堂已完成</span>
-        <span>{schedule.nearestFuture ? '已列出下一堂課' : '尚未安排下一堂課'}</span>
-      </footer>
     </section>
   )
 }
@@ -656,17 +832,21 @@ function StudentSchedule({
   })
   const mutations = useSchedulingMutations(session)
   const [editor, setEditor] = useState<ScheduleSeries | 'new' | null>(null)
+  const [seriesToDelete, setSeriesToDelete] = useState<ScheduleSeries | null>(null)
+  const [seriesDeleteError, setSeriesDeleteError] = useState('')
   const [seriesNotice, setSeriesNotice] = useState('')
   if (!schedule) return null
   return (
     <section className="detail-section student-schedule" aria-labelledby="student-schedule-title">
       <div className="student-schedule-heading">
         <div>
-          <span className="eyebrow dark">FIXED RHYTHM</span>
-          <h2 id="student-schedule-title">固定課程節奏</h2>
+          <span className="eyebrow dark">FIXED SCHEDULE</span>
+          <h2 id="student-schedule-title">固定課程時間</h2>
         </div>
-        <button className="text-button" onClick={() => setEditor('new')}>
-          建立固定課表
+        <button className="detail-add-button" onClick={() => setEditor('new')}>
+          <Plus aria-hidden="true" />
+          <span className="detail-add-button-full">新增時段</span>
+          <span className="detail-add-button-short">新增</span>
         </button>
       </div>
       <div className="student-series-list">
@@ -675,41 +855,55 @@ function StudentSchedule({
         ) : seriesQuery.isError ? (
           <p className="notice error">暫時無法讀取固定課表。</p>
         ) : seriesQuery.data?.length ? (
-          seriesQuery.data.map((series) => (
-            <button
-              key={series.id}
-              className="student-series-row"
-              onClick={() => setEditor(series)}
-            >
-              <strong>
-                {series.intervalWeeks === 1 ? '每週' : '隔週'} · {weekdayLabel(series.localWeekday)}{' '}
-                {series.localStartTime}
-              </strong>
-              <span>
-                {series.location} · {series.active ? '使用中' : '已停用'}
-              </span>
-            </button>
-          ))
+          seriesQuery.data.map((series) => {
+            const monthlyDay = Number(
+              isoToLocalDateTime(series.anchorStartsAt, timeZone).date.slice(-2)
+            )
+            const when =
+              series.intervalWeeks === 0
+                ? `每月 ${monthlyDay} 日`
+                : weekdayLabel(series.localWeekday)
+            return (
+              <div className="student-series-row" key={series.id}>
+                <span
+                  className={`student-series-day${series.active ? ' is-active' : ''}`}
+                  aria-hidden="true"
+                >
+                  {series.intervalWeeks === 0
+                    ? monthlyDay
+                    : weekdayLabel(series.localWeekday).slice(-1)}
+                </span>
+                <div className="student-series-copy">
+                  <strong>
+                    {when} · {series.localStartTime}
+                  </strong>
+                  <span>
+                    {series.intervalWeeks === 0
+                      ? '每月'
+                      : series.intervalWeeks === 1
+                        ? '每週'
+                        : '隔週'}{' '}
+                    · {series.durationMinutes} 分鐘
+                    {series.location ? ` · ${series.location}` : ''}
+                  </span>
+                </div>
+                <span className={`student-series-status${series.active ? ' is-active' : ''}`}>
+                  {series.active ? '使用中' : '已停用'}
+                </span>
+                <button
+                  type="button"
+                  className="student-series-edit"
+                  onClick={() => setEditor(series)}
+                  aria-label={`編輯${when} ${series.localStartTime}固定時段`}
+                >
+                  <Pencil aria-hidden="true" />
+                </button>
+              </div>
+            )
+          })
         ) : (
           <p>尚未建立固定課表。</p>
         )}
-        <button
-          className="secondary-button"
-          disabled={mutations.reconcileSeries.isPending}
-          onClick={() =>
-            mutations.reconcileSeries.mutate(studentId, {
-              onSuccess: (result) =>
-                setSeriesNotice(
-                  result.generatedIds.length
-                    ? `已補齊 ${result.generatedIds.length} 堂未來課程。`
-                    : '目前課程已足夠，沒有重複建立。'
-                ),
-              onError: () => setSeriesNotice('暫時無法補齊課程，請稍後重試。')
-            })
-          }
-        >
-          重新檢查未來課程
-        </button>
         {seriesNotice ? (
           <p className="form-notice" role="status">
             {seriesNotice}
@@ -721,10 +915,17 @@ function StudentSchedule({
           series={editor === 'new' ? null : editor}
           studentId={studentId}
           studentName={studentName}
-          nearestFuture={schedule.nearestFuture}
           timeZone={timeZone}
           pending={mutations.createSeries.isPending || mutations.updateSeries.isPending}
           onClose={() => setEditor(null)}
+          onDelete={
+            editor === 'new'
+              ? undefined
+              : () => {
+                  setSeriesDeleteError('')
+                  setSeriesToDelete(editor)
+                }
+          }
           onSave={(input) => {
             const callbacks = {
               onSuccess: (accepted: { generatedIds: string[] }) => {
@@ -750,8 +951,7 @@ function StudentSchedule({
                   input: {
                     ...input,
                     active: input.active ?? true,
-                    version: editor.version,
-                    effective_from_session_id: input.effective_from_session_id
+                    version: editor.version
                   }
                 },
                 callbacks
@@ -759,6 +959,45 @@ function StudentSchedule({
           }}
         />
       ) : null}
+      {seriesToDelete && (
+        <Confirmation
+          title="刪除固定課表？"
+          text={
+            seriesDeleteError || '刪除後不會再依此課表自動安排課堂；已建立的課堂和過去紀錄會保留。'
+          }
+          onCancel={() => {
+            setSeriesToDelete(null)
+            setSeriesDeleteError('')
+          }}
+          onConfirm={() =>
+            mutations.deleteSeries.mutate(
+              { seriesId: seriesToDelete.id, version: seriesToDelete.version },
+              {
+                onSuccess: () => {
+                  setSeriesToDelete(null)
+                  setSeriesDeleteError('')
+                  setEditor(null)
+                  setSeriesNotice('固定課表已刪除；已建立的課堂仍保留。')
+                },
+                onError: (error) => {
+                  if (error instanceof ApiError && error.status === 409 && error.details.current) {
+                    setSeriesToDelete(error.details.current as ScheduleSeries)
+                    setSeriesDeleteError(
+                      '固定課表已在其他裝置變更；請確認後再刪除。已建立的課堂和過去紀錄會保留。'
+                    )
+                  } else {
+                    setSeriesDeleteError('暫時無法刪除固定課表，請稍後重試。')
+                  }
+                }
+              }
+            )
+          }
+          disabled={mutations.deleteSeries.isPending}
+          confirmLabel="刪除固定課表"
+          confirmOnDelete
+          shortcutHint="也可以按 Delete 鍵確認。"
+        />
+      )}
     </section>
   )
 }
@@ -767,27 +1006,26 @@ function SeriesEditor({
   series,
   studentId,
   studentName,
-  nearestFuture,
   timeZone,
   pending,
   onClose,
+  onDelete,
   onSave
 }: {
   series: ScheduleSeries | null
   studentId: string
   studentName: string
-  nearestFuture: import('./api').CalendarSession | null
   timeZone: string
   pending: boolean
   onClose: () => void
+  onDelete?: () => void
   onSave: (input: {
     startsAt: string
     endsAt: string
     location: string
-    intervalWeeks: 1 | 2
+    intervalWeeks: 0 | 1 | 2
     autoScheduleHorizon: ScheduleSeries['autoScheduleHorizon']
     active?: boolean
-    effective_from_session_id?: string
   }) => void
 }) {
   const initial = series
@@ -797,12 +1035,13 @@ function SeriesEditor({
     [start, setStart] = useState(initial.time)
   const [duration, setDuration] = useState(series?.durationMinutes ?? 60),
     [location, setLocation] = useState(series?.location ?? '')
-  const [interval, setInterval] = useState<1 | 2>(series?.intervalWeeks ?? 1),
+  const [interval, setInterval] = useState<0 | 1 | 2>(series?.intervalWeeks ?? 1),
     [horizon, setHorizon] = useState<ScheduleSeries['autoScheduleHorizon']>(
-      series?.autoScheduleHorizon ?? 'NONE'
+      String(series?.autoScheduleHorizon) === 'MAX_WINDOW'
+        ? '2_WEEKS'
+        : (series?.autoScheduleHorizon ?? 'NONE')
     )
   const [active, setActive] = useState(series?.active ?? true),
-    [fromNext, setFromNext] = useState(false),
     [error, setError] = useState('')
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -818,9 +1057,7 @@ function SeriesEditor({
         location,
         intervalWeeks: interval,
         autoScheduleHorizon: horizon,
-        active,
-        effective_from_session_id:
-          fromNext && nearestFuture?.seriesId === series?.id ? nearestFuture?.id : undefined
+        active
       })
     } catch {
       setError('日期或時間無效。')
@@ -828,63 +1065,71 @@ function SeriesEditor({
   }
   return (
     <SchedulingDialog
+      variant="series"
       title={series ? '編輯固定課表' : `為 ${studentName} 建立固定課表`}
       description="固定課表只補齊未來需要的課程，不會改動過去紀錄。"
       onClose={onClose}
+      onDelete={onDelete}
     >
-      <form className="scheduling-form" onSubmit={submit}>
+      <form className="scheduling-form student-series-editor" onSubmit={submit}>
         <div className="field-row">
-          <label>
-            起始日期
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              required
-            />
-          </label>
+          <SeriesDatePicker value={date} onChange={setDate} />
           <label>
             開始時間
-            <input
-              type="time"
-              step="900"
+            <FormSelect
+              label="開始時間"
               value={start}
-              onChange={(event) => setStart(event.target.value)}
-              required
+              onChange={setStart}
+              options={[
+                ...(start < '06:00' || start > '23:00' ? [{ value: start, label: start }] : []),
+                ...Array.from({ length: 69 }, (_, index) => {
+                  const minutes = 360 + index * 15
+                  const time = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+                  return { value: time, label: time }
+                })
+              ]}
+            />
+          </label>
+        </div>
+        <div className="field-row">
+          <label>
+            課程長度
+            <FormSelect
+              label="課程長度"
+              value={String(duration)}
+              onChange={(value) => setDuration(Number(value))}
+              options={[
+                ...([30, 60, 90, 120, 150, 180].includes(duration)
+                  ? []
+                  : [{ value: String(duration), label: `${duration} 分鐘（目前）` }]),
+                ...[30, 60, 90, 120, 150, 180].map((minutes) => ({
+                  value: String(minutes),
+                  label: `${minutes} 分鐘`
+                }))
+              ]}
             />
           </label>
           <label>
-            分鐘
+            地點
             <input
-              type="number"
-              min="15"
-              max="480"
-              step="15"
-              value={duration}
-              onChange={(event) => setDuration(Number(event.target.value))}
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              maxLength={160}
               required
             />
           </label>
         </div>
-        <label>
-          地點
-          <input
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-            maxLength={160}
-            required
-          />
-        </label>
-        <div className="field-row">
+        <div className="student-series-settings">
           <label>
             頻率
             <FormSelect
               label="頻率"
               value={String(interval)}
-              onChange={(value) => setInterval(Number(value) as 1 | 2)}
+              onChange={(value) => setInterval(Number(value) as 0 | 1 | 2)}
               options={[
                 { value: '1', label: '每週' },
-                { value: '2', label: '隔週' }
+                { value: '2', label: '隔週' },
+                { value: '0', label: '每一個月' }
               ]}
             />
           </label>
@@ -897,36 +1142,36 @@ function SeriesEditor({
               options={[
                 { value: 'NONE', label: '只建立首堂' },
                 { value: '1_WEEK', label: '未來 1 週' },
-                { value: '2_WEEKS', label: '未來 2 週' },
-                { value: 'MAX_WINDOW', label: '依剩餘堂數補齊' }
+                { value: '2_WEEKS', label: '未來 2 週' }
               ]}
             />
           </label>
-        </div>
-        {series ? (
-          <>
-            <label className="checkbox-label">
+          <label className="student-series-toggle">
+            使用狀態
+            <span>
+              <strong>{active ? '使用中' : '已停用'}</strong>
               <input
                 type="checkbox"
+                role="switch"
+                aria-label="固定課表狀態"
                 checked={active}
                 onChange={(event) => setActive(event.target.checked)}
-              />{' '}
-              使用這個固定課表
-            </label>
-            {nearestFuture?.seriesId === series.id ? (
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={fromNext}
-                  onChange={(event) => setFromNext(event.target.checked)}
-                />{' '}
-                從下一堂課開始套用新時間
-              </label>
-            ) : null}
-          </>
-        ) : null}
+              />
+            </span>
+          </label>
+        </div>
         {error ? <p className="notice error">{error}</p> : null}
         <div className="scheduling-form-actions">
+          {onDelete && (
+            <button
+              type="button"
+              className="text-button danger-button student-series-delete"
+              onClick={onDelete}
+            >
+              <Trash2 aria-hidden="true" />
+              刪除固定課表
+            </button>
+          )}
           <button type="button" className="secondary-button" onClick={onClose}>
             取消
           </button>
@@ -947,6 +1192,22 @@ function formatScheduleDate(value: string | null) {
         new Date(value)
       )
     : '—'
+}
+function formatScheduleDateInTimeZone(value: string, timeZone: string) {
+  return new Intl.DateTimeFormat('zh-TW', {
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    timeZone
+  }).format(new Date(value))
+}
+function formatScheduleTimeInTimeZone(value: string, timeZone: string) {
+  return new Intl.DateTimeFormat('zh-TW', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone
+  }).format(new Date(value))
 }
 function formatScheduleTime(value: string | null) {
   return value
@@ -1432,7 +1693,8 @@ function CreateStudentDialog({
           name: String(values.get('name') || '').trim(),
           phone: String(values.get('phone') || '').trim(),
           goal: String(values.get('goal') || '').trim(),
-          privateNote: String(values.get('privateNote') || '').trim()
+          privateNote: String(values.get('privateNote') || '').trim(),
+          ageRange: (String(values.get('ageRange') || '') || null) as StudentAgeRange | null
         })
       )
     } catch (reason) {
@@ -1462,11 +1724,15 @@ function CreateStudentDialog({
             <input name="phone" maxLength={40} />
           </label>
           <label>
-            訓練目標
-            <input name="goal" maxLength={1000} />
+            年齡區間
+            <FormSelect label="年齡區間" name="ageRange" options={studentAgeRangeOptions} />
           </label>
           <label>
-            私人備註
+            學生簡介
+            <input name="goal" maxLength={1000} placeholder="例如：設計師、晨型人、喜歡跑步" />
+          </label>
+          <label>
+            備註
             <textarea name="privateNote" maxLength={4000} />
           </label>
           {error && <p className="form-error">{error}</p>}
@@ -1511,75 +1777,120 @@ function StudentPerformance({
 }) {
   const query = useStudentPerformance(session, studentId)
   const [selected, setSelected] = useState<PerformanceEntry | null>(null)
+  const [allOpen, setAllOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<'count' | 'latest'>('count')
+  const entries = [...(query.data ?? [])].sort(
+    (a, b) =>
+      (sortBy === 'count'
+        ? b.sessionCount - a.sessionCount || Date.parse(b.latestAt) - Date.parse(a.latestAt)
+        : Date.parse(b.latestAt) - Date.parse(a.latestAt) || b.sessionCount - a.sessionCount) ||
+      a.name.localeCompare(b.name, 'zh-TW')
+  )
+  const renderEntry = (entry: PerformanceEntry) => {
+    const bests = entry.recording
+      ? (entry.series ?? [])
+          .filter(
+            (series) => entry.recording!.metrics.includes(series.metric) && series.points.length
+          )
+          .map((series) => {
+            const best = (series.direction === 'lower' ? Math.min : Math.max)(
+              ...series.points.map((point) => point.value)
+            )
+            return `${Number(best.toFixed(3))}${series.unit ? ` ${series.unit}` : ''}${series.distanceMetres !== undefined ? ` (${series.distanceMetres} m)` : ''}`
+          })
+      : [`${entry.personal}${entry.metric === 'weight' ? ` ${entry.unit}` : ' 次'}`]
+    return (
+      <button
+        className="performance-row"
+        key={`${entry.definitionId}:${entry.recording?.type ?? entry.metric}`}
+        onClick={() => {
+          setAllOpen(false)
+          setSelected(entry)
+        }}
+      >
+        <span className="performance-row-mark" aria-hidden="true">
+          ↗
+        </span>
+        <span className="performance-row-identity">
+          <strong>{entry.name}</strong>
+          <small>
+            {entry.recording
+              ? recordingTypes[entry.recording.type].label
+              : metricLabels[entry.metric]}
+          </small>
+        </span>
+        <span className="performance-row-count">
+          <strong>{entry.sessionCount}</strong>
+          <small>筆記錄</small>
+        </span>
+        <span className="performance-row-latest">
+          <small>最近紀錄</small>
+          <strong>{new Date(entry.latestAt).toLocaleDateString('zh-TW')}</strong>
+        </span>
+        <span className="performance-row-best">
+          <small>個人最佳</small>
+          <strong>{bests.length ? bests.join(' / ') : '—'}</strong>
+        </span>
+        <ArrowRight aria-hidden="true" />
+      </button>
+    )
+  }
   return (
-    <section className="detail-section performance-directory">
-      <div className="section-heading">
-        <div>
-          <span>PERFORMANCE</span>
-          <h2>動作表現</h2>
-        </div>
-      </div>
+    <section className="performance-directory" aria-label="動作表現">
       {query.isLoading ? (
-        <p>載入表現中…</p>
+        <p>載入動作表現中…</p>
       ) : query.isError ? (
         <p>
           無法載入動作表現。 <button onClick={() => void query.refetch()}>重試</button>
         </p>
-      ) : query.data?.length ? (
-        <div className="performance-list">
-          {query.data.map((entry) => (
-            <button
-              key={`${entry.definitionId}:${entry.recording?.type ?? entry.metric}`}
-              onClick={() => setSelected(entry)}
-            >
-              <span>
-                <strong>{entry.name}</strong>
-                <small>
-                  {entry.sessionCount} 堂 ·{' '}
-                  {entry.recording
-                    ? recordingTypes[entry.recording.type].label
-                    : entry.metric === 'weight'
-                      ? '重量'
-                      : '次數'}
-                </small>
-              </span>
-              <span>
-                個人最佳{' '}
-                <strong>
-                  {entry.recording ? (
-                    entry.series
-                      ?.filter((s) => entry.recording!.metrics.includes(s.metric))
-                      .map((s) => {
-                        const best = s.points.length
-                          ? (s.direction === 'lower' ? Math.min : Math.max)(
-                              ...s.points.map((p) => p.value)
-                            )
-                          : null
-                        return (
-                          <span key={s.metric + ':' + (s.distanceMetres ?? '')}>
-                            {metricLabels[s.metric]}{' '}
-                            {s.distanceMetres !== undefined ? `(${s.distanceMetres} m) ` : ''}
-                            {best === null ? '—' : Number(best.toFixed(3))} {s.unit}{' '}
-                          </span>
-                        )
-                      })
-                  ) : (
-                    <>
-                      {entry.personal}
-                      {entry.metric === 'weight' ? ` ${entry.unit}` : ' 次'}
-                    </>
-                  )}
-                </strong>
-              </span>
-              <ArrowRight />
-            </button>
-          ))}
-        </div>
       ) : (
-        <div className="empty-state">
-          <strong>尚無紀錄</strong>
-          <p>記錄動作並標記已完成的組別後，表現會顯示在這裡。</p>
-        </div>
+        <button className="performance-portal" type="button" onClick={() => setAllOpen(true)}>
+          <span className="performance-portal-copy">
+            <small>PERFORMANCE / MOVEMENT RECORDS</small>
+            <strong>個人運動表現</strong>
+            <span>查看所有動作的紀錄與成長軌跡</span>
+          </span>
+          <span className="performance-portal-count">
+            <strong>{entries.length}</strong>
+            <small>項動作</small>
+          </span>
+          <ArrowRight aria-hidden="true" />
+        </button>
+      )}
+      {allOpen && (
+        <SchedulingDialog
+          variant="performance"
+          title={`${studentName}・個人運動表現`}
+          onClose={() => setAllOpen(false)}
+        >
+          <div className="performance-directory-intro">
+            <div>
+              <span className="eyebrow dark">MOVEMENT RECORDS</span>
+              <p>選擇動作查看完整紀錄與成長軌跡。</p>
+            </div>
+            <div className="performance-directory-controls">
+              <span>排序方式</span>
+              <FormSelect
+                label="排序方式"
+                value={sortBy}
+                onChange={(value) => setSortBy(value as 'count' | 'latest')}
+                options={[
+                  { value: 'count', label: '最多筆數' },
+                  { value: 'latest', label: '最新紀錄' }
+                ]}
+              />
+              <strong>{String(entries.length).padStart(2, '0')}</strong>
+            </div>
+          </div>
+          {entries.length ? (
+            <div className="performance-list performance-all-list">{entries.map(renderEntry)}</div>
+          ) : (
+            <div className="empty-state">
+              <strong>尚無動作紀錄</strong>
+              <p>完成課堂並記錄動作後，紀錄會顯示在這裡。</p>
+            </div>
+          )}
+        </SchedulingDialog>
       )}
       {selected?.recording ? (
         <MultiMetricTrend

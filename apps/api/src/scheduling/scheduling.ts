@@ -10,7 +10,7 @@ const localDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 const localTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 
 export const sessionStatusSchema = z.enum(['scheduled', 'completed', 'cancelled'])
-export const autoScheduleHorizonSchema = z.enum(['NONE', '1_WEEK', '2_WEEKS', 'MAX_WINDOW'])
+export const autoScheduleHorizonSchema = z.enum(['NONE', '1_WEEK', '2_WEEKS'])
 export type AutoScheduleHorizon = z.infer<typeof autoScheduleHorizonSchema>
 export const calendarRangeSchema = z.object({ start: localDate, end: localDate })
 const sessionTimingSchema = z.object({
@@ -62,7 +62,7 @@ const seriesSchema = z.object({
   startsAt: quarterHourInstant,
   endsAt: quarterHourInstant,
   location: z.string().trim().min(1).max(160),
-  intervalWeeks: z.union([z.literal(1), z.literal(2)]),
+  intervalWeeks: z.union([z.literal(0), z.literal(1), z.literal(2)]),
   autoScheduleHorizon: autoScheduleHorizonSchema.default('NONE'),
 })
 export const createSeriesSchema = seriesSchema.refine(
@@ -76,6 +76,7 @@ export const updateSeriesSchema = seriesSchema
     version,
   })
   .refine((value) => new Date(value.endsAt) > new Date(value.startsAt), { path: ['endsAt'] })
+export const deleteSeriesSchema = z.object({ confirmation: z.literal('DELETE'), version })
 export const deleteBlockSchema = z.object({
   confirmation: z.literal('DELETE'),
   version,
@@ -110,7 +111,7 @@ export type ScheduleSeries = {
   localWeekday: number
   localStartTime: string
   durationMinutes: number
-  intervalWeeks: 1 | 2
+  intervalWeeks: 0 | 1 | 2
   autoScheduleHorizon: z.infer<typeof autoScheduleHorizonSchema>
   location: string
   active: boolean

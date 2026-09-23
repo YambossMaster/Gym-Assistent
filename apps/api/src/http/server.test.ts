@@ -32,6 +32,37 @@ function createServer() {
 }
 
 describe('student HTTP interface', () => {
+  it('accepts an age range and allows clearing it without accepting arbitrary ages', async () => {
+    const server = createServer()
+    const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+    const created = await server.inject({
+      method: 'POST',
+      url: '/v1/students',
+      headers,
+      payload: { name: 'Alice', ageRange: 'AGE_25_34' },
+    })
+    expect(created.statusCode).toBe(201)
+    const student = created.json().student as { id: string; version: number; ageRange: string }
+    expect(student.ageRange).toBe('AGE_25_34')
+
+    const invalid = await server.inject({
+      method: 'PATCH',
+      url: `/v1/students/${student.id}`,
+      headers,
+      payload: { name: 'Alice', version: student.version, ageRange: '25' },
+    })
+    expect(invalid.statusCode).toBe(400)
+
+    const cleared = await server.inject({
+      method: 'PATCH',
+      url: `/v1/students/${student.id}`,
+      headers,
+      payload: { name: 'Alice', version: student.version, ageRange: null },
+    })
+    expect(cleared.statusCode).toBe(200)
+    expect(cleared.json().student.ageRange).toBeNull()
+  })
+
   it('reports an existing registration email through the approved public signup check', async () => {
     const repository = new MemoryStudentRepository()
     const server = buildServer({

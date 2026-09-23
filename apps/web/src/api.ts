@@ -4,18 +4,29 @@ import type {
   ProgressMetric,
   ProgressSeries
 } from './pages/training/recording'
+export type StudentAgeRange =
+  | 'UNDER_18'
+  | 'AGE_18_24'
+  | 'AGE_25_34'
+  | 'AGE_35_44'
+  | 'AGE_45_54'
+  | 'AGE_55_64'
+  | 'AGE_65_PLUS'
+
 export interface Student {
   id: string
   name: string
   phone: string
   goal: string
   privateNote: string
+  ageRange: StudentAgeRange | null
   active: boolean
   lineLinked: boolean
   version: number
   createdAt: string
   updatedAt: string
   lessonSummary?: { purchased: number; completed: number; remaining: number }
+  nextSessionAt?: string | null
 }
 
 export interface LessonPurchase {
@@ -116,8 +127,8 @@ export interface ScheduleSeries {
   localWeekday: number
   localStartTime: string
   durationMinutes: number
-  intervalWeeks: 1 | 2
-  autoScheduleHorizon: 'NONE' | '1_WEEK' | '2_WEEKS' | 'MAX_WINDOW'
+  intervalWeeks: 0 | 1 | 2
+  autoScheduleHorizon: 'NONE' | '1_WEEK' | '2_WEEKS'
   location: string
   active: boolean
   version: number
@@ -147,6 +158,7 @@ export interface CreateStudentInput {
   phone?: string
   goal?: string
   privateNote?: string
+  ageRange?: StudentAgeRange | null
 }
 
 export interface WorkspaceSettings {
@@ -753,7 +765,7 @@ export async function createScheduleSeries(
   accessToken: string,
   studentId: string,
   input: SessionTimingInput & {
-    intervalWeeks: 1 | 2
+    intervalWeeks: 0 | 1 | 2
     autoScheduleHorizon?: ScheduleSeries['autoScheduleHorizon']
   }
 ) {
@@ -772,7 +784,7 @@ export async function updateScheduleSeries(
   accessToken: string,
   seriesId: string,
   input: SessionTimingInput & {
-    intervalWeeks: 1 | 2
+    intervalWeeks: 0 | 1 | 2
     autoScheduleHorizon?: ScheduleSeries['autoScheduleHorizon']
     active: boolean
     effective_from_session_id?: string
@@ -789,6 +801,14 @@ export async function updateScheduleSeries(
     }
   )
   return response
+}
+
+export async function deleteScheduleSeries(accessToken: string, seriesId: string, version: number) {
+  return request<{ studentId: string }>(`/api/v1/schedule-series/${seriesId}`, accessToken, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ confirmation: 'DELETE', version })
+  })
 }
 
 export async function reconcileScheduleSeries(accessToken: string, studentId: string) {

@@ -33,11 +33,13 @@ interface StudentRow {
   phone: string
   goal: string
   private_note: string
+  age_range: Student['ageRange']
   active: boolean
   line_linked: boolean
   version: number
   created_at: Date
   updated_at: Date
+  next_session_starts_at?: Date | null
 }
 
 interface LessonPurchaseRow {
@@ -113,9 +115,16 @@ export class PostgresStudentRepository
 
   async listStudents(workspaceId: WorkspaceId) {
     const result = await this.#pool.query<StudentRow>(
-      `SELECT id, name, phone, goal, private_note, active, line_linked, version,
-              created_at, updated_at
-       FROM app_private.student
+      `SELECT id, name, phone, goal, private_note, age_range, active, line_linked, version,
+              created_at, updated_at,
+              (SELECT MIN(session.starts_at)
+               FROM app_private.course_session session
+               WHERE session.workspace_id = student.workspace_id
+                 AND session.student_id = student.id
+                 AND session.status = 'scheduled'
+                 AND NOT session.is_legacy
+                 AND session.starts_at > now()) AS next_session_starts_at
+       FROM app_private.student student
        WHERE workspace_id = $1
        ORDER BY created_at, id`,
       [workspaceId],
@@ -124,6 +133,7 @@ export class PostgresStudentRepository
       result.rows.map(async (student) => ({
         ...mapStudent(student),
         lessonSummary: (await this.lessonSummary(workspaceId, student.id))!,
+        nextSessionAt: student.next_session_starts_at?.toISOString() ?? null,
       })),
     )
   }
@@ -206,9 +216,10 @@ export class PostgresStudentRepository
     const result = await this.#pool.query<StudentRow>(
       `INSERT INTO app_private.student (
          id, workspace_id, name, phone, goal, private_note, active, line_linked,
+         age_range,
          created_at, updated_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
-       RETURNING id, name, phone, goal, private_note, active, line_linked, version,
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $9, $9)
+       RETURNING id, name, phone, goal, private_note, age_range, active, line_linked, version,
                  created_at, updated_at`,
       [
         input.id,
@@ -220,6 +231,7 @@ export class PostgresStudentRepository
         input.active,
         input.lineLinked,
         input.now,
+        input.ageRange,
       ],
     )
     const student = result.rows[0]
@@ -233,7 +245,7 @@ export class PostgresStudentRepository
   ): Promise<StudentDetail | null> {
     const [studentResult, purchasesResult, summary] = await Promise.all([
       this.#pool.query<StudentRow>(
-        `SELECT id, name, phone, goal, private_note, active, line_linked, version, created_at, updated_at
+        `SELECT id, name, phone, goal, private_note, age_range, active, line_linked, version, created_at, updated_at
          FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
         [workspaceId, studentId],
       ),
@@ -262,9 +274,10 @@ export class PostgresStudentRepository
     const result = await this.#pool.query<StudentRow>(
       `UPDATE app_private.student
        SET name = $3, phone = $4, goal = $5, private_note = $6, active = $7, line_linked = $8,
+           age_range = CASE WHEN $11 THEN $12 ELSE age_range END,
            version = version + 1, updated_at = $9
        WHERE workspace_id = $1 AND id = $2 AND version = $10
-       RETURNING id, name, phone, goal, private_note, active, line_linked, version, created_at, updated_at`,
+       RETURNING id, name, phone, goal, private_note, age_range, active, line_linked, version, created_at, updated_at`,
       [
         workspaceId,
         studentId,
@@ -276,6 +289,8 @@ export class PostgresStudentRepository
         input.lineLinked,
         input.now,
         input.expectedVersion,
+        input.ageRange !== undefined,
+        input.ageRange ?? null,
       ],
     )
     const student = result.rows[0]
@@ -442,6 +457,7 @@ function mapStudent(row: StudentRow): Student {
     phone: row.phone,
     goal: row.goal,
     privateNote: row.private_note,
+    ageRange: row.age_range,
     active: row.active,
     lineLinked: row.line_linked,
     version: row.version,

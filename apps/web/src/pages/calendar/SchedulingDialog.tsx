@@ -13,7 +13,7 @@ export function SchedulingDialog({
   description?: string
   onClose: () => void
   onDelete?: () => void
-  variant?: 'quick' | 'block' | 'session-edit'
+  variant?: 'quick' | 'block' | 'session-edit' | 'series' | 'performance' | 'profile'
   children: ReactNode
 }) {
   const onDeleteRef = useRef(onDelete)

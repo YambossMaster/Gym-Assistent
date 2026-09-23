@@ -52,7 +52,7 @@ export type NewScheduleSeries = {
   localWeekday: number
   localStartTime: string
   durationMinutes: number
-  intervalWeeks: 1 | 2
+  intervalWeeks: 0 | 1 | 2
   autoScheduleHorizon: import('./scheduling.js').AutoScheduleHorizon
   location: string
   now: Date
@@ -120,6 +120,11 @@ export interface SchedulingRepository {
       now: Date
     },
   ): Promise<ScheduleSeries | null>
+  deleteSeries(
+    workspaceId: SchedulingWorkspaceId,
+    seriesId: string,
+    expectedVersion: number,
+  ): Promise<{ studentId: string } | null>
   reconcileSeries(
     workspaceId: SchedulingWorkspaceId,
     studentId: string,

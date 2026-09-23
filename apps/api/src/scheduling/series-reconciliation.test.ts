@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { planSeriesReconciliation } from './series-reconciliation.js'
+import {
+  monthlyOccurrence,
+  planSeriesReconciliation,
+  rebaseSeriesAnchor,
+} from './series-reconciliation.js'
 import type { CourseSession, ScheduleSeries } from './scheduling.js'
 
 const series: ScheduleSeries = {
@@ -10,7 +14,7 @@ const series: ScheduleSeries = {
   localStartTime: '10:00',
   durationMinutes: 60,
   intervalWeeks: 1,
-  autoScheduleHorizon: 'MAX_WINDOW',
+  autoScheduleHorizon: '2_WEEKS',
   location: 'Studio',
   active: true,
   version: 1,
@@ -37,10 +41,7 @@ describe('planSeriesReconciliation', () => {
       sessions: [anchor],
       now: new Date('2026-09-13T00:00:00.000Z'),
     })
-    expect(plan.map((value) => value.toISOString())).toEqual([
-      '2026-09-21T02:00:00.000Z',
-      '2026-09-28T02:00:00.000Z',
-    ])
+    expect(plan.map((value) => value.toISOString())).toEqual(['2026-09-21T02:00:00.000Z'])
   })
   it('counts manual future Sessions, never backfills, and is idempotent after planned rows exist', () => {
     const manual = {
@@ -81,6 +82,38 @@ describe('planSeriesReconciliation', () => {
         now: new Date('2026-09-13T00:00:00.000Z'),
       }),
     ).toEqual([])
+  })
+  it('keeps the original day of month, clamping short months without drifting', () => {
+    const monthly = '2026-01-31T02:00:00.000Z'
+    expect(monthlyOccurrence(monthly, 1, 'Asia/Taipei').toISOString()).toBe(
+      '2026-02-28T02:00:00.000Z',
+    )
+    expect(monthlyOccurrence(monthly, 2, 'Asia/Taipei').toISOString()).toBe(
+      '2026-03-31T02:00:00.000Z',
+    )
+    const monthlySeries = {
+      ...series,
+      anchorStartsAt: monthly,
+      intervalWeeks: 0 as const,
+    }
+    const plan = planSeriesReconciliation({
+      series: monthlySeries,
+      remainingLessons: 4,
+      sessions: [{ ...anchor, startsAt: monthly, endsAt: '2026-01-31T03:00:00.000Z' }],
+      now: new Date('2026-02-17T00:00:00.000Z'),
+      timeZone: 'Asia/Taipei',
+    })
+    expect(plan.map((value) => value.toISOString())).toEqual(['2026-02-28T02:00:00.000Z'])
+  })
+  it('keeps the next future date when an edit leaves the historical start date unchanged', () => {
+    expect(
+      rebaseSeriesAnchor(
+        new Date('2026-06-27T03:00:00.000Z'),
+        '2026-06-27T02:00:00.000Z',
+        new Date('2026-10-03T02:00:00.000Z'),
+        'Asia/Taipei',
+      ).toISOString(),
+    ).toBe('2026-10-03T03:00:00.000Z')
   })
   it.each([
     ['NONE', 0],

@@ -1,15 +1,28 @@
 import { z } from 'zod'
 
+export const studentAgeRangeSchema = z.enum([
+  'UNDER_18',
+  'AGE_18_24',
+  'AGE_25_34',
+  'AGE_35_44',
+  'AGE_45_54',
+  'AGE_55_64',
+  'AGE_65_PLUS',
+])
+export type StudentAgeRange = z.infer<typeof studentAgeRangeSchema>
+
 export const createStudentSchema = z.object({
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40).default(''),
   goal: z.string().trim().max(1000).default(''),
   privateNote: z.string().trim().max(4000).default(''),
+  ageRange: studentAgeRangeSchema.nullable().default(null),
   active: z.boolean().default(true),
   lineLinked: z.boolean().default(false),
 })
 
 export const updateStudentSchema = createStudentSchema.extend({
+  ageRange: studentAgeRangeSchema.nullable().optional(),
   version: z.number().int().positive(),
 })
 
@@ -35,6 +48,7 @@ export interface Student {
   phone: string
   goal: string
   privateNote: string
+  ageRange: StudentAgeRange | null
   active: boolean
   lineLinked: boolean
   version: number
@@ -73,4 +87,5 @@ export interface StudentDetail {
 
 export interface StudentRosterItem extends Student {
   lessonSummary: LessonSummary
+  nextSessionAt: string | null
 }

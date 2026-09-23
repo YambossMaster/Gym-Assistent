@@ -30,11 +30,14 @@ export function useStudentsRouteQuery(session: Session) {
     queryKey: queryKeys.students(session.user.id),
     queryFn: () => listStudents(session.access_token)
   })
-  const income = useQuery({
+  return { students }
+}
+
+export function useIncomeRouteQuery(session: Session) {
+  return useQuery({
     queryKey: queryKeys.income(session.user.id),
     queryFn: () => getLessonPurchaseIncome(session.access_token)
   })
-  return { students, income }
 }
 
 export function useStudentDetailRouteQuery(session: Session, studentId: string) {
@@ -66,7 +69,7 @@ export function useStudentRouteMutations({
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
       invalidateTodayRoute(queryClient, session.user.id)
-      onNotice('學生資料已儲存。')
+      onNotice('')
     },
     onError: (error) => onNotice(readRouteError(error))
   })
@@ -75,7 +78,7 @@ export function useStudentRouteMutations({
       createLessonPurchase(session.access_token, studentId, input),
     onSuccess: () => {
       invalidateStudentPurchaseQueries(queryClient, session.user.id, studentId)
-      onNotice('購課已登錄。')
+      onNotice('')
     },
     onError: (error) => onNotice(readRouteError(error))
   })
@@ -99,7 +102,7 @@ export function useStudentRouteMutations({
     }) => updateLessonPurchase(session.access_token, studentId, purchaseId, input),
     onSuccess: () => {
       invalidateStudentPurchaseQueries(queryClient, session.user.id, studentId)
-      onNotice('購課已更新。')
+      onNotice('')
     },
     onError: (error) => onNotice(readRouteError(error))
   })
@@ -108,7 +111,7 @@ export function useStudentRouteMutations({
       deleteLessonPurchase(session.access_token, studentId, purchaseId, version),
     onSuccess: () => {
       invalidateStudentPurchaseQueries(queryClient, session.user.id, studentId)
-      onNotice('購課已刪除。')
+      onNotice('')
     },
     onError: (error) => onNotice(readRouteError(error))
   })

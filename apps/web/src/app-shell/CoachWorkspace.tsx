@@ -6,6 +6,7 @@ import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { getWorkspaceSettings } from '../api'
 import { ExercisesPage } from '../pages/exercises/ExercisesPage'
 import { StudentDetailPage, StudentsPage } from '../pages/students/StudentsPage'
+import { IncomePage } from '../pages/students/IncomePage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
 import { CalendarPage } from '../pages/calendar/CalendarPage'
@@ -85,7 +86,11 @@ export function CoachWorkspace({ session }: { session: Session }) {
             path="/calendar"
             element={<CalendarPage session={session} timeZone={timeZone} />}
           />
-          <Route path="/students" element={<StudentsPage session={session} />} />
+          <Route
+            path="/students"
+            element={<StudentsPage session={session} timeZone={timeZone} />}
+          />
+          <Route path="/students/finances" element={<IncomePage session={session} />} />
           <Route
             path="/students/:studentId"
             element={<StudentDetailPage session={session} timeZone={timeZone} />}

@@ -5,6 +5,7 @@ import {
   createBlockSchema,
   createSessionSchema,
   createSeriesSchema,
+  deleteSeriesSchema,
   deleteBlockSchema,
   deleteSessionSchema,
   replaceAvailabilitySchema,
@@ -273,6 +274,11 @@ export class SchedulingModule {
       this.now(),
     )
     return { series, generatedIds: generated.map((session) => session.id) }
+  }
+  async deleteSeries(identity: AuthenticatedIdentity, seriesId: string, raw: unknown) {
+    const input = deleteSeriesSchema.parse(raw)
+    const workspaceId = await this.repository.resolveWorkspace(identity)
+    return this.repository.deleteSeries(workspaceId, seriesId, input.version)
   }
   async reconcileSeries(identity: AuthenticatedIdentity, studentId: string) {
     const workspaceId = await this.repository.resolveWorkspace(identity)

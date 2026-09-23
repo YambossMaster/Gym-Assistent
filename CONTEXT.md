@@ -18,6 +18,15 @@ _Avoid_: Team, organization
 A person coached by the Coach who does not have a Gym Assistant account.
 _Avoid_: User, member, customer account
 
+**Student Introduction**:
+A short Coach-written cue for recognizing a Student, such as an occupation, trait, or label. It may
+mention a training aim, but is not limited to one.
+_Avoid_: Training Goal
+
+**Student Note**:
+Private Coach-written context about a Student, including training aims or details that do not belong
+in the brief introduction.
+
 **Lesson Purchase**:
 A recorded grant of lesson entitlement to a Student.
 _Avoid_: Balance adjustment, payment
