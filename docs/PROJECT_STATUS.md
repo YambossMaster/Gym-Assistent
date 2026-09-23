@@ -11,8 +11,8 @@
 | Current package    | **M7.5 Student introduction wording correction**                                               |
 | Package state      | **Desktop/390×844 review passed; Stage 1 review continues**                                    |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                  |
-| Branch baseline    | `09f9eaf` reached `origin/main`; CI run `35840171334` passed both jobs                         |
-| Worktree           | Student, Series, monthly migration, and Training picker edits local; `output/` stays local     |
+| Branch baseline    | `c70a253` reached `origin/main`; CI run `35906283925` passed both jobs                         |
+| Worktree           | Stage 1 checkpoint delivered; `output/` stays local                                            |
 | Linked database    | Development only; migrations through `20260923172115` applied and linked dry-run is up-to-date |
 | Production         | Not configured; no real customer data                                                          |
 
@@ -334,9 +334,9 @@ local pass or successful push is not a remote CI completion claim.
 
 - **Scope:** Product Owner requested full CI and delivery of the current M7.5 Stage 1 corrections to `main`; Stage 1 review remains open.
 - **Outcome:** the Student, Series, monthly scheduling, and Training picker changes are ready as one checkpoint. Keep `output/` local and outside the commit.
-- **Verification:** clean `npm ci` passed with zero vulnerabilities. Root `npm run check` passed formatting, API typecheck and 23 files/90 tests, and Web typecheck and 40 files/174 tests. Root API/Web production builds passed with only the existing Vite >500-kB chunk advisory. Linked migration dry-run is up to date; `app_private` lint found no schema errors. Linked advisors returned the accepted development leaked-password warning and existing capability-link permissive-policy performance warnings, with no errors. `git diff --check` passed. Earlier Stage 1 logs contain the focused authenticated desktop and 390×844 browser evidence for the changed surfaces.
-- **Known issue:** remote commit/ref and exact-SHA Actions remain to be verified.
-- **Next:** commit and push this checkpoint to `main`, confirm Verify and migration-dry-run for the delivered SHA, then resume Stage 1 Product Owner review.
+- **Verification:** clean `npm ci` passed with zero vulnerabilities. Root `npm run check` passed formatting, API typecheck and 23 files/90 tests, and Web typecheck and 40 files/174 tests. Root API/Web production builds passed with only the existing Vite >500-kB chunk advisory. Linked migration dry-run is up to date; `app_private` lint found no schema errors. Linked advisors returned the accepted development leaked-password warning and existing capability-link permissive-policy performance warnings, with no errors. `git diff --check` passed. Earlier Stage 1 logs contain the focused authenticated desktop and 390×844 browser evidence for the changed surfaces. Commit `c70a253` reached `origin/main`; exact-SHA Actions run `35906283925` completed with Verify and migration-dry-run both successful.
+- **Known issue:** Stage 1 Product Owner review continues; this checkpoint does not complete M7.5.
+- **Next:** resume M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product Owner direction; do not begin M8.
 
 ### 2026-09-24 — LOG-185 — Student introduction wording correction
 
