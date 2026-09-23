@@ -187,6 +187,89 @@ afterEach(async () => {
   Reflect.deleteProperty(document.documentElement, 'scrollTop')
 })
 
+it('shows only the destination Session draft when navigating between Training records', async () => {
+  const destination = {
+    ...training,
+    session: { ...training.session, id: 'destination-session' },
+    record: {
+      ...training.record,
+      id: 'destination-record',
+      exercises: [
+        {
+          ...training.record.exercises[0],
+          id: 'destination-exercise',
+          definitionName: '目的課堂動作'
+        }
+      ]
+    }
+  } as SessionTraining
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: destination, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  expect(host.querySelector('[data-exercise-id="destination-exercise"]')).not.toBeNull()
+  expect(host.querySelector('[data-exercise-id="one"]')).toBeNull()
+  expect(calls.save).not.toHaveBeenCalled()
+})
+
+it('keeps a pending edit bound to its source Session during navigation', async () => {
+  const addSetButton = [
+    ...host.querySelectorAll<HTMLButtonElement>('[data-exercise-id="one"] button')
+  ].find((button) => button.textContent?.includes('新增一組'))!
+  await act(async () => addSetButton.click())
+  const destination = {
+    ...training,
+    session: { ...training.session, id: 'destination-session' },
+    record: {
+      ...training.record,
+      id: 'destination-record',
+      exercises: [
+        {
+          ...training.record.exercises[0],
+          id: 'destination-exercise',
+          definitionName: '目的課堂動作'
+        }
+      ]
+    }
+  } as SessionTraining
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: destination, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  await act(async () => Promise.resolve())
+  expect(calls.save).toHaveBeenCalled()
+  expect(calls.save.mock.calls.every(([request]) => request.sessionId === 'gesture-session')).toBe(
+    true
+  )
+  expect(host.querySelector('[data-exercise-id="destination-exercise"]')).not.toBeNull()
+})
+
 describe('Training editor pointer lifecycle', () => {
   function scrollGeometry(documentTop = 200, clampOnShrink = false) {
     let scroll = 0

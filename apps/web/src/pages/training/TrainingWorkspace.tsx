@@ -50,7 +50,7 @@ import {
   type ReactNode
 } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ApiError,
   type ExerciseDefinition,
@@ -133,6 +133,7 @@ export function TrainingWorkspace({
     )
   return (
     <ExclusiveTrainingEditor
+      key={`${session.user.id}:${query.data.session.id}`}
       session={session}
       initial={query.data}
       onRefresh={async () => (await query.refetch()).data}
@@ -249,6 +250,9 @@ function TrainingEditor({
   sessionNotice?: string
   timeZone: string
 }) {
+  const navigate = useNavigate()
+  const routeLocation = useLocation()
+  const focusedDefinitionId = new URLSearchParams(routeLocation.search).get('exercise')
   const mutations = useTrainingMutations(session),
     scheduling = useSchedulingMutations(session)
   const [draft, setDraft] = useState(() => toDraft(initial)),
@@ -1010,6 +1014,24 @@ function TrainingEditor({
   )
   const totalSets = draft.exercises.reduce((count, exercise) => count + exercise.sets.length, 0)
   const trend = initial.exerciseSummaries.find((summary) => summary.occurrenceId === trendId)
+  const focusedExerciseId = focusedDefinitionId
+    ? draft.exercises.find((exercise) => exercise.definitionId === focusedDefinitionId)?.id
+    : undefined
+  useEffect(() => {
+    if (!focusedExerciseId) return
+    const frame = requestAnimationFrame(() => {
+      const target = Array.from(document.querySelectorAll<HTMLElement>('[data-exercise-id]')).find(
+        (element) => element.dataset.exerciseId === focusedExerciseId
+      )
+      target?.scrollIntoView({ block: 'center', behavior: 'instant' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [focusedExerciseId, initial.session.id])
+  const openHistory = (historySessionId: string) => {
+    if (!trend?.definitionId) return
+    setTrendId(null)
+    navigate(`/sessions/${historySessionId}?exercise=${encodeURIComponent(trend.definitionId)}`)
+  }
   return (
     <section className="session-workspace">
       <header className="session-topbar">
@@ -1189,6 +1211,7 @@ function TrainingEditor({
                         onDragPointerDown={(event) => beginDrag(exercise.id, event)}
                         onDragKeyDown={(event) => handleDragKey(exercise.id, index, event)}
                         onShowTrend={() => setTrendId(exercise.id)}
+                        focused={exercise.id === focusedExerciseId}
                         onChange={(next) =>
                           change({
                             ...draft,
@@ -1302,6 +1325,7 @@ function TrainingEditor({
                 : undefined
           }
           onClose={() => setTrendId(null)}
+          onOpenHistory={openHistory}
         />
       ) : trend ? (
         <PerformanceTrend
@@ -1323,6 +1347,7 @@ function TrainingEditor({
           points={trend.history}
           metric={trend.metric}
           onClose={() => setTrendId(null)}
+          onOpenHistory={openHistory}
         />
       ) : null}
     </section>
@@ -1363,6 +1388,7 @@ function ExerciseCard({
   index,
   dragging,
   dragPressed,
+  focused,
   onDragPointerDown,
   onDragKeyDown,
   onShowTrend,
@@ -1377,6 +1403,7 @@ function ExerciseCard({
   index: number
   dragging: boolean
   dragPressed: boolean
+  focused: boolean
   onDragPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void
   onDragKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
   onShowTrend: () => void
@@ -1392,6 +1419,10 @@ function ExerciseCard({
     progressRecording && summary?.series
       ? summary.series.find((series) => series.metric === progressRecording.metrics[0])
       : undefined
+  const summaryMetricPrefix =
+    primarySummary && primarySummary.metric !== 'weight'
+      ? `${metricLabels[primarySummary.metric]}${primarySummary.distanceMetres !== undefined ? `（${primarySummary.distanceMetres} m）` : ''}：`
+      : ''
   const addSet = () => {
     const existingSets = exercise.sets.map((set) => normalizeSet(set, recording, preference))
     const previous = existingSets.at(-1)
@@ -1418,6 +1449,7 @@ function ExerciseCard({
     <article
       className={`training-exercise-card recording-v2${dragging ? ' is-dragging' : ''}${dragPressed ? ' is-drag-pending' : ''}`}
       data-exercise-id={exercise.id}
+      data-focused-exercise={focused ? 'true' : undefined}
       role="listitem"
     >
       <header>
@@ -1440,28 +1472,24 @@ function ExerciseCard({
           </small>
         </div>
         {summary ? (
-          <div className="exercise-performance-inline">
+          <div
+            className={`exercise-performance-inline${primarySummary?.metric === 'weight' ? ' is-weight-summary' : ''}`}
+          >
             {primarySummary ? (
               <>
                 <div>
                   <span>本次 / 上次 最佳</span>
                   <strong>
-                    {metricLabels[primarySummary.metric]}
-                    {primarySummary.distanceMetres !== undefined
-                      ? `（${primarySummary.distanceMetres} m）`
-                      : ''}
-                    ：{formatSeriesValue(primarySummary.current, primarySummary.unit)} /{' '}
+                    {summaryMetricPrefix}
+                    {formatSeriesValue(primarySummary.current, primarySummary.unit)} /{' '}
                     {formatSeriesValue(primarySummary.previous, primarySummary.unit)}
                   </strong>
                 </div>
                 <div>
                   <span>個人最佳</span>
                   <strong>
-                    {metricLabels[primarySummary.metric]}
-                    {primarySummary.distanceMetres !== undefined
-                      ? `（${primarySummary.distanceMetres} m）`
-                      : ''}
-                    ：{formatSeriesValue(primarySummary.personal, primarySummary.unit)}
+                    {summaryMetricPrefix}
+                    {formatSeriesValue(primarySummary.personal, primarySummary.unit)}
                   </strong>
                 </div>
               </>

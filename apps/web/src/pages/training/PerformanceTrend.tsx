@@ -32,6 +32,7 @@ export function PerformanceTrend({
   error = false,
   refreshing = false,
   updateNotice,
+  onOpenHistory,
   onRetry,
   onClose
 }: {
@@ -43,6 +44,7 @@ export function PerformanceTrend({
   error?: boolean
   refreshing?: boolean
   updateNotice?: string
+  onOpenHistory?: (sessionId: string) => void
   onRetry?: () => void
   onClose: () => void
 }) {
@@ -304,15 +306,23 @@ export function PerformanceTrend({
                 .reverse()
                 .map((point, index) => (
                   <li key={`${point.sessionId}-${point.startsAt}`}>
-                    <span className="trajectory-index">
-                      {String(selected.length - index).padStart(2, '0')}
-                    </span>
-                    <time dateTime={point.startsAt}>{date(point.startsAt)}</time>
-                    {index === 0 && <span className="trajectory-latest">最新</span>}
-                    <strong>
-                      {trendNumber(point.value)}{' '}
-                      <small>{metric === 'reps' ? '次' : point.unit}</small>
-                    </strong>
+                    <button
+                      type="button"
+                      className="trajectory-history-link"
+                      onClick={() => onOpenHistory?.(point.sessionId)}
+                      disabled={!onOpenHistory}
+                      aria-label={`前往 ${date(point.startsAt)} 的${name}訓練紀錄`}
+                    >
+                      <span className="trajectory-index">
+                        {String(selected.length - index).padStart(2, '0')}
+                      </span>
+                      <time dateTime={point.startsAt}>{date(point.startsAt)}</time>
+                      {index === 0 && <span className="trajectory-latest">最新</span>}
+                      <strong>
+                        {trendNumber(point.value)}{' '}
+                        <small>{metric === 'reps' ? '次' : point.unit}</small>
+                      </strong>
+                    </button>
                   </li>
                 ))}
             </ol>

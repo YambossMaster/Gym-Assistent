@@ -26,6 +26,7 @@ export function MultiMetricTrend({
   studentName,
   series,
   updateNotice,
+  onOpenHistory,
   onClose
 }: {
   session: Session
@@ -35,6 +36,7 @@ export function MultiMetricTrend({
   studentName: string
   series: ProgressSeries[]
   updateNotice?: string
+  onOpenHistory?: (sessionId: string) => void
   onClose: () => void
 }) {
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, { focusDialog: true })
@@ -116,8 +118,8 @@ export function MultiMetricTrend({
   ]
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.sessionId.localeCompare(b.sessionId))
     .slice(-range)
-  const left = 105,
-    right = width - 34,
+  const left = mobile ? 52 : 105,
+    right = width - (mobile ? 24 : 34),
     top = 34,
     bottom = 246
   const x = (index: number) =>
@@ -279,7 +281,7 @@ export function MultiMetricTrend({
                       return (
                         <text
                           key={i}
-                          x={left - 29}
+                          x={left - (mobile ? 34 : 29)}
                           y={primaryY(value) + 4}
                           textAnchor="end"
                           fill={primaryColor}
@@ -396,19 +398,27 @@ export function MultiMetricTrend({
             .reverse()
             .map((p) => (
               <li key={p.sessionId}>
-                <time dateTime={p.startsAt}>{date(p.startsAt)}</time>
-                <div>
-                  {[primaryMetric].map((metric) => {
-                    const s = shown.find((s) => s.metric === metric),
-                      point = s?.points.find((row) => row.sessionId === p.sessionId)
-                    return (
-                      <strong key={metric}>
-                        <small>{metricLabels[metric]}</small>{' '}
-                        {point ? trendNumber(point.value) : '—'} <small>{s?.unit}</small>
-                      </strong>
-                    )
-                  })}
-                </div>
+                <button
+                  type="button"
+                  className="trajectory-history-link"
+                  onClick={() => onOpenHistory?.(p.sessionId)}
+                  disabled={!onOpenHistory}
+                  aria-label={`前往 ${date(p.startsAt)} 的${name}訓練紀錄`}
+                >
+                  <time dateTime={p.startsAt}>{date(p.startsAt)}</time>
+                  <div>
+                    {[primaryMetric].map((metric) => {
+                      const s = shown.find((s) => s.metric === metric),
+                        point = s?.points.find((row) => row.sessionId === p.sessionId)
+                      return (
+                        <strong key={metric}>
+                          <small>{metricLabels[metric]}</small>{' '}
+                          {point ? trendNumber(point.value) : '—'} <small>{s?.unit}</small>
+                        </strong>
+                      )
+                    })}
+                  </div>
+                </button>
               </li>
             ))}
         </ol>
