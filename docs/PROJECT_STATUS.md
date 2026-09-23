@@ -5,23 +5,22 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------------------------ |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                             |
-| Current package    | **M7.5 Stage 1 — Product Owner review and iterative correction**                                       |
-| Package state      | **Training and trajectory corrections passed the local CI gate; Main delivery in progress**            |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                          |
-| Branch baseline    | `2426aa3` is the current `origin/main` baseline; the next delivery is pending                          |
-| Worktree           | Mobile layout/history navigation and draft-isolation changes ready for delivery; `output/` stays local |
-| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply    |
-| Production         | Not configured; no real customer data                                                                  |
+| Field              | Current value                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
+| Current package    | **M7.5 Stage 2 — Contract preparation**                                                             |
+| Package state      | **Training and trajectory Stage 1 checkpoint delivered; Stage 2 Contract is next**                  |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
+| Branch baseline    | `09f9eaf` reached `origin/main`; CI run `35840171334` passed both jobs                              |
+| Worktree           | Training checkpoint committed; untracked `output/` screenshots stay local                           |
+| Linked database    | Development only; migrations through `20260921181944` applied; linked dry-run verified before apply |
+| Production         | Not configured; no real customer data                                                               |
 
 ## Next handoff
 
-Finish this explicitly requested Stage 1 Main checkpoint by confirming the exact pushed SHA's Verify
-and migration-dry-run Actions jobs. Then begin the M7.5 Stage 2 Contract: freeze the deferred backlog,
-route-by-route regression matrix, and release-readiness evidence before implementation. Keep Calendar
-touch/Block physical-phone acceptance in scope; do not begin M8.
+Begin the M7.5 Stage 2 Contract: freeze the deferred backlog, route-by-route regression matrix,
+and release-readiness evidence before implementation. Keep Calendar touch/Block physical-phone
+acceptance in scope; do not begin M8.
 
 The Product Owner accepted retaining Training drag-start neighbour anchoring on 2026-09-23. If the Product Owner asks
 to remove only the third experiment, set `ENABLE_DRAG_START_ANCHOR = false` in
@@ -336,17 +335,18 @@ local pass or successful push is not a remote CI completion claim.
 - **Scope:** run the Product Owner-requested full local CI gate for the current mobile Training,
   trajectory, history-navigation, draft-isolation, and summary corrections before Main delivery.
 - **Outcome:** the existing dev Web process was temporarily stopped so `npm ci` could replace its
-  locked native dependency. The source and Status changes are ready for a bounded Main checkpoint;
-  untracked `output/` screenshots remain local evidence.
+  locked native dependency. It and the API were restored with 200 responses from Web and `/health`.
+  The source checkpoint `09f9eaf` reached `origin/main`; untracked `output/` screenshots remain
+  local evidence.
 - **Verification:** clean `npm ci` completed with zero reported vulnerabilities; root `npm run check`
   passed (API 23 files / 84 tests; Web 38 files / 171 tests), root `npm run build` passed with the
   existing >500-kB bundle advisory, linked migration dry-run reported up to date, and
   `git diff --check` passed. The changed desktop and exact 390×844 surfaces were visually reviewed
-  during LOG-158–162. Remote CI evidence is pending.
+  during LOG-158–162. Exact-SHA GitHub Actions run `35840171334` completed successfully, with both
+  Verify and migration-dry-run jobs green; `origin/main` was independently confirmed at `09f9eaf`.
 - **Known issue:** physical-phone touch acceptance and the deferred Stage 2 backlog remain open;
   neither is represented as M7.5 completion.
-- **Next:** push this checkpoint to Main, confirm exact-SHA Verify and migration-dry-run jobs, then
-  begin the Stage 2 Contract without entering M8.
+- **Next:** begin the Stage 2 Contract without entering M8.
 
 ### 2026-09-23 — LOG-162 — Remove redundant weight metric prefix from Training summaries
 
