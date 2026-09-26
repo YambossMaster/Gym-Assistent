@@ -7,6 +7,13 @@ import { expect, it, vi } from 'vitest'
 import type { CalendarSession } from './api'
 import { StudentCourseRecord, StudentPerformance } from './coach-workspace'
 
+vi.mock('./config', () => ({
+  loadWebConfig: () => ({
+    supabaseUrl: 'https://example.supabase.co',
+    supabasePublishableKey: 'test-publishable-key'
+  })
+}))
+
 vi.mock('./pages/training/queries', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./pages/training/queries')>()),
   useStudentPerformance: () => ({

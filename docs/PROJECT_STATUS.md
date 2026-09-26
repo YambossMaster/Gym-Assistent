@@ -11,7 +11,7 @@
 | Current package    | **M7.5 Monthly finances and venues implementation**                                                 |
 | Package state      | **Venue/Finance Stage 1 checkpoint prepared for Main; remaining acceptance stays open**             |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
-| Branch baseline    | `3578cf0` is the verified pre-checkpoint `origin/main` ref; delivery CI pending                     |
+| Branch baseline    | `bbbbeca` reached `origin/main`; CI run `36271630283` failed in Web tests; repair pending           |
 | Worktree           | Venue/finance Sol slice plus preserved Stage 1 corrections; `output/` stays local and ignored       |
 | Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
 | Production         | Not configured; no real customer data                                                               |
@@ -335,7 +335,7 @@ local pass or successful push is not a remote CI completion claim.
 
 - **Scope:** Product Owner explicitly requested full CI and a Main push to pause the largely completed Venue management and monthly Finance review. Preserve the unfinished Stage 1 browser paths and Stage 2/M8 boundary. Keep local review fixtures outside Git.
 - **Outcome:** The Venue live E2E exposed two regressions in the applied Session-rule trigger: missing default Customer Source derivation for dual-rate Venues and missing purchase-derived Venue eligibility. Two forward-only migrations restore those rules while retaining Session-end fee-rule selection. The Finance live E2E expectation now follows the approved effective-time rule; local `output/` is ignored by Git and Prettier.
-- **Verification:** Final root format/types/tests passed (API 26 files/122 tests; Web 49 files/209 tests); final production build passed with the existing chunk-size advisory. Isolated two-Coach Venue and Finance live E2E passed after the fix and removed their exact fixtures. Linked development migration dry-run is up to date, `app_private` lint found no schema errors, and security advisors retain only the accepted development leaked-password-protection warning. `git diff --check` passed. Remote commit and exact-SHA Actions evidence are pending; no full M7.5 browser acceptance or milestone completion is claimed.
+- **Verification:** Local root format/types/tests passed again after the CI repair (API 26 files/122 tests; Web 49 files/209 tests); production build passed with the existing chunk-size advisory. Isolated two-Coach Venue and Finance live E2E passed after the trigger fix and removed their exact fixtures. Linked development migration dry-run is up to date, `app_private` lint found no schema errors, and security advisors retain only the accepted development leaked-password-protection warning. Initial commit `bbbbeca` reached Main, but exact-SHA Actions run `36271630283` failed because the new Student navigation test relied on local `VITE_SUPABASE_*` values. The test now supplies isolated public config; its targeted 2/2 rerun passed. Final remote CI is pending. No full M7.5 browser acceptance or milestone completion is claimed.
 - **Next:** deliver this checkpoint to Main, confirm the verify and migration-dry-run jobs for its exact SHA, then await the Product Owner's next Stage 1 review direction.
 
 ### 2026-09-27 — LOG-243 — Keep deleted Finance rows in one scroll area and remove empty section
