@@ -11,6 +11,8 @@ describe('Student Purchase cache invalidation', () => {
     invalidateStudentPurchaseQueries(queryClient, 'coach-1', 'student-1')
 
     expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
+      ['finances', 'coach-1'],
+      ['venues', 'coach-1'],
       queryKeys.student('coach-1', 'student-1'),
       queryKeys.students('coach-1'),
       queryKeys.income('coach-1'),

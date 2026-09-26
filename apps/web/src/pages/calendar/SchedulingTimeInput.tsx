@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 function format(minutes: number) {
@@ -18,11 +18,13 @@ function duration(value: number) {
 
 export function SchedulingTimeInput({
   label,
+  labelSuffix,
   value,
   start,
   onChange
 }: {
   label: string
+  labelSuffix?: ReactNode
   value: string
   start?: string
   onChange: (value: string) => void
@@ -112,7 +114,10 @@ export function SchedulingTimeInput({
   }
   return (
     <label className="scheduling-time-field">
-      {label}
+      <span>
+        {label}
+        {labelSuffix}
+      </span>
       <span className="scheduling-time-control">
         <input
           ref={input}

@@ -6,7 +6,7 @@ import type { TodayProjection } from './today.js'
 
 export type TodayNotification = {
   id: string
-  kind: 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
+  kind: 'low_venue_balance' | 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
   title: string
   detail: string
   targetRoute: string | null
@@ -53,6 +53,7 @@ export class TodayNotificationModule {
     private readonly workspace: Pick<StudentRepository, 'resolveWorkspace'>,
     private readonly repository: TodayNotificationRepository,
     private readonly now: () => Date = () => new Date(),
+    private readonly venues?: { lowNotices(workspaceId: string): Promise<TodayNotification[]> },
   ) {}
 
   async list(
@@ -78,6 +79,7 @@ export class TodayNotificationModule {
       since,
     )
     const notices: TodayNotification[] = [
+      ...((await this.venues?.lowNotices(workspaceId)) ?? []),
       ...attention.flatMap((item) => {
         const changedAt = sources.balances[item.student.id]
         if (!changedAt) return []

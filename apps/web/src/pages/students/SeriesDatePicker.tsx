@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
@@ -16,11 +16,13 @@ function dateValue(year: number, month: number, day: number) {
 export function SeriesDatePicker({
   value,
   onChange,
-  label = '起始日期'
+  label = '起始日期',
+  labelSuffix
 }: {
   value: string
   onChange: (value: string) => void
   label?: string
+  labelSuffix?: ReactNode
 }) {
   const trigger = useRef<HTMLButtonElement>(null)
   const calendar = useRef<HTMLDivElement>(null)
@@ -74,7 +76,10 @@ export function SeriesDatePicker({
 
   return (
     <div className="series-date-field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {labelSuffix}
+      </span>
       <button
         ref={trigger}
         type="button"

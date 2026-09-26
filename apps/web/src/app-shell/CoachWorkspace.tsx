@@ -7,6 +7,7 @@ import { getWorkspaceSettings } from '../api'
 import { ExercisesPage } from '../pages/exercises/ExercisesPage'
 import { StudentDetailPage, StudentsPage } from '../pages/students/StudentsPage'
 import { IncomePage } from '../pages/students/IncomePage'
+import { VenuePage } from '../pages/students/VenuePage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
 import { CalendarPage } from '../pages/calendar/CalendarPage'
@@ -91,6 +92,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
             element={<StudentsPage session={session} timeZone={timeZone} />}
           />
           <Route path="/students/finances" element={<IncomePage session={session} />} />
+          <Route path="/students/venues" element={<VenuePage session={session} />} />
           <Route
             path="/students/:studentId"
             element={<StudentDetailPage session={session} timeZone={timeZone} />}

@@ -17,17 +17,21 @@ export interface NewStudent {
   goal: string
   privateNote: string
   ageRange: Student['ageRange']
+  defaultVenueId: string | null
   active: boolean
   lineLinked: boolean
   now: Date
 }
 
-export interface UpdatedStudent extends Omit<NewStudent, 'id' | 'ageRange'> {
+export interface UpdatedStudent extends Omit<NewStudent, 'id' | 'ageRange' | 'defaultVenueId'> {
   ageRange?: Student['ageRange'] | undefined
+  defaultVenueId?: string | null | undefined
   expectedVersion: number
 }
 
 export interface NewLessonPurchase {
+  collectionMode?: 'coach' | 'venue'
+  venueId?: string | null
   id: string
   purchasedAt: Date
   lessonCount: number

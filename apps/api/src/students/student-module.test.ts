@@ -39,6 +39,7 @@ describe('StudentModule', () => {
       goal: '',
       privateNote: '',
       ageRange: null,
+      defaultVenueId: null,
       active: true,
       lineLinked: false,
       version: 1,
@@ -159,5 +160,27 @@ describe('StudentModule', () => {
     await expect(
       students.deleteLessonPurchase(coachA, student.id, purchase!.id, 1),
     ).rejects.toMatchObject({ name: 'LessonPurchaseVersionConflictError' })
+  })
+  it('keeps Venue entitlement on each purchase instead of changing the Student profile', async () => {
+    const students = new StudentModule({ repository: new MemoryStudentRepository() })
+    const student = await students.create(coachA, { name: 'Alice' })
+    const purchase = await students.createLessonPurchase(coachA, student.id, {
+      purchasedAt: '2026-09-01T00:00:00.000Z',
+      venueId: '11111111-1111-4111-8111-111111111111',
+      lessonCount: 2,
+      amountMinor: 4000,
+      currency: 'TWD',
+    })
+    expect(purchase?.venueId).toBe('11111111-1111-4111-8111-111111111111')
+    expect((await students.detail(coachA, student.id))?.student.defaultVenueId).toBeNull()
+    const corrected = await students.updateLessonPurchase(coachA, student.id, purchase!.id, {
+      purchasedAt: '2026-09-01T00:00:00.000Z',
+      venueId: null,
+      lessonCount: 2,
+      amountMinor: 4000,
+      currency: 'TWD',
+      version: 1,
+    })
+    expect(corrected?.venueId).toBeNull()
   })
 })

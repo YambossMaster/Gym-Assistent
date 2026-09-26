@@ -96,6 +96,7 @@ export class StudentModule {
     return this.#repository.createLessonPurchase(workspaceId, studentId, {
       id: this.#createId(),
       purchasedAt: new Date(input.purchasedAt),
+      venueId: input.venueId,
       lessonCount: input.lessonCount,
       amountMinor: input.amountMinor,
       currency: input.currency,
@@ -114,6 +115,7 @@ export class StudentModule {
     const workspaceId = await this.#repository.resolveWorkspace(identity)
     return this.#repository.updateLessonPurchase(workspaceId, studentId, purchaseId, {
       purchasedAt: new Date(input.purchasedAt),
+      ...(input.venueId !== undefined ? { venueId: input.venueId } : {}),
       lessonCount: input.lessonCount,
       amountMinor: input.amountMinor,
       currency: input.currency,

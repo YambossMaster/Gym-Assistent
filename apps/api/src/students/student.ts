@@ -17,23 +17,27 @@ export const createStudentSchema = z.object({
   goal: z.string().trim().max(1000).default(''),
   privateNote: z.string().trim().max(4000).default(''),
   ageRange: studentAgeRangeSchema.nullable().default(null),
+  defaultVenueId: z.uuid().nullable().default(null),
   active: z.boolean().default(true),
   lineLinked: z.boolean().default(false),
 })
 
 export const updateStudentSchema = createStudentSchema.extend({
   ageRange: studentAgeRangeSchema.nullable().optional(),
+  defaultVenueId: z.uuid().nullable().optional(),
   version: z.number().int().positive(),
 })
 
 export const createLessonPurchaseSchema = z.object({
   purchasedAt: z.iso.datetime({ offset: true }),
+  venueId: z.uuid().nullable().default(null),
   lessonCount: z.number().int().min(1).max(10_000),
   amountMinor: z.number().int().min(0).max(999_999_999_999),
   currency: z.string().regex(/^[A-Z]{3}$/),
   privateNote: z.string().trim().max(4000).default(''),
 })
 export const updateLessonPurchaseSchema = createLessonPurchaseSchema.extend({
+  venueId: z.uuid().nullable().optional(),
   version: z.number().int().positive(),
 })
 
@@ -49,6 +53,7 @@ export interface Student {
   goal: string
   privateNote: string
   ageRange: StudentAgeRange | null
+  defaultVenueId: string | null
   active: boolean
   lineLinked: boolean
   version: number
@@ -57,6 +62,8 @@ export interface Student {
 }
 
 export interface LessonPurchase {
+  collectionMode?: 'coach' | 'venue'
+  venueId?: string | null
   id: string
   purchasedAt: string
   lessonCount: number

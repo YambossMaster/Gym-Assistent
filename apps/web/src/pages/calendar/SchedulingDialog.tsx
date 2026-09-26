@@ -4,6 +4,8 @@ import { useDialogBehavior } from '../../shared/useDialogBehavior'
 export function SchedulingDialog({
   title,
   description,
+  eyebrow = 'FORM / ACTION',
+  titleAction,
   onClose,
   onDelete,
   variant,
@@ -11,6 +13,8 @@ export function SchedulingDialog({
 }: {
   title: string
   description?: string
+  eyebrow?: string
+  titleAction?: ReactNode
   onClose: () => void
   onDelete?: () => void
   variant?: 'quick' | 'block' | 'session-edit' | 'series' | 'performance' | 'profile'
@@ -22,6 +26,10 @@ export function SchedulingDialog({
     submitOnEnter: true,
     focusDialog: true
   })
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (dialog && !dialog.contains(document.activeElement)) dialog.focus()
+  }, [title])
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -76,8 +84,15 @@ export function SchedulingDialog({
       >
         <header>
           <div>
-            <span className="eyebrow dark">FORM / ACTION</span>
-            <h2 id="scheduling-dialog-title">{title}</h2>
+            <span className="eyebrow dark">{eyebrow}</span>
+            {titleAction ? (
+              <div className="scheduling-dialog-title-line">
+                <h2 id="scheduling-dialog-title">{title}</h2>
+                {titleAction}
+              </div>
+            ) : (
+              <h2 id="scheduling-dialog-title">{title}</h2>
+            )}
             {description ? <p>{description}</p> : null}
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label="關閉">

@@ -99,7 +99,15 @@ export function useDialogBehavior(
       if (lockScroll) unlockBodyScroll()
       window.removeEventListener('keydown', keydown)
       restoreFocusFrameRef.current = requestAnimationFrame(() => {
-        if (openerRef.current?.isConnected) openerRef.current.focus({ preventScroll: true })
+        // A replacement dialog may already own focus when this deferred cleanup runs.
+        if (
+          !(
+            document.activeElement instanceof HTMLElement &&
+            document.activeElement.closest('[role="dialog"]')
+          ) &&
+          openerRef.current?.isConnected
+        )
+          openerRef.current.focus({ preventScroll: true })
         restoreFocusFrameRef.current = null
       })
     }

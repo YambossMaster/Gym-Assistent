@@ -130,6 +130,7 @@ export class MemoryStudentRepository
       goal: input.goal,
       privateNote: input.privateNote,
       ageRange: input.ageRange,
+      defaultVenueId: input.defaultVenueId,
       active: input.active,
       lineLinked: input.lineLinked,
       version: 1,
@@ -155,6 +156,7 @@ export class MemoryStudentRepository
       throw new LessonPurchaseVersionConflictError(copyPurchase(current))
     const next: LessonPurchase = {
       ...current,
+      ...(input.venueId !== undefined ? { venueId: input.venueId } : {}),
       purchasedAt: input.purchasedAt.toISOString(),
       lessonCount: input.lessonCount,
       amountMinor: input.amountMinor,
@@ -216,6 +218,8 @@ export class MemoryStudentRepository
       goal: input.goal,
       privateNote: input.privateNote,
       ageRange: input.ageRange === undefined ? current.ageRange : input.ageRange,
+      defaultVenueId:
+        input.defaultVenueId === undefined ? current.defaultVenueId : input.defaultVenueId,
       active: input.active,
       lineLinked: input.lineLinked,
       version: current.version + 1,
@@ -253,6 +257,7 @@ export class MemoryStudentRepository
     const timestamp = input.now.toISOString()
     const purchase: LessonPurchase = {
       id: input.id,
+      venueId: input.venueId ?? null,
       purchasedAt: input.purchasedAt.toISOString(),
       lessonCount: input.lessonCount,
       amountMinor: input.amountMinor,

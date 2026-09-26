@@ -6,6 +6,21 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CalendarPage } from './CalendarPage'
 
+vi.mock('../students/finance-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../students/finance-api')>()),
+  useVenues: () => ({
+    data: {
+      venues: [{ id: 'venue-1', name: '教室', active: true }],
+      rules: [],
+      purchases: [
+        { studentId: 'student-1', venueId: 'venue-1', lessonCount: 8 },
+        { studentId: 'student-2', venueId: 'venue-1', lessonCount: 8 }
+      ]
+    }
+  }),
+  useFinanceMutation: () => ({ isPending: false, mutate: vi.fn() })
+}))
+
 const calls = vi.hoisted(() => ({
   updateSession: vi.fn(),
   updateBlock: vi.fn(),
@@ -33,6 +48,7 @@ vi.mock('./queries', () => ({
                 endsAt: `${range.start}T03:00:00.000Z`,
                 status: calls.completed ? 'completed' : 'scheduled',
                 location: '教室',
+                venueId: 'venue-1',
                 version: 4,
                 seriesId: calls.recurring ? 'series-1' : null,
                 completedAt: null,

@@ -16,6 +16,8 @@ export const calendarRangeSchema = z.object({ start: localDate, end: localDate }
 const sessionTimingSchema = z.object({
   startsAt: quarterHourInstant,
   endsAt: quarterHourInstant,
+  venueId: z.uuid().nullable().optional(),
+  customerSource: z.enum(['coach', 'venue']).nullable().optional(),
   location: z.string().trim().min(1).max(160),
 })
 const sessionTimingRangeSchema = sessionTimingSchema.refine(
@@ -61,6 +63,8 @@ export const updateBlockSchema = z
 const seriesSchema = z.object({
   startsAt: quarterHourInstant,
   endsAt: quarterHourInstant,
+  venueId: z.uuid().nullable().optional(),
+  customerSource: z.enum(['coach', 'venue']).nullable().optional(),
   location: z.string().trim().min(1).max(160),
   intervalWeeks: z.union([z.literal(0), z.literal(1), z.literal(2)]),
   autoScheduleHorizon: autoScheduleHorizonSchema.default('NONE'),
@@ -90,6 +94,9 @@ export type CourseSession = {
   seriesId: string | null
   startsAt: string | null
   endsAt: string | null
+  venueId?: string | null
+  customerSource?: 'coach' | 'venue' | null
+  feeRuleId?: string | null
   location: string | null
   status: z.infer<typeof sessionStatusSchema>
   completedAt: string | null
@@ -113,6 +120,9 @@ export type ScheduleSeries = {
   durationMinutes: number
   intervalWeeks: 0 | 1 | 2
   autoScheduleHorizon: z.infer<typeof autoScheduleHorizonSchema>
+  venueId?: string | null
+  customerSource?: 'coach' | 'venue' | null
+  feeRuleId?: string | null
   location: string
   active: boolean
   version: number

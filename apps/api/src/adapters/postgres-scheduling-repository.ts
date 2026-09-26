@@ -60,21 +60,21 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
   }
   async listSessions(workspaceId: string, start: Date, end: Date) {
     const rows = await this.pool.query(
-      `select s.id,s.student_id,"student".name student_name,s.series_id,s.starts_at,s.ends_at,s.location,s.status,s.completed_at,s.version,s.is_legacy from app_private.course_session s join app_private.student "student" on "student".id=s.student_id and "student".workspace_id=s.workspace_id where s.workspace_id=$1 and not s.is_legacy and s.starts_at < $3 and s.ends_at > $2 order by s.starts_at,s.id`,
+      `select s.id,s.student_id,"student".name student_name,s.series_id,s.starts_at,s.ends_at,s.venue_id,s.customer_source,s.fee_rule_id,s.location,s.status,s.completed_at,s.version,s.is_legacy from app_private.course_session s join app_private.student "student" on "student".id=s.student_id and "student".workspace_id=s.workspace_id where s.workspace_id=$1 and not s.is_legacy and s.starts_at < $3 and s.ends_at > $2 order by s.starts_at,s.id`,
       [workspaceId, start, end],
     )
     return rows.rows.map(mapSession)
   }
   async getSession(workspaceId: string, sessionId: string) {
     const rows = await this.pool.query(
-      `select s.id,s.student_id,"student".name student_name,s.series_id,s.starts_at,s.ends_at,s.location,s.status,s.completed_at,s.version,s.is_legacy from app_private.course_session s join app_private.student "student" on "student".id=s.student_id and "student".workspace_id=s.workspace_id where s.workspace_id=$1 and s.id=$2`,
+      `select s.id,s.student_id,"student".name student_name,s.series_id,s.starts_at,s.ends_at,s.venue_id,s.customer_source,s.fee_rule_id,s.location,s.status,s.completed_at,s.version,s.is_legacy from app_private.course_session s join app_private.student "student" on "student".id=s.student_id and "student".workspace_id=s.workspace_id where s.workspace_id=$1 and s.id=$2`,
       [workspaceId, sessionId],
     )
     return rows.rows[0] ? mapSession(rows.rows[0]) : null
   }
   async createSession(workspaceId: string, input: NewSession) {
     const row = await this.pool.query(
-      `insert into app_private.course_session (id,workspace_id,student_id,series_id,starts_at,ends_at,location,status,is_legacy,version,created_at,updated_at) values ($1,$2,$3,$4,$5,$6,$7,'scheduled',false,1,$8,$8) returning id,student_id,(select name from app_private.student where workspace_id=$2 and id=$3) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
+      `insert into app_private.course_session (id,workspace_id,student_id,series_id,starts_at,ends_at,location,status,is_legacy,version,created_at,updated_at,venue_id,customer_source) values ($1,$2,$3,$4,$5,$6,$7,'scheduled',false,1,$8,$8,$9,$10) returning id,student_id,(select name from app_private.student where workspace_id=$2 and id=$3) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
       [
         input.id,
         workspaceId,
@@ -84,13 +84,15 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
         input.endsAt,
         input.location,
         input.now,
+        input.venueId ?? null,
+        input.customerSource ?? null,
       ],
     )
     return mapSession(row.rows[0])
   }
   async updateSession(workspaceId: string, id: string, input: ChangedSession) {
     const row = await this.pool.query(
-      `update app_private.course_session set starts_at=$4,ends_at=$5,location=$6,version=version+1,updated_at=$7,student_id=coalesce($8::uuid,student_id) where workspace_id=$1 and id=$2 and version=$3 and status='scheduled' and not is_legacy returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
+      `update app_private.course_session set starts_at=$4,ends_at=$5,location=$6,version=version+1,updated_at=$7,student_id=coalesce($8::uuid,student_id),venue_id=case when $9 then $10::uuid else venue_id end,customer_source=case when $9 then $11 else customer_source end where workspace_id=$1 and id=$2 and version=$3 and status='scheduled' and not is_legacy returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
       [
         workspaceId,
         id,
@@ -100,6 +102,9 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
         input.location,
         input.now,
         input.studentId ?? null,
+        input.venueId !== undefined,
+        input.venueId ?? null,
+        input.customerSource ?? null,
       ],
     )
     if (row.rows[0]) return mapSession(row.rows[0])
@@ -118,7 +123,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       action === 'complete' ? 'completed' : action === 'reopen' ? 'scheduled' : 'cancelled'
     const completed = action === 'complete' ? now : null
     const row = await this.pool.query(
-      `update app_private.course_session set status=$4,completed_at=$5,version=version+1,updated_at=$6 where workspace_id=$1 and id=$2 and version=$3 and not is_legacy and ((status='scheduled' and $4 in ('completed','cancelled')) or (status='completed' and $4='scheduled')) returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
+      `update app_private.course_session set status=$4,completed_at=$5,version=version+1,updated_at=$6 where workspace_id=$1 and id=$2 and version=$3 and not is_legacy and ((status='scheduled' and $4 in ('completed','cancelled')) or (status='completed' and $4='scheduled')) returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
       [workspaceId, id, version, next, completed, now],
     )
     if (row.rows[0]) return mapSession(row.rows[0])
@@ -139,7 +144,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
   async listSeries(workspaceId: string, studentId: string) {
     const rows = await this.pool.query(
       `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
-        interval_weeks,auto_schedule_horizon,location,active,version from app_private.schedule_series
+        interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version from app_private.schedule_series
        where workspace_id=$1 and student_id=$2 order by anchor_starts_at,id`,
       [workspaceId, studentId],
     )
@@ -151,9 +156,9 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       await client.query('begin')
       const seriesRow = await client.query(
         `insert into app_private.schedule_series
-          (id,workspace_id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,interval_weeks,auto_schedule_horizon,location,active,version,created_at,updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,1,$11,$11)
-         returning id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,interval_weeks,auto_schedule_horizon,location,active,version`,
+          (id,workspace_id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,interval_weeks,auto_schedule_horizon,location,active,version,created_at,updated_at,venue_id,customer_source)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,1,$11,$11,$12,$13)
+         returning id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version`,
         [
           series.id,
           workspaceId,
@@ -166,13 +171,15 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           series.autoScheduleHorizon,
           series.location,
           series.now,
+          series.venueId ?? null,
+          series.customerSource ?? null,
         ],
       )
       const anchorRow = await client.query(
         `insert into app_private.course_session
-          (id,workspace_id,student_id,series_id,starts_at,ends_at,location,status,is_legacy,version,created_at,updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,'scheduled',false,1,$8,$8)
-         returning id,student_id,(select name from app_private.student where workspace_id=$2 and id=$3) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
+          (id,workspace_id,student_id,series_id,starts_at,ends_at,location,status,is_legacy,version,created_at,updated_at,venue_id,customer_source)
+         values ($1,$2,$3,$4,$5,$6,$7,'scheduled',false,1,$8,$8,$9,$10)
+         returning id,student_id,(select name from app_private.student where workspace_id=$2 and id=$3) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
         [
           anchor.id,
           workspaceId,
@@ -182,6 +189,8 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           anchor.endsAt,
           anchor.location,
           anchor.now,
+          anchor.venueId ?? null,
+          anchor.customerSource ?? null,
         ],
       )
       await client.query('commit')
@@ -199,7 +208,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       await client.query('begin')
       const current = await client.query(
         `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
-          interval_weeks,auto_schedule_horizon,location,active,version
+          interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version
          from app_private.schedule_series where workspace_id=$1 and id=$2 for update`,
         [workspaceId, seriesId],
       )
@@ -238,7 +247,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       await client.query('begin')
       const current = await client.query(
         `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
-          interval_weeks,auto_schedule_horizon,location,active,version
+          interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version
          from app_private.schedule_series where workspace_id=$1 and id=$2 for update`,
         [workspaceId, seriesId],
       )
@@ -267,9 +276,9 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       const updated = await client.query(
         `update app_private.schedule_series set local_weekday=$4,local_start_time=$5,
           duration_minutes=$6,interval_weeks=$7,auto_schedule_horizon=$8,location=$9,active=$10,
-          version=version+1,updated_at=$11,anchor_starts_at=$12 where workspace_id=$1 and id=$2 and version=$3
+          version=version+1,updated_at=$11,anchor_starts_at=$12,venue_id=case when $13 then $14::uuid else venue_id end,customer_source=case when $13 then $15 else customer_source end where workspace_id=$1 and id=$2 and version=$3
          returning id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
-          interval_weeks,auto_schedule_horizon,location,active,version`,
+          interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version`,
         [
           workspaceId,
           seriesId,
@@ -283,6 +292,9 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           input.active,
           input.now,
           effectiveAnchor,
+          input.venueId !== undefined,
+          input.venueId ?? null,
+          input.customerSource ?? null,
         ],
       )
       if (pivot.rows[0]) {
@@ -305,8 +317,19 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           const endsAt = new Date(startsAt.getTime() + input.durationMinutes * 60_000)
           await client.query(
             `update app_private.course_session set starts_at=$4,ends_at=$5,location=$6,
-              version=version+1,updated_at=$7 where workspace_id=$1 and id=$2 and series_id=$3`,
-            [workspaceId, occurrence.id, seriesId, startsAt, endsAt, input.location, input.now],
+              version=version+1,updated_at=$7,venue_id=case when $8 then $9::uuid else venue_id end,customer_source=case when $8 then $10 else customer_source end where workspace_id=$1 and id=$2 and series_id=$3`,
+            [
+              workspaceId,
+              occurrence.id,
+              seriesId,
+              startsAt,
+              endsAt,
+              input.location,
+              input.now,
+              input.venueId !== undefined,
+              input.venueId ?? null,
+              input.customerSource ?? null,
+            ],
           )
         }
       }
@@ -329,7 +352,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       const [seriesRows, summaryRows, sessionRows] = await Promise.all([
         client.query(
           `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
-            interval_weeks,auto_schedule_horizon,location,active,version from app_private.schedule_series
+            interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version from app_private.schedule_series
            where workspace_id=$1 and student_id=$2 and active order by anchor_starts_at,id`,
           [workspaceId, studentId],
         ),
@@ -339,7 +362,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           [workspaceId, studentId],
         ),
         client.query(
-          `select s.id,s.student_id,"student".name student_name,s.series_id,s.starts_at,s.ends_at,s.location,s.status,s.completed_at,s.version,s.is_legacy
+          `select s.id,s.student_id,"student".name student_name,s.series_id,s.starts_at,s.ends_at,s.venue_id,s.customer_source,s.fee_rule_id,s.location,s.status,s.completed_at,s.version,s.is_legacy
            from app_private.course_session s join app_private.student "student" on "student".id=s.student_id and "student".workspace_id=s.workspace_id
            where s.workspace_id=$1 and s.student_id=$2 and not s.is_legacy`,
           [workspaceId, studentId],
@@ -364,10 +387,21 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           const id = randomUUID()
           const row = await client.query(
             `insert into app_private.course_session
-              (id,workspace_id,student_id,series_id,starts_at,ends_at,location,status,is_legacy,version,created_at,updated_at)
-             values ($1,$2,$3,$4,$5,$6,$7,'scheduled',false,1,$8,$8)
-             returning id,student_id,(select name from app_private.student where workspace_id=$2 and id=$3) student_name,series_id,starts_at,ends_at,location,status,completed_at,version,is_legacy`,
-            [id, workspaceId, studentId, series.id, startsAt, endsAt, series.location, now],
+              (id,workspace_id,student_id,series_id,starts_at,ends_at,location,status,is_legacy,version,created_at,updated_at,venue_id,customer_source)
+             values ($1,$2,$3,$4,$5,$6,$7,'scheduled',false,1,$8,$8,$9,$10)
+             returning id,student_id,(select name from app_private.student where workspace_id=$2 and id=$3) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
+            [
+              id,
+              workspaceId,
+              studentId,
+              series.id,
+              startsAt,
+              endsAt,
+              series.location,
+              now,
+              series.venueId ?? null,
+              series.customerSource ?? null,
+            ],
           )
           const created = mapSession(row.rows[0])
           generated.push(created)
@@ -625,6 +659,8 @@ function mapSession(row: any): CourseSession {
     seriesId: row.series_id,
     startsAt: row.starts_at?.toISOString() ?? null,
     endsAt: row.ends_at?.toISOString() ?? null,
+    venueId: row.venue_id ?? null,
+    customerSource: row.customer_source ?? null,
     location: row.location,
     status: row.status,
     completedAt: row.completed_at?.toISOString() ?? null,
@@ -652,6 +688,8 @@ function mapSeries(row: any): ScheduleSeries {
     durationMinutes: row.duration_minutes,
     intervalWeeks: row.interval_weeks,
     autoScheduleHorizon: row.auto_schedule_horizon,
+    venueId: row.venue_id ?? null,
+    customerSource: row.customer_source ?? null,
     location: row.location,
     active: row.active,
     version: row.version,

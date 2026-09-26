@@ -11,6 +11,10 @@ import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
 import { useTrainingMutations, useTrainingPreference } from '../training/queries'
 import { DemoImportPanel } from './DemoImportPanel'
+import {
+  getDefaultFinanceCurrency,
+  saveDefaultFinanceCurrency
+} from '../students/PurchaseMoneyFields'
 
 export function SettingsPage({ session }: { session: Session }) {
   const [message, setMessage] = useState('')
@@ -130,6 +134,7 @@ export function SettingsPage({ session }: { session: Session }) {
           />
         </section>
         <TrainingPreferencePanel session={session} />
+        <FinancePreferencePanel />
         {settingsQuery.data && (
           <ImportPanelBoundary
             session={session}
@@ -171,6 +176,28 @@ export function SettingsPage({ session }: { session: Session }) {
         />
       )}
     </Page>
+  )
+}
+
+function FinancePreferencePanel() {
+  const [currency, setCurrency] = useState(getDefaultFinanceCurrency)
+  return (
+    <section className="settings-panel">
+      <SettingsPanelHeading eyebrow="FINANCE" title="收支設定" />
+      <label>
+        預設幣別
+        <FormSelect
+          label="預設幣別"
+          value={currency}
+          onChange={(next) => {
+            setCurrency(next)
+            saveDefaultFinanceCurrency(next)
+          }}
+          options={['TWD', 'USD', 'JPY', 'EUR', 'HKD'].map((value) => ({ value, label: value }))}
+        />
+      </label>
+      <p>新增購課與場地收支紀錄時使用此幣別；既有紀錄保留原幣別。</p>
+    </section>
   )
 }
 

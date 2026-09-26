@@ -1,3 +1,5 @@
+import { FinanceModule } from './finances/finance-module.js'
+import { PostgresFinanceRepository } from './adapters/postgres-finance-repository.js'
 import { Pool } from 'pg'
 import { PostgresStudentRepository } from './adapters/postgres-student-repository.js'
 import { loadConfig } from './config.js'
@@ -35,12 +37,15 @@ const identityVerifier = new OidcIdentityVerifier({
   jwksUrl: `${supabaseIssuer}/.well-known/jwks.json`,
 })
 const server = buildServer({
+  finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
   identityVerifier,
   students: new StudentModule({ repository }),
   today: new TodayModule(repository),
   todayNotifications: new TodayNotificationModule(
     repository,
     new PostgresTodayNotificationRepository(pool),
+    undefined,
+    new PostgresFinanceRepository(pool),
   ),
   workspace: new WorkspaceModule({ repository }),
   accountLifecycle: new AccountLifecycleModule({

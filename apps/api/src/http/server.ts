@@ -1,3 +1,5 @@
+import { FinanceModule } from '../finances/finance-module.js'
+import { FinanceError } from '../finances/finance.js'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { z, ZodError } from 'zod'
 import { type IdentityVerifier, IdentityVerificationError } from '../identity/identity.js'
@@ -44,6 +46,7 @@ export interface ServerDependencies {
   scheduling?: SchedulingModule
   training?: TrainingModule
   publicAccess?: PublicAccessModule
+  finances?: FinanceModule
   demoImport?: DemoImportModule
   logger?: boolean | Record<string, unknown>
 }
@@ -73,6 +76,7 @@ const createStudentBodySchema = {
     goal: { type: 'string', maxLength: 1000 },
     privateNote: { type: 'string', maxLength: 4000 },
     ageRange: studentAgeRangeBodySchema,
+    defaultVenueId: { type: ['string', 'null'], format: 'uuid' },
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
   },
@@ -88,6 +92,7 @@ const updateStudentBodySchema = {
     goal: { type: 'string', maxLength: 1000 },
     privateNote: { type: 'string', maxLength: 4000 },
     ageRange: studentAgeRangeBodySchema,
+    defaultVenueId: { type: ['string', 'null'], format: 'uuid' },
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
     version: { type: 'integer', minimum: 1 },
@@ -100,6 +105,7 @@ const createLessonPurchaseBodySchema = {
   required: ['purchasedAt', 'lessonCount', 'amountMinor', 'currency'],
   properties: {
     purchasedAt: { type: 'string', format: 'date-time' },
+    venueId: { anyOf: [{ type: 'string', format: 'uuid' }, { type: 'null' }] },
     lessonCount: { type: 'integer', minimum: 1, maximum: 10000 },
     amountMinor: { type: 'integer', minimum: 0, maximum: 999999999999 },
     currency: { type: 'string', pattern: '^[A-Z]{3}$' },
@@ -167,6 +173,7 @@ export function buildServer({
   training,
   publicAccess,
   demoImport,
+  finances,
   logger = false,
 }: ServerDependencies): FastifyInstance {
   const server = Fastify({
@@ -174,7 +181,106 @@ export function buildServer({
     ajv: { customOptions: { removeAdditional: false } },
   })
 
+  if (finances) {
+    for (const [path, kind] of [
+      ['/v1/venues', 'venues'],
+      ['/v1/finances/current', 'current'],
+      ['/v1/finances/months', 'months'],
+      ['/v1/finances/months/:month', 'month'],
+    ] as const)
+      server.get(path, async (request) => {
+        const identity = await identityVerifier.verify(request.headers.authorization)
+        return finances.read(
+          identity,
+          kind,
+          kind === 'month'
+            ? (request.params as { month: string }).month
+            : (request.query as { cursor?: string }).cursor,
+        )
+      })
+    server.get('/v1/finances/deleted', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const query = request.query as { month?: string; cursor?: string }
+      return finances.read(identity, 'deleted', `${query.month ?? ''}|${query.cursor ?? ''}`)
+    })
+    server.get('/v1/venues/:venueId/course-records', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const params = request.params as { venueId: string }
+      const query = request.query as { cursor?: string }
+      return finances.read(identity, 'course-records', `${params.venueId}:${query.cursor ?? ''}`)
+    })
+    for (const [method, path, operation] of [
+      ['POST', '/v1/venues', 'create'],
+      ['PATCH', '/v1/venues/:venueId', 'edit'],
+      ['DELETE', '/v1/venues/:venueId', 'delete'],
+      ['POST', '/v1/venues/:venueId/fee-rules/preview', 'rule-preview'],
+      ['POST', '/v1/venues/:venueId/fee-rules', 'rule'],
+      ['POST', '/v1/venues/:venueId/salary-rules', 'salary'],
+      ['POST', '/v1/venues/:venueId/coach-supplied-students', 'coach-supplied-student'],
+      ['POST', '/v1/venues/:venueId/credit-purchases', 'credit'],
+      ['POST', '/v1/venues/:venueId/credit-purchases/preview', 'credit-preview'],
+      ['PATCH', '/v1/venues/:venueId/credit-purchases/:entityId', 'credit-edit'],
+      ['POST', '/v1/venues/:venueId/credit-purchases/:entityId/preview', 'credit-edit-preview'],
+      ['DELETE', '/v1/venues/:venueId/credit-purchases/:entityId', 'credit-delete'],
+      ['POST', '/v1/venues/:venueId/history/preview', 'history-preview'],
+      ['POST', '/v1/venues/:venueId/history', 'history'],
+      ['PATCH', '/v1/venues/:venueId/course-records/:entityId', 'course-record-edit'],
+      ['POST', '/v1/venues/:venueId/course-records/:entityId/preview', 'course-record-preview'],
+      ['POST', '/v1/finances/entries', 'entry-create'],
+      ['PATCH', '/v1/finances/entries/:entityId', 'entry-edit'],
+      ['DELETE', '/v1/finances/entries/:entityId', 'entry-delete'],
+      ['POST', '/v1/finances/entries/:entityId/restore', 'entry-restore'],
+      ['DELETE', '/v1/finances/entries/:entityId/adjustment', 'entry-reset'],
+    ] as const)
+      server.route({
+        method,
+        url: path,
+        handler: async (request) => {
+          const identity = await identityVerifier.verify(request.headers.authorization)
+          const params = request.params as { venueId?: string; entityId?: string }
+          return finances.command(
+            identity,
+            operation,
+            params.venueId,
+            params.entityId,
+            request.body,
+          )
+        },
+      })
+  }
   server.setErrorHandler((error, _request, reply) => {
+    if (error instanceof FinanceError)
+      return reply.status(error.statusCode).send({
+        error:
+          error.statusCode === 409
+            ? 'version_conflict'
+            : error.statusCode === 404
+              ? 'not_found'
+              : 'invalid_request',
+        message: error.message,
+        current: error.current,
+      })
+    if ((error as { code?: string }).code === 'P0002')
+      return reply.status(404).send({ error: 'not_found', message: '找不到此場地。' })
+    if (
+      (error as { code?: string }).code === '23514' &&
+      (error as Error).message.includes('Student has no purchase for this Venue')
+    )
+      return reply
+        .status(400)
+        .send({ error: 'venue_not_purchased', message: '這名學生沒有可用於此場地的購課紀錄。' })
+    if (
+      (error as { code?: string }).code === '23514' &&
+      (error as Error).message.includes('Purchase is needed by scheduled work at this Venue')
+    )
+      return reply.status(409).send({
+        error: 'purchase_needed_by_schedule',
+        message: '這筆購課仍供待上課或固定課程使用，請先調整排課。',
+      })
+    if ((error as { code?: string }).code === 'P0001')
+      return reply
+        .status(400)
+        .send({ error: 'invalid_request', message: '請確認場地、客源與收款資料。' })
     if (error instanceof IdentityVerificationError) {
       return reply.status(401).send({ error: 'unauthorized', message: error.message })
     }

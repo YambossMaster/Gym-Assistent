@@ -14,6 +14,8 @@ export type NewSession = {
   studentId: string
   startsAt: Date
   endsAt: Date
+  venueId?: string | null | undefined
+  customerSource?: 'coach' | 'venue' | null | undefined
   location: string
   now: Date
   seriesId?: string
@@ -22,6 +24,8 @@ export type ChangedSession = {
   studentId?: string
   startsAt: Date
   endsAt: Date
+  venueId?: string | null | undefined
+  customerSource?: 'coach' | 'venue' | null | undefined
   location: string
   expectedVersion: number
   now: Date
@@ -54,6 +58,8 @@ export type NewScheduleSeries = {
   durationMinutes: number
   intervalWeeks: 0 | 1 | 2
   autoScheduleHorizon: import('./scheduling.js').AutoScheduleHorizon
+  venueId?: string | null | undefined
+  customerSource?: 'coach' | 'venue' | null | undefined
   location: string
   now: Date
 }

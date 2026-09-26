@@ -6,6 +6,69 @@ import { SchedulingDialog } from './SchedulingDialog'
 import { Confirmation } from '../../shared/primitives'
 
 describe('SchedulingDialog focus', () => {
+  it('keeps keyboard focus inside when a quick-view action is replaced by an editor', async () => {
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(
+          <SchedulingDialog title="課程" onClose={() => {}}>
+            <button>編輯安排</button>
+          </SchedulingDialog>
+        )
+      )
+      host.querySelectorAll<HTMLButtonElement>('button')[1]!.focus()
+      await act(async () =>
+        root.render(
+          <SchedulingDialog title="編輯課程" onClose={() => {}}>
+            <input aria-label="地點" />
+          </SchedulingDialog>
+        )
+      )
+      expect(document.activeElement).toBe(host.querySelector('[role="dialog"]'))
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+  it('does not restore the page opener over a replacement dialog', async () => {
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      frames.push(callback)
+    )
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const opener = document.createElement('button')
+    const host = document.createElement('div')
+    document.body.append(opener, host)
+    opener.focus()
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(
+          <SchedulingDialog key="venue" title="場地" onClose={() => {}}>
+            名稱
+          </SchedulingDialog>
+        )
+      )
+      await act(async () =>
+        root.render(
+          <SchedulingDialog key="rule" title="費率" onClose={() => {}}>
+            設定
+          </SchedulingDialog>
+        )
+      )
+      await act(async () => frames.splice(0).forEach((callback) => callback(0)))
+      expect(document.activeElement).toBe(host.querySelector('[role="dialog"]'))
+    } finally {
+      await act(async () => root.unmount())
+      frames.splice(0).forEach((callback) => callback(0))
+    }
+  })
   afterEach(() => {
     document.body.innerHTML = ''
     vi.unstubAllGlobals()

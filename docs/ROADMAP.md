@@ -460,6 +460,47 @@ concurrency, and recovery. Stage 1 applies the relevant Contract, Terra, and Sol
 correction; the consolidated CI gate belongs to Stage 2. Record current work, local evidence, the
 Stage 2 backlog, and one executable next handoff in `PROJECT_STATUS.md`.
 
+#### Product Owner-approved Stage 1 addition — Monthly finances and venues
+
+The Product Owner added the Student-area **本月收支** route as a bounded M7.5 Stage 1 package on
+2026-09-24. It preserves name-only Venue use and adds opt-in venue-cost rules,
+prepaid Venue lesson balance/low-balance notification, current-month income and expenses,
+and access to historical months. On 2026-09-27, the Product Owner placed year/month
+selection in the overview card and removed the separate **各月收支紀錄** card; selecting a
+month changes the overview and the ledger together. A prepaid Venue batch is expensed once
+when purchased; Session completion consumes one credit without another expense. The
+2026-09-25 Product Owner correction makes every newly entered scheduling place a Venue,
+deduplicates names within a Workspace, and moves Venue management to its own Student-area route.
+The later 2026-09-25 correction makes Student purchases the source of scheduling Venue
+eligibility: general purchases allow any Venue, Venue-bound purchases allow their selected
+Venue, and completion deducts one applicable lesson. Venue-bound commission is calculated
+at Student purchase; general-purchase Venue expenses arise per completed Session.
+Venue-supplied is the default for dual-rate commission, with Coach-supplied Students
+marked in Venue management. A Venue may also record monthly base salary with a
+configured pay day; that day's income appears in **收支明細**. Venue settings expose
+controls specific to their expense type and do not offer a normal **確認影響範圍** step.
+The 2026-09-26 Product Owner correction adds **場地課程紀錄** and dated-time effective
+boundaries, with the Course Session end time selecting each Venue rule. Prepaid batches
+have their own deduction start time and explicit per-Session allocation; later batches
+automatically cover earlier unassigned Sessions only when the start time permits it,
+and the Coach may manually assign a Session to an available batch. Venue-bound
+Student-purchase commission remains a purchase-month expense; later rate changes
+create only per-Session differences, while a change to a different expense mode
+retains the original purchase expense. Finance detail may have a separate manual
+amount override that does not change its source. See the frozen
+[`M7.5-VENUE-SESSION-RECORDS-CONTRACT.md`](M7.5-VENUE-SESSION-RECORDS-CONTRACT.md).
+The Product Owner then approved single-row ledger edits to amount, date/time, and name;
+manual add, hide, restore, and cancel-edit operations; original-source preservation;
+and chronological sorting by each row's displayed date/time. Active rows alone form
+the adjusted monthly totals, and the income headline identifies manual adjustments.
+See [`M7.5-FINANCE-LEDGER-MANAGEMENT-CONTRACT.md`](M7.5-FINANCE-LEDGER-MANAGEMENT-CONTRACT.md).
+For these two frozen 2026-09-26 Contracts, the Product Owner directed direct Sol delivery
+without a separate Terra handoff. Sol owns the contracted server, migration, and Web slice
+together; Stage 1 remains local and its acceptance evidence belongs in `PROJECT_STATUS.md`.
+The product and evidence contract being revised is
+[`M7.5-MONTHLY-FINANCE-CONTRACT.md`](M7.5-MONTHLY-FINANCE-CONTRACT.md). This addition does not
+reopen M3/M4 delivery or change the Stage 1/Stage 2 and M8 boundaries above.
+
 #### Contract gate
 
 - Reproduce each reported problem and freeze the expected Coach or Student outcome, affected route,

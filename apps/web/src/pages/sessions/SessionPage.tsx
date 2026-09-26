@@ -1,3 +1,4 @@
+import { VenueField } from '../students/VenueField'
 import type { Session } from '@supabase/supabase-js'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarClock, Trash2 } from 'lucide-react'
@@ -120,6 +121,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
       />
       {editing ? (
         <SessionEditor
+          session={session}
           item={item}
           students={studentsQuery.data ?? []}
           timeZone={timeZone}
@@ -187,6 +189,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
 }
 
 export function SessionEditor({
+  session,
   item,
   students,
   timeZone,
@@ -195,7 +198,10 @@ export function SessionEditor({
   onSave,
   onRequestDelete
 }: {
+  session?: Session
   item: {
+    venueId?: string | null
+    customerSource?: 'coach' | 'venue' | null
     studentId: string
     studentName: string
     startsAt: string | null
@@ -207,7 +213,14 @@ export function SessionEditor({
   timeZone: string
   pending: boolean
   onClose: () => void
-  onSave: (input: { studentId: string; startsAt: string; endsAt: string; location: string }) => void
+  onSave: (input: {
+    venueId?: string | null
+    customerSource?: 'coach' | 'venue' | null
+    studentId: string
+    startsAt: string
+    endsAt: string
+    location: string
+  }) => void
   onRequestDelete: () => void
 }) {
   const start = isoToLocalDateTime(item.startsAt!, timeZone)
@@ -217,9 +230,15 @@ export function SessionEditor({
   const [startTime, setStartTime] = useState(start.time)
   const [endTime, setEndTime] = useState(end.time)
   const [location, setLocation] = useState(item.location ?? '')
+  const [venueId, setVenueId] = useState(item.venueId ?? null),
+    [customerSource, setCustomerSource] = useState(item.customerSource ?? null)
   const [error, setError] = useState('')
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    if (item.status === 'scheduled' && !venueId) {
+      setError('請選擇或新增場地。')
+      return
+    }
     if (endTime <= startTime) {
       setError('結束時間必須晚於開始時間。')
       return
@@ -229,7 +248,9 @@ export function SessionEditor({
         studentId,
         startsAt: localDateTimeToIso({ date, time: startTime }, timeZone),
         endsAt: localDateTimeToIso({ date, time: endTime }, timeZone),
-        location
+        location,
+        venueId,
+        customerSource
       })
     } catch {
       setError('這個本地時間不存在。')
@@ -291,16 +312,32 @@ export function SessionEditor({
               />
             </label>
           </div>
-          <label>
-            地點
-            <input
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              required
-              disabled={item.status !== 'scheduled'}
-              maxLength={160}
+          {session && item.status === 'scheduled' ? (
+            <VenueField
+              session={session}
+              studentId={item.studentId}
+              date={date}
+              venueId={venueId}
+              customerSource={customerSource}
+              location={location}
+              onChange={(v) => {
+                setVenueId(v.venueId)
+                setCustomerSource(v.customerSource)
+                setLocation(v.location)
+              }}
             />
-          </label>
+          ) : (
+            <label>
+              場地
+              <input
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+                required
+                disabled={item.status !== 'scheduled'}
+                maxLength={160}
+              />
+            </label>
+          )}
           {error ? <p className="notice error">{error}</p> : null}
         </div>
         <div className="scheduling-form-footer session-editor-form-footer">

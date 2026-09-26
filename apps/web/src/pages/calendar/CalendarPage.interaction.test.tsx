@@ -5,6 +5,18 @@ import type { Session } from '@supabase/supabase-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CalendarPage } from './CalendarPage'
 
+vi.mock('../students/finance-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../students/finance-api')>()),
+  useVenues: () => ({
+    data: {
+      venues: [{ id: 'venue-1', name: '教室', active: true }],
+      rules: [],
+      purchases: [{ studentId: 'student-1', venueId: 'venue-1', lessonCount: 8 }]
+    }
+  }),
+  useFinanceMutation: () => ({ isPending: false, mutate: vi.fn() })
+}))
+
 const createSeriesMutate = vi.hoisted(() => vi.fn())
 const createBlockMutate = vi.hoisted(() => vi.fn())
 vi.mock('./queries', () => ({
@@ -143,6 +155,14 @@ describe('Calendar scheduling surface', () => {
       ].find((button) => button.textContent?.trim() === '每週')!
       await act(async () => weekly.click())
       expect(form.querySelector<HTMLInputElement>('input[name="repeat"]')?.value).toBe('1')
+      await act(async () =>
+        form.querySelector<HTMLButtonElement>('.form-select-trigger[aria-label="場地"]')!.click()
+      )
+      await act(async () =>
+        [...document.querySelectorAll<HTMLButtonElement>('.form-select-menu [role="option"]')]
+          .find((option) => option.textContent?.trim() === '教室')!
+          .click()
+      )
       await act(async () =>
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
       )

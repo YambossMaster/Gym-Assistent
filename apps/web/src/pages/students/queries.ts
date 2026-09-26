@@ -19,6 +19,8 @@ export function invalidateStudentPurchaseQueries(
   coachId: string,
   studentId: string
 ) {
+  void queryClient.invalidateQueries({ queryKey: ['finances', coachId] })
+  void queryClient.invalidateQueries({ queryKey: ['venues', coachId] })
   void queryClient.invalidateQueries({ queryKey: queryKeys.student(coachId, studentId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.students(coachId) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.income(coachId) })

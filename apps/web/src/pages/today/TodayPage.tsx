@@ -80,7 +80,7 @@ function TodaySignals({
               : '課程資料尚未提供'}
           </small>
         </div>
-        <div className="today-signal">
+        <Link className="today-signal today-signal-link" to="/students" aria-label="前往學生頁面">
           <span className="today-signal-icon">
             <UsersRound />
           </span>
@@ -88,24 +88,22 @@ function TodaySignals({
             <span>活躍學生</span>
             <strong>{today.summary.activeStudents}</strong>
           </div>
-        </div>
-        <div className="today-signal income">
+          <ChevronRight className="today-signal-chevron" aria-hidden="true" />
+        </Link>
+        <Link
+          className="today-signal today-signal-link income"
+          to="/students/finances"
+          aria-label="前往本月收支頁面"
+        >
           <span className="today-signal-icon">
             <WalletCards />
           </span>
           <div>
             <span>{formatPeriod(today.summary.incomePeriod)}</span>
-            {today.summary.incomeByCurrency.length ? (
-              today.summary.incomeByCurrency.map((income) => (
-                <strong key={income.currency}>
-                  {formatMoney(income.amountMinor, income.currency)}
-                </strong>
-              ))
-            ) : (
-              <strong className="today-no-income">尚無實收紀錄</strong>
-            )}
+            <strong className="today-finance-label">收支明細概覽</strong>
           </div>
-        </div>
+          <ChevronRight className="today-signal-chevron" aria-hidden="true" />
+        </Link>
         <TodayNotificationCenter
           session={session}
           notifications={today.notifications ?? []}
@@ -480,14 +478,7 @@ function dayGreeting(timeZone: string) {
 }
 function formatPeriod(period: { startsOn: string; endsOn: string }) {
   const [year, month] = period.startsOn.split('-')
-  return `${year} 年 ${Number(month)} 月實收`
-}
-function formatMoney(amountMinor: number, currency: string) {
-  return new Intl.NumberFormat('zh-TW', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: currency === 'TWD' ? 0 : undefined
-  }).format(amountMinor)
+  return `${year} 年 ${Number(month)} 月`
 }
 function lessonText(remaining: number) {
   return remaining < 0

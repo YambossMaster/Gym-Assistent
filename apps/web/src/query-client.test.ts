@@ -1,5 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { focusManager, QueryObserver } from '@tanstack/react-query'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { financeReadRecovery } from './pages/students/finance-api'
 import { createAppQueryClient } from './query-client'
+
+afterEach(() => focusManager.setFocused(undefined))
 
 describe('formal route query cache', () => {
   it('keeps prefetched route data fresh across ordinary navigation', () => {
@@ -40,4 +44,31 @@ describe('formal route query cache', () => {
 
     expect(client.getQueryData(key)).toBeUndefined()
   })
+})
+
+it('retries a failed finance read when the page becomes active again', async () => {
+  const client = createAppQueryClient()
+  client.mount()
+  const read = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('service unavailable'))
+    .mockResolvedValue('ready')
+  const observer = new QueryObserver(client, {
+    queryKey: ['finances', 'coach-1', 'current'],
+    queryFn: read,
+    ...financeReadRecovery,
+    retry: false
+  })
+  const unsubscribe = observer.subscribe(() => {})
+  try {
+    await vi.waitFor(() => expect(observer.getCurrentResult().isError).toBe(true))
+    focusManager.setFocused(false)
+    focusManager.setFocused(true)
+    await vi.waitFor(() => expect(observer.getCurrentResult().data).toBe('ready'))
+    expect(read).toHaveBeenCalledTimes(2)
+  } finally {
+    unsubscribe()
+    client.clear()
+    client.unmount()
+  }
 })

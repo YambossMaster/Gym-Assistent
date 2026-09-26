@@ -29,7 +29,37 @@ in the brief introduction.
 
 **Lesson Purchase**:
 A recorded grant of lesson entitlement to a Student.
+It may grant lessons usable at any Venue or lessons bound to one named Venue.
 _Avoid_: Balance adjustment, payment
+
+**Venue**:
+A Coach-named place used for a Course Session. The Coach may record only its name or
+optionally track the cost of teaching there.
+_Avoid_: Treating an untracked Venue as a free Venue
+
+**Venue Lesson Purchase**:
+A Coach-recorded purchase of a number of lessons that can be taught at one Venue.
+Its full price is an expense when purchased; using a lesson reduces the remaining count.
+_Avoid_: Charging the purchase price again for each completed Course Session
+
+**Venue Course Record**:
+The Coach's view of one completed Course Session at a Venue, including the applied expense rule,
+any fee or prepaid-lesson use, and its source links. It is not a second Course Session.
+_Avoid_: Treating a monthly finance row as the source Course Session
+
+**Customer Source**:
+For dual-rate Venue commission, display the two sources as 「場地供客」 and 「自帶客」.
+The source describes who brought the Student, not who collected the Lesson Purchase payment.
+
+**Venue Lesson Allocation**:
+The assignment of one completed Course Session to one Venue Lesson Purchase batch, consuming
+one available Venue lesson. A Session can instead be explicitly exempt or await allocation.
+_Avoid_: Assuming every completed Session automatically belongs to the oldest purchase
+
+**Venue Base Salary**:
+A fixed monthly amount a Venue pays the Coach, recorded as income on that Venue's configured
+monthly pay day.
+_Avoid_: Student Lesson Purchase, Venue expense
 
 **Course Session**:
 One scheduled occurrence of coaching that may later be completed or cancelled.

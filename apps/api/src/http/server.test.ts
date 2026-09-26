@@ -284,6 +284,19 @@ describe('student HTTP interface', () => {
       },
     })
     const purchase = created.json().purchase as { id: string; version: number }
+    const obsoleteCollection = await server.inject({
+      method: 'POST',
+      url: `/v1/students/${student.id}/lesson-purchases`,
+      headers,
+      payload: {
+        purchasedAt: '2026-09-01T00:00:00.000Z',
+        lessonCount: 2,
+        amountMinor: 4000,
+        currency: 'TWD',
+        collectionMode: 'venue',
+      },
+    })
+    expect(obsoleteCollection.statusCode).toBe(400)
     const updated = await server.inject({
       method: 'PATCH',
       url: `/v1/students/${student.id}/lesson-purchases/${purchase.id}`,

@@ -1,0 +1,120 @@
+import { useState } from 'react'
+import { financeMoney, moneyFactor } from './finance-api'
+
+const currencyPreferenceKey = 'gym-assistant.default-purchase-currency'
+
+export function getDefaultFinanceCurrency() {
+  try {
+    const value = localStorage.getItem(currencyPreferenceKey)
+    return ['TWD', 'USD', 'JPY', 'EUR', 'HKD'].includes(value ?? '') ? value! : 'TWD'
+  } catch {
+    return 'TWD'
+  }
+}
+
+export function saveDefaultFinanceCurrency(value: string) {
+  try {
+    localStorage.setItem(currencyPreferenceKey, value)
+  } catch {
+    // Keep the selected UI preference usable for the current page when storage is unavailable.
+  }
+}
+
+export function PurchaseMoneyFields({
+  count,
+  amount,
+  currency = 'TWD',
+  includeCount = true,
+  totalLabel = '總金額'
+}: {
+  count?: number
+  amount?: number
+  currency?: string
+  includeCount?: boolean
+  totalLabel?: string
+}) {
+  const [lessons, setLessons] = useState(count === undefined ? '' : String(count)),
+    [totalDraft, setTotalDraft] = useState(
+      amount === undefined ? '' : String(amount / moneyFactor(currency))
+    ),
+    [unitDraft, setUnitDraft] = useState(''),
+    [editedField, setEditedField] = useState<'total' | 'unit'>('total')
+  const code = currency
+  const factor = moneyFactor(code),
+    n = Number(lessons)
+  const total =
+    editedField === 'unit'
+      ? unitDraft !== '' && /^\d+(?:\.\d*)?$/.test(unitDraft) && n > 0
+        ? String(Math.round(Number(unitDraft) * factor * n) / factor)
+        : ''
+      : totalDraft
+  const validTotal = /^\d+(?:\.\d+)?$/.test(total)
+  const minor = validTotal ? Math.round(Number(total) * factor) : null
+  const unit =
+    editedField === 'unit'
+      ? unitDraft
+      : n > 0 && minor !== null
+        ? String(Number((minor / n / factor).toFixed(2)))
+        : ''
+  const approximateUnit = n > 0 && minor !== null && !Number.isInteger(minor / n)
+  const currencyDecimals = Math.round(Math.log10(factor))
+  return (
+    <div className="finance-money-fields">
+      {includeCount && (
+        <label>
+          堂數
+          <input
+            name="lessonCount"
+            type="number"
+            min="1"
+            max="10000"
+            step="1"
+            required
+            value={lessons}
+            onChange={(e) => setLessons(e.target.value)}
+          />
+        </label>
+      )}
+      <label>
+        {totalLabel}
+        <input
+          aria-label={totalLabel}
+          type="text"
+          inputMode="decimal"
+          pattern={currencyDecimals ? `[0-9]+(?:[.][0-9]{1,${currencyDecimals}})?` : '[0-9]+'}
+          required
+          value={total}
+          placeholder="0"
+          onChange={(e) => {
+            setTotalDraft(e.target.value)
+            setEditedField('total')
+          }}
+        />
+      </label>
+      <label>
+        每堂參考價{approximateUnit ? '（約）' : ''}
+        <input
+          aria-label="每堂參考價"
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9]+(?:[.][0-9]{1,4})?"
+          value={unit}
+          placeholder="0"
+          onChange={(e) => {
+            setUnitDraft(e.target.value)
+            setEditedField('unit')
+          }}
+        />
+      </label>
+      <input type="hidden" name="amountMinor" value={minor ?? ''} />
+      <input type="hidden" name="currency" value={code} />
+      <span className="finance-money-equation">
+        {n > 0 && minor !== null
+          ? `${n} 堂 · 合計 ${financeMoney(minor, code)}`
+          : n > 0
+            ? '輸入總金額'
+            : '輸入堂數'}
+      </span>
+    </div>
+  )
+}

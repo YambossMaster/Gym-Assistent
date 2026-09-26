@@ -6,6 +6,7 @@ export function Page({
   eyebrow,
   description,
   actions,
+  beforeHeader,
   className,
   children
 }: {
@@ -13,11 +14,13 @@ export function Page({
   eyebrow?: string
   description?: string
   actions?: ReactNode
+  beforeHeader?: ReactNode
   className?: string
   children: ReactNode
 }) {
   return (
     <section className={`page${className ? ` ${className}` : ''}`}>
+      {beforeHeader}
       <header className="page-header reveal">
         <div>
           {eyebrow && <span className="eyebrow dark">{eyebrow}</span>}

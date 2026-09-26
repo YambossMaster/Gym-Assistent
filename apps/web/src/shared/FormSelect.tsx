@@ -6,6 +6,7 @@ export type FormSelectOption = { value: string; label: string; disabled?: boolea
 
 export function FormSelect({
   label,
+  displayValue,
   options,
   value,
   defaultValue,
@@ -16,6 +17,7 @@ export function FormSelect({
   className = ''
 }: {
   label: string
+  displayValue?: string
   options: FormSelectOption[]
   value?: string
   defaultValue?: string
@@ -145,7 +147,10 @@ export function FormSelect({
         onClick={() => (open ? setOpen(false) : expand())}
         onKeyDown={keyDown}
       >
-        <span>{options.find((option) => option.value === selected)?.label ?? '請選擇'}</span>
+        <span className="form-select-option-label">
+          {options.find((option) => option.value === selected)?.label ?? '請選擇'}
+        </span>
+        {displayValue && <span className="form-select-display-label">{displayValue}</span>}
         <ChevronDown aria-hidden="true" />
       </button>
       {open &&

@@ -1,32 +1,33 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-24. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-27. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                     |
-| Current package    | **M7.5 Student introduction wording correction**                                               |
-| Package state      | **Desktop/390×844 review passed; Stage 1 review continues**                                    |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                  |
-| Branch baseline    | `c70a253` reached `origin/main`; CI run `35906283925` passed both jobs                         |
-| Worktree           | Stage 1 checkpoint delivered; `output/` stays local                                            |
-| Linked database    | Development only; migrations through `20260923172115` applied and linked dry-run is up-to-date |
-| Production         | Not configured; no real customer data                                                          |
+| Field              | Current value                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
+| Current package    | **M7.5 Monthly finances and venues implementation**                                                 |
+| Package state      | **Venue/Finance Stage 1 checkpoint prepared for Main; remaining acceptance stays open**             |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
+| Branch baseline    | `3578cf0` is the verified pre-checkpoint `origin/main` ref; delivery CI pending                     |
+| Worktree           | Venue/finance Sol slice plus preserved Stage 1 corrections; `output/` stays local and ignored       |
+| Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
+| Production         | Not configured; no real customer data                                                               |
 
 ## Next handoff
 
-Continue M7.5 Stage 1 Product Owner review: take the next reported issue, reproduce and correct it
-locally with focused evidence. Begin the Stage 2 Contract only after the Product Owner explicitly
-ends Stage 1. Keep Calendar touch/Block physical-phone acceptance in scope; do not begin M8.
-
-The Product Owner accepted retaining Training drag-start neighbour anchoring on 2026-09-23. If the Product Owner asks
-to remove only the third experiment, set `ENABLE_DRAG_START_ANCHOR = false` in
-`apps/web/src/pages/training/exercise-drag-start-anchor.ts`; retain drop restoration, drag-only footer
-spacing, and viewport/list scroll bounds. The disabled-anchor editor regression verifies that drop
-restoration still works. Do not revert the entire reorder correction.
+After this authorized Stage 1 checkpoint, resume Product Owner review of Venue management,
+Venue course records, Student course history, trajectory navigation, and Finance overview/month
+selector against the preserved 2026 development data (LOG-221–243; scenario index in local
+`output/M7.5-2026-venue-finance-review-data.md`). Take subsequent corrections only when the
+Product Owner resumes review; do not infer Stage 1 or M7.5 completion from this checkpoint.
+The remaining Stage 1 browser acceptance for Venue creation, Venue-bound purchases,
+Calendar/fixed-Series choices, salary pay-day income, and prepaid completion/reopen with
+its low-balance notice remains open. Preserve these review fixtures until the Product Owner
+finishes inspecting them. Keep the unrelated `output/` intact; do not enter Stage 2/M8 without
+separate Product Owner direction.
 
 ## M7.5 Stage 2 backlog
 
@@ -329,6 +330,990 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-27 — LOG-244 — M7.5 Venue and Finance Stage 1 delivery checkpoint
+
+- **Scope:** Product Owner explicitly requested full CI and a Main push to pause the largely completed Venue management and monthly Finance review. Preserve the unfinished Stage 1 browser paths and Stage 2/M8 boundary. Keep local review fixtures outside Git.
+- **Outcome:** The Venue live E2E exposed two regressions in the applied Session-rule trigger: missing default Customer Source derivation for dual-rate Venues and missing purchase-derived Venue eligibility. Two forward-only migrations restore those rules while retaining Session-end fee-rule selection. The Finance live E2E expectation now follows the approved effective-time rule; local `output/` is ignored by Git and Prettier.
+- **Verification:** Final root format/types/tests passed (API 26 files/122 tests; Web 49 files/209 tests); final production build passed with the existing chunk-size advisory. Isolated two-Coach Venue and Finance live E2E passed after the fix and removed their exact fixtures. Linked development migration dry-run is up to date, `app_private` lint found no schema errors, and security advisors retain only the accepted development leaked-password-protection warning. `git diff --check` passed. Remote commit and exact-SHA Actions evidence are pending; no full M7.5 browser acceptance or milestone completion is claimed.
+- **Next:** deliver this checkpoint to Main, confirm the verify and migration-dry-run jobs for its exact SHA, then await the Product Owner's next Stage 1 review direction.
+
+### 2026-09-27 — LOG-243 — Keep deleted Finance rows in one scroll area and remove empty section
+
+- **Scope:** Product Owner requested that expanded deleted rows follow the total in the same ledger scrollbar, with a clear **已刪除明細** divider; the expand/collapse option stays at the card bottom. The deleted-row editor must use the normal **恢復明細** button at the far left of the cancel/save row. Once no deleted rows remain, the option, divider, and reserved space must disappear.
+- **Outcome:** The ledger now renders active totals and expanded deleted rows in one scroll area. Its bottom toggle remains outside that area. Restore and source-removed clone actions use the shared secondary button in the editor footer, with no browser-default action below the form. Zero deleted count removes the entire deleted section and toggle, and the card shrinks to its content. Added an interaction regression for shared scroll structure and restore action placement.
+- **Verification:** Web format/typecheck/test passed (49 files, 209 tests), Web production build passed with the existing chunk-size advisory, and `git diff --check` passed. Authenticated Chrome desktop and exact 390 × 844 preview showed the zero-deleted state without the old heading or option; the mobile preview also showed the bottom toggle and single scrollbar while its prior cached count was one. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-242 — Clarify modified Finance rows and confirmation controls
+
+- **Scope:** Product Owner requested a pale-green wrench **已修改** marker beside each modified ledger title, **取消修改** in the same footer row as delete/cancel/save, matching button styling for confirmation, Enter to confirm and Escape to cancel, and pale-green parenthesized markers beside the form fields whose saved values differ from their source.
+- **Outcome:** Modified rows now show a compact title marker instead of spending a third detail line on that state. The edit footer places reset between the left delete action and right cancel/save actions, including a four-button mobile layout. Confirmation uses the shared secondary/lime buttons, focuses **確認**, and accepts Enter or Ctrl/Cmd+Enter while Escape returns to the editor. The Finance projection now includes original occurrence time so date, time, name, and amount markers reflect their actual source comparisons. An amount-only edit no longer invents a midnight occurrence time for a date-only source.
+- **Verification:** Focused Web interaction/navigation tests (5), API Finance tests (18), both TypeScript checks, Web production build, focused Prettier, and `git diff --check` passed. Interaction coverage includes Enter confirmation, Escape cancellation, and amount-only submission without an occurrence-time override. Web build retained the existing chunk-size advisory. Authenticated visual acceptance remains open because local Web/API services were not running. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-241 — Present Finance source as structured plain text
+
+- **Scope:** Product Owner clarified that **來源說明** stays as the heading, followed by one text display box containing a written explanation, source amount, and source date; the source-record button belongs on the next line.
+- **Outcome:** Replaced the separately styled explanation and fact grid with a single read-only, preformatted text display. Generated source details now use a summary sentence and labelled amount/date lines, with repeated commission wording shortened; source-change state becomes an additional text line. The existing source-record action remains immediately below the box.
+- **Verification:** Focused Prettier, Web TypeScript, targeted Finance navigation/source-format tests (3 passed), production build, and `git diff --check` passed. Vite needed the known elevated Windows rerun after sandbox `spawn EPERM`; build retained the existing chunk-size advisory. Authenticated visual acceptance remains open because the local Web/API services were not running. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-240 — Align and simplify Finance source information
+
+- **Scope:** Product Owner identified the Finance detail editor's indented **來源說明** heading, oversized and crowded source text, and an unframed source-record link.
+- **Outcome:** The source section now aligns with the other form fields without a surrounding card. Its heading is larger than its description; middle-dot source details appear on separate lines; amount and date use labelled, smaller text. The source-record link is an outlined button with hover and keyboard-focus states.
+- **Verification:** Focused Prettier, Web TypeScript, and production build passed with the existing chunk-size advisory. The local Web/API services were not running, so authenticated visual acceptance remains for Product Owner review. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-239 — Restore Finance source paths and simplify Today finance signal
+
+- **Scope:** Product Owner reported a black selected-row frame, a scattered Finance source field,
+  purchase income stopping at Student detail, Venue course detail skipping its list on close,
+  prepaid source lacking a return, and a Today card that exposed an income total.
+- **Outcome:** Ledger keyboard focus now uses a quiet left accent rather than a full black frame.
+  Source description, original amount/date, and its route form one bounded field on desktop and
+  mobile. Purchase income opens the Student purchase-history card and its back link restores the
+  originating Finance month and detail. Venue course detail closes to its record list, then to the
+  Finance detail; prepaid source closes directly to that detail. Today displays the month and
+  **收支明細概覽** with its existing arrow and route, without an amount.
+- **Verification:** Web TypeScript, affected-file Prettier, Web production build, and focused
+  Vitest passed (2 files, 17 tests). Authenticated desktop Chrome verified the source field,
+  purchase-history scroll/back, both Venue course close layers, prepaid close/back, and Today copy.
+  Exact 390×844 preview showed the source field without visible overflow. `git diff --check`
+  passed for tracked affected Web files. Sandbox Vitest/build first hit Windows `spawn EPERM`;
+  elevated reruns passed. Physical-phone touch remains open. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/Finance acceptance; preserve
+  development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-238 — Separate Student roster from management entries
+
+- **Scope:** Product Owner asked for a clear, full-width division between all Student cards and the **本月收支** / **場地管理** entry cards.
+- **Outcome:** The management-entry grid now starts below a 2px horizontal rule with larger space on both sides; the rule spans the roster content width. Narrow screens retain proportional spacing and the stacked entry cards.
+- **Verification:** Focused Prettier and `git diff --check` passed. Web TypeScript and production build passed on an elevated rerun after Vite hit the known Windows sandbox `spawn EPERM`; the existing chunk-size advisory remains. No authenticated browser acceptance was available because the local Web service was not running; the exact rendered visual remains for Product Owner review.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary. No commit, push, or remote CI is claimed.
+
+### 2026-09-27 — LOG-237 — Tighten mobile Finance operators and pin the ledger heading
+
+- **Scope:** Product Owner requested a smaller, lower mobile minus; a smaller equals sign farther left; the mobile row count beside **收支明細** instead of above the add action; removal of the month title's pale-green outer focus frame; and desktop-style internal scrolling with a clearer title-to-record divider on mobile and desktop.
+- **Outcome:** Mobile operators were adjusted while the amounts stay centered. The mobile ledger title and count share one line, and **＋新增** stands alone at right. The month selector retains a keyboard-visible underline without the green outer ring. Mobile ledger records scroll inside a viewport-height card below its fixed heading, with clearance between the scrollbar and record amounts. Both sizes use a stronger heading divider, and desktop column labels have a clearer bottom rule.
+- **Verification:** Focused Prettier, Web TypeScript, production build, and diff check passed. Authenticated Chrome at exact 390×844 showed the title/count/action alignment and the opened month title without the green frame. Scrolling records changed the inner scroll position while the heading stayed fixed; the card bottom measured 20px above fixed navigation. Authenticated desktop Chrome showed the stronger header and column-label rules. Physical-phone touch acceptance remains open.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary. No commit, push, or remote CI is claimed.
+
+### 2026-09-27 — LOG-236 — Refine Finance ledger scrolling and source navigation
+
+- **Scope:** Product Owner requested desktop ledger scroll chaining, clearer Finance editor hierarchy and source field, direct Venue course-record source positioning with return to the Finance detail, consistent footer controls, and less dialog bottom space.
+- **Outcome:** The ledger rows now pass an upward scroll to the page when already at the top. Finance editor title and form are separated; source explanation has its own heading, amount/date facts, and source link. Session expense links carry Venue and Session IDs to the Venue course-record list, which loads and centers the matching row with a pale-green highlight. Closing that dialog, canceling a source-record edit, using the Venue page back link, or browser Back restores the original Finance month and detail dialog. Save uses the shared compact lime action and Ctrl/Cmd + Enter; delete/cancel/save heights align, and bottom padding is reduced.
+- **Verification:** Web typecheck, full Web suite (47 files, 201 tests), and production build passed with the existing chunk-size advisory. Authenticated desktop Chrome confirmed the inner-to-outer upward scroll (page position 391 → 0 while ledger remained at 0), exact Venue record highlight, return by close and browser Back, and the revised Finance editor layout. Initial Vite test/build attempts hit the known Windows sandbox `spawn EPERM`; reruns with normal process permissions passed. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-235 — Refine mobile Finance overview and ledger heading
+
+- **Scope:** Product Owner requested a mobile-only alignment correction for the Finance equation, a single interactive year/month overview title, and a smaller ledger add action labeled **新增** without squeezing the heading.
+- **Outcome:** At mobile widths, income and expense occupy equal centered columns around a larger minus sign. The dark difference panel centers its amount and places a white equals sign beside it. The existing custom month selector presents as the overview title with a chevron and retains the paged month menu. The ledger heading uses separate grid slots for its title, row count, and compact **＋新增** action. Desktop Finance presentation remains on its existing rules.
+- **Verification:** Web TypeScript and production build passed, with the existing chunk-size advisory. Focused Prettier and diff check passed. Authenticated Chrome's exact 390×844 preview showed centered September and August totals, the compact ledger header, and no visible horizontal overflow; selecting August updated the heading, totals, and ledger, and returning to the current month restored September. Physical-phone touch acceptance remains open.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary. No commit, push, or remote CI is claimed.
+
+### 2026-09-27 — LOG-234 — Refine desktop Finance equation and scrollable ledger
+
+- **Scope:** Product Owner requested stronger, centered equation operators; a Student-detail-style Finance ledger heading; a smaller add action and explicit row count; an internal ledger scrollbar with its heading held above the rows; better expense/income clearance; a clear total without TWD; and less bottom-page whitespace. A follow-up rejected the total row's pale-green fill and identified its amount alignment.
+- **Outcome:** Desktop overview amounts are centered in equal-width columns around larger minus/equal signs. The ledger has a `FINANCE / LEDGER` eyebrow, **共 N 筆**, and a slightly smaller add button. The page ends with a small gap under the viewport-height ledger; its rows scroll inside the card beneath a fixed title and sticky column labels. Expense/income columns sit farther from chevrons. The total uses the existing card background, an ink divider, stronger type, and column-aligned amounts. The ledger remounts for a selected month so its scroll position resets with the data. Mobile layout remains on its existing rules.
+- **Verification:** Web typecheck and production build passed with only the existing chunk-size advisory; focused Prettier and `git diff --check` passed. Authenticated Chrome checks at desktop and 1756×1078 confirmed operator placement, ledger title/row count/action sizing, inner scrolling through the total, fixed header, amount alignment, and about 20px of bottom space. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-233 — Combine Finance title and recorded-difference equation
+
+- **Scope:** Product Owner requested the monthly Finance overview card to replace the page title, a year/month selector in that card instead of the historical-month card, an emphasized recorded-difference equation, shorter copy, and a consistent add icon.
+- **Outcome:** The card's heading names the selected year and month. The custom selector retains paged access to earlier months and updates the overview and ledger through their shared month query. The totals display recorded income minus recorded Venue expense equals recorded calculated difference, with the result emphasized. Removed the redundant currency abbreviation and partial-coverage sentence from the overview; the ledger add action uses the shared Plus icon. A transient JSX edit error seen during work was corrected before final verification.
+- **Verification:** Web production build and typecheck passed; full Web suite passed with two workers (47 files, 201 tests). The first unrestricted suite attempt had worker startup timeouts despite 156 passing tests, so it was rerun with bounded concurrency. Focused Prettier and `git diff --check` passed. Authenticated Chrome confirmed desktop and exact 390×844 display, August selection and return to September, corresponding ledger values, and no horizontal overflow. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-232 — Clarify Venue course history time, month changes, and mobile scrolling
+
+- **Scope:** Product Owner requested Calendar-consistent 24-hour times, a narrow visible mobile scroll indicator, one divider before each month, and clearer year/month markers in Venue course history.
+- **Outcome:** Venue course rows and details format times with the 24-hour cycle. The mobile list reserves a slim scrollbar gutter with a styled thumb. Month headings use a larger, darker label on a pale green field with a lime edge; their extra top border is removed while row spacing remains.
+- **Verification:** Focused Web Venue tests passed (2 files, 14 tests), Web typecheck and production build passed with the existing chunk-size advisory, and `git diff --check` passed. Authenticated desktop and exact 390×844 Chrome inspection showed 09:00/15:30 times, month changes, the single prior-row divider, and a visible mobile scroll indicator clear of record text. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining acceptance, including the historic rent-rule discrepancy; preserve development review fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-27 — LOG-231 — Refine Venue course history and repair prepaid writes
+
+- **Scope:** Product Owner requested a Venue-name history title, weekdays, month dividers, desktop scrollbar placement and clearance, and a hidden mobile scrollbar without losing scrolling; prepaid creation returned an unexpected server error.
+- **Outcome:** The history title now names the Venue, date rows include a one-character weekday, and month boundaries show year and month. Its toolbar stays outside the scrollable list; desktop rows have scrollbar clearance, and the exact mobile layout hides only the scrollbar. A live server log traced the 500 to PostgreSQL `42P08` (one bind parameter inferred as both date and timestamp). Explicit date casts repair Venue-rule and prepaid create/edit SQL in all matching paths. The running local API was restarted on port 3000 and `/health` returned 200.
+- **Verification:** Before the SQL correction, an isolated development live run failed at `POST /venues` with 500 and the server logged `42P08`. Afterward, the same run passed the prepaid create, edit, balance, reopen, and notice block, including an explicit deduction start; the runner removed its exact fixtures. API adapter tests (12) and Web Venue tests (13), both typechecks, both builds, and affected-file Prettier passed. Authenticated desktop and exact 390×844 browser checks showed the title, weekdays, month transitions, desktop scrollbar below the fixed toolbar, and hidden mobile scrollbar with successful vertical scrolling. `git diff --check` passed. No commit, push, or remote CI is claimed.
+- **Known issue:** The broader pre-existing finance live runner continues past the prepaid block and fails later in a separate historic rent-rule expectation (`800` actual versus `500` expected); that behavior is outside this correction and remains for Stage 1 acceptance. It cleaned its isolated fixtures on failure.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance, including the historic rent-rule discrepancy; preserve development review fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-230 — Keep Venue history controls visible and save prepaid credits directly
+
+- **Scope:** Product Owner requested a fixed heading and history entry while Venue course rows scroll, and a one-step prepaid Venue purchase flow for both new and edited batches. They also reported that the old preview confirmation appeared to do nothing.
+- **Outcome:** The Venue course dialog retains its heading, close action, and `過往支出類型` entry while the record body scrolls. Prepaid create and edit submit directly to the existing POST/PATCH operations with `登錄預購` or `變更`; the preview panel and second confirmation for these forms are removed. Mutation errors now appear beside the form actions. Rule and historical-link preview flows remain as contracted. The Venue course records Contract records this Product Owner correction.
+- **Verification:** Two focused form tests failed before the change because they observed preview endpoints, then passed with direct POST/PATCH and the successful return to Venue detail. Web production build/typecheck and 15 focused tests passed. Authenticated desktop and exact 390×844 browser views confirmed fixed heading/history controls during list scrolling and the direct create/edit action labels. Affected-file Prettier and `git diff --check` passed. No customer or review fixture data was changed; no commit, push, or remote CI is claimed. The precise cause of the old second-click failure was not isolated because that step was removed; direct save and error feedback are covered by the new tests.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-229 — Keep Venue status switch available at zero archived
+
+- **Scope:** Product Owner reported that restoring the only archived Venue left the Coach on an
+  archived list with no way to switch back, and requested the Student roster's two-status control.
+- **Outcome:** Venue management always shows `進行中` and `已封存` with counts, including zero. The
+  selected category stays switchable after a Venue changes status, and an empty category explains
+  that it has no Venues. Desktop aligns the control to the right; mobile fills the list width.
+- **Verification:** The focused regression first failed on the missing switch after a simulated
+  last-Venue restore, then passed after the fix (VenueManager: 11 tests). Web typecheck, production
+  build, affected-file Prettier, and `git diff --check` passed. Authenticated desktop and exact
+  390×844 browser checks showed both choices at `已封存 0`, the empty state, and direct return to
+  `進行中`. Development review data was not changed. No commit, push, or remote CI is claimed.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance; preserve
+  development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-228 — Open complete course history in a dialog and refine Venue course details
+
+- **Scope:** Product Owner clarified that `查看更多` should open a scrollable interface on the Student page, and requested a Venue course title divider, larger footer actions, and direct navigation from the purchase-source row.
+- **Outcome:** The Student page keeps ten course rows and opens all records in the same row layout inside a scrollable dialog; the temporary separate route was removed. Venue course details now separate the title from the venue/student information, show the purchase source as a whole-row link with a right arrow, and retain only `修改場地紀錄` and a black `查看課堂` footer action. Both footer actions are slightly larger.
+- **Verification:** Web typecheck and production build passed; focused Student navigation and VenueManager tests passed (12 tests). Authenticated desktop and exact 390×844 browser views confirmed the complete course dialog and its internal scrolling, plus the Venue detail layout. Clicking the purchase-source row on mobile opened the correct Student `#purchase-history` section. Affected-file Prettier and `git diff --check` passed. No commit, push, or remote CI is claimed.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance; preserve development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-227 — Restore Venue heading emphasis and match footer actions
+
+- **Scope:** Product Owner corrected the prior mobile Coach-supplied heading layout and requested
+  equal geometry for the Venue detail footer actions.
+- **Outcome:** The mobile `教練自帶客` heading retains its original size and weight, the add action
+  sits at the right of the heading, and the explanation plus count share one line underneath.
+  The mobile Archive/Delete/Restore, Cancel, and Save buttons use matching 80 × 46px geometry.
+  Desktop heading and action layout remain visually unchanged.
+- **Verification:** Web typecheck and production build passed; focused VenueManager tests passed
+  (10 tests), and affected-file Prettier check passed. Authenticated exact 390×844 and desktop
+  browser views confirmed the heading and footer arrangements. `git diff --check` passed.
+  No commit, push, or remote CI is claimed.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance; preserve
+  development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-226 — Clarify mobile Venue detail hierarchy
+
+- **Scope:** Product Owner requested a clearer mobile Venue title/field boundary, reserved address
+  line when blank, a two-line Coach-supplied heading with its add action beside the title, and
+  wider Cancel/Save actions.
+- **Outcome:** Mobile Venue details have a subtle divider below the title/address block. Empty
+  addresses retain the same line height. The Coach-supplied explanation sits below its title,
+  while `加入自帶客` aligns with that title. Mobile Cancel/Save buttons are wider; desktop layout
+  rules remain unchanged.
+- **Verification:** Web typecheck, production build, and focused VenueManager tests passed (10 tests),
+  including a blank-address assertion. Prettier check passed. Authenticated 390×844 preview showed
+  the divider, Coach heading/action arrangement, and wider footer for prepaid and Coach-supplied
+  Venues without visible horizontal overflow. `git diff --check` passed. No commit, push, or
+  remote CI is claimed.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance; preserve
+  development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-225 — Align Venue action and simplify list copy
+
+- **Scope:** Product Owner requested alignment of `新增場地`, a two-count prepaid summary,
+  `單次計費` wording, and a focused mobile Venue-list layout correction.
+- **Outcome:** The add action centers its icon and label on desktop and mobile. Prepaid cards show
+  only remaining available and undeducted lessons, including zero. All current Web labels,
+  rule summaries/history, and the API validation message use `單次計費`. The mobile list uses
+  shorter cards and tighter gaps while retaining full-card targets and readable wrapping.
+- **Verification:** Web and API typechecks passed; VenueManager focused tests passed (10 tests),
+  affected-file Prettier check and Web production build passed. Authenticated desktop and exact
+  390×844 preview showed the updated action, prepaid count, rent label, and compact cards without
+  visible horizontal overflow. Repository `git diff --check` passed. Initial sandbox Vitest/build
+  attempts hit Windows `spawn EPERM`; elevated reruns passed. No commit, push, or remote CI is claimed.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and remaining acceptance; preserve
+  development fixtures and the Stage 2/M8 boundary.
+
+### 2026-09-26 — LOG-224 — Restore trajectory navigation and bound Student history
+
+- **Scope:** Product Owner reported inactive growth-trajectory history rows from Student detail,
+  unlimited Student course records, Venue record hierarchy/source navigation/unit-price gaps,
+  opaque prepaid rule history, and requested a lime preview button with a shortcut.
+- **Outcome:** Student trajectory rows now route to the original Session and exercise. Student detail
+  shows at most ten classes with a dedicated complete-history route. Venue record detail uses a
+  smaller Venue–Student heading, matched action buttons, a purchase-history anchor, and a per-class
+  purchase price. The expense-rule list states type changes directly and omits versions with no
+  visible setting change. Preview uses the existing lime primary style; Ctrl/Cmd+Enter submits the
+  form's current preview/save step without opening the custom select.
+- **Verification:** Web typecheck and production build passed; four focused Vitest files passed
+  (21 tests). Authenticated desktop and exact 390×844 preview confirmed Venue detail, concise rule
+  history, ten-class Student summary, complete-history route, purchase-history scroll, and the
+  Ctrl+Enter preview without saving. `git diff --check` passed for the affected Web files.
+- **Known issue:** Stage 1's remaining broader Venue and Finance acceptance is still open. This is
+  local evidence only; no push or remote CI is claimed.
+- **Next:** continue the Product Owner's M7.5 Stage 1 review and fix the next reported issue; keep
+  refreshed development fixtures and the Stage 2/M8 boundary intact.
+
+### 2026-09-26 — LOG-223 — Refine Venue course records and detail navigation
+
+- **Scope:** Product Owner requested Stage 1 corrections only in Venue management and Venue course
+  records: layered closing, concise fee summaries, consistent purchase source, historical prepaid
+  balance per Session, 「場地供客」 wording, newest-first Venue purchases, and desktop/mobile layout.
+- **Outcome:** Nested Venue views and individual Session/edit states close one layer at a time.
+  Individual records use a collapsible applied-rule summary and a consistent Student purchase source
+  section, with edit/source/Session actions aligned in one footer row. Rent and purchase-time
+  commission summaries are shorter; same-basis commission differences omit the repeated rate label.
+  Venue purchase batches sort newest first, rule history has a visible toolbar action, and mobile
+  archive/delete aligns with cancel/save. The API now projects the remaining lessons immediately
+  after each allocated Session from the final assignment set in chronological order; the batch
+  detail separately retains its current balance. Coach-facing source wording is now 「場地供客」
+  throughout the formal app; Contract and Context record the term and historical balance rule.
+- **Verification:** focused API Finance tests 18/18 and Venue Web tests 10/10 passed. Authenticated
+  Chrome confirmed the actual rent/commission/prepaid copy, chronological balances, nested close
+  sequence, detail disclosure, and action alignment on desktop and exact 390×844, including both
+  archive and delete Venue footers. API/Web typechecks, Web build, and final diff/format checks are
+  recorded in this local turn; no push or remote CI is claimed.
+- **Next:** Product Owner reviews the Venue surfaces, then provides the Finance ledger issues they
+  mentioned. Preserve the test data and continue Stage 1 acceptance separately.
+
+### 2026-09-26 — LOG-222 — Clarify Venue records and Finance ledger
+
+- **Scope:** Product Owner found recorded Venue rule history, course rows, and ledger amounts too
+  vague to interpret, and requested oldest-to-newest financial-statement presentation with separate
+  desktop expense/income columns, a total row, and a single mobile amount column.
+- **Outcome:** Rule history identifies exact same-kind fee/rate changes, effective time, and the
+  settings in each version; each row expands to calculation context and links to prepaid batches.
+  Venue course rows explain allocated/pending prepaid status, purchase-time commission, rate
+  differences, rent, and their sources; individual rows expose package pricing and effective rules.
+  Finance rows now name the Student/Venue and concrete purchase, fee, rate, salary, or prepaid basis.
+  Desktop amounts use separate red expense and green income columns; mobile keeps one amount column.
+  Rows use Workspace-local displayed date/time from oldest to newest, followed by per-currency totals.
+- **Verification:** API/Web typechecks passed; focused Finance tests 17/17 and Venue Web tests 9/9
+  passed; Web production build passed with only the existing chunk-size advisory. Authenticated Chrome
+  confirmed July ledger values/ordering, a commission Session detail, prepaid pending/allocation
+  explanations, expandable rule history, and desktop plus exact 390×844 ledger/history layouts.
+  Touched TS/TSX files passed focused Prettier and changed files passed `git diff --check`;
+  no remote CI or push is claimed.
+- **Next:** Product Owner inspects the refined displays with the preserved development fixtures;
+  keep Stage 1 browser acceptance and deferred arbitrary edit/source-change tests separate.
+
+### 2026-09-26 — LOG-221 — Regenerate Venue and Finance review data
+
+- **Scope:** Product Owner requested only steps 1–3 of a new historical test-data cycle: retain the
+  existing Students and Venues, replace old Student purchases, scheduling/completion, Training
+  records, and prepaid Venue batches, and add a few same-kind Venue rule changes. Steps 4–5 remain
+  for a later Product Owner review.
+- **Isolation:** matched the exact development project host, the previously verified Asia/Taipei
+  Workspace `4ba6de2b-520d-4c65-88d0-1fd7d529ae0b`, its owner ID, all six Student IDs/names,
+  and the four selected Venue IDs/names before a single transaction. The original Workspace had
+  six purchases, six Series, 78 Sessions, two prepaid batches, no manual Finance states/entries,
+  and no Venue-linked Sessions. A local backup of replaced rows is in ignored `output/`.
+- **Outcome:** kept all six Students and five Venues; gave each Student one Venue-specific purchase
+  pattern and a fixed weekly/biweekly rhythm. The new data has 14 Purchases, six active Series,
+  119 completed and four upcoming Sessions, 119 Training Records/1,071 completed sets, and three
+  prepaid Venue batches. Two completed prepaid Sessions intentionally precede the first batch's
+  start-deducting time by less than two days and remain unallocated. The four selected Venues have
+  dated same-kind commission/rent/prepaid rules; one Venue has two dated salary settings. Local
+  `output/M7.5-2026-venue-finance-review-data.md` records the per-Student scenarios.
+- **Verification:** transaction/rollback dry run passed before the committed run; a fresh read found
+  exactly 27 allocated and two pending prepaid Sessions, zero missing rule links, zero Session
+  overlaps, zero cross-Venue or overfilled credit links, and zero stale scheduled Sessions. The
+  production Finance projection generated populated TWD ledgers for March–September with no
+  missing calculation rows and a salary income row in its applicable months. No code/schema
+  checks, commit, push, or remote CI are claimed for this data-only setup.
+- **Next:** Product Owner inspects Venue course records and monthly ledger with this dataset. Do
+  not perform the deferred arbitrary edits or add/modify/delete/source-change tests until directed.
+
+### 2026-09-26 — LOG-220 — Tighten Finance ledger layout and editor
+
+- **Scope:** Product Owner requested a focused layout pass on the Finance ledger before continuing
+  Stage 1 acceptance.
+- **Outcome:** Ledger rows are shorter and fully clickable, with inline status, full year, a chevron,
+  and a black `+新增明細` action. Prepaid rows show their stored activation time separately from the
+  booked purchase date, preserving month assignment and sort semantics. The editor uses the shared
+  date picker and scheduling time input side by side, a segmented income/expense choice, source link
+  next to the source value, and delete/cancel/save on one footer row. Existing Escape, Enter and
+  Delete dialog shortcuts remain available.
+- **Verification:** API typecheck and focused Finance test passed (15 tests); Web typecheck, production
+  build and shared date-picker test passed (1 test). The existing Vite chunk-size advisory remains.
+  Authenticated desktop and 390×844 browser checks covered list density, row opening, editor controls,
+  responsive footer, and the new-entry direction control. `git diff --check` passed. Initial sandbox
+  build/test attempts hit Windows `spawn EPERM`; elevated reruns passed. No commit, push, or remote CI
+  is claimed for this Stage 1 layout correction.
+- **Next:** continue the remaining Stage 1 browser acceptance in the Next handoff after Product Owner
+  direction.
+
+### 2026-09-26 — LOG-219 — Deliver Venue course records and monthly ledger through Sol
+
+- **Scope:** Product Owner directed direct Sol implementation of the frozen Venue course-record
+  and Finance ledger Contracts, without a separate Terra handoff. Stage 1 stays local.
+- **Outcome:** The Workspace-scoped migration `20260926024512_venue_course_finance_ledger.sql`
+  stores rule instants, batch deduction starts, per-Session adjustments, Finance source states,
+  and manual entries. API projections use Session end instants, allocate prepaid batches to
+  eligible completed Sessions, calculate commission differences against purchase-time rates,
+  retain manual ledger values when sources change, and recompute adjusted month totals. The Web
+  now has paged Venue course records with per-Session previews and editing, rule and credit
+  previews, and Finance row add/edit/hide/restore/reset with visible source changes and month
+  reassignment. The course record links to the actual allocated purchase source and labels
+  missing calculation data honestly. Other Stage 1 worktree changes were preserved.
+- **Verification:** linked development migration applied; subsequent linked dry-run reports no
+  pending migration; `db lint --linked --schema app_private --level error` reports no errors.
+  A transaction/rollback SQL fixture passed end-time batch eligibility, later-batch backfill,
+  preserved allocation, and independent ledger state. Final API check passed 26 files/118 tests;
+  Web check passed 45 files/194 tests; root format check, build, and `git diff --check` passed.
+  Authenticated browser verified desktop Venue rule and credit impact previews, Venue course
+  detail → month expense propagation, manual amount retained after source mutation, reset,
+  hide/restore, manual row movement from September to October, and exact 390×844 Venue empty
+  state without horizontal overflow. A second isolated browser fixture verified prepaid
+  batch reassignment, batch balance preview, saving, conflict recovery with preserved input,
+  and saving again on desktop. Exact 390×844 repeated the populated batch switch and save;
+  the detail spacing was tightened and no horizontal overflow appeared. Both fixtures were
+  removed, with exact IDs checked to zero. Browser fixture operations touched only isolated
+  rows; the migration backfilled existing development rule/credit instants and balances.
+- **Known issue:** the earlier Venue creation/purchase/salary/prepaid reopen acceptance paths
+  remain for the next local Stage 1 pass. No push or new remote CI is claimed.
+- **Next:** run the single local acceptance package in Next handoff; keep Stage 1 local.
+
+### 2026-09-26 — LOG-218 — Compact the prepaid Venue dialog
+
+- **Scope:** Product Owner said the prepaid purchase editor used too much space and felt empty.
+- **Outcome:** reduced the editor's maximum width from 900px to 720px, shortened the Coach note
+  field, and tightened field spacing. At mobile width, fields use one column and the dialog grows
+  to its content while retaining a viewport-bound scroll limit.
+- **Verification:** authenticated desktop and exact 390×844 preview show a narrower dialog with
+  less unused note space and usable fields. No automated test or build was run for this styling
+  adjustment; no record was saved.
+- **Next:** continue the frozen Venue and finance-ledger Contracts through Terra, then Sol and the
+  pending Stage 1 local acceptance; preserve unrelated worktree changes and `output/`.
+
+### 2026-09-26 — LOG-217 — Freeze finance-ledger management Contract
+
+- **Scope:** Product Owner expanded 收支明細 to edit one row's amount/date/time/name, add manual
+  income or expense, hide and restore system rows, cancel edits, and sort by each row's own
+  displayed date/time. Direction stays fixed; changing it uses hide plus a new manual row.
+- **Outcome:** Added `M7.5-FINANCE-LEDGER-MANAGEMENT-CONTRACT.md`, linked it from the Venue and
+  monthly-finance Contracts, and recorded its Stage 1 scope in the Roadmap. System source facts
+  remain independent from ledger adjustments. Active rows drive adjusted monthly totals;
+  the income headline becomes **本月已記錄收入** with **含手動調整** when relevant. An edited
+  system row restored from 已刪除保留其原有手動欄位；這是依恢復同筆資料的意圖採用的
+  bounded implementation choice.
+- **Verification:** Reviewed current stable Finance row IDs, read-only ledger UI, and monthly
+  projection; Contract formatting and targeted diff checks passed. No schema, API, UI,
+  or development data changed for this Contract gate.
+- **Next:** implement the two frozen Contracts together through Terra, then Sol and the
+  pending Stage 1 local acceptance; preserve unrelated worktree changes and `output/`.
+
+### 2026-09-26 — LOG-216 — Freeze Venue records and open finance-ledger review
+
+- **Scope:** Product Owner resolved upfront commission timing, later rate differences,
+  fee-mode changes, prepaid backfill and manual allocation, manual finance-row amounts,
+  and Student purchase date/time, then expanded the discussion to ledger edit/add/delete/restore.
+- **Outcome:** Promoted the Venue review draft to `M7.5-VENUE-SESSION-RECORDS-CONTRACT.md`,
+  linked its precedence from the monthly-finance Contract, added its approved Stage 1 scope
+  to the Roadmap, and defined Venue Course Record and Venue Lesson Allocation in `CONTEXT.md`.
+  The ledger extension remains under review and has no implementation.
+- **Verification:** Inspected the Finance projection and page; Venue Contract formatting passed.
+  No schema, API, UI, or development data changed for this Contract work.
+- **Next:** resolve the ledger extension and then implement the combined frozen Contract
+  through Terra → Sol; retain prior Stage 1 browser acceptance work.
+
+### 2026-09-26 — LOG-215 — Remove prepaid shortcut from Venue cards
+
+- **Scope:** Product Owner decided the `登錄預購` card action was difficult to fit and did not save
+  enough effort to justify its placement.
+- **Outcome:** removed the action from Venue cards. Remaining prepaid lessons stay beside the
+  prepaid rule, and the dedicated Venue detail continues to expose `登錄預購` in its prepaid
+  section.
+- **Verification:** authenticated desktop and exact 390×844 browser review show the prepaid card
+  aligned with other Venue cards and no `登錄預購` shortcut. Automated tests and build were not run
+  for this small presentation change.
+- **Next:** continue the existing Venue course records Contract review in the handoff above; keep
+  local changes and `output/` intact.
+
+### 2026-09-26 — LOG-214 — Draft Venue course records Contract correction
+
+- **Scope:** Product Owner proposed a Venue course-record history with one row per completed
+  Session, end-time-based fee rules, prepaid batches with start times and explicit Session
+  allocation, and one-way manual corrections in monthly finance detail.
+- **Outcome:** Initially added the Venue records review draft, promoted to
+  `M7.5-VENUE-SESSION-RECORDS-CONTRACT.md` in LOG-216. Confirmed that the
+  existing model instead selects dated rules from Session starts, consumes prepaid credits as
+  aggregate FIFO, and counts Venue-bound purchase commission in the purchase month. The Product
+  Owner confirmed prepaid usage remains one whole lesson per Session or zero when exempt,
+  retained upfront commission for Venue-bound Student purchases, and bounded automatic
+  catch-up to a prepaid batch's effective start time while allowing explicit manual allocation.
+  Later changes to an upfront commission percentage add only the difference for completed
+  Sessions. Manual finance-row edits persist across source changes with a visible notice.
+  No production code, schema, or development data was changed for this proposal.
+- **Verification:** Inspected the current Contract, Finance Module, PostgreSQL migration, Venue
+  editor, and cleanly formatted the proposal. No behavioral or live test is claimed.
+- **Known issue:** One product choice listed in the Next handoff remains open; this proposal
+  must not be treated as a frozen Contract or implemented piecemeal.
+- **Next:** Resolve those choices, freeze the revised Contract, then resume its ordered delivery
+  gates and the outstanding Stage 1 browser acceptance.
+
+### 2026-09-26 — LOG-213 — Unify Venue management cards
+
+- **Scope:** Product Owner requested that prepaid Venues use the same card shape as other Venues,
+  with remaining lessons beside the prepaid rule and the purchase action in the heading row.
+- **Outcome:** removed the prepaid-only lower strip. The card now reads
+  `預購場地堂數（剩餘堂數 N 堂）`; `登錄預購` remains a separate button before the detail arrow.
+  At 390px, all Venue headings share a minimum height so the wrapped prepaid label does not make
+  its card taller than its neighbours.
+- **Verification:** Web typecheck, focused Venue Manager tests (9/9), targeted Prettier check,
+  production build, and `git diff --check` passed. Authenticated desktop and exact 390×844
+  browser review confirmed card alignment, action order, and that the mobile action opens its
+  editor. The initial sandboxed test/build attempts hit Windows `spawn EPERM`; elevated reruns
+  passed. The build retained its existing large-chunk advisory. No data was saved or deleted.
+- **Next:** finish Stage 1 browser acceptance in the Next handoff; preserve other local work and
+  `output/` without entering Stage 2 or M8.
+
+### 2026-09-25 — LOG-212 — Remove Venue detail gaps and allow prepaid batch deletion
+
+- **Scope:** Product Owner identified an apparent empty row above the detail
+  footer, misaligned prepaid and Coach-supplied headings, weak section separation,
+  oversized prepaid records, and no way to delete a prepaid batch from its editor.
+- **Outcome:** Venue detail uses its own zero-gap layout instead of generic form
+  spacing. The footer has one intentional top spacing and no duplicate divider.
+  Prepaid and Coach-supplied sections align with the setting labels and have a
+  clear bottom boundary. Prepaid rows use smaller type and scroll after three
+  visible records. An existing batch's editor now exposes a delete action and
+  impact confirmation. The Workspace-scoped API checks the batch version,
+  deletes only that Venue's batch, and recalculates affected month and balance;
+  completed Sessions remain.
+- **Verification:** API full suite passed 26 files/115 tests, including
+  deletion recalculation. Web full suite passed 45 files/193 tests.
+  API/Web typecheck and production builds
+  passed; Web build retained the existing large-chunk advisory. Authenticated
+  desktop browser confirmed three Venue layouts, section boundaries, and the
+  delete confirmation. Exact 390×844 prepaid detail had no horizontal overflow.
+  Existing browser records were not deleted.
+- **Next:** finish Stage 1 browser acceptance in the Next handoff; keep local
+  changes and `output/` intact without entering Stage 2 or M8.
+
+### 2026-09-25 — LOG-211 — Venue detail density, address and prepaid batches
+
+- **Scope:** Product Owner requested optional Venue address, clearer detail actions,
+  compact prepaid and Coach-supplied Student sections, per-batch balances and prices,
+  a separate rule-history dialog, and removal of empty space in simple Venues.
+- **Outcome:** Venue create/name edit accepts an optional address and shows it below
+  the Venue title when present. The linked development migration
+  `20260925092226_venue_address.sql` adds the private Venue column. The server
+  projects each prepaid batch's remaining lessons by consuming completed Sessions
+  from the earliest purchase date and ID. Detail shows four compact rows before
+  scrolling, per-batch remaining and unit price, and per-lesson rent. Edit Name,
+  prepaid registration and Coach-supplied add actions have visible icons. The
+  Coach-supplied Student list uses compact chips; add opens a child dialog and
+  remove stays in the Venue detail. The dated rule records open in a child dialog;
+  an untracked Venue with only its two settings has no extra divider or reserved area.
+- **Verification:** linked development push applied only this migration; subsequent
+  dry-run reported up to date. API 26 files/112 tests and Web 45 files/192 tests
+  passed. API/Web typecheck and Web production build passed; the existing Vite
+  large-chunk advisory remains. Authenticated desktop browser confirmed prepaid
+  per-batch balances and prices, simple Venue density, per-lesson rent,
+  Coach-supplied chips, the optional address field, and Esc returning from
+  Coach-supplied and rule-history child dialogs. Exact 390×844 inspection found
+  no horizontal overflow in the Coach-supplied detail. Browser data was not changed.
+- **Next:** finish the remaining Stage 1 browser acceptance in the Next handoff;
+  keep local work and `output/` intact without entering Stage 2 or M8.
+
+### 2026-09-25 — LOG-210 — Tighten Venue detail and salary interaction
+
+- **Scope:** Product Owner requested a single row for monthly salary and pay day
+  without numeric spinners, shorter Venue setting rows, clearer commission rates,
+  title-aligned name editing, and return to Venue detail from child settings.
+- **Outcome:** the salary inputs share one responsive row and retain numeric
+  validation. Existing monthly projection clamps a 29th–31st pay day to the last
+  day of a shorter month. Venue detail places Edit Name beside the title, shows
+  uniform or dual commission percentages, shortens both setting rows, and removes
+  their dark hover fill. Child editors opened from Venue detail return there on
+  close, cancel, or successful save; a directly opened editor keeps its list return.
+  Refreshed Venue data updates a reopened detail without replacing an active child.
+- **Verification:** focused Web dialog tests passed 2 files/12 tests; full Web
+  suite passed 45 files/191 tests with one worker. Web typecheck, formatting, and
+  production build passed with the existing chunk-size advisory. Focused API
+  finance tests passed 1 file/9 tests, including February pay-day clamping.
+  Authenticated desktop and exact 390×844 browser checks confirmed compact rows,
+  title alignment, uniform and dual commission summaries, a single salary row
+  without visible spinners, no horizontal overflow, and close/cancel returning
+  to Venue detail. No salary or Venue data was saved in the browser check.
+- **Next:** complete the remaining Stage 1 browser acceptance in the Next handoff;
+  keep local work and `output/` intact without entering Stage 2 or M8.
+
+### 2026-09-25 — LOG-209 — Align Venue prepaid purchase with Student purchasing
+
+- **Scope:** Product Owner requested Student purchase layout and input behavior in
+  the Venue prepaid purchase editor, omitting the Student-specific Venue selector.
+- **Outcome:** date/count and total/unit price now form paired rows, followed by a
+  private Coach note and the usual actions. Money inputs preserve the active draft,
+  allow zero to be cleared, and recalculate total or unit price without jumping.
+  The note persists on the Venue purchase batch behind the finance API. Existing
+  Venue credit requests without a note remain accepted with an empty default.
+- **Verification:** focused Web tests passed 2 files/7 tests, focused API tests
+  passed 2 files/18 tests, full Web tests passed 45 files/190 tests, and full API
+  tests passed 26 files/110 tests with one worker. Web/API typechecks and Web
+  formatting passed; both production builds passed with the existing Web chunk-size
+  advisory. Authenticated desktop browser review and 390×844 inspection
+  confirmed the rows, note, keyboard zero-clear/re-entry, recalculated total,
+  and no horizontal overflow. Development migration `20260925072518` applied;
+  linked dry-run reports up to date. Browser inspection did not save a purchase.
+- **Known issue:** the full default parallel Vitest runs stalled on worker timeouts;
+  single-worker full suites passed. Remaining Venue/finance acceptance in the Next
+  handoff has not been completed by this editor correction.
+- **Next:** continue the Stage 1 browser acceptance above. Keep this work local
+  until Product Owner direction; Stage 2 and M8 remain gated.
+
+### 2026-09-25 — LOG-208 — Link Today student and finance signals
+
+- **Scope:** Product Owner requested whole-column navigation from the Today
+  active-student and monthly-purchase summary signals, with chevrons matching
+  the adjacent notification signal.
+- **Outcome:** the active-student signal opens `/students`; the monthly-purchase
+  signal opens `/students/finances` (本月收支). Both entire signals are keyboard
+  focusable links with visible focus and hover states. The existing finance
+  wording and unrelated local Stage 1 work remain preserved.
+- **Verification:** Web check passed formatting, typecheck, and 45 test files / 190
+  tests; Web production build passed with the existing chunk-size advisory;
+  scoped `git diff --check` passed. The sandbox initially blocked Vite with
+  `spawn EPERM`; checks passed when rerun outside it. No local Web/API service
+  was listening for an authenticated browser check, so click-through and exact
+  390×844 visual acceptance remain unobserved.
+- **Next:** continue the corrected Venue/finance browser acceptance in the
+  Next handoff. Keep Stage 1 local until Product Owner direction.
+
+### 2026-09-25 — LOG-207 — Simplify Venue create and detail interactions
+
+- **Scope:** apply the Product Owner's Venue manager copy, layout, one-step
+  creation, conditional fields, and keyboard shortcuts.
+- **Outcome:** a new Venue accepts optional fee rule, first prepaid purchase,
+  and salary in one transaction; the name-only path keeps untracked/no-salary
+  defaults. Venue detail uses the Venue name as title, moves status summaries
+  into the setting rows, opens name editing separately, and uses green Save,
+  Cancel, and left-aligned deletion. Enter, Escape, and Delete use the dialog's
+  keyboard behavior, with Delete excluded from editable fields.
+- **Verification:** API check passed 26 files/110 tests; Web check passed 45
+  files/189 tests; API/Web production builds passed with the existing Web
+  chunk-size advisory. Focused Venue transaction and UI tests passed. Typecheck,
+  formatting, and `git diff --check` passed. Authenticated desktop and exact
+  390×844 browser review confirmed the default and prepaid create forms, compact
+  42×24 salary switch, Venue detail hierarchy, and no horizontal overflow.
+  Delete opened confirmation and Enter closed the detail through Save. No Venue
+  was created or deleted during browser inspection.
+- **Known issue:** the detail Save closes the view after settings are saved in
+  their own dialogs; this view contains no editable fields. The remaining
+  purchase, salary, and prepaid browser scenarios in the Next handoff remain.
+- **Next:** complete the remaining finance browser scenarios in the Next
+  handoff, including a saved non-default Venue creation in an isolated fixture.
+
+### 2026-09-25 — LOG-206 — Implement corrected Venue and purchase workflow locally
+
+- **Scope:** connected purchase-specific Venue entitlement to Student purchase entry,
+  Calendar and fixed-Series Venue selection, completion-based lesson allocation,
+  Venue commission timing, prepaid Venue purchases and low-balance notification,
+  Venue-scoped Coach-supplied Student exceptions, and dated monthly salary.
+- **Outcome:** new purchases choose **無固定場地** or a fixed Venue. Scheduling
+  derives eligible active Venues from those purchases; the database validates
+  the association and prevents a purchase correction/removal that would leave
+  scheduled work without an eligible Venue. General purchases incur the selected
+  Venue cost on completion, while a Venue-bound commission is charged once on
+  purchase. The Venue detail shows type-specific actions and salary settings;
+  the monthly detail gains pay-day salary income. Legacy collecting-Venue data
+  remains separate from the new entitlement Venue.
+- **Verification:** API check passed 26 files/108 tests; Web check passed 45
+  files/188 tests; API/Web typecheck and production build passed (existing Vite
+  chunk-size advisory). `git diff --check` passed. Official CLI migrations
+  through `20260924215948` applied to linked development; subsequent dry-run
+  reported no pending migrations. Two isolated SQL mutation suites passed on
+  linked development inside rolled-back transactions, covering purchase
+  eligibility, source defaults/exceptions, the purchase-removal guard, salary
+  storage, low-balance lifecycle, and reopen. An isolated two-Coach API run
+  passed fixed/general purchase and Calendar/fixed-Series eligibility,
+  purchase-removal protection, commission timing, Venue/Coach-supplied rates,
+  and cross-Workspace isolation. Its fixtures were removed; a linked-database
+  count confirmed zero remaining under the exact test prefix. Authenticated
+  desktop browser inspection confirmed conditional prepaid and salary controls;
+  390×844 preview confirmed Student purchase Venue options, Venue details,
+  and current-month finance layout. Security advisor reports
+  only the pre-existing leaked-password-protection warning; performance advisor
+  reports two older unindexed foreign keys plus informational index/policy items.
+- **Known issue:** the older finance E2E depends on an unavailable local
+  PostgreSQL listener. The replacement API flow uses only isolated development
+  accounts and cleans up through the product API. New-purchase, salary, and
+  prepaid completion browser scenarios remain unobserved; no remote CI or push
+  is claimed for this local Stage 1 work.
+- **Next:** complete the remaining browser scenarios in the Next handoff,
+  then record their exact evidence while keeping Stage 1 local.
+
+### 2026-09-25 — LOG-205 — Apply Product Owner's clarified Venue and salary rules
+
+- **Scope:** correct the previous agent's unnecessary questions about multi-Venue
+  deduction, commission timing, and base salary. The Product Owner had already
+  specified that completion deducts one lesson at the selected Venue, a general
+  purchase incurs Venue cost per completed Session, and Venue-bound commission
+  can be calculated when the Student purchases. They specified a monthly pay day
+  and one salary row in **本月收支** → **收支明細**.
+- **Outcome:** revised the M7.5 Contract and Venue-model review with these
+  rules, Venue-supplied customer-source default, a Venue-specific Coach-supplied
+  Student list, conditional Venue controls, and removal of the ordinary
+  **確認影響範圍** step. Updated Roadmap scope and the domain glossary. The Venue
+  fee-rule editor now saves directly without the extra impact-preview step;
+  explicit historical linking keeps its separate confirmation. The larger
+  purchase, salary, and customer-source implementation remains unfinished.
+- **Verification:** compared Student purchase, scheduling, finance, Venue UI,
+  and existing migrations with the corrected workflow. The focused VenueManager
+  test passed 4/4 and Web typecheck passed. The first test attempt hit Windows
+  `spawn EPERM` in the sandbox; the elevated retry passed. Targeted Prettier
+  check and `git diff --check` passed with only line-ending notices.
+- **Known issue:** purchase-specific Venue entitlement, once-at-purchase
+  commission, Venue-scoped customer-source list, and salary income are not yet
+  implemented. The pending unique-name development migration remains unapplied.
+- **Next:** reconcile revised API/migration details, then implement and verify
+  the corrected Venue-first workflow locally in M7.5 Stage 1.
+
+### 2026-09-25 — LOG-204 — Reopen Venue model before further finance work
+
+- **Scope:** Product Owner identified the missing relationship among Student
+  purchases, Venue eligibility, Calendar/fixed-Series scheduling, and conditional
+  Venue management. They rejected the normal **確認影響範圍** setup step and specified
+  default Venue-supplied customer source, a Coach-supplied Student list, prepaid
+  Venue purchase entry, low-balance notice, and optional monthly base salary.
+- **Outcome:** marked the former monthly-finance Contract as reopened and wrote
+  [`M7.5-VENUE-MODEL-REVIEW.md`](M7.5-VENUE-MODEL-REVIEW.md) with the requested
+  workflow, current code mismatches, concrete acceptance scenarios, and the
+  remaining decisions required to freeze a revised Contract. No schema, API,
+  browser flow, or historical data was changed in this documentation review.
+- **Verification:** compared the live worktree's Student purchase schema,
+  scheduling inputs, finance derivation, Venue editor and prepaid-entry UI with
+  the Contract; Prettier check passed for the Contract and review document, and
+  targeted `git diff --check` passed (only existing line-ending notices).
+- **Known issue:** local finance behavior still follows the previous Contract;
+  the unique-name development migration remains unapplied after auto-review
+  rejected its two-record cleanup.
+- **Next:** resolve the four decisions in the Venue-model review, revise/freeze
+  the Contract and Roadmap scope, then resume focused Terra and Sol corrections
+  within M7.5 Stage 1. Do not enter Stage 2, M8, or push this package.
+
+### 2026-09-25 — LOG-203 — Calculate Student purchases less Venue expenses
+
+- **Scope:** Product Owner removed the distinction between Coach collection and Venue collection.
+  This is a purchase-and-cost calculator, not a settlement ledger.
+- **Outcome:** Student purchases enter the month at their full recorded amount regardless of legacy
+  collection designation. Commission and rent are Venue expenses; historical Venue payouts no longer
+  enter totals. The purchase form shows only the optional fixed Venue, the Venue rule editor no longer
+  asks who collected payment, and the Venue detail no longer offers payout entry. The payout HTTP
+  routes are removed; historical payout rows remain stored. Finance and Today copy now identify
+  purchase totals and a calculated difference. New purchase HTTP requests reject obsolete
+  collection fields; correcting an existing purchase keeps its historical metadata intact.
+  Customer source remains only for dual-rate commission.
+- **Verification:** API 26 files / 105 tests and Web 44 files / 187 tests pass; typechecks and both
+  production builds pass. Authenticated desktop and 390×844 browser review confirms the purchase
+  form, commission editor, and current-month finance labels. The live finance E2E stopped before
+  fixture creation because `.env.e2e` points to local PostgreSQL port 5432, which refused connection.
+  No existing Venue or Student record was changed in the browser. No push or remote CI is claimed.
+
+### 2026-09-25 — LOG-202 — Simplify Venue details and fix archive behavior
+
+- **Scope:** correct the Product Owner's numbered review of Venue detail layout, action relevance,
+  copy, fee history, and deletion/archive behavior.
+- **Outcome:** the detail dialog uses a compact Venue name with a muted expense type beside it;
+  name editing opens only on request. **場地支出類型** is the primary action. Prepaid entry appears
+  only for prepaid Venues, and actual payout entry appears under **場地代收** only when there are
+  Venue-collected sources. Legacy linkage is shown only for matching unlinked history. The initial
+  untracked rule is hidden; later dated rules live in a compact disclosure. The API now projects
+  whether each Venue can be deleted. Unreferenced active or archived Venues can be deleted with
+  confirmation; referenced active Venues can be archived, and archived Venues can be restored.
+  Archive no longer runs duplicate-name validation when the name did not change, fixing the failure
+  with existing same-name development Venues. The DELETE operation still rechecks references and
+  version inside its transaction.
+- **Verification:** browser reviewed the detail on desktop and exact 390×844. Web 44 files / 187
+  tests and API 26 files / 105 tests pass; both production builds and typechecks pass. Focused tests
+  cover conditional controls, versioned direct deletion, unchanged-name archive, and duplicate-name
+  archive recovery. `git diff --check` passed. No existing Venue was changed or deleted in live data.
+- **Known issue:** the earlier same-name migration remains unapplied after automatic approval review
+  rejected its irreversible two-record development-data cleanup. The Venue list still shows those
+  original records until that separate migration is authorized.
+- **Next:** continue M7.5 Stage 1 local Product Owner review. Keep the duplicate-name migration
+  pending until explicitly authorized; do not push or advance to Stage 2.
+
+### 2026-09-25 — LOG-201 — Use Settings currency in Venue management
+
+- **Scope:** the Product Owner removed the redundant currency selector from Venue management's
+  fee form and directed it to use the currency chosen under Settings → 收支設定.
+- **Outcome:** new rent rules, Venue prepaid purchases, and payouts use that preference. Their
+  amount labels show the currency code without a selector. Editing a recorded prepaid purchase or
+  payout retains its saved currency. A new rent rule only carries forward the prior amount when
+  its currency matches the current preference, avoiding an unconverted amount in another currency.
+  Settings copy now describes purchase and Venue finance use.
+- **Verification:** focused Venue UI tests passed 2 / 2, including a USD rent-rule preview with
+  the correct minor-unit amount and no currency selector. Full Web tests passed 44 files / 185
+  tests; Web typecheck and build passed. Browser review confirmed the rent form shows one amount
+  field marked `TWD` and no currency control. `git diff --check` passed. No live finance data was
+  changed; no push or remote CI claimed.
+- **Known issue:** the earlier duplicate-name migration remains unapplied after automatic approval
+  review rejected its irreversible two-record development-data cleanup.
+- **Next:** continue Stage 1 local Product Owner review; keep the duplicate-name migration pending
+  until explicitly authorized, and do not push or advance to Stage 2.
+
+### 2026-09-25 — LOG-200 — Delete an unused archived Venue with simple confirmation
+
+- **Scope:** the Product Owner asked that archived Venues support restore and deletion with a
+  confirmation prompt that does not require typing `DELETE`.
+- **Outcome:** the Venue editor keeps **恢復場地** and adds **刪除場地** only for archived Venues. A
+  standard confirmation names the Venue. The Workspace-scoped `DELETE /v1/venues/:venueId`
+  operation checks the supplied version and rejects active Venues or Venues referenced by Sessions,
+  fixed Series, Student fixed Venue, Student purchases, Venue credit purchases, or payouts. Unused
+  archived Venues and their fee rules are deleted together; referenced history remains intact.
+- **Verification:** Web 44 files / 184 tests and API 26 files / 104 tests pass; both production
+  builds and typechecks pass. Focused UI test checks restore availability, the no-input confirmation,
+  and the versioned DELETE request. Focused repository tests check unused deletion and active or
+  referenced rejection. Browser Venue page inspection found no existing archived Venue to safely
+  exercise; no live record was deleted. `git diff --check` passed before this Status update.
+- **Known issue:** the earlier duplicate-name migration remains unapplied after automatic approval
+  review rejected its irreversible cleanup of two existing development records. This change does
+  not apply that migration or remove those records.
+- **Next:** continue Stage 1 local Product Owner review. The distinct duplicate-name migration
+  still requires explicit approval for the exact development-data cleanup before applying it; do
+  not push or advance to Stage 2.
+
+### 2026-09-25 — LOG-199 — Place required Venue validation at its field
+
+- **Scope:** correct the Product Owner's feedback on the inline placement from LOG-198.
+- **Outcome:** show the red parenthetical validation immediately after `收款場地`, the field it describes;
+  `收款方式` remains a clean heading. Keep the layout stable and clear the message when corrected.
+- **Verification:** `git diff --check` passed. No tests, build, or browser review run for this narrow correction.
+- **Next:** continue M7.5 Stage 1 Product Owner review; preserve local scope and the pending duplicate-Venue migration boundary.
+
+### 2026-09-25 — LOG-198 — Keep purchase validation inline with its label
+
+- **Scope:** apply the Product Owner's error-message placement correction to new and edited purchase forms.
+- **Outcome:** remove the standalone error rows that shifted the form layout. When Venue collection
+  lacks a Venue, show the validation in red parentheses after `收款方式`; clear it when the user
+  chooses a Venue or switches to Coach collection.
+- **Verification:** `git diff --check` passed. No tests, build, or browser review run for this narrow correction.
+- **Next:** continue M7.5 Stage 1 Product Owner review; preserve local scope and the pending duplicate-Venue migration boundary.
+
+### 2026-09-25 — LOG-197 — One-field Venue entry and separate Venue management
+
+- **Scope:** apply the Product Owner's scheduling and Venue management corrections, including the
+  follow-up request that `＋ 新增場地` turn the existing selector slot into a text input without adding
+  another row.
+- **Outcome:** scheduling and purchase forms can choose an existing Venue or create one in the same
+  field. Student fixed Venue uses the same picker. New Venues default to `不記錄場地支出`, and same-name
+  input resolves to an existing Venue. The picker collapses legacy same-name options. New scheduling
+  no longer has a separate `地點` field or `僅記錄地點` mode. `/students/venues` now owns Venue management,
+  linked from Students; 本月收支 retains finance cards and links to the Venue page. Venue create/rename
+  reports `該場地已存在。` for a Workspace duplicate; API and notification links target the new route.
+- **Verification:** API tests 26 files / 101 tests; Web tests 43 files / 182 tests before the final
+  picker de-duplication, then focused Venue tests 3 / 3. API and Web typechecks and builds pass.
+  Browser review covered Calendar same-slot input on desktop and exact 390×844, Student links,
+  Finance page separation, Venue page desktop/mobile, and duplicate-name manager feedback.
+  `git diff --check` passed before the final test/format edits; rerun before delivery. No push or
+  remote CI claimed.
+- **Known issue:** linked development data contains three `比利時` Venues; read-only inspection found
+  no references and only default untracked rules. The pending migration would delete two records and
+  add the unique Workspace/name index. Automatic approval review rejected `supabase db push --linked
+--yes` because deletion is irreversible and current authorization did not cover that cleanup. The
+  migration remains unapplied; manager still exposes the original records for review.
+- **Next:** obtain explicit approval for that exact two-record cleanup and migration before applying
+  it, then verify the linked schema and Venue flows. Continue Stage 1 local Product Owner review;
+  preserve `output/`, and do not push or advance to Stage 2.
+
+### 2026-09-25 — LOG-196 — Restore Web compilation after purchase-form correction
+
+- **Scope:** resolve the Vite syntax overlay reported in the Student purchase fields and the next
+  TypeScript error exposed in the same local Venue work.
+- **Outcome:** group the Venue selector and validation message into one JSX branch; pass the already
+  loaded Venue list from Calendar to its editor so changing Students can apply a fixed Venue.
+  Calendar test fixtures now provide that query result.
+- **Verification:** the Web typecheck first reproduced the reported parser failure at
+  `PurchaseCollectionFields.tsx:69`; after the JSX fix it exposed the Calendar scope error. The Web
+  typecheck and production build now pass. Focused Calendar/Venue tests pass 3 files / 15 tests;
+  targeted Prettier and `git diff --check` pass. Vite build required the elevated Windows path after
+  sandbox `spawn EPERM`; it retains the existing large-chunk advisory. No authenticated browser
+  acceptance, push, or remote CI is claimed for this correction.
+- **Next:** continue Stage 1 Product Owner review and remaining focused UI/API and desktop/390×844
+  acceptance from LOG-195. Keep all changes local and preserve `output/`.
+
+### 2026-09-25 — LOG-195 — Student purchase controls and fixed Venue preference
+
+- **Scope:** apply the Product Owner's six corrections to the M7.5 Stage 1 purchase and Student
+  experience while retaining the local-only review boundary and all pre-existing worktree changes.
+- **Outcome:** purchase currency selection moved to a **收支設定** card with a TWD default for new
+  records; zero amounts now use placeholders; purchase date labels match other fields and share a
+  row with lesson count; collection mode is a two-option control defaulting to Coach collection and
+  the Venue selector stays visible, using 尚無固定場地 for the optional Student preference and a
+  required collecting Venue only for Venue collection. Student profile also has an optional fixed Venue, and
+  new fixed-rhythm schedules prefill its Venue/name. Added the nullable tenant-scoped Student Venue
+  reference migration and amended the Contract for these Product Owner-directed additions.
+- **Verification:** `git diff --check` passed. The linked development migration succeeded as version
+  `20260924181013`; a read-only schema query confirmed nullable UUID `default_venue_id`. Automated
+  tests and browser acceptance were not run for this follow-up; push and remote CI remain out of
+  scope.
+- **Next:** continue Stage 1 Product Owner review; run focused UI/API checks and desktop/390×844
+  browser acceptance. Keep all changes local and preserve `output/`.
+
+### 2026-09-25 — LOG-194 — Group monthly finances by task
+
+- **Scope:** address the Product Owner's report that the monthly-finance page is difficult to scan;
+  give each existing topic and task a titled card without changing finance operations.
+- **Outcome:** the current or selected month's overview, conditional missing-data list, transaction
+  detail, month history, and Venue management now have separate card boundaries and headings.
+  The page title remains 本月收支 and all existing links and controls remain in place.
+- **Verification:** Web TypeScript and production build passed; the existing large-chunk advisory
+  remains. In the signed-in Chrome page, desktop and exact 390×844 views showed distinct cards;
+  mobile document width was 375px within the 390px viewport. Prettier and `git diff --check` passed.
+- **Next:** continue Stage 1 Product Owner review and focused corrections; keep Stage 1 local.
+
+### 2026-09-25 — LOG-193 — Finance read failure recovery
+
+- **Scope:** investigate the Product Owner's second report that current finances, month history,
+  and Venues all appeared unreadable in the signed-in Chrome page after LOG-192.
+- **Outcome:** `/health`, Web proxy, and all three API routes were available when checked. The
+  affected browser held errors, but each manual retry succeeded without a data or migration change.
+  A direct scoped snapshot of the same development Workspace loaded its 6 purchases, 78 sessions,
+  and 6 Series; derived current/month data succeeded. Finance reads now use bounded retry for
+  transient network/server failures, and failed finance queries refetch when the Coach returns to
+  the page. Healthy cached routes keep the existing no-focus-refetch policy. Calendar interaction
+  tests now isolate the independently tested VenueField from their scheduling fixtures.
+- **Verification:** a regression test failed against the prior focus policy and passed after the
+  finance-specific recovery change. Full Web suite: 43 files / 181 tests passed; Web typecheck and
+  production build passed (existing JS chunk advisory). `git diff --check` passed. In the user's
+  signed-in Chrome tab, manual retries restored all three blocks; subsequent navigation and reload
+  loaded current income ($16,000 TWD), three historical months, and the Venue section without error.
+- **Known issue:** the original transient request status was not captured, so the exact outage cause
+  remains unconfirmed. The confirmed defect was the page retaining a failed state after service
+  recovery. Stage 2 still owns consistent service-unavailable recovery across other Coach routes.
+- **Next:** continue Stage 1 Product Owner review and focused corrections; keep Stage 1 local.
+
+### 2026-09-24 — LOG-192 — Linked finance migrations applied; local functionality verified
+
+- **Scope:** resume Monthly finances and venues under the Product Owner's explicit permission to
+  apply migrations to the linked development Supabase; resolve the three failing finance panels
+  and complete focused Terra/Sol verification.
+- **Outcome:** verified the linked destination against the Supabase project's identity, then
+  applied `20260924111403_monthly_finances_venues.sql` and
+  `20260924125303_monthly_finance_reference_indexes.sql`. Current/month index/Venue reads now
+  work. Venue-retained commission appears as reference detail without a second cash expense.
+  Credit/payout corrections return affected months; transaction retries re-read contested versions.
+  Source links open the matching credit/payout editor. Cached Venue data survives failed refresh.
+  History previews show income, expense and difference per currency, including a disappearing
+  currency; historical Series must supply customer source when current/future dual rates need it.
+  Rent editing respects currency units.
+  Purchase create/edit share the same date control and form layout. Receipt dates use Workspace
+  time zone; amount-only edits retain the original purchase instant. Indivisible package totals
+  remain exact and their approximate unit price no longer blocks form submission. Dialog
+  replacement and quick-view-to-edit transitions preserve keyboard focus.
+- **Verification:** API 11 files / 55 tests and Web 6 files / 14 tests passed; root typecheck and
+  API/Web production build passed. `git diff --check` passed. Build retains the existing chunk-size
+  advisory (Web JS 760.25 kB, gzip 219.31 kB; CSS 169.54 kB, gzip 31.17 kB).
+  `apps/api/src/e2e/run-finance-live.ts` passed against the linked database and local API using two
+  distinct existing test accounts: untracked/free/rent/prepaid/uniform and dual commission,
+  both collection modes, exact rounding and missing price, dated history preview/confirm,
+  completed-rule pinning, stale versions, simultaneous edits (one 200/one 409 with current entity),
+  payout/credit date and amount corrections, generated Series Venue propagation, negative prepaid
+  balance, completion/reopen, stable notification/read/dismiss/top-up/new occurrence, cross-Coach
+  HTTP denial, and real runtime-role RLS. The runtime inherits `gym_assistant_api` without superuser
+  or bypass-RLS privileges. A rerun interrupted by development hot reload was cleaned and rerun
+  successfully after `/health` recovered; this interruption was not counted as a pass.
+  The applied-schema SQL rollback test passed again. Linked dry-run reports up-to-date. All 78
+  prior text-only locations remain unassigned; no legacy costs were fabricated. Uniquely named
+  API/browser fixtures and their test notification states were removed after non-interference
+  checks, with zero test Student/Venue rows remaining.
+- **Browser evidence:** normal Chrome desktop and the existing exact 390×844 preview exercised
+  populated current income/expense/difference, historical July and return to current, Venue create,
+  rule preview/confirm, prepaid 3 lessons / exact 1000 total, retained balance, source-record opening,
+  Student venue-collected purchase, fixed schedule save and generated Calendar course. Mobile
+  purchase/Series/Calendar editors retain the selected Venue, usable custom menus and Escape
+  behavior. Measured finance document width/scrollWidth 390/390; purchase dialog width 370 with
+  save button bottom 818 inside the 844-high viewport; Series Venue menu right edge 361. This is
+  browser responsive acceptance, not a physical-device claim.
+- **Evidence limits:** automatic review rejected one additional inline Venue creation in the
+  signed-in browser Workspace for lack of explicit account-specific mutation authority. No bypass
+  was attempted. That extra browser mutation is not claimed as passed: the real inline component
+  integration test verifies its name-only authenticated POST, automatic selection and preservation
+  of the surrounding draft; real Venue creation/defaults were separately verified by live HTTP and
+  the earlier accepted browser Venue setup. The original migration-approval blocker is resolved.
+  Supabase security advisors report only the pre-existing
+  [disabled leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+  Both new unindexed foreign-key findings were fixed. Remaining
+  [foreign-key index findings](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys)
+  concern the existing Series and Demo-import references; capability-link policies and unused-index
+  information remain baseline advisories. No security settings, production data, push or remote CI
+  changes were made.
+- **Next:** continue Stage 1 Product Owner review and focused corrections; enter Stage 2 only after
+  explicit Product Owner direction.
+
+### 2026-09-24 — LOG-191 — Monthly finances local implementation; migration approval boundary
+
+- **Scope:** implement the frozen Monthly finances and venues Contract using the Product Owner's
+  selected Astra workflow, preserving existing Student visual work and Stage 1 locality.
+- **Outcome:** added private Venue/rule/credit/payout migration, server-owned monthly calculations,
+  paginated month index, versioned Venue/rule/history/purchase operations, Session/Series optional
+  Venue/source fields, and prepaid threshold occurrence handling. Student collection designation
+  and actual venue payouts feed the same income accounting. Web has current/historical finances,
+  Venue management and preview forms, in-context Venue selection, total/unit arithmetic, targeted
+  invalidation, and FORM-style responsive composition. This is implementation-in-progress, not
+  completed Terra/Sol acceptance.
+- **Verification:** API 7 focused files / 41 tests and Web 4 focused files / 9 tests passed;
+  root typecheck and API/Web production build passed (existing >500-kB bundle advisory remains).
+  A real linked-development BEGIN/ROLLBACK migration check passed, preserving 78 text-only locations.
+  `supabase/tests/monthly-finances.sql` additionally passed rule pinning, top-up/reopen/new threshold
+  occurrence, repeat-refresh stability, location preservation, cross-Workspace composite FK,
+  private grants and policy-presence assertions. All fixture/schema writes were rolled back.
+  Linked dry-run listed only the pending finance migration. Chrome desktop and the existing
+  390×844 preview reached the new route; only loading/error presentation was observed.
+- **Known issues / limits:** automatic approval review rejected persistent linked `db push`, citing
+  missing explicit remote-schema authorization and destination/shared-impact evidence. An async
+  authorization question is pending; do not retry the persistent operation without resolving it.
+  The Management API temporary role could not `SET ROLE gym_assistant_api`, so role-level row
+  isolation was not proved by that SQL test; real two-Coach/API-role testing is still required.
+  Populated UI, all mutation paths, preview concurrency, live backfill, payout/credit corrections,
+  and full Sol visual/keyboard/touch acceptance remain unverified. Migration has not been applied;
+  local updated reads need that schema. No push, remote CI, Stage 2 transition, or M8 work occurred.
+- **Next:** resolve the explicit migration approval, complete Terra live evidence and fixes, then
+  finish Sol desktop/exact-390×844 acceptance as described in Next handoff.
+
+### 2026-09-24 — LOG-190 — Monthly finances and venues Contract frozen
+
+- **Scope:** Product Owner added a bounded monthly-finance/Venue package inside M7.5 Stage 1 and
+  corrected the prepaid-Venue and historical-month behaviour before implementation.
+- **Outcome:** [`M7.5-MONTHLY-FINANCE-CONTRACT.md`](M7.5-MONTHLY-FINANCE-CONTRACT.md) freezes the
+  `本月收支` route with an `各月收支紀錄` entry, optional untracked Venues, dated fee rules,
+  one-time prepaid Venue expense and completion-time credit use, low Venue-balance notification,
+  Student total/unit-price entry, collection modes, backfill, and server-owned monthly totals.
+  Roadmap records only this approved Stage 1 addition; CONTEXT defines the new product terms.
+- **Verification:** targeted Prettier check and `git diff --check` passed for the Contract,
+  Roadmap, Status, and vocabulary. No implementation, database mutation, browser acceptance,
+  push, or remote CI is claimed.
+- **Known issue:** unrelated local Student entrance/header visual changes and `output/` remain in
+  the shared worktree and must be preserved.
+- **Next:** implement the Contract's Terra gate, then Sol and focused Stage 1 verification.
+
+### 2026-09-24 — LOG-189 — Mobile Student create-button placement
+
+- **Scope:** keep the mobile Student `新增學生` action on the title row at the right edge with
+  appropriate inset from the page boundary.
+- **Outcome:** mobile Student header uses a title/action grid and a compact 44px button; the action
+  no longer occupies a separate full-width row. Desktop layout is unchanged.
+- **Verification:** exact 390×844 preview shows the title and compact `新增學生` button on one row;
+  the button stays inset from the right edge, and the search/status controls remain on their own
+  following row. `git diff --check` passed. No automated tests were run for this CSS-only adjustment.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-188 — Student finance card spacing correction
+
+- **Scope:** reduce the monthly-finance portal's top and bottom inner spacing to match the
+  established Student performance portal.
+- **Outcome:** removed the oversized minimum height and set desktop and mobile padding to the same
+  compact vertical rhythm as the reference card.
+- **Verification:** authenticated desktop and exact 390×844 preview show compact inner spacing with
+  no excess vertical blank area; existing finance-entry navigation remains visible. `git diff --check`
+  passed. No additional automated tests or production build were run for this CSS-only adjustment.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
+
+### 2026-09-24 — LOG-187 — Student finance entrance and return-link correction
+
+- **Scope:** match the Student-list monthly-finance entry to the established Student-detail section
+  portal hierarchy and place the finance page's return link at the same upper-left position as the
+  Student-detail return link.
+- **Outcome:** the entry now has a mono English eyebrow, Chinese heading, brief explanation, larger
+  card spacing, and right-arrow affordance. The finance route uses the shared page header with a
+  preceding `回到學生列表` link styled like Student detail. Income data and navigation targets are
+  unchanged.
+- **Verification:** authenticated desktop and exact 390×844 preview showed the entry and return
+  layout; the return link navigated to the Student list. Web format, typecheck, and 40 files/174
+  tests passed; Web production build passed with the existing >500-kB chunk advisory;
+  `git diff --check` passed. No live data mutation, migration, push, or remote CI is claimed.
+- **Next:** continue M7.5 Stage 1 Product Owner review. Enter Stage 2 only after explicit Product
+  Owner direction; do not begin M8.
 
 ### 2026-09-24 — LOG-186 — Stage 1 checkpoint local CI gate
 

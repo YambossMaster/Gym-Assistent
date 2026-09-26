@@ -1,3 +1,4 @@
+import { VenueField } from '../students/VenueField'
 import type { Session } from '@supabase/supabase-js'
 import {
   CalendarDays,
@@ -33,6 +34,12 @@ import {
 import { FormSelect } from '../../shared/FormSelect'
 import { Confirmation } from '../../shared/primitives'
 import { useStudentsRouteQuery } from '../students/queries'
+import {
+  suggestedStudentVenue,
+  useVenues,
+  type Venue,
+  type VenueData
+} from '../students/finance-api'
 import { isoToLocalDateTime, localDateTimeToIso } from './calendar-time'
 import { useCalendarRouteQuery, useSchedulingMutations } from './queries'
 import { SchedulingDialog } from './SchedulingDialog'
@@ -48,6 +55,8 @@ type Draft =
       start: string
       end: string
       studentId: string
+      venueId?: string | null
+      customerSource?: 'coach' | 'venue' | null
       location: string
       repeat?: 0 | 1 | 2
       current?: CalendarSession
@@ -87,6 +96,7 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
   const query = useCalendarRouteQuery(session, range)
   const students =
     useStudentsRouteQuery(session).students.data?.filter((student) => student.active) ?? []
+  const venueQuery = useVenues(session)
   const mutations = useSchedulingMutations(session)
   const state = selectCalendarRouteState({
     data: query.data,
@@ -100,8 +110,14 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
     start,
     end,
     studentId: students[0]?.id ?? '',
-    location: ''
+    venueId: suggestedStudentVenue(venueQuery.data, students[0]?.id ?? '')?.id ?? null,
+    location: suggestedStudentVenue(venueQuery.data, students[0]?.id ?? '')?.name ?? ''
   })
+  useEffect(() => {
+    if (draft?.kind !== 'session' || draft.current || !draft.venueId || draft.location) return
+    const name = venueQuery.data?.venues.find((venue) => venue.id === draft.venueId)?.name
+    if (name) setDraft({ ...draft, location: name })
+  }, [draft, venueQuery.data])
   useEffect(() => {
     const page = pageRef.current
     if (!page) return
@@ -315,9 +331,12 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
       </div>
       {draft && query.data ? (
         <Editor
+          session={session}
           draft={draft}
           calendar={query.data}
           students={students}
+          venues={venueQuery.data?.venues ?? []}
+          purchases={venueQuery.data?.purchases ?? []}
           timeZone={timeZone}
           mutations={mutations}
           initialError={draftError}
@@ -337,9 +356,12 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
 }
 
 function Editor({
+  session,
   draft,
   calendar,
   students,
+  venues,
+  purchases,
   timeZone,
   mutations,
   initialError,
@@ -347,9 +369,12 @@ function Editor({
   onClose,
   onSaved
 }: {
+  session: Session
   draft: Draft
   calendar: CalendarProjection
   students: Student[]
+  venues: Venue[]
+  purchases: NonNullable<VenueData['purchases']>
   timeZone: string
   mutations: ReturnType<typeof useSchedulingMutations>
   initialError: string
@@ -384,6 +409,10 @@ function Editor({
       setError('請選擇學生。')
       return
     }
+    if (draft.kind === 'session' && !draft.venueId) {
+      setError('請選擇或新增場地。')
+      return
+    }
     if (draft.kind === 'session') {
       let startsAt: string, endsAt: string
       try {
@@ -393,7 +422,13 @@ function Editor({
         setError('這個本地時間不存在，請避開日光節約時間切換區間。')
         return
       }
-      const input = { startsAt, endsAt, location: draft.location }
+      const input = {
+        startsAt,
+        endsAt,
+        location: draft.location,
+        venueId: draft.venueId,
+        customerSource: draft.customerSource
+      }
       if (draft.current)
         mutations.updateSession.mutate(
           {
@@ -765,7 +800,12 @@ function Editor({
                 <FormSelect
                   label="學生"
                   value={draft.studentId}
-                  onChange={(value) => onChange({ ...draft, studentId: value })}
+                  onChange={(value) => {
+                    const suggested = suggestedStudentVenue({ venues, purchases }, value)
+                    const venueId = !draft.current ? (suggested?.id ?? null) : draft.venueId
+                    const location = !draft.current ? (suggested?.name ?? '') : draft.location
+                    onChange({ ...draft, studentId: value, venueId, location })
+                  }}
                   required
                   options={[
                     { value: '', label: '選擇學生' },
@@ -797,15 +837,15 @@ function Editor({
                     />
                   </label>
                 ) : null}
-                <label>
-                  地點
-                  <input
-                    value={draft.location}
-                    onChange={(event) => onChange({ ...draft, location: event.target.value })}
-                    maxLength={160}
-                    required
-                  />
-                </label>
+                <VenueField
+                  session={session}
+                  studentId={draft.studentId}
+                  date={draft.date}
+                  venueId={draft.venueId}
+                  customerSource={draft.customerSource}
+                  location={draft.location}
+                  onChange={(value) => onChange({ ...draft, ...value })}
+                />
               </div>
             </>
           ) : null}
@@ -1488,6 +1528,8 @@ function sessionDraft(
     start: start.time,
     end: end.time,
     studentId: item.studentId,
+    venueId: item.venueId,
+    customerSource: item.customerSource,
     location: item.location ?? '',
     current: item
   }

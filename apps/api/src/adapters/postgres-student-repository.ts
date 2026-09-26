@@ -1,3 +1,4 @@
+import { PostgresFinanceRepository } from './postgres-finance-repository.js'
 import { randomUUID } from 'node:crypto'
 import type { Pool } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
@@ -34,6 +35,7 @@ interface StudentRow {
   goal: string
   private_note: string
   age_range: Student['ageRange']
+  default_venue_id: string | null
   active: boolean
   line_linked: boolean
   version: number
@@ -43,6 +45,8 @@ interface StudentRow {
 }
 
 interface LessonPurchaseRow {
+  collection_mode: 'coach' | 'venue'
+  venue_id: string | null
   id: string
   purchased_at: Date
   lesson_count: number
@@ -115,7 +119,7 @@ export class PostgresStudentRepository
 
   async listStudents(workspaceId: WorkspaceId) {
     const result = await this.#pool.query<StudentRow>(
-      `SELECT id, name, phone, goal, private_note, age_range, active, line_linked, version,
+      `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version,
               created_at, updated_at,
               (SELECT MIN(session.starts_at)
                FROM app_private.course_session session
@@ -216,10 +220,10 @@ export class PostgresStudentRepository
     const result = await this.#pool.query<StudentRow>(
       `INSERT INTO app_private.student (
          id, workspace_id, name, phone, goal, private_note, active, line_linked,
-         age_range,
+         age_range, default_venue_id,
          created_at, updated_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $9, $9)
-       RETURNING id, name, phone, goal, private_note, age_range, active, line_linked, version,
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $9, $9)
+       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version,
                  created_at, updated_at`,
       [
         input.id,
@@ -232,6 +236,7 @@ export class PostgresStudentRepository
         input.lineLinked,
         input.now,
         input.ageRange,
+        input.defaultVenueId,
       ],
     )
     const student = result.rows[0]
@@ -245,12 +250,12 @@ export class PostgresStudentRepository
   ): Promise<StudentDetail | null> {
     const [studentResult, purchasesResult, summary] = await Promise.all([
       this.#pool.query<StudentRow>(
-        `SELECT id, name, phone, goal, private_note, age_range, active, line_linked, version, created_at, updated_at
+        `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version, created_at, updated_at
          FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
         [workspaceId, studentId],
       ),
       this.#pool.query<LessonPurchaseRow>(
-        `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at
+        `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id
          FROM app_private.lesson_purchase
          WHERE workspace_id = $1 AND student_id = $2 ORDER BY purchased_at, id`,
         [workspaceId, studentId],
@@ -275,9 +280,10 @@ export class PostgresStudentRepository
       `UPDATE app_private.student
        SET name = $3, phone = $4, goal = $5, private_note = $6, active = $7, line_linked = $8,
            age_range = CASE WHEN $11 THEN $12 ELSE age_range END,
+           default_venue_id = CASE WHEN $14 THEN $13 ELSE default_venue_id END,
            version = version + 1, updated_at = $9
        WHERE workspace_id = $1 AND id = $2 AND version = $10
-       RETURNING id, name, phone, goal, private_note, age_range, active, line_linked, version, created_at, updated_at`,
+       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version, created_at, updated_at`,
       [
         workspaceId,
         studentId,
@@ -291,6 +297,8 @@ export class PostgresStudentRepository
         input.expectedVersion,
         input.ageRange !== undefined,
         input.ageRange ?? null,
+        input.defaultVenueId,
+        input.defaultVenueId !== undefined,
       ],
     )
     const student = result.rows[0]
@@ -327,10 +335,10 @@ export class PostgresStudentRepository
     input: NewLessonPurchase,
   ): Promise<LessonPurchase | null> {
     const result = await this.#pool.query<LessonPurchaseRow>(
-      `INSERT INTO app_private.lesson_purchase (id, workspace_id, student_id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at)
-       SELECT $3, $1, student.id, $4, $5, $6, $7, $8, $9, $9
+      `INSERT INTO app_private.lesson_purchase (id, workspace_id, student_id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at, collection_mode, entitlement_venue_id)
+       SELECT $3, $1, student.id, $4, $5, $6, $7, $8, $9, $9, $10, $11
        FROM app_private.student AS student WHERE student.workspace_id = $1 AND student.id = $2
-       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at`,
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id`,
       [
         workspaceId,
         studentId,
@@ -341,6 +349,8 @@ export class PostgresStudentRepository
         input.currency,
         input.privateNote,
         input.now,
+        input.collectionMode ?? 'coach',
+        input.venueId ?? null,
       ],
     )
     const purchase = result.rows[0]
@@ -356,9 +366,10 @@ export class PostgresStudentRepository
     const result = await this.#pool.query<LessonPurchaseRow>(
       `UPDATE app_private.lesson_purchase
        SET purchased_at = $4, lesson_count = $5, amount_minor = $6, currency = $7, private_note = $8,
+           entitlement_venue_id = CASE WHEN $11 THEN $12 ELSE entitlement_venue_id END,
            version = version + 1, updated_at = $9
        WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $10
-       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at`,
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id`,
       [
         workspaceId,
         studentId,
@@ -370,11 +381,13 @@ export class PostgresStudentRepository
         input.privateNote,
         input.now,
         input.expectedVersion,
+        input.venueId !== undefined,
+        input.venueId ?? null,
       ],
     )
     if (result.rows[0]) return mapLessonPurchase(result.rows[0])
     const current = await this.#pool.query<LessonPurchaseRow>(
-      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at
+      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id
        FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3`,
       [workspaceId, studentId, purchaseId],
     )
@@ -395,7 +408,7 @@ export class PostgresStudentRepository
     )
     if (result.rowCount) return true
     const current = await this.#pool.query<LessonPurchaseRow>(
-      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at
+      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id
        FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3`,
       [workspaceId, studentId, purchaseId],
     )
@@ -422,31 +435,14 @@ export class PostgresStudentRepository
   }
 
   async incomeSummary(workspaceId: WorkspaceId): Promise<LessonIncomeSummary[]> {
-    const result = await this.#pool.query<LessonIncomeSummary>(
-      `SELECT currency, COALESCE(SUM(amount_minor), 0)::bigint AS "amountMinor"
-       FROM app_private.lesson_purchase
-       WHERE workspace_id = $1
-       GROUP BY currency
-       ORDER BY currency`,
-      [workspaceId],
-    )
-    return result.rows.map((row) => ({ ...row, amountMinor: Number(row.amountMinor) }))
+    return new PostgresFinanceRepository(this.#pool).income(workspaceId)
   }
-
   async incomeSummaryForPeriod(
     workspaceId: WorkspaceId,
     startsAt: Date,
     endsAt: Date,
   ): Promise<LessonIncomeSummary[]> {
-    const result = await this.#pool.query<LessonIncomeSummary>(
-      `SELECT currency, COALESCE(SUM(amount_minor), 0)::bigint AS "amountMinor"
-       FROM app_private.lesson_purchase
-       WHERE workspace_id = $1 AND purchased_at >= $2 AND purchased_at < $3
-       GROUP BY currency
-       ORDER BY currency`,
-      [workspaceId, startsAt, endsAt],
-    )
-    return result.rows.map((row) => ({ ...row, amountMinor: Number(row.amountMinor) }))
+    return new PostgresFinanceRepository(this.#pool).income(workspaceId, startsAt, endsAt)
   }
 }
 
@@ -458,6 +454,7 @@ function mapStudent(row: StudentRow): Student {
     goal: row.goal,
     privateNote: row.private_note,
     ageRange: row.age_range,
+    defaultVenueId: row.default_venue_id,
     active: row.active,
     lineLinked: row.line_linked,
     version: row.version,
@@ -469,6 +466,8 @@ function mapStudent(row: StudentRow): Student {
 function mapLessonPurchase(row: LessonPurchaseRow): LessonPurchase {
   return {
     id: row.id,
+    collectionMode: row.collection_mode,
+    venueId: row.venue_id,
     purchasedAt: row.purchased_at.toISOString(),
     lessonCount: row.lesson_count,
     amountMinor: Number(row.amount_minor),

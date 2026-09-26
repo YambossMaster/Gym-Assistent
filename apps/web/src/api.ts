@@ -20,6 +20,7 @@ export interface Student {
   goal: string
   privateNote: string
   ageRange: StudentAgeRange | null
+  defaultVenueId: string | null
   active: boolean
   lineLinked: boolean
   version: number
@@ -30,6 +31,8 @@ export interface Student {
 }
 
 export interface LessonPurchase {
+  collectionMode?: 'coach' | 'venue'
+  venueId?: string | null
   id: string
   purchasedAt: string
   lessonCount: number
@@ -77,7 +80,7 @@ export interface TodayProjection {
 
 export interface TodayNotification {
   id: string
-  kind: 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
+  kind: 'low_venue_balance' | 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
   title: string
   detail: string
   targetRoute: string | null
@@ -92,6 +95,8 @@ export interface CalendarSession {
   seriesId: string | null
   startsAt: string | null
   endsAt: string | null
+  venueId?: string | null
+  customerSource?: 'coach' | 'venue' | null
   location: string | null
   status: 'scheduled' | 'completed' | 'cancelled'
   completedAt: string | null
@@ -129,6 +134,8 @@ export interface ScheduleSeries {
   durationMinutes: number
   intervalWeeks: 0 | 1 | 2
   autoScheduleHorizon: 'NONE' | '1_WEEK' | '2_WEEKS'
+  venueId?: string | null
+  customerSource?: 'coach' | 'venue' | null
   location: string
   active: boolean
   version: number
@@ -150,6 +157,8 @@ export interface TodaySchedule {
 export type SessionTimingInput = {
   startsAt: string
   endsAt: string
+  venueId?: string | null
+  customerSource?: 'coach' | 'venue' | null
   location: string
 }
 
@@ -159,6 +168,7 @@ export interface CreateStudentInput {
   goal?: string
   privateNote?: string
   ageRange?: StudentAgeRange | null
+  defaultVenueId?: string | null
 }
 
 export interface WorkspaceSettings {
@@ -213,6 +223,8 @@ export interface SessionTraining {
   session: CalendarSession & {
     startsAt: string
     endsAt: string
+    venueId?: string | null
+    customerSource?: 'coach' | 'venue' | null
     location: string
     version: number
     isLegacy: false
@@ -432,6 +444,7 @@ export async function createLessonPurchase(
   studentId: string,
   input: {
     purchasedAt: string
+    venueId?: string | null
     lessonCount: number
     amountMinor: number
     currency: string
@@ -452,6 +465,7 @@ export async function updateLessonPurchase(
   purchaseId: string,
   input: {
     purchasedAt: string
+    venueId?: string | null
     lessonCount: number
     amountMinor: number
     currency: string
@@ -1124,7 +1138,11 @@ export async function rollbackDemoImport(accessToken: string, importId: string) 
   return response.importRun
 }
 
-async function request<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(
+  path: string,
+  accessToken: string,
+  init: RequestInit = {}
+): Promise<T> {
   const response = await fetch(path, {
     ...init,
     headers: {

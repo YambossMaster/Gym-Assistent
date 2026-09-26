@@ -1,3 +1,11 @@
+import {
+  getDefaultFinanceCurrency,
+  PurchaseMoneyFields
+} from './pages/students/PurchaseMoneyFields'
+import { workspaceInstant, workspaceWallTime } from './pages/students/workspace-time'
+import { PurchaseCollectionFields } from './pages/students/PurchaseCollectionFields'
+import { financeReturnPath, suggestedStudentVenue, useVenues } from './pages/students/finance-api'
+import { VenueField } from './pages/students/VenueField'
 import { MultiMetricTrend } from './pages/training/MultiMetricTrend'
 import { metricLabels, recordingTypes } from './pages/training/recording'
 import { PerformanceTrend as TrendDialog } from './pages/training/PerformanceTrend'
@@ -23,7 +31,7 @@ import {
   XCircle
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { Link, NavLink, useNavigate, useParams } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ApiError,
   createStudent,
@@ -180,10 +188,24 @@ export function StudentsPage({
           ))}
         </section>
       )}
-      <Link className="student-finance-entry" to="/students/finances">
-        <span>每月收支</span>
-        <ArrowRight aria-hidden="true" />
-      </Link>
+      <div className="student-management-links">
+        <Link className="student-finance-entry" to="/students/finances">
+          <span className="student-finance-copy">
+            <small>FINANCE / MONTHLY SUMMARY</small>
+            <strong>本月收支</strong>
+            <span>查看購課總額、場地支出與各月紀錄</span>
+          </span>
+          <ArrowRight aria-hidden="true" />
+        </Link>
+        <Link className="student-finance-entry" to="/students/venues">
+          <span className="student-finance-copy">
+            <small>VENUES / MANAGEMENT</small>
+            <strong>場地管理</strong>
+            <span>新增場地、設定費用及查看剩餘堂數</span>
+          </span>
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </div>
       {createOpen && (
         <CreateStudentDialog
           accessToken={session.access_token}
@@ -283,12 +305,16 @@ export function StudentDetailPage({
   timeZone?: string
 }) {
   const { studentId = '' } = useParams()
+  const { hash, search } = useLocation()
   const navigate = useNavigate()
   const [notice, setNotice] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [purchaseCreateOpen, setPurchaseCreateOpen] = useState(false)
   const [purchaseDate, setPurchaseDate] = useState(() =>
     new Date().toLocaleDateString('sv-SE', { timeZone })
+  )
+  const [purchaseTime, setPurchaseTime] = useState(() =>
+    workspaceWallTime(new Date().toISOString(), timeZone).slice(11)
   )
   const [profileEditing, setProfileEditing] = useState(false)
   const [purchaseToDelete, setPurchaseToDelete] = useState<{ id: string; version: number } | null>(
@@ -299,6 +325,14 @@ export function StudentDetailPage({
   const [purchaseEditor, setPurchaseEditor] = useState<LessonPurchase | null>(null)
   const [purchaseConflict, setPurchaseConflict] = useState<LessonPurchase | null>(null)
   const detailQuery = useStudentDetailRouteQuery(session, studentId)
+  useEffect(() => {
+    if (hash !== '#purchase-history' || !detailQuery.data) return
+    const frame = requestAnimationFrame(() =>
+      document.getElementById('purchase-history')?.scrollIntoView({ block: 'start' })
+    )
+    return () => cancelAnimationFrame(frame)
+  }, [hash, detailQuery.data])
+  const venueQuery = useVenues(session)
   const {
     save: saveMutation,
     purchase: purchaseMutation,
@@ -340,6 +374,7 @@ export function StudentDetailPage({
         goal: String(values.get('goal') || '').trim(),
         privateNote: String(values.get('privateNote') || '').trim(),
         ageRange: (String(values.get('ageRange') || '') || null) as StudentAgeRange | null,
+        defaultVenueId: detail.student.defaultVenueId,
         active: detail.student.active,
         lineLinked: detail.student.lineLinked,
         version: detail.student.version
@@ -358,10 +393,11 @@ export function StudentDetailPage({
     const values = new FormData(form)
     purchaseMutation.mutate(
       {
-        purchasedAt: new Date(String(values.get('purchasedAt'))).toISOString(),
+        purchasedAt: workspaceInstant(`${purchaseDate}T${purchaseTime}`, timeZone),
+        venueId: String(values.get('venueId') || '') || null,
         lessonCount: Number(values.get('lessonCount')),
         amountMinor: Number(values.get('amountMinor')),
-        currency: 'TWD',
+        currency: String(values.get('currency') || 'TWD'),
         privateNote: String(values.get('purchaseNote') || '').trim()
       },
       {
@@ -380,6 +416,7 @@ export function StudentDetailPage({
       goal: detail.student.goal,
       privateNote: detail.student.privateNote,
       ageRange: detail.student.ageRange,
+      defaultVenueId: detail.student.defaultVenueId,
       active,
       lineLinked: detail.student.lineLinked,
       version: detail.student.version
@@ -390,9 +427,16 @@ export function StudentDetailPage({
   }
   return (
     <section className="page student-detail-page">
-      <Link className="student-detail-back" to="/students">
+      <Link
+        className="student-detail-back"
+        to={
+          new URLSearchParams(search).get('from') === 'finances'
+            ? financeReturnPath(new URLSearchParams(search))
+            : '/students'
+        }
+      >
         <ArrowLeft aria-hidden="true" />
-        回到學生列表
+        {new URLSearchParams(search).get('from') === 'finances' ? '回到收支明細' : '回到學生列表'}
       </Link>
       <header className="student-detail-hero">
         <div className="student-detail-heading">
@@ -530,7 +574,7 @@ export function StudentDetailPage({
           studentName={detail.student.name}
         />
         <StudentCourseRecord schedule={detail.schedule} />
-        <section className="detail-section purchase-history">
+        <section id="purchase-history" className="detail-section purchase-history">
           <div className="purchase-history-heading">
             <div>
               <span className="eyebrow dark">PURCHASE LEDGER</span>
@@ -550,6 +594,19 @@ export function StudentDetailPage({
               <span className="detail-add-button-short">新增</span>
             </button>
           </div>
+          {(venueQuery.data?.studentVenueBalances ?? []).filter(
+            (balance) => balance.studentId === studentId
+          ).length > 0 && (
+            <p className="finance-context">
+              {(venueQuery.data?.studentVenueBalances ?? [])
+                .filter((balance) => balance.studentId === studentId)
+                .map(
+                  (balance) =>
+                    `${balance.venueId ? (venueQuery.data?.venues.find((venue) => venue.id === balance.venueId)?.name ?? '場地') : '無固定場地'}剩餘 ${balance.remaining} 堂`
+                )
+                .join(' · ')}
+            </p>
+          )}
           {detail.purchases.length ? (
             detail.purchases.map((item) => (
               <div className="purchase-ledger-row" key={item.id}>
@@ -559,6 +616,15 @@ export function StudentDetailPage({
                 <strong>+{item.lessonCount} 堂</strong>
                 <span className="purchase-ledger-money">
                   {formatMoney(item.amountMinor, item.currency)}
+                  <small>
+                    {item.venueId
+                      ? (venueQuery.data?.venues.find((venue) => venue.id === item.venueId)?.name ??
+                        '場地')
+                      : '無固定場地'}{' '}
+                    · 購課總額 · 每堂
+                    {item.amountMinor % item.lessonCount ? '約 ' : ''}
+                    {formatMoney(item.amountMinor / item.lessonCount, item.currency)}
+                  </small>
                 </span>
                 <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
                 <span className="purchase-ledger-actions">
@@ -625,18 +691,20 @@ export function StudentDetailPage({
           variant="profile"
         >
           <form className="purchase-create-form" onSubmit={purchase}>
-            <div className="field-row">
+            <PurchaseCollectionFields session={session} />
+            <div className="field-row purchase-date-count-row">
               <SeriesDatePicker label="購買日期" value={purchaseDate} onChange={setPurchaseDate} />
-              <input type="hidden" name="purchasedAt" value={purchaseDate} />
               <label>
-                堂數
-                <input name="lessonCount" type="number" min="1" max="10000" required />
-              </label>
-              <label>
-                實收金額（TWD）
-                <input name="amountMinor" type="number" min="0" step="1" required />
+                購買時間
+                <input
+                  type="time"
+                  required
+                  value={purchaseTime}
+                  onChange={(event) => setPurchaseTime(event.target.value)}
+                />
               </label>
             </div>
+            <PurchaseMoneyFields currency={getDefaultFinanceCurrency()} />
             <label>
               教練備註
               <textarea name="purchaseNote" maxLength={4000} />
@@ -718,16 +786,19 @@ export function StudentDetailPage({
       )}
       {purchaseEditor && (
         <PurchaseEditor
+          session={session}
+          timeZone={timeZone}
+          initialVenueId={purchaseEditor.venueId ?? null}
           purchase={purchaseEditor}
           conflict={purchaseConflict}
-          error={updatePurchaseMutation.error}
+          error={updatePurchaseMutation.error ?? saveMutation.error}
           disabled={submitting}
           saving={updatePurchaseMutation.isPending}
           onCancel={() => {
             setPurchaseEditor(null)
             setPurchaseConflict(null)
           }}
-          onSave={(input) =>
+          onSave={(input) => {
             updatePurchaseMutation.mutate(
               { purchaseId: purchaseEditor.id, input },
               {
@@ -743,70 +814,103 @@ export function StudentDetailPage({
                 }
               }
             )
-          }
+          }}
         />
       )}
     </section>
   )
 }
 
-function StudentCourseRecord({
-  schedule
+export function StudentCourseRecord({
+  schedule,
+  full = false
 }: {
+  full?: boolean
   schedule?: {
     nearestFuture: import('./api').CalendarSession | null
     history: import('./api').CalendarSession[]
   }
 }) {
+  const [allOpen, setAllOpen] = useState(false)
   if (!schedule) return null
   const records = selectStudentCourseRecords(schedule)
+  const visibleRecords = full ? records : records.slice(0, 10)
   return (
-    <section className="student-course-record" aria-labelledby="student-course-record-title">
-      <header className="student-course-record-heading">
-        <div>
-          <span className="eyebrow">SESSION HISTORY</span>
-          <h2 id="student-course-record-title">課程紀錄</h2>
-        </div>
-      </header>
-      {records.length ? (
-        <div className="student-course-record-list">
-          {records.map((item) => {
-            const isNext = item.status === 'scheduled'
-            return (
-              <Link
-                key={item.id}
-                className={`student-course-record-row${isNext ? ' is-next' : ''}`}
-                to={`/sessions/${item.id}`}
-              >
-                <span className="student-course-record-index">
-                  {isNext ? <CalendarClock /> : <Check />}
-                </span>
-                <span className="student-course-record-date">
-                  <strong>{formatScheduleDate(item.startsAt)}</strong>
-                </span>
-                <span className="student-course-record-meta">
-                  {formatScheduleTime(item.startsAt)}–{formatScheduleTime(item.endsAt)}
-                  <span aria-hidden="true">・</span>
-                  {item.location || '未設定地點'}
-                </span>
-                <span className="student-course-record-status">
-                  {isNext ? '最近未上課' : '已完成'}
-                </span>
-                <ArrowRight />
-              </Link>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="student-course-record-empty">
-          <CalendarClock />
-          <div>
-            <strong>還沒有課程紀錄</strong>
-            <span>安排下一堂課或完成課堂後，就會顯示在這裡。</span>
+    <>
+      <section
+        className="student-course-record"
+        aria-labelledby={full ? undefined : 'student-course-record-title'}
+        aria-label={full ? '完整課程紀錄' : undefined}
+      >
+        {!full && (
+          <header className="student-course-record-heading">
+            <div>
+              <span className="eyebrow">SESSION HISTORY</span>
+              <h2 id="student-course-record-title">課程紀錄</h2>
+            </div>
+          </header>
+        )}
+        {records.length ? (
+          <div className="student-course-record-list">
+            {visibleRecords.map((item) => {
+              const isNext = item.status === 'scheduled'
+              return (
+                <Link
+                  key={item.id}
+                  className={`student-course-record-row${isNext ? ' is-next' : ''}`}
+                  to={`/sessions/${item.id}`}
+                >
+                  <span className="student-course-record-index">
+                    {isNext ? <CalendarClock /> : <Check />}
+                  </span>
+                  <span className="student-course-record-date">
+                    <strong>{formatScheduleDate(item.startsAt)}</strong>
+                  </span>
+                  <span className="student-course-record-meta">
+                    {formatScheduleTime(item.startsAt)}–{formatScheduleTime(item.endsAt)}
+                    <span aria-hidden="true">・</span>
+                    {item.location || '未設定地點'}
+                  </span>
+                  <span className="student-course-record-status">
+                    {isNext ? '最近未上課' : '已完成'}
+                  </span>
+                  <ArrowRight />
+                </Link>
+              )
+            })}
           </div>
-        </div>
+        ) : (
+          <div className="student-course-record-empty">
+            <CalendarClock />
+            <div>
+              <strong>還沒有課程紀錄</strong>
+              <span>安排下一堂課或完成課堂後，就會顯示在這裡。</span>
+            </div>
+          </div>
+        )}
+        {!full && records.length > 10 && (
+          <button
+            type="button"
+            className="student-course-record-more"
+            onClick={() => setAllOpen(true)}
+          >
+            查看更多 <ArrowRight size={17} aria-hidden="true" />
+          </button>
+        )}
+      </section>
+      {allOpen && (
+        <SchedulingDialog
+          title="課程紀錄"
+          eyebrow="SESSION HISTORY"
+          variant="profile"
+          onClose={() => setAllOpen(false)}
+        >
+          <div className="student-course-record-dialog">
+            <StudentCourseRecord schedule={schedule} full />
+          </div>
+        </SchedulingDialog>
       )}
-    </section>
+    </>
   )
 }
 
@@ -826,6 +930,8 @@ function StudentSchedule({
     history: import('./api').CalendarSession[]
   }
 }) {
+  const venueQuery = useVenues(session)
+  const defaultVenue = suggestedStudentVenue(venueQuery.data, studentId)
   const seriesQuery = useQuery({
     queryKey: queryKeys.scheduleSeries(session.user.id, studentId),
     queryFn: () => listScheduleSeries(session.access_token, studentId)
@@ -912,9 +1018,12 @@ function StudentSchedule({
       </div>
       {editor ? (
         <SeriesEditor
+          session={session}
           series={editor === 'new' ? null : editor}
           studentId={studentId}
           studentName={studentName}
+          initialVenueId={defaultVenue?.id ?? null}
+          initialLocation={defaultVenue?.name ?? ''}
           timeZone={timeZone}
           pending={mutations.createSeries.isPending || mutations.updateSeries.isPending}
           onClose={() => setEditor(null)}
@@ -1003,18 +1112,24 @@ function StudentSchedule({
 }
 
 function SeriesEditor({
+  session,
   series,
   studentId,
   studentName,
+  initialVenueId,
+  initialLocation,
   timeZone,
   pending,
   onClose,
   onDelete,
   onSave
 }: {
+  session: Session
   series: ScheduleSeries | null
   studentId: string
   studentName: string
+  initialVenueId: string | null
+  initialLocation: string
   timeZone: string
   pending: boolean
   onClose: () => void
@@ -1022,6 +1137,8 @@ function SeriesEditor({
   onSave: (input: {
     startsAt: string
     endsAt: string
+    venueId?: string | null
+    customerSource?: 'coach' | 'venue' | null
     location: string
     intervalWeeks: 0 | 1 | 2
     autoScheduleHorizon: ScheduleSeries['autoScheduleHorizon']
@@ -1034,7 +1151,9 @@ function SeriesEditor({
   const [date, setDate] = useState(initial.date),
     [start, setStart] = useState(initial.time)
   const [duration, setDuration] = useState(series?.durationMinutes ?? 60),
-    [location, setLocation] = useState(series?.location ?? '')
+    [location, setLocation] = useState(series?.location ?? initialLocation)
+  const [venueId, setVenueId] = useState(series?.venueId ?? initialVenueId),
+    [customerSource, setCustomerSource] = useState(series?.customerSource ?? null)
   const [interval, setInterval] = useState<0 | 1 | 2>(series?.intervalWeeks ?? 1),
     [horizon, setHorizon] = useState<ScheduleSeries['autoScheduleHorizon']>(
       String(series?.autoScheduleHorizon) === 'MAX_WINDOW'
@@ -1045,6 +1164,10 @@ function SeriesEditor({
     [error, setError] = useState('')
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    if (!venueId) {
+      setError('請選擇或新增場地。')
+      return
+    }
     try {
       const startsAt = localDateTimeToIso({ date, time: start }, timeZone)
       const endLocal = isoToLocalDateTime(
@@ -1055,6 +1178,8 @@ function SeriesEditor({
         startsAt,
         endsAt: localDateTimeToIso(endLocal, timeZone),
         location,
+        venueId,
+        customerSource,
         intervalWeeks: interval,
         autoScheduleHorizon: horizon,
         active
@@ -1109,15 +1234,19 @@ function SeriesEditor({
               ]}
             />
           </label>
-          <label>
-            地點
-            <input
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              maxLength={160}
-              required
-            />
-          </label>
+          <VenueField
+            session={session}
+            studentId={studentId}
+            date={date}
+            venueId={venueId}
+            customerSource={customerSource}
+            location={location}
+            onChange={(v) => {
+              setVenueId(v.venueId)
+              setCustomerSource(v.customerSource)
+              setLocation(v.location)
+            }}
+          />
         </div>
         <div className="student-series-settings">
           <label>
@@ -1220,6 +1349,9 @@ function formatScheduleTime(value: string | null) {
 }
 
 function PurchaseEditor({
+  session,
+  timeZone,
+  initialVenueId,
   purchase,
   conflict,
   error,
@@ -1228,6 +1360,9 @@ function PurchaseEditor({
   onCancel,
   onSave
 }: {
+  session: Session
+  timeZone: string
+  initialVenueId: string | null
   purchase: LessonPurchase
   conflict: LessonPurchase | null
   error: unknown
@@ -1235,6 +1370,7 @@ function PurchaseEditor({
   saving: boolean
   onCancel: () => void
   onSave: (input: {
+    venueId: string | null
     purchasedAt: string
     lessonCount: number
     amountMinor: number
@@ -1243,35 +1379,26 @@ function PurchaseEditor({
     version: number
   }) => void
 }) {
-  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onCancel, {
-    submitOnEnter: true,
-    focusDialog: true
-  })
+  const [date, setDate] = useState(isoToLocalDateTime(purchase.purchasedAt, timeZone).date)
+  const [time, setTime] = useState(isoToLocalDateTime(purchase.purchasedAt, timeZone).time)
   return (
-    <section
-      ref={dialogRef}
-      tabIndex={-1}
-      className="purchase-editor"
-      role="dialog"
-      aria-modal="true"
-      aria-label="編輯購課紀錄"
-      onPointerDown={onBackdropPointerDown}
-    >
+    <SchedulingDialog title="編輯購課紀錄" variant="profile" onClose={onCancel}>
       <form
+        className="purchase-create-form"
         onSubmit={(event) => {
           event.preventDefault()
           const values = new FormData(event.currentTarget)
           onSave({
-            purchasedAt: new Date(String(values.get('purchasedAt'))).toISOString(),
+            purchasedAt: workspaceInstant(`${date}T${time}`, timeZone),
             lessonCount: Number(values.get('lessonCount')),
             amountMinor: Number(values.get('amountMinor')),
-            currency: purchase.currency,
+            currency: String(values.get('currency') || purchase.currency),
+            venueId: String(values.get('venueId') || '') || null,
             privateNote: String(values.get('privateNote') || '').trim(),
             version: purchase.version
           })
         }}
       >
-        <h2>編輯購課紀錄</h2>
         {conflict ? (
           <p className="form-notice" role="alert">
             這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
@@ -1283,36 +1410,22 @@ function PurchaseEditor({
             {error.message}
           </p>
         ) : null}
+        <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
         <label>
-          購買日期
+          購買時間
           <input
-            name="purchasedAt"
-            type="date"
-            defaultValue={purchase.purchasedAt.slice(0, 10)}
+            type="time"
             required
+            value={time}
+            onChange={(event) => setTime(event.target.value)}
           />
         </label>
-        <label>
-          堂數
-          <input
-            name="lessonCount"
-            type="number"
-            min="1"
-            max="10000"
-            defaultValue={purchase.lessonCount}
-            required
-          />
-        </label>
-        <label>
-          實收金額
-          <input
-            name="amountMinor"
-            type="number"
-            min="0"
-            defaultValue={purchase.amountMinor}
-            required
-          />
-        </label>
+        <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
+        <PurchaseMoneyFields
+          count={purchase.lessonCount}
+          amount={purchase.amountMinor}
+          currency={purchase.currency}
+        />
         <label>
           教練備註
           <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
@@ -1326,7 +1439,7 @@ function PurchaseEditor({
           </button>
         </div>
       </form>
-    </section>
+    </SchedulingDialog>
   )
 }
 
@@ -1766,7 +1879,7 @@ function formatMoney(amountMinor: number, currency: string) {
   }).format(amountMinor)
 }
 
-function StudentPerformance({
+export function StudentPerformance({
   session,
   studentId,
   studentName
@@ -1776,6 +1889,11 @@ function StudentPerformance({
   studentName: string
 }) {
   const query = useStudentPerformance(session, studentId)
+  const navigate = useNavigate()
+  const openHistory = (definitionId: string, historySessionId: string) => {
+    setSelected(null)
+    navigate(`/sessions/${historySessionId}?exercise=${encodeURIComponent(definitionId)}`)
+  }
   const [selected, setSelected] = useState<PerformanceEntry | null>(null)
   const [allOpen, setAllOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'count' | 'latest'>('count')
@@ -1909,6 +2027,7 @@ function StudentPerformance({
             []
           }
           onClose={() => setSelected(null)}
+          onOpenHistory={(historySessionId) => openHistory(selected.definitionId, historySessionId)}
         />
       ) : (
         selected && (
@@ -1918,6 +2037,9 @@ function StudentPerformance({
             studentId={studentId}
             entry={selected}
             onClose={() => setSelected(null)}
+            onOpenHistory={(historySessionId) =>
+              openHistory(selected.definitionId, historySessionId)
+            }
           />
         )
       )}
@@ -1930,12 +2052,14 @@ function PerformanceTrend({
   session,
   studentId,
   entry,
+  onOpenHistory,
   onClose
 }: {
   studentName: string
   session: Session
   studentId: string
   entry: PerformanceEntry
+  onOpenHistory: (sessionId: string) => void
   onClose: () => void
 }) {
   const query = useStudentTrend(session, studentId, entry.definitionId, entry.metric)
@@ -1950,6 +2074,7 @@ function PerformanceTrend({
       refreshing={query.isFetching && !query.isLoading}
       onRetry={() => void query.refetch()}
       onClose={onClose}
+      onOpenHistory={onOpenHistory}
     />
   )
 }
