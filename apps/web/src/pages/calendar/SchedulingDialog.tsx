@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 
@@ -42,7 +43,9 @@ export function SchedulingDialog({
         dialog?.contains(document.activeElement) &&
         !(
           event.target instanceof HTMLElement &&
-          event.target.closest('input, textarea, select, [contenteditable="true"]')
+          event.target.closest(
+            'input, textarea, select, button, [role="listbox"], [contenteditable="true"]'
+          )
         )
       ) {
         event.preventDefault()
@@ -77,7 +80,7 @@ export function SchedulingDialog({
       <section
         ref={dialogRef}
         tabIndex={-1}
-        className={`scheduling-dialog${variant ? ` ${variant}` : ''}`}
+        className={`scheduling-dialog ui-settings-dialog${variant ? ` ${variant}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="scheduling-dialog-title"
@@ -96,7 +99,7 @@ export function SchedulingDialog({
             {description ? <p>{description}</p> : null}
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label="關閉">
-            ×
+            <X aria-hidden="true" />
           </button>
         </header>
         {children}

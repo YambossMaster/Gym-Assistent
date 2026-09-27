@@ -3,18 +3,33 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react
 const dialogStack: symbol[] = []
 let scrollLockCount = 0
 let scrollLockPriorOverflow = ''
+let rootScrollLockPriorOverflow = ''
 
-function lockBodyScroll() {
+function lockPageScroll() {
   if (scrollLockCount === 0) {
     scrollLockPriorOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    rootScrollLockPriorOverflow = document.documentElement.style.overflow
+    // `hidden` creates a scroll container and breaks the desktop sidebar's sticky position.
+    document.body.style.overflow = 'clip'
+    document.documentElement.style.overflow = 'clip'
   }
   scrollLockCount += 1
 }
 
-function unlockBodyScroll() {
+function unlockPageScroll() {
   scrollLockCount = Math.max(0, scrollLockCount - 1)
-  if (scrollLockCount === 0) document.body.style.overflow = scrollLockPriorOverflow
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = scrollLockPriorOverflow
+    document.documentElement.style.overflow = rootScrollLockPriorOverflow
+  }
+}
+
+export function useModalScrollLock(active: boolean) {
+  useEffect(() => {
+    if (!active) return
+    lockPageScroll()
+    return unlockPageScroll
+  }, [active])
 }
 
 export function useDialogBehavior(
@@ -50,7 +65,7 @@ export function useDialogBehavior(
     }
     const token = tokenRef.current
     dialogStack.push(token)
-    if (lockScroll) lockBodyScroll()
+    if (lockScroll) lockPageScroll()
     if (focusDialog) dialogRef.current?.focus()
     const keydown = (event: KeyboardEvent) => {
       if (dialogStack.at(-1) !== token || event.defaultPrevented || event.isComposing) return
@@ -64,11 +79,20 @@ export function useDialogBehavior(
         if (
           target instanceof HTMLInputElement ||
           target instanceof HTMLTextAreaElement ||
-          (target instanceof HTMLElement && target.closest('[contenteditable="true"]'))
+          (target instanceof HTMLElement &&
+            target.closest('button, [role="listbox"], [contenteditable="true"]'))
         )
           return
         event.preventDefault()
         onDeleteShortcutRef.current()
+        return
+      }
+      if (event.key === 'Enter' && submitOnEnter && (event.ctrlKey || event.metaKey)) {
+        const form = dialogRef.current?.querySelector('form')
+        if (form) {
+          event.preventDefault()
+          form.requestSubmit()
+        }
         return
       }
       if (event.key !== 'Enter' || !submitOnEnter) return
@@ -96,7 +120,7 @@ export function useDialogBehavior(
     return () => {
       const index = dialogStack.indexOf(token)
       if (index !== -1) dialogStack.splice(index, 1)
-      if (lockScroll) unlockBodyScroll()
+      if (lockScroll) unlockPageScroll()
       window.removeEventListener('keydown', keydown)
       restoreFocusFrameRef.current = requestAnimationFrame(() => {
         // A replacement dialog may already own focus when this deferred cleanup runs.

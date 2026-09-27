@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { numericInputKeyDown } from '../../shared/numeric-input'
 import { financeMoney, moneyFactor } from './finance-api'
 
 const currencyPreferenceKey = 'gym-assistant.default-purchase-currency'
@@ -66,6 +67,7 @@ export function PurchaseMoneyFields({
           <input
             name="lessonCount"
             type="number"
+            onKeyDown={numericInputKeyDown}
             min="1"
             max="10000"
             step="1"

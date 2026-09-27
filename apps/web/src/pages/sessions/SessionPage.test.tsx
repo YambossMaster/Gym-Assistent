@@ -89,12 +89,51 @@ it('uses the compact Session editor structure with a separated action footer', a
     )
     expect(host.querySelector('.scheduling-dialog.session-edit')).not.toBeNull()
     expect(host.querySelector('.session-editor-form-body')).not.toBeNull()
+    expect(host.querySelector('.session-editor-form-body > .scheduling-time-fields')).not.toBeNull()
+    expect(host.querySelectorAll('.session-editor-form-body .scheduling-time-arrow')).toHaveLength(
+      1
+    )
     expect(host.querySelector('.session-editor-form-footer')).not.toBeNull()
     expect(
       [...host.querySelectorAll<HTMLButtonElement>('.session-editor-form-footer button')].map(
         (button) => button.textContent?.trim()
       )
     ).toEqual(['刪除課堂', '取消', '儲存變更'])
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
+it('explains why a completed session cannot be changed', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <SessionEditor
+          item={{
+            studentId: 'student-1',
+            studentName: '學生甲',
+            startsAt: '2026-09-15T01:00:00.000Z',
+            endsAt: '2026-09-15T02:00:00.000Z',
+            location: 'FORM A',
+            status: 'completed'
+          }}
+          students={[{ id: 'student-1', name: '學生甲', active: true }]}
+          timeZone="Asia/Taipei"
+          pending={false}
+          onClose={vi.fn()}
+          onSave={vi.fn()}
+          onRequestDelete={vi.fn()}
+        />
+      )
+    )
+    expect(host.querySelector('.scheduling-dialog > header')?.textContent).toContain(
+      '課堂已完成，無法變更安排。'
+    )
+    expect(host.querySelector<HTMLButtonElement>('.series-date-trigger')?.disabled).toBe(true)
   } finally {
     await act(async () => root.unmount())
   }

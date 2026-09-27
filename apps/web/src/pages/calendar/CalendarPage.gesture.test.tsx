@@ -183,8 +183,8 @@ describe('Calendar Day and Week gestures', () => {
         dialog.querySelector<HTMLButtonElement>('.form-select-trigger[aria-label="學生"]')
           ?.textContent
       ).toContain('學生甲')
-      const times = [...dialog.querySelectorAll<HTMLInputElement>('.scheduling-time-field input')]
-      expect(times.map((input) => input.value)).toEqual(['10:00', '11:30'])
+      const times = [...dialog.querySelectorAll('.scheduling-time-field .form-select-option-label')]
+      expect(times.map((item) => item.textContent?.slice(0, 5))).toEqual(['10:00', '11:30'])
     } finally {
       await act(async () => root.unmount())
     }
@@ -222,10 +222,10 @@ describe('Calendar Day and Week gestures', () => {
       await act(async () => pointer(grid, 'pointerup', 100, 290, 'touch'))
       expect(
         [
-          ...host.querySelectorAll<HTMLInputElement>(
-            '.scheduling-dialog .scheduling-time-field input'
+          ...host.querySelectorAll(
+            '.scheduling-dialog .scheduling-time-field .form-select-option-label'
           )
-        ].map((input) => input.value)
+        ].map((item) => item.textContent?.slice(0, 5))
       ).toEqual(['10:00', '11:30'])
     } finally {
       await act(async () => root.unmount())
@@ -240,10 +240,10 @@ describe('Calendar Day and Week gestures', () => {
       await act(async () => pointer(grid, 'pointerup', 100, 234, 'touch'))
       expect(
         [
-          ...host.querySelectorAll<HTMLInputElement>(
-            '.scheduling-dialog .scheduling-time-field input'
+          ...host.querySelectorAll(
+            '.scheduling-dialog .scheduling-time-field .form-select-option-label'
           )
-        ].map((input) => input.value)
+        ].map((item) => item.textContent?.slice(0, 5))
       ).toEqual(['10:00', '11:00'])
     } finally {
       await act(async () => root.unmount())
@@ -305,6 +305,11 @@ describe('Calendar Day and Week gestures', () => {
       await act(async () => pointer(item, 'pointerup', 100, 245, 'touch'))
       const dialog = host.querySelector('.scheduling-dialog')!
       expect(dialog.querySelector('.calendar-quick-time')?.textContent).toContain('教室')
+      expect(
+        [...dialog.querySelectorAll('.calendar-quick-actions > *')].map((action) =>
+          action.textContent?.trim()
+        )
+      ).toEqual(['刪除', '開啟課堂', '完成上課'])
       await act(async () =>
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
       )
@@ -319,11 +324,11 @@ describe('Calendar Day and Week gestures', () => {
       await act(async () =>
         restoredDialog.querySelector<HTMLButtonElement>('.calendar-quick-edit')!.click()
       )
-      const input = restoredDialog.querySelector<HTMLInputElement>('input[type="date"]')!
-      input.focus()
+      const dateTrigger = restoredDialog.querySelector<HTMLButtonElement>('.series-date-trigger')!
+      dateTrigger.focus()
       calls.deleteSession.mockClear()
       await act(async () =>
-        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+        dateTrigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
       )
       expect(calls.deleteSession).not.toHaveBeenCalled()
       await act(async () =>

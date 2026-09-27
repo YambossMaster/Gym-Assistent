@@ -19,7 +19,7 @@ export function VenuePage({ session }: { session: Session }) {
           to={fromFinance ? financeReturnPath(params) : '/students'}
         >
           <ArrowLeft aria-hidden="true" />
-          {fromFinance ? '回到收支明細' : '回到學生列表'}
+          返回
         </Link>
       }
     >

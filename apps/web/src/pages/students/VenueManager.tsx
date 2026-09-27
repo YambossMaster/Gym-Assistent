@@ -7,6 +7,8 @@ import { Plus, MapPin, ChevronRight, Pencil, X } from 'lucide-react'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { SeriesDatePicker } from './SeriesDatePicker'
 import { FormSelect } from '../../shared/FormSelect'
+import { TimeSelect } from '../../shared/TimeSelect'
+import { numericInputKeyDown } from '../../shared/numeric-input'
 import { Confirmation } from '../../shared/primitives'
 import {
   financeMoney,
@@ -180,7 +182,7 @@ export function VenueManager({ session }: { session: Session }) {
           <h2>場地與支出</h2>
         </div>
         <button
-          className="secondary-button venue-add-button"
+          className="secondary-button venue-add-button ui-action-add"
           onClick={() => setEditor({ kind: 'create' })}
         >
           <Plus size={16} aria-hidden="true" />
@@ -624,7 +626,7 @@ function VenueEditor({
             >
               {!venue!.active && (
                 <button
-                  className="secondary-button"
+                  className="secondary-button ui-action-general"
                   disabled={mutation.isPending}
                   onClick={() =>
                     save(
@@ -639,7 +641,7 @@ function VenueEditor({
               )}
               {venue!.active && !venue!.canDelete && (
                 <button
-                  className="secondary-button"
+                  className="secondary-button ui-action-general"
                   disabled={mutation.isPending}
                   onClick={() =>
                     save(
@@ -655,7 +657,7 @@ function VenueEditor({
               {venue!.canDelete && (
                 <button
                   type="button"
-                  className="danger-outline-button"
+                  className="danger-outline-button ui-action-delete"
                   disabled={mutation.isPending}
                   onClick={() => {
                     mutation.reset()
@@ -666,10 +668,18 @@ function VenueEditor({
                 </button>
               )}
               <span className="venue-detail-footer-actions">
-                <button type="button" className="secondary-button" onClick={onClose}>
+                <button
+                  type="button"
+                  className="secondary-button ui-action-cancel"
+                  onClick={onClose}
+                >
                   取消
                 </button>
-                <button type="button" className="primary-button compact" onClick={onClose}>
+                <button
+                  type="button"
+                  className="primary-button compact ui-action-save"
+                  onClick={onClose}
+                >
                   儲存
                 </button>
               </span>
@@ -678,6 +688,7 @@ function VenueEditor({
         ) : (
           <form
             className={editor.kind === 'credit' ? 'venue-credit-form' : undefined}
+            autoComplete="off"
             onKeyDown={(event) => {
               if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
               if (event.target instanceof HTMLInputElement && event.target.type === 'text') {
@@ -870,7 +881,7 @@ function VenueEditor({
                       value={address}
                       onChange={(event) => setAddress(event.target.value)}
                       maxLength={500}
-                      autoComplete="street-address"
+                      autoComplete="off"
                     />
                   </label>
                 </>
@@ -903,12 +914,11 @@ function VenueEditor({
                 />
               ) : null}
               {(editor.kind === 'rule' || (editor.kind === 'create' && kind !== 'untracked')) && (
-                <label>
-                  生效時間
-                  <input
-                    type="time"
+                <div className="field-control">
+                  <span>生效時間</span>
+                  <TimeSelect
+                    label="生效時間"
                     name="ruleTime"
-                    required
                     defaultValue={
                       editor.kind === 'rule' && venue?.currentRule?.effectiveAt
                         ? workspaceWallTime(
@@ -921,7 +931,7 @@ function VenueEditor({
                           ).slice(11)
                     }
                   />
-                </label>
+                </div>
               )}
               {(editor.kind === 'credit' || (editor.kind === 'create' && kind === 'prepaid')) && (
                 <>
@@ -930,12 +940,11 @@ function VenueEditor({
                     value={deductDate}
                     onChange={setDeductDate}
                   />
-                  <label>
-                    開始扣堂時間
-                    <input
-                      type="time"
+                  <div className="field-control">
+                    <span>開始扣堂時間</span>
+                    <TimeSelect
+                      label="開始扣堂時間"
                       name="deductTime"
-                      required
                       defaultValue={
                         editor.kind === 'credit' && editor.credit?.startsDeductingAt
                           ? workspaceWallTime(
@@ -945,7 +954,7 @@ function VenueEditor({
                           : '00:00'
                       }
                     />
-                  </label>
+                  </div>
                 </>
               )}
               {(editor.kind === 'rule' || editor.kind === 'create') && (
@@ -993,6 +1002,7 @@ function VenueEditor({
                           <input
                             name={key}
                             type="number"
+                            onKeyDown={numericInputKeyDown}
                             min="0"
                             max="100"
                             step="0.01"
@@ -1010,6 +1020,7 @@ function VenueEditor({
                         <input
                           name="rent"
                           type="number"
+                          onKeyDown={numericInputKeyDown}
                           min="0"
                           step="0.01"
                           required
@@ -1055,6 +1066,7 @@ function VenueEditor({
                         <input
                           name="salaryAmount"
                           type="number"
+                          onKeyDown={numericInputKeyDown}
                           min="0"
                           step={1 / moneyFactor(currentSalary?.currency ?? preferredCurrency)}
                           required
@@ -1071,6 +1083,7 @@ function VenueEditor({
                         <input
                           name="payDay"
                           type="number"
+                          onKeyDown={numericInputKeyDown}
                           min="1"
                           max="31"
                           step="1"
@@ -1203,7 +1216,7 @@ function VenueEditor({
               <section className="finance-preview">
                 <h3>{editor.kind === 'rule' ? '確認場地規則影響' : '確認歷史課程關聯'}</h3>
                 <button type="button" onClick={() => setPreview(null)}>
-                  返回修改
+                  返回
                 </button>
                 {editor.kind === 'rule' && (
                   <>
@@ -1265,7 +1278,7 @@ function VenueEditor({
               {editor.kind === 'credit' && editor.credit && (
                 <button
                   type="button"
-                  className="danger-outline-button venue-credit-delete"
+                  className="danger-outline-button venue-credit-delete ui-action-delete"
                   disabled={mutation.isPending}
                   onClick={() => {
                     mutation.reset()
@@ -1275,13 +1288,13 @@ function VenueEditor({
                   刪除預購紀錄
                 </button>
               )}
-              <button type="button" className="secondary-button" onClick={onClose}>
+              <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
                 取消
               </button>
               {editor.kind === 'rule-history' ? null : preview ? (
                 <button
                   type="button"
-                  className="primary-button"
+                  className="primary-button ui-action-save"
                   disabled={mutation.isPending}
                   onClick={() =>
                     save(
@@ -1293,17 +1306,29 @@ function VenueEditor({
                     )
                   }
                 >
-                  確認套用
+                  {mutation.isPending ? '處理中…' : '確認套用'}
                 </button>
               ) : (
                 <button
-                  className="primary-button"
+                  className={
+                    editor.kind === 'history' || editor.kind === 'rule'
+                      ? 'secondary-button ui-action-general'
+                      : editor.kind === 'coach-supplied' ||
+                          (editor.kind === 'credit' && !editor.credit)
+                        ? 'primary-button ui-action-add'
+                        : 'primary-button ui-action-save'
+                  }
                   disabled={
                     mutation.isPending ||
                     (editor.kind === 'history' && !Object.values(selected).some(Boolean)) ||
                     (editor.kind === 'coach-supplied' && !selectedStudentId)
                   }
                 >
+                  {!mutation.isPending &&
+                  (editor.kind === 'coach-supplied' ||
+                    (editor.kind === 'credit' && !editor.credit)) ? (
+                    <Plus aria-hidden="true" />
+                  ) : null}
                   {mutation.isPending
                     ? '處理中…'
                     : editor.kind === 'history' || editor.kind === 'rule'

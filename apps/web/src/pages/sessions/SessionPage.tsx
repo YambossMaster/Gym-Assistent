@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError, getSession, listStudents } from '../../api'
 import { queryKeys } from '../../query-keys'
 import { FormSelect } from '../../shared/FormSelect'
+import { TimeSelect } from '../../shared/TimeSelect'
 import { Confirmation, Page } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from '../calendar/calendar-time'
@@ -14,6 +15,7 @@ import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { TrainingWorkspace } from '../training/TrainingWorkspace'
 import { useSessionTraining } from '../training/queries'
 import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
+import { SeriesDatePicker } from '../students/SeriesDatePicker'
 
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
@@ -79,7 +81,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
           <h2>這筆是舊有堂數紀錄</h2>
           <p>它保留在堂數計算中，但沒有日期，無法在課堂頁面編輯。</p>
           <Link className="text-button" to="/students">
-            返回學生
+            返回
           </Link>
         </section>
       </Page>
@@ -164,7 +166,6 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
           text="此課堂的所有內容變更將不被保存。刪除後無法復原。"
           confirmLabel="刪除"
           confirmOnDelete
-          shortcutHint="ESC 取消 · DELETE 刪除"
           onCancel={() => setDeleting(false)}
           onConfirm={() => {
             const onSuccess = () => navigate(-1)
@@ -257,8 +258,13 @@ export function SessionEditor({
     }
   }
   return (
-    <SchedulingDialog title="變更課堂" onClose={onClose} variant="session-edit">
-      <form className="scheduling-form session-editor-form" onSubmit={submit}>
+    <SchedulingDialog
+      title="變更課堂"
+      description={item.status === 'completed' ? '課堂已完成，無法變更安排。' : undefined}
+      onClose={onClose}
+      variant="session-edit"
+    >
+      <form className="scheduling-form session-editor-form" onSubmit={submit} autoComplete="off">
         <div className="scheduling-form-body session-editor-form-body">
           <label>
             學生
@@ -278,39 +284,34 @@ export function SessionEditor({
               ]}
             />
           </label>
-          <div className="field-row">
-            <label>
-              日期
-              <input
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-                required
-                disabled={item.status !== 'scheduled'}
-              />
-            </label>
-            <label>
-              開始
-              <input
-                type="time"
-                step="900"
+          <div className="scheduling-time-fields">
+            <SeriesDatePicker
+              label="日期"
+              value={date}
+              onChange={setDate}
+              disabled={item.status !== 'scheduled'}
+            />
+            <div className="field-control">
+              <span>開始</span>
+              <TimeSelect
+                label="開始"
                 value={startTime}
-                onChange={(event) => setStartTime(event.target.value)}
-                required
+                onChange={setStartTime}
                 disabled={item.status !== 'scheduled'}
               />
-            </label>
-            <label>
-              結束
-              <input
-                type="time"
-                step="900"
+            </div>
+            <span className="scheduling-time-arrow" aria-hidden="true">
+              →
+            </span>
+            <div className="field-control">
+              <span>結束</span>
+              <TimeSelect
+                label="結束"
                 value={endTime}
-                onChange={(event) => setEndTime(event.target.value)}
-                required
+                onChange={setEndTime}
                 disabled={item.status !== 'scheduled'}
               />
-            </label>
+            </div>
           </div>
           {session && item.status === 'scheduled' ? (
             <VenueField
@@ -342,14 +343,18 @@ export function SessionEditor({
         </div>
         <div className="scheduling-form-footer session-editor-form-footer">
           <div className="scheduling-form-actions">
-            <button type="button" className="danger-text-button" onClick={onRequestDelete}>
+            <button
+              type="button"
+              className="danger-text-button ui-action-delete"
+              onClick={onRequestDelete}
+            >
               <Trash2 /> 刪除課堂
             </button>
-            <button type="button" className="secondary-button" onClick={onClose}>
+            <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
               取消
             </button>
             {item.status === 'scheduled' ? (
-              <button className="primary-button compact" disabled={pending}>
+              <button className="primary-button compact ui-action-save" disabled={pending}>
                 {pending ? '儲存中…' : '儲存變更'}
               </button>
             ) : null}

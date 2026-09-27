@@ -296,7 +296,7 @@ function SignIn() {
               </span>
             ) : (
               <button type="button" onClick={() => change('signin')}>
-                返回登入
+                返回
               </button>
             )}
           </div>
@@ -350,7 +350,7 @@ function Recovery({ onComplete }: { onComplete: () => void }) {
             />
           </label>
           {error && <p className="form-error">{error}</p>}
-          <button className="primary-button">
+          <button className="primary-button ui-action-save">
             更新密碼 <KeyRound />
           </button>
         </form>

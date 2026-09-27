@@ -1,4 +1,5 @@
 import { MeasurementInputs } from './MeasurementInputs'
+import { numericInputKeyDown } from '../../shared/numeric-input'
 import {
   emptyMeasurements,
   recordingTypes,
@@ -128,7 +129,7 @@ export function TrainingWorkspace({
         </h2>
         {query.error instanceof ApiError && query.error.status === 404 ? (
           <a className="secondary-button" href="/calendar">
-            返回行事曆
+            返回
           </a>
         ) : (
           <button className="secondary-button" onClick={() => void query.refetch()}>
@@ -1174,7 +1175,10 @@ function TrainingEditor({
               <Dumbbell />
               <h3>尚未安排動作</h3>
               <p>加入第一個動作，開始記錄這堂課的訓練。</p>
-              <button className="primary-button compact" onClick={() => setPicker(true)}>
+              <button
+                className="primary-button compact ui-action-add"
+                onClick={() => setPicker(true)}
+              >
                 <Plus />
                 加入動作
               </button>
@@ -1239,7 +1243,10 @@ function TrainingEditor({
                     )
                   }
                 )}
-                <button className="training-add-exercise" onClick={() => setPicker(true)}>
+                <button
+                  className="training-add-exercise ui-action-add"
+                  onClick={() => setPicker(true)}
+                >
                   <Plus />
                   加入動作
                 </button>
@@ -1568,7 +1575,7 @@ function ExerciseCard({
             }
           />
         ))}
-        <button className="text-button set-add" onClick={addSet}>
+        <button className="text-button set-add ui-action-add" onClick={addSet}>
           <Plus />
           新增一組
         </button>
@@ -1604,6 +1611,7 @@ function SetCard({
         <input
           inputMode="decimal"
           type="number"
+          onKeyDown={numericInputKeyDown}
           min="1"
           max="10"
           step="0.5"
@@ -1745,6 +1753,7 @@ export function ExercisePicker({
               placeholder="搜尋名稱、器材、類型或部位"
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              autoComplete="off"
             />
           </label>
           <div className="library-tabs picker-tabs">
@@ -1762,7 +1771,7 @@ export function ExercisePicker({
             ))}
           </div>
           <button
-            className="primary-button picker-create"
+            className="primary-button picker-create ui-action-add"
             onClick={() => {
               setMessage('')
               setEditing(null)

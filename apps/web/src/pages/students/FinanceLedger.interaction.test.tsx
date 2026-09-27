@@ -28,7 +28,90 @@ afterEach(() => {
   mutation.mutate.mockClear()
   mutation.reset.mockClear()
   deletedRequest.mockReset()
+  localStorage.removeItem('gym-assistant.default-purchase-currency')
   document.body.innerHTML = ''
+})
+
+it('uses the Settings currency for a new ledger entry without a currency field', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  localStorage.setItem('gym-assistant.default-purchase-currency', 'USD')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>
+            <FinanceLedger
+              session={{ access_token: 'test', user: { id: 'coach' } } as Session}
+              data={
+                {
+                  month: '2026-09',
+                  timeZone: 'Asia/Taipei',
+                  coverage: 'complete',
+                  totals: [
+                    { currency: 'TWD', incomeMinor: 100, expenseMinor: 0, differenceMinor: 100 }
+                  ],
+                  missing: [],
+                  venues: [],
+                  rows: []
+                } as MonthlyFinance
+              }
+            />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    )
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.finance-ledger header button')!.click()
+    )
+    const form = host.querySelector<HTMLFormElement>('.finance-ledger-editor form')!
+    await act(async () =>
+      form.querySelector<HTMLButtonElement>('.time-select .form-select-trigger')!.click()
+    )
+    const timeChoices = [...document.querySelectorAll('[role="option"]')].map(
+      (item) => item.querySelector('.option-item-label')?.textContent
+    )
+    expect(timeChoices).toContain('00:00')
+    expect(timeChoices).toContain('05:45')
+    expect(timeChoices).toContain('23:45')
+    const midnightChoice = [
+      ...document.querySelectorAll<HTMLButtonElement>('[role="option"]')
+    ].find((item) => item.querySelector('.option-item-label')?.textContent === '00:15')!
+    await act(async () => midnightChoice.click())
+    expect(form.querySelector('.time-select .form-select-trigger')?.textContent).toContain('00:15')
+    expect(form.textContent).not.toContain('幣別')
+    expect(form.querySelector('input[pattern="[A-Z]{3}"]')).toBeNull()
+    const amountInput = form.querySelector<HTMLInputElement>('input[type="number"]')!
+    expect(amountInput.step).toBe('0.01')
+    const nameInput = form.querySelector<HTMLInputElement>('input[maxlength="160"]')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(
+        nameInput,
+        '測試支出'
+      )
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }))
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(
+        amountInput,
+        '12.34'
+      )
+      amountInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => form.requestSubmit())
+    expect(mutation.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: '/finances/entries',
+        method: 'POST',
+        body: expect.objectContaining({ currency: 'USD', amountMinor: 1234 })
+      }),
+      expect.any(Object)
+    )
+  } finally {
+    await act(async () => root.unmount())
+    queryClient.clear()
+  }
 })
 
 it('keeps deleted rows in the ledger scroll area and places restore beside cancel and save', async () => {

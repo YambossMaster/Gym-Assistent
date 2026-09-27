@@ -11,6 +11,7 @@ import { metricLabels, recordingTypes } from './pages/training/recording'
 import { PerformanceTrend as TrendDialog } from './pages/training/PerformanceTrend'
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from './shared/FormSelect'
+import { TimeSelect } from './shared/TimeSelect'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -60,7 +61,6 @@ import { SchedulingDialog } from './pages/calendar/SchedulingDialog'
 import { SeriesDatePicker } from './pages/students/SeriesDatePicker'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
-import { useDialogBehavior } from './shared/useDialogBehavior'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
 import type { PerformanceEntry } from './api'
@@ -112,7 +112,10 @@ export function StudentsPage({
       title="學生"
       eyebrow={`學生名單 · ${students.length}`}
       actions={
-        <button className="primary-button compact" onClick={() => setCreateOpen(true)}>
+        <button
+          className="primary-button compact ui-action-add"
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus />
           新增學生
         </button>
@@ -125,6 +128,7 @@ export function StudentsPage({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="搜尋姓名或學生簡介"
+            autoComplete="off"
           />
         </label>
         <div className="student-view-switch" role="group" aria-label="學生狀態">
@@ -436,7 +440,7 @@ export function StudentDetailPage({
         }
       >
         <ArrowLeft aria-hidden="true" />
-        {new URLSearchParams(search).get('from') === 'finances' ? '回到收支明細' : '回到學生列表'}
+        返回
       </Link>
       <header className="student-detail-hero">
         <div className="student-detail-heading">
@@ -500,15 +504,26 @@ export function StudentDetailPage({
             variant="profile"
             onClose={() => setProfileEditing(false)}
           >
-            <form className="student-detail-profile-form" onSubmit={save}>
+            <form className="student-detail-profile-form" onSubmit={save} autoComplete="off">
               <label>
                 姓名
-                <input name="name" defaultValue={detail.student.name} required maxLength={120} />
+                <input
+                  name="name"
+                  defaultValue={detail.student.name}
+                  required
+                  maxLength={120}
+                  autoComplete="off"
+                />
               </label>
               <div className="field-row">
                 <label>
                   電話
-                  <input name="phone" defaultValue={detail.student.phone} maxLength={40} />
+                  <input
+                    name="phone"
+                    defaultValue={detail.student.phone}
+                    maxLength={40}
+                    autoComplete="off"
+                  />
                 </label>
                 <label>
                   年齡區間
@@ -526,6 +541,7 @@ export function StudentDetailPage({
                   name="goal"
                   defaultValue={detail.student.goal}
                   maxLength={1000}
+                  autoComplete="off"
                   placeholder="例如：設計師、晨型人、喜歡跑步"
                 />
               </label>
@@ -547,12 +563,12 @@ export function StudentDetailPage({
               <footer>
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="secondary-button ui-action-cancel"
                   onClick={() => setProfileEditing(false)}
                 >
                   取消
                 </button>
-                <button className="primary-button compact" disabled={submitting}>
+                <button className="primary-button compact ui-action-save" disabled={submitting}>
                   {saveMutation.isPending ? '儲存中…' : '儲存資料'}
                 </button>
               </footer>
@@ -675,7 +691,7 @@ export function StudentDetailPage({
           {!detail.student.active && (
             <button
               type="button"
-              className="text-button danger-button"
+              className="text-button danger-button ui-action-delete"
               disabled={submitting}
               onClick={() => setDeleteOpen(true)}
             >
@@ -690,19 +706,14 @@ export function StudentDetailPage({
           onClose={() => setPurchaseCreateOpen(false)}
           variant="profile"
         >
-          <form className="purchase-create-form" onSubmit={purchase}>
+          <form className="purchase-create-form" onSubmit={purchase} autoComplete="off">
             <PurchaseCollectionFields session={session} />
             <div className="field-row purchase-date-count-row">
               <SeriesDatePicker label="購買日期" value={purchaseDate} onChange={setPurchaseDate} />
-              <label>
-                購買時間
-                <input
-                  type="time"
-                  required
-                  value={purchaseTime}
-                  onChange={(event) => setPurchaseTime(event.target.value)}
-                />
-              </label>
+              <div className="field-control">
+                <span>購買時間</span>
+                <TimeSelect label="購買時間" value={purchaseTime} onChange={setPurchaseTime} />
+              </div>
             </div>
             <PurchaseMoneyFields currency={getDefaultFinanceCurrency()} />
             <label>
@@ -719,14 +730,21 @@ export function StudentDetailPage({
             <footer>
               <button
                 type="button"
-                className="secondary-button"
+                className="secondary-button ui-action-cancel"
                 onClick={() => setPurchaseCreateOpen(false)}
                 disabled={submitting}
               >
                 取消
               </button>
-              <button className="primary-button compact" disabled={submitting}>
-                {purchaseMutation.isPending ? '登錄中…' : '新增購課紀錄'}
+              <button className="primary-button compact ui-action-add" disabled={submitting}>
+                {purchaseMutation.isPending ? (
+                  '處理中…'
+                ) : (
+                  <>
+                    <Plus aria-hidden="true" />
+                    新增購課紀錄
+                  </>
+                )}
               </button>
             </footer>
           </form>
@@ -949,7 +967,7 @@ function StudentSchedule({
           <span className="eyebrow dark">FIXED SCHEDULE</span>
           <h2 id="student-schedule-title">固定課程時間</h2>
         </div>
-        <button className="detail-add-button" onClick={() => setEditor('new')}>
+        <button className="detail-add-button ui-action-add" onClick={() => setEditor('new')}>
           <Plus aria-hidden="true" />
           <span className="detail-add-button-full">新增時段</span>
           <span className="detail-add-button-short">新增</span>
@@ -1104,7 +1122,6 @@ function StudentSchedule({
           disabled={mutations.deleteSeries.isPending}
           confirmLabel="刪除固定課表"
           confirmOnDelete
-          shortcutHint="也可以按 Delete 鍵確認。"
         />
       )}
     </section>
@@ -1196,7 +1213,7 @@ function SeriesEditor({
       onClose={onClose}
       onDelete={onDelete}
     >
-      <form className="scheduling-form student-series-editor" onSubmit={submit}>
+      <form className="scheduling-form student-series-editor" onSubmit={submit} autoComplete="off">
         <div className="field-row">
           <SeriesDatePicker value={date} onChange={setDate} />
           <label>
@@ -1294,17 +1311,17 @@ function SeriesEditor({
           {onDelete && (
             <button
               type="button"
-              className="text-button danger-button student-series-delete"
+              className="text-button danger-button student-series-delete ui-action-delete"
               onClick={onDelete}
             >
               <Trash2 aria-hidden="true" />
               刪除固定課表
             </button>
           )}
-          <button type="button" className="secondary-button" onClick={onClose}>
+          <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
             取消
           </button>
-          <button className="primary-button compact" disabled={pending}>
+          <button className="primary-button compact ui-action-save" disabled={pending}>
             {pending ? '儲存中…' : '儲存固定課表'}
           </button>
         </div>
@@ -1385,6 +1402,7 @@ function PurchaseEditor({
     <SchedulingDialog title="編輯購課紀錄" variant="profile" onClose={onCancel}>
       <form
         className="purchase-create-form"
+        autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault()
           const values = new FormData(event.currentTarget)
@@ -1411,15 +1429,10 @@ function PurchaseEditor({
           </p>
         ) : null}
         <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
-        <label>
-          購買時間
-          <input
-            type="time"
-            required
-            value={time}
-            onChange={(event) => setTime(event.target.value)}
-          />
-        </label>
+        <div className="field-control">
+          <span>購買時間</span>
+          <TimeSelect label="購買時間" value={time} onChange={setTime} />
+        </div>
         <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
         <PurchaseMoneyFields
           count={purchase.lessonCount}
@@ -1431,11 +1444,16 @@ function PurchaseEditor({
           <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
         </label>
         <div className="purchase-editor-actions">
-          <button className="secondary-button" type="button" onClick={onCancel} disabled={disabled}>
+          <button
+            className="secondary-button ui-action-cancel"
+            type="button"
+            onClick={onCancel}
+            disabled={disabled}
+          >
             取消
           </button>
-          <button className="primary-button compact" disabled={disabled}>
-            {saving ? '儲存中…' : '儲存購課紀錄'}
+          <button className="primary-button compact ui-action-save" disabled={disabled}>
+            {saving ? '儲存中…' : '儲存'}
           </button>
         </div>
       </form>
@@ -1496,7 +1514,7 @@ function StudentDetailEmpty() {
         <h2>這位學生已不存在</h2>
         <p>可能已被刪除，或你沒有查看權限。</p>
         <NavLink className="text-button" to="/students">
-          返回學生名單 <ArrowRight />
+          返回 <ArrowRight />
         </NavLink>
       </section>
     </Page>
@@ -1585,6 +1603,7 @@ export function SettingsPage({ session }: { session: Session }) {
       <section className="settings-layout">
         <form
           className="settings-panel workspace-settings-panel"
+          autoComplete="off"
           onSubmit={(event) => {
             event.preventDefault()
             setMessage('')
@@ -1610,7 +1629,10 @@ export function SettingsPage({ session }: { session: Session }) {
             工作時區
             <input name="timeZone" defaultValue={settings.timeZone} maxLength={64} required />
           </label>
-          <button className="primary-button compact settings-submit" disabled={submitting}>
+          <button
+            className="primary-button compact settings-submit ui-action-save"
+            disabled={submitting}
+          >
             {settingsMutation.isPending ? '儲存中…' : '儲存設定'}
           </button>
         </form>
@@ -1694,7 +1716,7 @@ export function SettingsPage({ session }: { session: Session }) {
                 </div>
                 <div className="password-form-actions">
                   <button
-                    className="text-button"
+                    className="secondary-button ui-action-cancel"
                     type="button"
                     onClick={() => {
                       setPasswordOpen(false)
@@ -1705,8 +1727,8 @@ export function SettingsPage({ session }: { session: Session }) {
                   >
                     取消
                   </button>
-                  <button className="primary-button compact" disabled={submitting}>
-                    更新密碼 <KeyRound />
+                  <button className="primary-button compact ui-action-save" disabled={submitting}>
+                    {submitting ? '更新中…' : '更新密碼'} <KeyRound />
                   </button>
                 </div>
               </form>
@@ -1723,7 +1745,7 @@ export function SettingsPage({ session }: { session: Session }) {
             {lifecycle ? (
               <div className="deletion-countdown-actions">
                 <button
-                  className="secondary-button"
+                  className="secondary-button ui-action-general"
                   disabled={submitting}
                   onClick={() => lifecycleMutation.mutate('cancel')}
                 >
@@ -1731,7 +1753,7 @@ export function SettingsPage({ session }: { session: Session }) {
                 </button>
                 <div className="danger-operation-actions">
                   <button
-                    className="danger-outline-button"
+                    className="danger-outline-button ui-action-delete"
                     disabled={submitting}
                     onClick={() => setImmediateDelete(true)}
                   >
@@ -1741,7 +1763,7 @@ export function SettingsPage({ session }: { session: Session }) {
               </div>
             ) : (
               <button
-                className="danger-outline-button"
+                className="danger-outline-button ui-action-delete"
                 disabled={submitting}
                 onClick={() => setDeletionRequestOpen(true)}
               >
@@ -1792,10 +1814,6 @@ function CreateStudentDialog({
 }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
-    submitOnEnter: true,
-    focusDialog: true
-  })
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
@@ -1816,50 +1834,53 @@ function CreateStudentDialog({
     }
   }
   return (
-    <div className="modal-backdrop" onPointerDown={onBackdropPointerDown}>
-      <section ref={dialogRef} tabIndex={-1} className="modal" role="dialog" aria-modal="true">
-        <header>
-          <div>
-            <span className="eyebrow dark">學生</span>
-            <h2>新增學生</h2>
-          </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="關閉新增學生">
-            ×
-          </button>
-        </header>
-        <form onSubmit={submit}>
-          <label>
-            姓名
-            <input name="name" required maxLength={120} />
-          </label>
+    <SchedulingDialog title="新增學生" variant="profile" onClose={onClose}>
+      <form className="student-detail-profile-form" onSubmit={submit} autoComplete="off">
+        <label>
+          姓名
+          <input name="name" required maxLength={120} autoComplete="off" />
+        </label>
+        <div className="field-row">
           <label>
             電話
-            <input name="phone" maxLength={40} />
+            <input name="phone" maxLength={40} autoComplete="off" />
           </label>
           <label>
             年齡區間
             <FormSelect label="年齡區間" name="ageRange" options={studentAgeRangeOptions} />
           </label>
-          <label>
-            學生簡介
-            <input name="goal" maxLength={1000} placeholder="例如：設計師、晨型人、喜歡跑步" />
-          </label>
-          <label>
-            備註
-            <textarea name="privateNote" maxLength={4000} />
-          </label>
-          {error && <p className="form-error">{error}</p>}
-          <footer>
-            <button className="secondary-button" type="button" onClick={onClose}>
-              取消
-            </button>
-            <button className="primary-button compact" disabled={submitting}>
-              {submitting ? '建立中…' : '建立學生'}
-            </button>
-          </footer>
-        </form>
-      </section>
-    </div>
+        </div>
+        <label>
+          學生簡介
+          <input
+            name="goal"
+            maxLength={1000}
+            autoComplete="off"
+            placeholder="例如：設計師、晨型人、喜歡跑步"
+          />
+        </label>
+        <label>
+          備註
+          <textarea name="privateNote" maxLength={4000} />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <footer>
+          <button className="secondary-button ui-action-cancel" type="button" onClick={onClose}>
+            取消
+          </button>
+          <button className="primary-button compact ui-action-add" disabled={submitting}>
+            {submitting ? (
+              '處理中…'
+            ) : (
+              <>
+                <Plus aria-hidden="true" />
+                建立學生
+              </>
+            )}
+          </button>
+        </footer>
+      </form>
+    </SchedulingDialog>
   )
 }
 

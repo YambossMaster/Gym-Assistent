@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-27. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-28. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
@@ -8,17 +8,20 @@
 | Field              | Current value                                                                                       |
 | ------------------ | --------------------------------------------------------------------------------------------------- |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
-| Current package    | **M7.5 Monthly finances and venues implementation**                                                 |
-| Package state      | **Venue/Finance Stage 1 checkpoint delivered; remaining acceptance stays open**                     |
+| Current package    | **M7.5 interactive control and Finance detail review; Venue/Finance acceptance remains open**       |
+| Package state      | **Interactive-control review paused after local CI checks; remote checkpoint delivery pending**     |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
 | Branch baseline    | Code checkpoint `baddb7d` reached Main; CI run `36272037958` passed both jobs                       |
-| Worktree           | Venue/finance Sol slice plus mobile Finance scroll correction; `output/` stays local and ignored    |
+| Worktree           | Shared controls, owning Web pages, and CSS review slice; `output/` stays local and ignored          |
 | Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
 | Production         | Not configured; no real customer data                                                               |
 
 ## Next handoff
 
-After this authorized Stage 1 checkpoint, resume Product Owner review of Venue management,
+The Product Owner has paused review of the interactive-control corrections after the desktop-led
+Settings layout and option-control pass. Deliver this reviewed local slice as a Main checkpoint only
+after local checks and exact-SHA remote CI pass; this does not close Stage 1 or M7.5. When the Product
+Owner resumes, continue review of Venue management,
 Venue course records, Student course history, trajectory navigation, and Finance overview/month
 selector against the preserved 2026 development data (LOG-221–243; scenario index in local
 `output/M7.5-2026-venue-finance-review-data.md`). Take subsequent corrections only when the
@@ -330,6 +333,158 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-28 — LOG-265 — Interactive-control and Settings checkpoint preflight
+
+- **Scope:** The Product Owner paused the desktop-led Settings layout and shared option-control review and authorized CI plus a Main push if clean. This checkpoint includes the current Web control, owning-route, CSS, regression-test, and control-standard changes. Stage 1 Venue/Finance acceptance remains open.
+- **Outcome:** The local preflight found no migration changes or pending linked migrations. The first sandboxed root check could not start Vitest workers (`spawn EPERM`); the approved elevated rerun completed normally.
+- **Verification:** Elevated root `npm run check` passed formatting, API typecheck and 26 files/122 tests, and Web typecheck and 51 files/221 tests. Elevated root `npm run build` passed with the existing over-500-kB chunk advisory. Linked development `npm run db:push:dry` returned `upToDate: true` and no migrations; `git diff --check` passed. Remote CI is pending.
+- **Next:** Push the checked checkpoint to Main, verify the exact remote SHA and both GitHub Actions jobs, then leave the Product Owner's remaining Stage 1 review and acceptance open.
+
+### 2026-09-28 — LOG-264 — Keep the desktop sidebar fixed when a dialog opens
+
+- **Scope:** Product Owner showed the desktop sidebar jumping upward when opening the permanent Student deletion confirmation near the bottom of the detail page.
+- **Cause:** Shared dialog scroll lock set `overflow: hidden` on both `body` and `html`, creating a scroll container that made the sticky sidebar move with the already scrolled page.
+- **Outcome:** Shared scroll lock now uses `overflow: clip`, retaining the locked background without changing the sidebar's sticky reference. The prior overflow values are restored when the final dialog closes, including nested dialogs.
+- **Verification:** In an isolated authenticated Chrome tab, the bug reproduced before the change: opening the confirmation moved the sidebar upward. After the change, the sidebar stayed in place on opening, an attempted background scroll did not move the page, and Cancel restored the normal view. No data was deleted. A new regression test checks the clip lock and restoration; the nested-dialog test was updated. Web check passed (51 test files, 221 tests), production build passed with its existing chunk-size advisory, and `git diff --check` passed. No commit, push, or remote CI is claimed.
+- **Next:** Continue Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-263 — Separate permanent-deletion input and actions; enable valid keyboard confirmation
+
+- **Scope:** Product Owner reported that the 「永久刪除」 confirmation input and action buttons nearly touch, and requested a keyboard shortcut after `DELETE` is entered correctly.
+- **Outcome:** Typed confirmations now leave 20px between the input and action row. After the exact word is present, Delete confirms directly from the input or elsewhere in the dialog; Enter is not a confirmation shortcut. Before the word is complete, Delete retains its normal text-editing behavior.
+- **Verification:** After the Product Owner clarified the shortcut, Web check passed (51 test files, 220 tests), production build passed with its existing chunk-size advisory, and `git diff --check` passed. Regression coverage verifies that Enter does not confirm, Delete confirms from the input only after the exact word is present, and incomplete text cannot confirm. An isolated authenticated Chrome tab showed the 20px gap and the button enabling only after `DELETE`; it was cancelled without deleting data. No commit, push, or remote CI is claimed.
+- **Next:** Continue Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-262 — Put new Finance direction and amount on one row
+
+- **Scope:** Product Owner requested the 「新增明細」 direction choice and amount field share one row to reduce unused space.
+- **Outcome:** The two controls now sit in a dedicated equal-width grid row. The existing direction selection, amount input, and management of existing entries retain their behavior; no other form layout changed.
+- **Verification:** Web production build (including TypeScript), focused Finance interaction tests (3/3), targeted TSX/CSS/Status formatting checks, and `git diff --check` passed. Authenticated desktop Chrome inspection showed the two labeled controls aligned on one row, with the description and footer following below; no data was submitted. The build retained its existing chunk-size advisory. No commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-261 — Replace olive dropdown selection with pale FORM lime
+
+- **Scope:** Product Owner rejected the olive selected row shown in the 「新增學生」age-range menu and clarified that selected options may be softer than the main color but must remain visibly related to the FORM green.
+- **Outcome:** The shared `OptionItem` selected and selected-active fills now mix `--lime` with white at 25% and 35%, replacing the desaturated olive values. Neutral Hover and the dark checkmark remain. [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md) now specifies pale FORM lime rather than an arbitrary muted tint. All `FormSelect` menus share this change.
+- **Verification:** The 390×844 browser preview showed the updated selected row and computed `color(srgb 0.947843 1 0.741961)` for selected-active. Web production build (including TypeScript), focused Prettier check, and `git diff --check` passed; the existing bundle-size advisory remains. No full test run, commit, push, or remote CI is claimed for this CSS-only correction.
+- **Next:** Continue Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-260 — Align purchase form fields and actions
+
+- **Scope:** Product Owner requested 「堂數／總金額／每堂參考價」 on one row in both purchase dialogs, removal of the calculation prompt, and standard lower-right Cancel/Save actions in 「編輯購課紀錄」.
+- **Cause:** The purchase form flattened `PurchaseMoneyFields` into a two-column grid, placing the third field on a new row. The edit action container occupied only the form's first grid column and split its buttons with an older fractional grid.
+- **Outcome:** The two purchase dialogs now place the three monetary fields in a dedicated equal-width row and hide their calculation prompt. The edit action container spans the form and aligns standard 48px actions at the lower right; its save label is 「儲存」. Other uses of `PurchaseMoneyFields` are unchanged.
+- **Verification:** Web production build (including TypeScript), targeted TSX/CSS/Status Prettier checks, and `git diff --check` passed. In an isolated authenticated Chrome tab, both dialogs visibly showed the three fields on one row without the calculation prompt; the edit dialog showed standard-size 「取消／儲存」 actions at the lower right. The verification tab was closed without submitting purchase data. The build retained its existing chunk-size advisory. No commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-259 — Align Student creation with profile editing and remove autofill suggestions
+
+- **Scope:** Product Owner reported sluggish scrolling in 「新增學生」, wasted full-width fields, browser-generated black phone suggestions contrary to the global text-input rule, and a Student introduction placeholder too dark to distinguish from entered text.
+- **Cause:** Student creation still used the older tall `.modal` with a 10px blurred backdrop, while profile editing used the compact `SchedulingDialog` and paired phone/age fields. The creation and editing text inputs did not disable browser autofill.
+- **Outcome:** Student creation now uses the same profile dialog and form layout as 「編輯基本資料」. Phone and age share a row on desktop and stack on mobile; the shorter dialog no longer needs internal scrolling at the tested sizes. Removed blur from shared modal backdrops, including the public confirmation style, to avoid expensive backdrop repaint during dialog scrolling. Disabled browser-generated autofill suggestions on Coach workflow forms and standalone search/name inputs while preserving credential-field behavior. The Student introduction placeholder is slightly lighter. The global text-input rule is recorded in [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md).
+- **Verification:** Before the change, the desktop Student creation dialog had a blurred backdrop and 769px content inside a 627px scroll area. Afterward, the authenticated desktop dialog had no backdrop blur and `scrollHeight = clientHeight = 628px`; Chrome showed no black suggestion list when the phone field was focused. The 390×844 preview showed the compact field layout and no internal scroll (`scrollHeight = clientHeight = 689px`); its placeholder computed to `rgb(150, 154, 146)` versus entered text `rgb(21, 23, 17)`. Full Web format/type/test checks passed 51 files / 219 tests, production build and `git diff --check` passed; the existing bundle-size advisory remains. Physical-phone scroll performance has not been measured. No commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-258 — Restore fixed-Series dialog title scale
+
+- **Scope:** Product Owner questioned the smaller titles in 「建立固定課表」 and 「編輯固定課表」 and asked them to match the established setting-dialog typography.
+- **Cause:** The dialog is rendered inside Student detail's `.student-schedule` section, so the section-wide 21px `h2` rule overrode the shared `.ui-settings-dialog > header h2` 28px rule.
+- **Outcome:** Scoped the Student schedule heading rules to `.student-schedule-heading h2`. Both fixed-Series dialog titles now use the existing shared 28px title font and size; the section heading retains its 21px size. No shared dialog rule or other dialog was changed.
+- **Verification:** Web production build (including TypeScript), targeted CSS Prettier check, and `git diff --check` passed. The build retained its existing chunk-size advisory. No browser visual check, commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-257 — Remove Training add-set Hover change
+
+- **Scope:** Product Owner showed that hovering over 「訓練紀錄」的「＋新增一組」 changed its light dashed appearance to a dark filled button and requested no Hover effect for this control only.
+- **Outcome:** Removed the older local Hover tint and made the Training add-set Hover keep its normal text, border, and transparent background. Shared action-button rules and other controls are unchanged.
+- **Verification:** Web production build (including TypeScript), targeted CSS Prettier check, and `git diff --check` passed. The build retained its existing chunk-size advisory. No browser visual check, commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-256 — Align Session edit timing fields and Calendar preview actions
+
+- **Scope:** Product Owner requested the Session 「變更課堂」 date/start/end layout match Calendar scheduling and course editing, an explanation for completed lessons with disabled controls, and the scheduled Calendar preview button order 「刪除／開啟課堂／完成上課」.
+- **Outcome:** Session editing reuses the Calendar `scheduling-time-fields` grid and separator arrow; the existing date and time controls, disabled states, and save behavior remain. Completed sessions show 「課堂已完成，無法變更安排。」 below the dialog title. Scheduled Calendar preview actions render in the requested left-to-right order.
+- **Verification:** Focused Session and Calendar interaction tests passed 14 / 14. Full Web format/type/test checks passed 51 files / 219 tests; production build passed with the existing chunk-size advisory. Authenticated desktop browser showed the three time fields on one row. In the 390×844 preview, the date occupied one row and start/end aligned side by side; the dialog bottom remained within the viewport. No commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-255 — Keep mobile modal scrolling inside the dialog and shorten end-time fields
+
+- **Scope:** Product Owner supplied a mobile recording showing the Calendar background moving while 「安排這個時段」 remained open, plus clipped duration text in create/edit end-time fields and redundant 「不填也可以」 in the Block note.
+- **Cause:** The shared dialog behavior locked only `body`, and Calendar's capturing wheel listener still processed wheel events from its descendant dialog, collapsing the background header. `TimeSelect` reused its duration-bearing option label in the narrow trigger.
+- **Outcome:** The shared, reference-counted scroll lock now covers both `html` and `body`, including the public reschedule confirmation. Calendar ignores header wheel gestures while a modal is open. The scheduling dialog contains its own overscroll. End-time triggers show only `HH:mm`; their menu options retain `HH:mm（時長）`. Removed the Block note placeholder while keeping 「備註（選填）」. The mobile-modal rule is recorded in [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md).
+- **Verification:** Focused regressions failed before the fixes for background header collapse, root scroll lock, trigger label, and redundant placeholder, then passed 13 / 13. Full Web format/type/test checks passed 51 files / 218 tests; production build passed with the existing chunk-size advisory. Authenticated 390×844 preview reproduced the background collapse before the fix; after a fresh reload, a wheel scroll inside the dialog moved only its form body (about 69px), while the Calendar stayed uncollapsed and root scroll remained 0, including at the form's end. The same preview showed `10:00` in the selected field and `10:00（1 小時）` in the menu, and no Block-note placeholder. No commit, push, or remote CI is claimed.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-254 — Refine checkbox and fix nested dialog Hover inheritance
+
+- **Scope:** Product Owner approved the new dialog close action but rejected the dark 18px checkbox and the unreadable `複製連結` Hover. The supplied checkbox markup is a visual reference, not an instruction to add Tailwind or animation.
+- **Cause:** `.session-top-actions button:hover:not(:disabled)` matched every descendant button, including the Capability Link dialog nested under the Session toolbar. Its higher specificity overrode the general action's neutral Hover, producing the dark lime tinted background and low contrast shown in the screenshot.
+- **Outcome:** Session toolbar button base, icon, responsive, and Hover rules now target direct child buttons only. The dialog copy action therefore retains the shared neutral Hover. Native semantic checkboxes now use a 24px square, FORM lime checked fill, and dark check, with a neutral surrounding row and no scale animation. The approved dialog close action is unchanged. [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md) records these rules.
+- **Verification:** Authenticated Chrome showed the new checked appearance in the Training Result dialog. Web format/type checks and all 51 files / 216 tests passed; production build and `git diff --check` passed, with the existing bundle-size advisory. The copy action's Hover cause and corrected selector were inspected in CSS; the existing live dialog did not reveal its one-time raw URL, so no link was reissued solely for a pointer screenshot. No commit, push, or remote CI is claimed.
+- **Next:** Continue Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-253 — Normalize checkbox, Hover, and dialog close presentation
+
+- **Scope:** Product Owner reported a bright-green checked field, an unreadable copy-action Hover, and inconsistent dialog close icons. The mobile Calendar close action was the visual reference.
+- **Outcome:** The shared checkbox keeps its row and border neutral and shows a compact dark square with a white check. Shared option selection and Hover use restrained neutral tints; general/cancel button Hover retains dark text and action buttons no longer lift. Dialog close buttons now use a 24px `X` inside a transparent 44px target, including the two dialogs that previously rendered a text `×`. The durable presentation rules are in [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md). No route data or API behavior changed.
+- **Verification:** Web format/type checks, 51 files / 216 tests, production build, and `git diff --check` passed. Authenticated Chrome showed the Training Result checkbox and close icon on desktop; the existing 390×844 preview showed the Calendar dialog close icon. The production build retained its existing chunk-size advisory. The copy button's Hover was checked through the shared CSS rule, not a live pointer-hover capture. No commit, push, or remote CI is claimed.
+- **Known issue:** Product Owner visual acceptance and the remaining Venue/Finance Stage 1 browser paths remain open.
+- **Next:** Continue focused Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-252 — Align time and Venue field labels across embedded forms
+
+- **Scope:** Product Owner identified low, cramped time labels in Finance and Calendar dialogs, and a Venue label whose typography differed from neighboring field labels. Check the corresponding Session edit form as well.
+- **Outcome:** The shared `scheduling-time-field` now uses grid layout so its 8px label-to-control gap takes effect; the shared embedded-dialog title rule now includes `venue-choice-label`. This fixes both callers of `SchedulingTimeInput`, the Finance ledger time field, and Venue fields using `VenueNamePicker` without changing form state or API behavior.
+- **Verification:** An authenticated browser measurement reproduced the 1px time-label gap against the date field's 8px and the Venue label at 13px/400. After the CSS correction, Finance Date/Time and Calendar Date/Start/End were aligned at 8px; Calendar and Session edit Venue labels measured 14px/700 with an 8px gap. Web format check, production build (including TypeScript), and `git diff --check` passed. The existing bundle-size advisory remains; no commit, push, or remote CI is claimed.
+- **Known issue:** Product Owner visual acceptance across the remaining routes and Venue/Finance Stage 1 browser paths remains open.
+- **Next:** Continue focused Product Owner visual review of interactive controls and embedded setting dialogs, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-251 — Restore full-day choices for Finance entry time
+
+- **Scope:** Product Owner found that the 新增明細 time menu began at 06:00 and asked where that restriction came from.
+- **Cause and outcome:** FinanceLedger had reused the Calendar-owned `SchedulingTimeInput`, whose default menu offers 06:00–23:00 for a Course Session start. The Finance ledger Contract requires a date and time but sets no such window. Finance now uses the shared `TimeSelect` for 00:00–23:45 quarter-hour choices while retaining its existing label and modified-field marker; Calendar scheduling behavior is unchanged.
+- **Verification:** the Finance interaction regression failed first because 00:00 was absent from the menu, then passed after the fix with 00:00, 05:45, and 23:45 present and 00:15 selectable. Full Web format/type/test checks passed 51 files / 216 tests; production build and `git diff --check` passed. The build retained its existing chunk-size advisory. No browser, live-data, push, or remote CI result is claimed.
+- **Next:** Product Owner continues the interactive-control and Venue/Finance visual review; preserve the remaining Stage 1 acceptance and Stage 2/M8 boundary.
+
+### 2026-09-28 — LOG-250 — Standardize formal Web return choices
+
+- **Scope:** Product Owner requested that all return-related option text in the formal Web read `返回`, including the Finance page link shown in the supplied screenshot.
+- **Outcome:** Student detail, Venue, Finance, Session, Training error, Auth recovery, and Venue preview return controls now show `返回`; the Finance month selector's jump back to the current month uses the same text. Existing destinations and actions are unchanged. The Auth heading `回到工作台` and explanatory error sentence remain descriptive copy, not return choices. The archived Demo remains untouched.
+- **Verification:** source-wide formal Web search found no remaining extended return-choice labels. Web Prettier and TypeScript checks passed; elevated Vitest passed 51 files / 216 tests; production build and `git diff --check` passed. The build retained its existing chunk-size advisory. The initial sandboxed Vitest attempt stopped at Vite startup with Windows `spawn EPERM`, before rerunning successfully. No browser acceptance, push, or remote CI is claimed for this focused copy correction.
+- **Next:** Product Owner continues the interactive-control and Venue/Finance visual review; preserve the remaining Stage 1 acceptance and Stage 2/M8 boundary.
+
+### 2026-09-28 — LOG-249 — Align embedded setting forms and common action buttons
+
+- **Scope:** Product Owner supplied Calendar and Finance dialog examples with inconsistent field labels and Save/Cancel sizing, directed removal of visible shortcut hints, and requested consistent common action buttons across the Web.
+- **Outcome:** Shared embedded setting-dialog typography now gives titles, field labels, control text, and gaps one scale; Calendar and Finance time values use the regular site font. Visible keyboard-shortcut hints were removed while dialog keyboard behavior remains. Save/Confirm/Change, Cancel, Delete, Add, and general actions now use semantic button styles for 14px/700 text, 48px minimum height, fixed colors, and matching corners; remaining Settings, Demo import, exercise, public sharing, and Training add controls were aligned. The exercise tag Add button is more legible while disabled. Business mutations and API calls were not changed.
+- **Verification:** Web format/type/test checks passed 51 files / 216 tests before the final class-only alignment; the subsequent production build (including TypeScript), final format check, and `git diff --check` passed. The build retained its existing chunk-size advisory. Browser checks compared Calendar and Finance dialogs on desktop and 390×844, confirming equal Save/Cancel typography and height, consistent labels and titles, hidden shortcut hints, and a fitting mobile footer. Exercise editor at 390×844 confirmed 24px title, 14px/700 labels and actions, and a visible Add control. No commit, push, or remote CI is claimed.
+- **Known issue:** Product Owner visual acceptance across the remaining routes and Venue/Finance Stage 1 browser paths remains open.
+- **Next:** Continue focused Product Owner visual review of interactive controls and embedded setting dialogs, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-248 — Use Settings currency for new Finance ledger entries
+
+- **Scope:** Product Owner identified the redundant free-text 幣別 field in the 新增明細 dialog and directed its removal because Settings already owns the currency choice.
+- **Outcome:** New manual Finance entries read the current Settings currency when the dialog opens, show it beside 金額, and submit that currency with the correctly scaled minor-unit amount. Existing entries retain their recorded currency. Settings copy now includes new manual ledger entries.
+- **Verification:** A regression first failed on the visible currency field; after the change, the focused Finance interaction tests passed 3 / 3. Web format/type/test checks passed 51 files / 216 tests, production build passed with the existing chunk-size advisory, and `git diff --check` passed. No live data was changed; no push or remote CI is claimed.
+- **Known issue:** Product Owner visual acceptance and the remaining Venue/Finance Stage 1 browser paths remain open.
+- **Next:** Continue focused Product Owner corrections, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-247 — Align interactive choices and form controls with Product Owner examples
+
+- **Scope:** Product Owner supplied 17 screenshots and defined the existing single-select, segmented, switch, date, time, checkbox, input, and common action-button patterns as the review standard. Preserve route business behavior while correcting the affected Web controls.
+- **Outcome:** Shared `FormSelect` now avoids label-click close/reopen and coordinates with the exercise suggestion menu so two site menus do not overlap. Exercise name/equipment text inputs disable browser autofill suggestions. Formal Web native date/time inputs were replaced with the approved calendar picker and a non-editable 15-minute `TimeSelect`; numeric inputs reject exponent/sign keystrokes as appropriate and hide spinner arrows. Checkboxes use the site palette. Common add/save/cancel/delete/general button classes fix dimensions, typography, and colors; key pending actions show `處理中…` and disabled buttons no longer use the prohibited cursor. Shared dialog behavior supports Escape, Ctrl/Cmd+Enter, and guarded Delete where the owning dialog supplies a delete action. Route state/API behavior is unchanged.
+- **Verification:** Web format and TypeScript checks, all 51 test files/215 tests, production build, and a local authenticated Chrome check passed. Browser inspection confirmed the calendar date popover, a non-editable quarter-hour start-time list, and a single click on its field heading closing the list. At 390×844, browser DOM inspection found a formerly squeezed start-time field; the mobile grid selector was corrected and its date/start/end field bounds then fit the viewport. Earlier exercise-editor Chrome inspection confirmed one site menu at a time and no browser autofill overlay in the tested fields. Vite retained its existing chunk-size advisory; no commit, push, or remote CI is claimed.
+- **Known issue:** Product Owner visual acceptance across every route and physical-phone touch states remains open. The current local worktree also includes the earlier Training Result review slice, which remains uncommitted.
+- **Next:** Product Owner reviews these controls and reports any route-specific mismatch; continue focused corrections, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-27 — LOG-246 — Prepare semantic option and form components for review
+
+- **Scope:** Product Owner approved semantic primary/secondary text, contrast, and a 4px spacing scale, then requested the component-consolidation stage in TSX without changing business pages.
+- **Outcome:** Shared `FormSelect` now renders reusable `OptionItem` rows with optional secondary descriptions; its menu and row spacing use 4/8/12px values. Added reusable controlled `RadioGroup` and native-semantic `Checkbox` with styled appearance, primary 14px labels, secondary 14px descriptions, and shared contrast tokens. Existing route state, API calls, and business pages are unchanged.
+- **Verification:** Web format check, TypeScript check, all 50 test files/212 tests, production build, and `git diff --check` passed. Focused tests cover option descriptions, form submission, and radio/checkbox selection. The production build retained its existing chunk-size advisory. No browser visual acceptance, commit, push, or remote CI is claimed.
+- **Known issue:** Some route-specific `FormSelect` trigger typography overrides remain outside this component-only scope; the new dropdown option rows themselves use Body Compact. Review those trigger variants with the owning page during the later single-file replacement stage.
+- **Next:** Product Owner reviews these shared components; only after approval and a named target file should the single-page replacement begin. Venue/Finance Stage 1 browser acceptance remains open.
 
 ### 2026-09-27 — LOG-245 — Keep the mobile Finance ledger heading in view
 

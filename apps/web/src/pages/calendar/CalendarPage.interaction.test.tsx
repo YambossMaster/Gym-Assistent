@@ -90,6 +90,28 @@ describe('Calendar scheduling surface', () => {
     }
   })
 
+  it('does not collapse the background calendar when scrolling inside a scheduling dialog', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(<CalendarPage session={{} as Session} timeZone="Asia/Taipei" />)
+      )
+      await act(async () => host.querySelector<HTMLButtonElement>('.page-header button')!.click())
+      const page = host.querySelector('.calendar-page')!
+      const dialog = host.querySelector('.scheduling-dialog')!
+      await act(async () =>
+        dialog.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 }))
+      )
+      expect(page.classList.contains('calendar-focus-mode')).toBe(false)
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
   it('shows Demo-aligned course, availability, and block modes without the acknowledgement gate', async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
@@ -110,10 +132,12 @@ describe('Calendar scheduling surface', () => {
         dialog.querySelector<HTMLButtonElement>('.scheduling-form-actions .primary-button')!
           .disabled
       ).toBe(false)
-      const start = dialog.querySelector<HTMLInputElement>('.scheduling-time-field input')!
-      await act(async () => start.focus())
-      expect(document.body.querySelector('.scheduling-time-menu[role="listbox"]')).not.toBeNull()
-      expect(dialog.querySelector('.scheduling-time-menu')).toBeNull()
+      const start = dialog.querySelector<HTMLButtonElement>(
+        '.scheduling-time-field .form-select-trigger'
+      )!
+      await act(async () => start.click())
+      expect(document.body.querySelector('.form-select-menu[role="listbox"]')).not.toBeNull()
+      expect(dialog.querySelector('.form-select-menu')).toBeNull()
       await act(async () => {
         ;[...dialog.querySelectorAll<HTMLButtonElement>('.composer-kind button')][1]!.click()
       })
@@ -125,6 +149,7 @@ describe('Calendar scheduling surface', () => {
         ;[...dialog.querySelectorAll<HTMLButtonElement>('.composer-kind button')][2]!.click()
       })
       expect(dialog.textContent).toContain('備註（選填）')
+      expect(dialog.querySelector<HTMLInputElement>('input[placeholder="不填也可以"]')).toBeNull()
       expect(
         dialog.querySelector<HTMLInputElement>('input[placeholder="不填也可以封鎖"]')
       ).toBeNull()

@@ -57,7 +57,7 @@ export function ExercisesPage({ session }: { session: Session }) {
       eyebrow={query.data ? `${query.data.totals.all} EXERCISES` : 'EXERCISE LIBRARY'}
       actions={
         <button
-          className="primary-button compact"
+          className="primary-button compact ui-action-add"
           onClick={() => {
             setMessage('')
             setEditing(null)
@@ -76,6 +76,7 @@ export function ExercisesPage({ session }: { session: Session }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="搜尋名稱、器材、類型或部位"
+            autoComplete="off"
           />
         </label>
         <div className="library-tabs">
@@ -212,7 +213,7 @@ export function ExercisesPage({ session }: { session: Session }) {
                     編輯
                   </button>
                   <button
-                    className="text-button danger"
+                    className="text-button danger ui-action-delete"
                     disabled={busy}
                     onClick={() => setDeleting(definition)}
                   >
@@ -229,7 +230,11 @@ export function ExercisesPage({ session }: { session: Session }) {
           <Dumbbell />
           <h2>{query.data?.totals.all === 0 ? '尚無動作' : '沒有符合的動作'}</h2>
           <button
-            className="primary-button compact"
+            className={
+              query.data?.totals.all === 0
+                ? 'primary-button compact ui-action-add'
+                : 'secondary-button ui-action-general'
+            }
             onClick={
               query.data?.totals.all === 0
                 ? () => {
@@ -238,7 +243,14 @@ export function ExercisesPage({ session }: { session: Session }) {
                 : clear
             }
           >
-            {query.data?.totals.all === 0 ? '新增自訂動作' : '清除篩選'}
+            {query.data?.totals.all === 0 ? (
+              <>
+                <Plus aria-hidden="true" />
+                新增自訂動作
+              </>
+            ) : (
+              '清除篩選'
+            )}
           </button>
         </section>
       )}
@@ -326,11 +338,19 @@ export function DefinitionEditor({
   })
   useEffect(() => {
     if (!equipmentOpen) return
+    document.dispatchEvent(new CustomEvent('ui-choice-menu-open', { detail: equipmentRef.current }))
+    const closeOtherMenu = (event: Event) => {
+      if ((event as CustomEvent).detail !== equipmentRef.current) setEquipmentOpen(false)
+    }
     const outside = (event: PointerEvent) => {
       if (!equipmentRef.current?.contains(event.target as Node)) setEquipmentOpen(false)
     }
+    document.addEventListener('ui-choice-menu-open', closeOtherMenu)
     document.addEventListener('pointerdown', outside)
-    return () => document.removeEventListener('pointerdown', outside)
+    return () => {
+      document.removeEventListener('ui-choice-menu-open', closeOtherMenu)
+      document.removeEventListener('pointerdown', outside)
+    }
   }, [equipmentOpen])
   const equipmentSuggestions = (filters?.equipment ?? [])
     .filter(
@@ -376,7 +396,7 @@ export function DefinitionEditor({
       <section
         ref={dialogRef}
         tabIndex={-1}
-        className="definition-editor"
+        className="definition-editor ui-settings-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="definition-title"
@@ -390,11 +410,17 @@ export function DefinitionEditor({
             <X />
           </button>
         </header>
-        <form onSubmit={submit}>
+        <form onSubmit={submit} autoComplete="off">
           <div className="editor-top-grid">
             <label className="editor-field">
               動作名稱
-              <input name="name" defaultValue={definition?.name} required maxLength={120} />
+              <input
+                name="name"
+                defaultValue={definition?.name}
+                required
+                maxLength={120}
+                autoComplete="off"
+              />
             </label>
             <div className="editor-field equipment-field" ref={equipmentRef}>
               <label htmlFor="editor-equipment">器材</label>
@@ -402,6 +428,7 @@ export function DefinitionEditor({
                 <input
                   id="editor-equipment"
                   name="equipment"
+                  autoComplete="off"
                   value={equipment}
                   onChange={(event) => {
                     setEquipment(event.target.value)
@@ -516,6 +543,7 @@ export function DefinitionEditor({
             <div className="editor-tag-entry">
               <input
                 aria-label="新增部位標籤"
+                autoComplete="off"
                 placeholder="輸入其他部位"
                 value={customPart}
                 onChange={(event) => setCustomPart(event.target.value)}
@@ -529,6 +557,7 @@ export function DefinitionEditor({
               />
               <button
                 type="button"
+                className="ui-action-add"
                 disabled={!customPart.trim() || parts.length >= 12}
                 onClick={addCustomPart}
               >
@@ -598,10 +627,13 @@ export function DefinitionEditor({
           <footer>
             <p className="editor-note">修改動作庫不會覆寫已保存的課堂內容。</p>
             <div className="editor-actions">
-              <button type="button" className="secondary-button" onClick={onClose}>
+              <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
                 取消
               </button>
-              <button className="primary-button compact" disabled={saving || parts.length === 0}>
+              <button
+                className="primary-button compact ui-action-save"
+                disabled={saving || parts.length === 0}
+              >
                 {saving ? '儲存中…' : definition ? '儲存修改' : '建立動作'}
               </button>
             </div>

@@ -5,6 +5,7 @@ import {
   type Measurements,
   type RecordingConfig
 } from './recording'
+import { numericInputKeyDown } from '../../shared/numeric-input'
 
 export function MeasurementInputs({
   config,
@@ -43,6 +44,7 @@ export function MeasurementInputs({
                   aria-label={metricLabels[d]}
                   inputMode={d === 'reps' || d === 'rounds' ? 'numeric' : 'decimal'}
                   type="number"
+                  onKeyDown={numericInputKeyDown}
                   min="0"
                   max={d === 'duration' || d === 'distance' ? 1_000_000 : 10_000}
                   step={d === 'reps' || d === 'rounds' ? 1 : 0.001}

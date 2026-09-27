@@ -52,8 +52,7 @@ export function Confirmation({
   disabled,
   requiredWord = 'DELETE',
   confirmLabel = '永久刪除',
-  confirmOnDelete = false,
-  shortcutHint
+  confirmOnDelete = false
 }: {
   title: string
   text: string
@@ -65,13 +64,12 @@ export function Confirmation({
   requiredWord?: string
   confirmLabel?: string
   confirmOnDelete?: boolean
-  shortcutHint?: string
 }) {
   const requiresText = onConfirmationChange !== undefined
+  const canConfirm = !disabled && (!requiresText || confirmation === requiredWord)
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onCancel, {
     focusDialog: true,
-    submitOnEnter: true,
-    onDeleteShortcut: confirmOnDelete && !requiresText && !disabled ? onConfirm : undefined
+    onDeleteShortcut: canConfirm && (confirmOnDelete || requiresText) ? onConfirm : undefined
   })
   return (
     <div className="danger-confirmation" onPointerDown={onBackdropPointerDown}>
@@ -84,28 +82,37 @@ export function Confirmation({
       >
         <h2>{title}</h2>
         <p>{text}</p>
-        {shortcutHint ? (
-          <small className="danger-confirmation-shortcuts">{shortcutHint}</small>
-        ) : null}
         {requiresText && (
           <label>
             輸入 {requiredWord} 以確認
             <input
               value={confirmation}
               onChange={(event) => onConfirmationChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Delete' || event.nativeEvent.isComposing || !canConfirm) return
+                event.preventDefault()
+                event.stopPropagation()
+                onConfirm()
+              }}
             />
           </label>
         )}
         <div className="danger-confirmation-actions">
-          <button className="secondary-button" disabled={disabled} onClick={onCancel}>
+          <button
+            className="secondary-button ui-action-cancel"
+            disabled={disabled}
+            onClick={onCancel}
+            aria-keyshortcuts="Escape"
+          >
             取消
           </button>
           <button
-            className="danger-confirm-button"
-            disabled={disabled || (requiresText && confirmation !== requiredWord)}
+            className="danger-confirm-button ui-action-delete"
+            disabled={!canConfirm}
             onClick={onConfirm}
+            aria-keyshortcuts={requiresText || confirmOnDelete ? 'Delete' : undefined}
           >
-            {confirmLabel}
+            {disabled ? '處理中…' : confirmLabel}
           </button>
         </div>
       </section>

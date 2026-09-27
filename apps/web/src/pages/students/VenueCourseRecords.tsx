@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import { ApiError, request } from '../../api'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { FormSelect } from '../../shared/FormSelect'
+import { numericInputKeyDown } from '../../shared/numeric-input'
 import { workspaceWallTime } from './workspace-time'
 import {
   financeMoney,
@@ -341,6 +342,7 @@ export function VenueCourseRecords({
               ) : (
                 <form
                   ref={formRef}
+                  autoComplete="off"
                   onKeyDownCapture={(event) => {
                     if (
                       event.key === 'Enter' &&
@@ -435,6 +437,7 @@ export function VenueCourseRecords({
                       <input
                         required
                         type="number"
+                        onKeyDown={numericInputKeyDown}
                         min={mode === 'rate' ? 0 : -999999999999}
                         max={mode === 'rate' ? 100 : 999999999999}
                         step={mode === 'rate' ? 0.01 : 1}
@@ -503,7 +506,7 @@ export function VenueCourseRecords({
                   <div className="finance-actions">
                     <button
                       type="button"
-                      className="secondary-button"
+                      className="secondary-button ui-action-cancel"
                       onClick={() => {
                         setEditing(false)
                         setPreview(null)
@@ -513,11 +516,10 @@ export function VenueCourseRecords({
                     </button>
                     <button
                       type="submit"
-                      className="primary-button compact"
+                      className="primary-button compact ui-action-save"
                       disabled={mutation.isPending}
-                      title="Ctrl/Cmd + Enter"
                     >
-                      {preview ? '儲存' : '預覽變更'}
+                      {mutation.isPending ? '處理中…' : preview ? '儲存' : '預覽變更'}
                     </button>
                   </div>
                 </form>

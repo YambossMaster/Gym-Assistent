@@ -17,12 +17,14 @@ export function SeriesDatePicker({
   value,
   onChange,
   label = '起始日期',
-  labelSuffix
+  labelSuffix,
+  disabled = false
 }: {
   value: string
   onChange: (value: string) => void
   label?: string
   labelSuffix?: ReactNode
+  disabled?: boolean
 }) {
   const trigger = useRef<HTMLButtonElement>(null)
   const calendar = useRef<HTMLDivElement>(null)
@@ -87,6 +89,7 @@ export function SeriesDatePicker({
         aria-label={label}
         aria-haspopup="dialog"
         aria-expanded={open}
+        disabled={disabled}
         onClick={() => {
           if (!open) {
             setView({ year: selected.getUTCFullYear(), month: selected.getUTCMonth() })

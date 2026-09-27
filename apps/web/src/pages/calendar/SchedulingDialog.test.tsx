@@ -110,13 +110,15 @@ describe('SchedulingDialog focus', () => {
           .find((button) => button.textContent?.includes('刪除課堂'))!
           .click()
       )
-      expect(document.body.style.overflow).toBe('hidden')
+      expect(document.body.style.overflow).toBe('clip')
+      expect(document.documentElement.style.overflow).toBe('clip')
       await act(async () =>
         [...host.querySelectorAll<HTMLButtonElement>('button')]
           .find((button) => button.textContent?.includes('永久刪除'))!
           .click()
       )
       expect(document.body.style.overflow).toBe('')
+      expect(document.documentElement.style.overflow).toBe('')
     } finally {
       await act(async () => root.unmount())
       document.body.style.overflow = ''

@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowUpRight, ChevronRight, Plus, Wrench } from 'lucide-react'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
-import { SchedulingTimeInput } from '../calendar/SchedulingTimeInput'
+import { TimeSelect } from '../../shared/TimeSelect'
 import { SeriesDatePicker } from './SeriesDatePicker'
+import { getDefaultFinanceCurrency } from './PurchaseMoneyFields'
 import { ApiError, request } from '../../api'
+import { numericInputKeyDown } from '../../shared/numeric-input'
 import {
   financeKey,
   financeMoney,
@@ -140,7 +142,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
           : `${row.date}T00:00`
     )
     setAmount(row === 'new' ? '' : String(row.amountMinor / moneyFactor(row.currency)))
-    setCurrency(row === 'new' ? (data.totals[0]?.currency ?? 'TWD') : row.currency)
+    setCurrency(row === 'new' ? getDefaultFinanceCurrency() : row.currency)
     setDirection(row === 'new' ? 'expense' : (row.direction as 'income' | 'expense'))
     setNote('')
   }
@@ -286,7 +288,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
           </div>
         </div>
         <span className="finance-ledger-desktop-count">共 {data.rows.length} 筆</span>
-        <button type="button" className="primary-button" onClick={() => open('new')}>
+        <button type="button" className="primary-button ui-action-add" onClick={() => open('new')}>
           <Plus size={18} aria-hidden="true" />
           <span className="finance-add-desktop">新增明細</span>
           <span className="finance-add-mobile">新增</span>
@@ -421,29 +423,28 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                 <div className="finance-actions finance-ledger-confirm-actions">
                   <button
                     type="button"
-                    className="secondary-button"
+                    className="secondary-button ui-action-cancel"
                     onClick={() => setConfirm(null)}
                     aria-keyshortcuts="Escape"
-                    title="Esc"
                   >
                     取消
                   </button>
                   <button
                     type="button"
-                    className="primary-button compact"
+                    className="primary-button compact ui-action-save"
                     disabled={mutation.isPending}
                     onClick={act}
                     aria-keyshortcuts="Enter Control+Enter Meta+Enter"
-                    title="Enter"
                     autoFocus
                   >
-                    確認
+                    {mutation.isPending ? '處理中…' : '確認'}
                   </button>
                 </div>
               </>
             ) : (
               <form
                 ref={formRef}
+                autoComplete="off"
                 onKeyDownCapture={(event) => {
                   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.repeat) {
                     event.preventDefault()
@@ -463,12 +464,17 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                     value={when.slice(0, 10)}
                     onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
                   />
-                  <SchedulingTimeInput
-                    label="時間"
-                    labelSuffix={modifiedFields?.time ? <ModifiedFieldMark /> : null}
-                    value={when.slice(11)}
-                    onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
-                  />
+                  <div className="scheduling-time-field">
+                    <span>
+                      時間
+                      {modifiedFields?.time ? <ModifiedFieldMark /> : null}
+                    </span>
+                    <TimeSelect
+                      label="時間"
+                      value={when.slice(11)}
+                      onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                    />
+                  </div>
                 </div>
                 <label>
                   <span className="finance-ledger-field-title">
@@ -481,8 +487,8 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                     onChange={(event) => setLabel(event.target.value)}
                   />
                 </label>
-                {editor === 'new' && (
-                  <>
+                <div className={editor === 'new' ? 'finance-ledger-amount-row' : undefined}>
+                  {editor === 'new' && (
                     <div className="finance-ledger-direction" role="group" aria-label="方向">
                       <span>方向</span>
                       <div className="scheduling-segmented">
@@ -502,31 +508,24 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                         </button>
                       </div>
                     </div>
-                    <label>
-                      幣別
-                      <input
-                        required
-                        pattern="[A-Z]{3}"
-                        maxLength={3}
-                        value={currency}
-                        onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-                      />
-                    </label>
-                  </>
-                )}
-                <label>
-                  <span className="finance-ledger-field-title">
-                    金額{modifiedFields?.amount && <ModifiedFieldMark />}
-                  </span>
-                  <input
-                    type="number"
-                    min={editor !== 'new' && editor.kind === 'commission' ? undefined : 0}
-                    step={1 / moneyFactor(currency)}
-                    required
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value)}
-                  />
-                </label>
+                  )}
+                  <label>
+                    <span className="finance-ledger-field-title">
+                      金額{editor === 'new' && `（${currency}）`}
+                      {modifiedFields?.amount && <ModifiedFieldMark />}
+                    </span>
+                    <input
+                      type="number"
+                      onKeyDown={numericInputKeyDown}
+                      data-allow-negative={editor !== 'new' && editor.kind === 'commission'}
+                      min={editor !== 'new' && editor.kind === 'commission' ? undefined : 0}
+                      step={1 / moneyFactor(currency)}
+                      required
+                      value={amount}
+                      onChange={(event) => setAmount(event.target.value)}
+                    />
+                  </label>
+                </div>
                 {editor === 'new' && (
                   <label>
                     說明（選填）
@@ -543,7 +542,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                     <pre className="finance-ledger-source-display">{sourceExplanation(editor)}</pre>
                     {editor.targetRoute && (
                       <Link
-                        className="finance-ledger-source-link"
+                        className="finance-ledger-source-link ui-action-general"
                         to={financeSourceRoute(editor, params)}
                       >
                         前往來源紀錄 <ArrowUpRight aria-hidden="true" />
@@ -555,7 +554,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   {editor !== 'new' && !data.rows.some((r) => r.id === editor.id) && (
                     <button
                       type="button"
-                      className="secondary-button finance-ledger-restore"
+                      className="secondary-button finance-ledger-restore ui-action-general"
                       onClick={() => setConfirm(editor.sourceRemoved ? 'clone' : 'restore')}
                     >
                       {editor.sourceRemoved ? '另存為自行新增' : '恢復明細'}
@@ -564,7 +563,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   {editor !== 'new' && data.rows.some((r) => r.id === editor.id) && (
                     <button
                       type="button"
-                      className="danger-outline-button"
+                      className="danger-outline-button ui-action-delete"
                       onClick={() => setConfirm('delete')}
                     >
                       刪除
@@ -573,7 +572,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   {editor !== 'new' && editor.status === 'modified' && !editor.sourceRemoved && (
                     <button
                       type="button"
-                      className="secondary-button finance-ledger-reset"
+                      className="secondary-button finance-ledger-reset ui-action-general"
                       onClick={() => setConfirm('reset')}
                     >
                       取消修改
@@ -581,18 +580,17 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   )}
                   <button
                     type="button"
-                    className="secondary-button finance-ledger-cancel"
+                    className="secondary-button finance-ledger-cancel ui-action-cancel"
                     onClick={close}
                   >
                     取消
                   </button>
                   <button
                     type="submit"
-                    className="primary-button compact finance-ledger-save"
+                    className="primary-button compact finance-ledger-save ui-action-save"
                     disabled={mutation.isPending}
-                    title="Ctrl/Cmd + Enter"
                   >
-                    儲存
+                    {mutation.isPending ? '處理中…' : '儲存'}
                   </button>
                 </div>
               </form>

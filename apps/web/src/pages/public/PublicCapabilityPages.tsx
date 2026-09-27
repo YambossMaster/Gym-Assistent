@@ -1,7 +1,7 @@
 import { formatMeasurements } from '../training/recording'
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, Download, Dumbbell, RefreshCw } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   ApiError,
@@ -13,6 +13,7 @@ import {
   type PublicUsedReschedule
 } from '../../api'
 import { Brand } from '../../shared/primitives'
+import { useModalScrollLock } from '../../shared/useDialogBehavior'
 
 export function PublicCapabilityApp({ purpose }: { purpose: 'training' | 'reschedule' }) {
   const [client] = useState(
@@ -41,6 +42,99 @@ function PublicFrame({ children }: { children: React.ReactNode }) {
     </main>
   )
 }
+
+const trainingResultStyles = {
+  heading: { padding: 32, gap: 24 },
+  eyebrow: {
+    display: 'block',
+    marginBottom: 8,
+    color: 'var(--lime)',
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1,
+    letterSpacing: '0.04em'
+  },
+  title: {
+    margin: '0 0 12px',
+    color: 'var(--white)',
+    fontSize: 'clamp(32px, 4vw, 36px)',
+    fontWeight: 700,
+    lineHeight: 1.2
+  },
+  session: { color: '#bdc0b3', fontSize: 14, fontWeight: 400, lineHeight: 1.5 },
+  coachSeal: { padding: '12px 16px' },
+  coachLabel: { fontSize: 12, fontWeight: 600, lineHeight: 1, letterSpacing: '0.04em' },
+  coachName: { color: 'var(--white)', fontSize: 14, fontWeight: 600, lineHeight: 1.5 },
+  exerciseList: { padding: '16px 24px' },
+  exercise: { padding: '32px 0' },
+  exerciseHeading: { gap: 16 },
+  exerciseNumber: {
+    color: 'var(--text-supplementary)',
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1,
+    letterSpacing: '0.04em'
+  },
+  exerciseTitle: {
+    margin: '0 0 16px',
+    color: 'var(--text-primary)',
+    fontSize: 'clamp(24px, 3vw, 28px)',
+    fontWeight: 700,
+    lineHeight: 1.25
+  },
+  set: { minHeight: 56, padding: '8px 12px' },
+  setLabel: {
+    color: 'var(--text-primary)',
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1,
+    letterSpacing: '0.04em'
+  },
+  measurement: {
+    color: 'var(--text-primary)',
+    fontSize: 14,
+    fontWeight: 600,
+    lineHeight: 1.5
+  },
+  rpe: { color: 'var(--text-secondary)', fontSize: 14, fontWeight: 400, lineHeight: 1.5 },
+  resultBadge: {
+    padding: '4px 8px',
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1,
+    letterSpacing: '0.04em'
+  },
+  emptyTitle: {
+    margin: '16px 0 0',
+    color: 'var(--text-primary)',
+    fontSize: 'clamp(24px, 3vw, 28px)',
+    fontWeight: 700,
+    lineHeight: 1.25
+  },
+  note: { margin: '8px 24px 32px', padding: 24 },
+  noteLabel: {
+    color: 'var(--text-primary)',
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1,
+    letterSpacing: '0.04em'
+  },
+  noteText: {
+    margin: '8px 0 0',
+    color: 'var(--text-primary)',
+    fontSize: 16,
+    fontWeight: 400,
+    lineHeight: 1.5
+  },
+  download: { padding: '0 24px 48px' },
+  downloadStatus: {
+    color: 'var(--text-supplementary)',
+    fontSize: 12,
+    fontWeight: 400,
+    lineHeight: 1.5
+  },
+  downloadError: { color: '#a43827', fontSize: 12, fontWeight: 600, lineHeight: 1.5 }
+} satisfies Record<string, CSSProperties>
 
 function TrainingResultPage() {
   const { token = '' } = useParams()
@@ -77,11 +171,13 @@ function TrainingResultPage() {
   return (
     <PublicFrame>
       <article className="public-result-card">
-        <header className="public-result-heading">
+        <header className="public-result-heading" style={trainingResultStyles.heading}>
           <div>
-            <span className="eyebrow dark">TRAINING RESULT</span>
-            <h1>{result.studentDisplayName} 的訓練結果</h1>
-            <p>
+            <span className="eyebrow dark" style={trainingResultStyles.eyebrow}>
+              TRAINING RESULT
+            </span>
+            <h1 style={trainingResultStyles.title}>{result.studentDisplayName} 的訓練結果</h1>
+            <p style={trainingResultStyles.session}>
               {formatSession(
                 result.session.startsAt,
                 result.session.endsAt,
@@ -90,35 +186,54 @@ function TrainingResultPage() {
               · {result.session.durationMinutes} 分鐘
             </p>
           </div>
-          <div className="public-coach-seal">
-            <small>COACH</small>
-            <strong>{result.coachDisplayName}</strong>
+          <div className="public-coach-seal" style={trainingResultStyles.coachSeal}>
+            <small style={trainingResultStyles.coachLabel}>COACH</small>
+            <strong style={trainingResultStyles.coachName}>{result.coachDisplayName}</strong>
           </div>
         </header>
         {result.exercises.length ? (
-          <div className="public-exercise-list">
+          <div className="public-exercise-list" style={trainingResultStyles.exerciseList}>
             {result.exercises.map((exercise) => (
-              <section className="public-exercise" key={exercise.position}>
-                <header>
-                  <span>{String(exercise.position).padStart(2, '0')}</span>
-                  <h2>{exercise.definitionName}</h2>
+              <section
+                className="public-exercise"
+                style={trainingResultStyles.exercise}
+                key={exercise.position}
+              >
+                <header style={trainingResultStyles.exerciseHeading}>
+                  <span style={trainingResultStyles.exerciseNumber}>
+                    {String(exercise.position).padStart(2, '0')}
+                  </span>
+                  <h2 style={trainingResultStyles.exerciseTitle}>{exercise.definitionName}</h2>
                 </header>
                 <div className="public-set-grid">
                   {exercise.sets.map((set) => (
-                    <div className="public-set" key={set.position}>
-                      <strong>SET {set.position}</strong>
+                    <div className="public-set" style={trainingResultStyles.set} key={set.position}>
+                      <strong style={trainingResultStyles.setLabel}>SET {set.position}</strong>
                       {exercise.recording && set.measurements ? (
-                        <span>{formatMeasurements(exercise.recording, set.measurements)}</span>
+                        <span style={trainingResultStyles.measurement}>
+                          {formatMeasurements(exercise.recording, set.measurements)}
+                        </span>
                       ) : (
                         <>
-                          <span>
+                          <span style={trainingResultStyles.measurement}>
                             {value(set.plannedWeight)} {set.plannedWeight === null ? '' : set.unit}
                           </span>
-                          <span>{set.actualReps === null ? '—' : `× ${set.actualReps}`}</span>
+                          <span style={trainingResultStyles.measurement}>
+                            {set.actualReps === null ? '—' : `× ${set.actualReps}`}
+                          </span>
                         </>
                       )}
-                      {set.rpe !== null ? <span>RPE {set.rpe}</span> : <span>RPE —</span>}
-                      <em data-result={set.result ?? 'none'}>{setResult(set.result)}</em>
+                      {set.rpe !== null ? (
+                        <span style={trainingResultStyles.rpe}>RPE {set.rpe}</span>
+                      ) : (
+                        <span style={trainingResultStyles.rpe}>RPE —</span>
+                      )}
+                      <em
+                        data-result={set.result ?? 'none'}
+                        style={trainingResultStyles.resultBadge}
+                      >
+                        {setResult(set.result)}
+                      </em>
                     </div>
                   ))}
                 </div>
@@ -128,24 +243,31 @@ function TrainingResultPage() {
         ) : (
           <section className="public-no-record">
             <Dumbbell />
-            <h2>這堂課沒有動作紀錄。</h2>
+            <h2 style={trainingResultStyles.emptyTitle}>這堂課沒有動作紀錄。</h2>
           </section>
         )}
         {result.trainingNote !== undefined ? (
-          <section className="public-note">
-            <span>教練給你的話</span>
-            <p>{result.trainingNote || '—'}</p>
+          <section className="public-note" style={trainingResultStyles.note}>
+            <span style={trainingResultStyles.noteLabel}>教練給你的話</span>
+            <p style={trainingResultStyles.noteText}>{result.trainingNote || '—'}</p>
           </section>
         ) : null}
-        <div className="public-download">
+        <div className="public-download" style={trainingResultStyles.download}>
           <button
-            className="primary-button"
+            className="secondary-button ui-action-general"
             disabled={downloadState === 'pending'}
             onClick={() => void downloadResult(result, setDownloadState)}
           >
             <Download /> {downloadState === 'pending' ? '正在製作圖片…' : '下載圖片'}
           </button>
-          <span role="status">
+          <span
+            role="status"
+            style={
+              downloadState === 'error'
+                ? trainingResultStyles.downloadError
+                : trainingResultStyles.downloadStatus
+            }
+          >
             {downloadState === 'success'
               ? '圖片已下載'
               : downloadState === 'error'
@@ -164,6 +286,7 @@ function ReschedulePage() {
   const dialogRef = useRef<HTMLElement>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  useModalScrollLock(confirming)
   const [used, setUsed] = useState<PublicUsedReschedule | null>(null)
   const [conflict, setConflict] = useState(false)
   const [rateDelay, setRateDelay] = useState(0)
@@ -361,7 +484,7 @@ function ReschedulePage() {
             ) : null}
             <div>
               <button
-                className="secondary-button"
+                className="secondary-button ui-action-cancel"
                 disabled={mutation.isPending}
                 onClick={() => {
                   setConfirming(false)
@@ -371,7 +494,7 @@ function ReschedulePage() {
                 取消
               </button>
               <button
-                className="primary-button"
+                className="primary-button ui-action-save"
                 disabled={mutation.isPending || rateDelay > 0}
                 onClick={() => mutation.mutate(selected)}
               >

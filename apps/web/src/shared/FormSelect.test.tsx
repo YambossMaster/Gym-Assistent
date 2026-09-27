@@ -79,3 +79,87 @@ it('keeps a short upward-opening menu adjacent to the trigger', async () => {
     await act(async () => root.unmount())
   }
 })
+
+it('renders option descriptions as secondary text without changing the selected value', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <FormSelect
+          label="場地"
+          value="studio"
+          options={[
+            { value: 'studio', label: '工作室', description: '目前預設場地' },
+            { value: 'outdoor', label: '戶外', description: '不使用室內場地' }
+          ]}
+        />
+      )
+    )
+    await act(async () => host.querySelector<HTMLButtonElement>('.form-select-trigger')!.click())
+    const options = document.querySelectorAll<HTMLButtonElement>('[role="option"]')
+    expect(options).toHaveLength(2)
+    expect(options[0].querySelector('.option-item-label')?.textContent).toBe('工作室')
+    expect(options[0].querySelector('.option-item-description')?.textContent).toBe('目前預設場地')
+    expect(options[0].getAttribute('aria-selected')).toBe('true')
+    expect(host.querySelector('.form-select-trigger')?.textContent).not.toContain('目前預設場地')
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
+it('does not reopen when a wrapping label forwards the click that closes the menu', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <label>
+          學生
+          <FormSelect label="學生" options={[{ value: 'a', label: '學生 A' }]} />
+        </label>
+      )
+    )
+    const trigger = host.querySelector<HTMLButtonElement>('.form-select-trigger')!
+    await act(async () => trigger.click())
+    expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+    await act(async () => {
+      host.querySelector('label')!.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+      trigger.click()
+    })
+    expect(document.querySelector('[role="listbox"]')).toBeNull()
+    await act(async () => trigger.click())
+    expect(document.querySelector('[role="listbox"]')).not.toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
+it('closes an open menu when another choice menu opens', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <>
+          <FormSelect label="器材" options={[{ value: 'bar', label: '槓鈴' }]} />
+          <FormSelect label="紀錄類型" options={[{ value: 'reps', label: '次數' }]} />
+        </>
+      )
+    )
+    const triggers = host.querySelectorAll<HTMLButtonElement>('.form-select-trigger')
+    await act(async () => triggers[0].click())
+    expect(document.querySelector('[role="listbox"]')?.getAttribute('aria-label')).toBe('器材')
+    await act(async () => triggers[1].click())
+    expect(document.querySelectorAll('[role="listbox"]')).toHaveLength(1)
+    expect(document.querySelector('[role="listbox"]')?.getAttribute('aria-label')).toBe('紀錄類型')
+  } finally {
+    await act(async () => root.unmount())
+  }
+})

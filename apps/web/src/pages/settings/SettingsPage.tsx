@@ -196,7 +196,7 @@ function FinancePreferencePanel() {
           options={['TWD', 'USD', 'JPY', 'EUR', 'HKD'].map((value) => ({ value, label: value }))}
         />
       </label>
-      <p>新增購課與場地收支紀錄時使用此幣別；既有紀錄保留原幣別。</p>
+      <p>新增購課、場地收支與收支明細時使用此幣別；既有紀錄保留原幣別。</p>
     </section>
   )
 }
@@ -325,7 +325,11 @@ function WorkspaceProfile({
   if (state === 'error' || !settings)
     return <PanelError title="暫時無法讀取教練資料" onRetry={onRetry} />
   return (
-    <form className="settings-panel workspace-settings-panel" onSubmit={onSubmit}>
+    <form
+      className="settings-panel workspace-settings-panel"
+      onSubmit={onSubmit}
+      autoComplete="off"
+    >
       <SettingsPanelHeading eyebrow="COACH PROFILE" title="教練資料" />
       {refreshFailed && <RefreshError onRetry={onRetry} />}
       <label>
@@ -336,7 +340,7 @@ function WorkspaceProfile({
         工作時區
         <input name="timeZone" defaultValue={settings.timeZone} maxLength={64} required />
       </label>
-      <button className="primary-button compact settings-submit" disabled={isSaving}>
+      <button className="primary-button compact settings-submit ui-action-save" disabled={isSaving}>
         {isSaving ? '儲存中…' : '儲存設定'}
       </button>
     </form>
@@ -422,10 +426,10 @@ function PasswordSection({
             </label>
           </div>
           <div className="password-form-actions">
-            <button className="text-button" type="button" onClick={onCancel}>
+            <button className="secondary-button ui-action-cancel" type="button" onClick={onCancel}>
               取消
             </button>
-            <button className="primary-button compact" disabled={saving}>
+            <button className="primary-button compact ui-action-save" disabled={saving}>
               {saving ? '更新中…' : '更新密碼'} <KeyRound />
             </button>
           </div>
@@ -475,17 +479,29 @@ function LifecycleSection({
       </div>
       {deletionDueAt ? (
         <div className="deletion-countdown-actions">
-          <button className="secondary-button" disabled={saving} onClick={onCancel}>
+          <button
+            className="secondary-button ui-action-general"
+            disabled={saving}
+            onClick={onCancel}
+          >
             取消刪除
           </button>
           <div className="danger-operation-actions">
-            <button className="danger-outline-button" disabled={saving} onClick={onImmediateDelete}>
+            <button
+              className="danger-outline-button ui-action-delete"
+              disabled={saving}
+              onClick={onImmediateDelete}
+            >
               立即刪除 <Trash2 />
             </button>
           </div>
         </div>
       ) : (
-        <button className="danger-outline-button" disabled={saving} onClick={onRequest}>
+        <button
+          className="danger-outline-button ui-action-delete"
+          disabled={saving}
+          onClick={onRequest}
+        >
           刪除帳號 <Trash2 />
         </button>
       )}

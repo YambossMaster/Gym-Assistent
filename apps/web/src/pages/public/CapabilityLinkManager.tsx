@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Clipboard, Link2, RefreshCw, ShieldOff, X } from 'lucide-react'
+import { Check, Clipboard, Link2, Plus, RefreshCw, ShieldOff, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   ApiError,
@@ -14,6 +14,7 @@ import {
   type IssuedCapabilityLink
 } from '../../api'
 import { queryKeys } from '../../query-keys'
+import { Checkbox } from '../../shared/Checkbox'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 
 export function CapabilityLinkActions({
@@ -188,7 +189,7 @@ function CapabilityLinkDialog({
       onPointerDown={onBackdropPointerDown}
     >
       <section
-        className="modal capability-dialog"
+        className="modal capability-dialog ui-settings-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="capability-title"
@@ -207,17 +208,13 @@ function CapabilityLinkDialog({
         </header>
         <p className="capability-intro">連結會在 24 小時後失效。只有持有連結的人能查看這項內容。</p>
         {purpose === 'training_result' ? (
-          <label className="checkbox-label capability-note">
-            <input
-              type="checkbox"
-              checked={includeNote}
-              onChange={(event) => setIncludeNote(event.target.checked)}
-            />
-            <span>
-              <strong>一併分享教練筆記</strong>
-              <small>只有這個連結會顯示本堂筆記。</small>
-            </span>
-          </label>
+          <Checkbox
+            className="capability-note"
+            label="一併分享教練筆記"
+            description="只有這個連結會顯示本堂筆記。"
+            checked={includeNote}
+            onChange={setIncludeNote}
+          />
         ) : null}
         {query.isLoading ? (
           <p role="status">正在確認連結狀態…</p>
@@ -236,7 +233,10 @@ function CapabilityLinkDialog({
               value={rawUrl}
               onFocus={(event) => event.currentTarget.select()}
             />
-            <button className="primary-button" onClick={() => void copy(rawUrl, setCopyState)}>
+            <button
+              className="secondary-button ui-action-general"
+              onClick={() => void copy(rawUrl, setCopyState)}
+            >
               <Clipboard /> 複製連結
             </button>
             <span role="status">
@@ -256,29 +256,36 @@ function CapabilityLinkDialog({
         <footer>
           {!current ? (
             <button
-              className="primary-button"
+              className="primary-button ui-action-add"
               disabled={pending || query.isLoading}
               onClick={() => issue.mutate()}
             >
-              建立連結
+              {issue.isPending ? (
+                '處理中…'
+              ) : (
+                <>
+                  <Plus aria-hidden="true" />
+                  建立連結
+                </>
+              )}
             </button>
           ) : null}
           {current?.allowedActions.canRevoke ? (
             <button
-              className="danger-outline-button"
+              className="danger-outline-button ui-action-delete"
               disabled={pending}
               onClick={() => revoke.mutate(current)}
             >
-              <ShieldOff /> 撤銷連結
+              <ShieldOff /> {revoke.isPending ? '處理中…' : '撤銷連結'}
             </button>
           ) : null}
           {current?.allowedActions.canReissue ? (
             <button
-              className="secondary-button"
+              className="secondary-button ui-action-general"
               disabled={pending}
               onClick={() => reissue.mutate(current)}
             >
-              <RefreshCw /> 重新建立連結
+              <RefreshCw /> {reissue.isPending ? '處理中…' : '重新建立連結'}
             </button>
           ) : null}
         </footer>

@@ -32,6 +32,7 @@ import {
   type Student
 } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
+import { SeriesDatePicker } from '../students/SeriesDatePicker'
 import { Confirmation } from '../../shared/primitives'
 import { useStudentsRouteQuery } from '../students/queries'
 import {
@@ -122,6 +123,7 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
     const page = pageRef.current
     if (!page) return
     const handleWheel = (event: WheelEvent) => {
+      if (document.querySelector('[aria-modal="true"]')) return
       const now = performance.now()
       if (now < headerGestureLockUntilRef.current) {
         event.preventDefault()
@@ -155,7 +157,10 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
               <span className="eyebrow dark">{formatRange(range, timeZone)}</span>
               <h1>行事曆</h1>
             </div>
-            <button className="primary-button compact" onClick={() => setDraft(initialDraft())}>
+            <button
+              className="primary-button compact ui-action-add"
+              onClick={() => setDraft(initialDraft())}
+            >
               <Plus /> 安排課程
             </button>
           </header>
@@ -386,7 +391,7 @@ function Editor({
   const [sessionMode, setSessionMode] = useState<'view' | 'edit'>(initialError ? 'edit' : 'view')
   const [deleteTarget, setDeleteTarget] = useState<'session' | 'block' | null>(null)
   const quickEditRef = useRef<HTMLButtonElement>(null)
-  const editDateRef = useRef<HTMLInputElement>(null)
+  const editDateRef = useRef<HTMLDivElement>(null)
   const pending = Object.values(mutations).some((mutation) => mutation.isPending)
   const mutateError = (value: unknown) =>
     setError(
@@ -567,7 +572,9 @@ function Editor({
   }
   const beginEdit = () => {
     setSessionMode('edit')
-    requestAnimationFrame(() => editDateRef.current?.focus({ preventScroll: true }))
+    requestAnimationFrame(() =>
+      editDateRef.current?.querySelector('button')?.focus({ preventScroll: true })
+    )
   }
   if (deleteTarget)
     return (
@@ -631,7 +638,20 @@ function Editor({
             </p>
           ) : null}
           <div className={`calendar-quick-actions${canRemove ? ' has-remove' : ''}`}>
-            <Link className="secondary-button calendar-open-session" to={`/sessions/${current.id}`}>
+            {canRemove ? (
+              <button
+                type="button"
+                className="calendar-delete-button ui-action-delete"
+                disabled={pending}
+                onClick={() => setDeleteTarget('session')}
+              >
+                刪除
+              </button>
+            ) : null}
+            <Link
+              className="secondary-button calendar-open-session ui-action-general"
+              to={`/sessions/${current.id}`}
+            >
               開啟課堂
             </Link>
             {current.status === 'scheduled' ? (
@@ -653,16 +673,6 @@ function Editor({
                 改回待上課
               </button>
             ) : null}
-            {canRemove ? (
-              <button
-                type="button"
-                className="calendar-delete-button"
-                disabled={pending}
-                onClick={() => setDeleteTarget('session')}
-              >
-                刪除
-              </button>
-            ) : null}
           </div>
           {current.status === 'scheduled' && current.startsAt ? (
             <div className="calendar-quick-secondary">
@@ -671,9 +681,6 @@ function Editor({
               </Link>
             </div>
           ) : null}
-          <span className="scheduling-shortcut-hint">
-            {canRemove ? 'DELETE 刪除 · ' : ''}ESC 取消
-          </span>
         </div>
       </SchedulingDialog>
     )
@@ -701,7 +708,7 @@ function Editor({
             : undefined
       }
     >
-      <form className="scheduling-form" onSubmit={submit}>
+      <form className="scheduling-form" onSubmit={submit} autoComplete="off">
         <div className="scheduling-form-body">
           {!('current' in draft && draft.current) ? (
             <div className="composer-kind" role="group" aria-label="安排類型">
@@ -757,16 +764,13 @@ function Editor({
             </div>
           ) : null}
           <div className="scheduling-time-fields">
-            <label>
-              日期
-              <input
-                ref={editDateRef}
-                type="date"
+            <div ref={editDateRef}>
+              <SeriesDatePicker
+                label="日期"
                 value={draft.date}
-                onChange={(event) => onChange({ ...draft, date: event.target.value })}
-                required
+                onChange={(date) => onChange({ ...draft, date })}
               />
-            </label>
+            </div>
             <SchedulingTimeInput
               label="開始"
               value={draft.start}
@@ -856,7 +860,6 @@ function Editor({
                 <input
                   value={draft.note}
                   onChange={(event) => onChange({ ...draft, note: event.target.value })}
-                  placeholder="不填也可以"
                   maxLength={1000}
                 />
               </label>
@@ -939,14 +942,11 @@ function Editor({
           ) : null}
         </div>
         <div className="scheduling-form-footer">
-          <span className="scheduling-shortcut-hint">
-            ENTER 確認 · {draft.kind === 'block' && draft.current ? 'DELETE 刪除 · ' : ''}ESC 取消
-          </span>
           <div className="scheduling-form-actions">
             {draft.kind === 'block' && draft.current ? (
               <button
                 type="button"
-                className="calendar-delete-button"
+                className="calendar-delete-button ui-action-delete"
                 onClick={() => setDeleteTarget('block')}
                 disabled={pending}
               >
@@ -955,12 +955,12 @@ function Editor({
             ) : null}
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-button ui-action-cancel"
               onClick={draft.kind === 'session' && draft.current ? cancelEdit : onClose}
             >
               取消
             </button>
-            <button className="primary-button compact" disabled={pending}>
+            <button className="primary-button compact ui-action-save" disabled={pending}>
               {pending
                 ? '儲存中…'
                 : draft.kind === 'block' && draft.current

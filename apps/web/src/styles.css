@@ -8,6 +8,9 @@
   --lime-deep: #bfe82a;
   --red: #d9513b;
   --muted: #74766d;
+  --text-primary: var(--ink);
+  --text-secondary: #5f6259;
+  --text-supplementary: #696b63;
   --line: rgba(21, 23, 17, 0.14);
   --shadow: 0 24px 80px rgba(21, 23, 17, 0.12);
   color: var(--ink);
@@ -313,7 +316,6 @@
   display: grid;
   place-items: center;
   background: rgba(15, 17, 12, 0.62);
-  backdrop-filter: blur(10px);
 }
 .public-dialog {
   width: min(520px, 100%);
@@ -1536,6 +1538,18 @@ svg {
 }
 
 /* Shared dropdown language across Coach routes. The menu is portaled so it remains visible in dialogs. */
+.ui-text-body-compact {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.ui-text-secondary {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
 .form-select {
   min-width: 0;
   width: 100%;
@@ -1547,18 +1561,21 @@ svg {
 .form-select-trigger {
   width: 100%;
   min-height: 48px;
-  padding: 0 14px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   border: 1px solid var(--line);
   border-radius: 11px;
   color: var(--ink);
   background: var(--white);
   cursor: pointer;
-  font: inherit;
-  font-weight: 700;
+  appearance: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
   text-align: left;
   transition:
     border-color 160ms ease,
@@ -1595,7 +1612,7 @@ svg {
 .form-select-menu {
   position: fixed;
   z-index: 200;
-  padding: 7px;
+  padding: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid #d8d7cf;
@@ -1623,23 +1640,97 @@ svg {
   box-shadow: 0 20px 44px rgba(21, 23, 17, 0.19);
   scrollbar-color: #a9b18b transparent;
 }
-.form-select-menu button {
+.option-item {
   width: 100%;
   min-height: 40px;
-  padding: 8px 11px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   border: 0;
   border-radius: 8px;
   color: var(--ink);
   background: transparent;
   cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
+  appearance: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
   text-align: left;
+}
+.option-item-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.option-item.selected .option-item-label {
+  font-weight: 500;
+}
+.choice-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.choice-group-label {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.choice-group-options {
+  display: grid;
+  gap: 4px;
+}
+.choice-item {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.choice-item:hover:not(:has(input:disabled)) {
+  background: #f5f5f0;
+}
+.choice-item:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.choice-item:has(input:focus-visible) {
+  outline: 2px solid #8aa71f;
+  outline-offset: 2px;
+}
+.choice-item input[type='radio'] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex: 0 0 20px;
+  position: relative;
+  margin: 0;
+  border: 2px solid var(--text-secondary);
+  background: var(--white);
+  appearance: none;
+  cursor: inherit;
+  border-radius: 50%;
+}
+.choice-item input[type='radio']:checked {
+  border-color: var(--text-primary);
+  background: var(--text-primary);
+}
+.choice-item input[type='radio']:checked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--white);
 }
 .equipment-suggestions button {
   width: 100%;
@@ -1666,23 +1757,27 @@ svg {
 .equipment-suggestions button:hover {
   background: #f1f2e9;
 }
-.form-select-menu button.active {
-  background: #f1f2e9;
+.option-item.active {
+  background: #f5f5f0;
 }
-.form-select-menu button.selected {
-  background: #e8f6ad;
+.option-item.selected {
+  background: color-mix(in srgb, var(--lime) 25%, #fff);
 }
-.form-select-menu button.selected.active {
-  background: #dff38a;
+.option-item.selected.active {
+  background: color-mix(in srgb, var(--lime) 35%, #fff);
 }
-.form-select-menu button:disabled {
+.option-item:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.form-select-menu button svg {
+.option-item svg {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
+}
+.option-item:focus-visible {
+  outline: 2px solid #8aa71f;
+  outline-offset: -2px;
 }
 @keyframes form-select-in {
   from {
@@ -4190,7 +4285,6 @@ textarea:focus {
   display: grid;
   place-items: center;
   background: rgba(15, 17, 12, 0.58);
-  backdrop-filter: blur(10px);
 }
 
 .modal {
@@ -4520,11 +4614,11 @@ textarea:focus {
   justify-content: space-between;
   gap: 12px;
 }
-.student-schedule h2,
+.student-schedule-heading h2,
 .student-schedule h3 {
   margin: 7px 0 0;
 }
-.student-schedule h2 {
+.student-schedule-heading h2 {
   font-size: 22px;
   letter-spacing: -0.05em;
 }
@@ -4629,7 +4723,6 @@ textarea:focus {
   display: grid;
   place-items: center;
   background: rgba(15, 17, 12, 0.58);
-  backdrop-filter: blur(10px);
 }
 
 .purchase-editor form {
@@ -4651,8 +4744,9 @@ textarea:focus {
 }
 
 .purchase-editor-actions {
-  display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
   gap: 10px;
   margin-top: 4px;
 }
@@ -4725,9 +4819,15 @@ textarea:focus {
   gap: 16px;
 }
 .purchase-create-form > .purchase-date-count-row,
-.purchase-create-form > .purchase-collection-fields,
-.purchase-create-form > .finance-money-fields {
+.purchase-create-form > .purchase-collection-fields {
   display: contents;
+}
+.purchase-create-form > .finance-money-fields {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.purchase-create-form .finance-money-equation {
+  display: none;
 }
 .purchase-create-form .series-date-field > span {
   color: var(--ink);
@@ -4742,8 +4842,7 @@ textarea:focus {
 }
 .purchase-create-form .purchase-collection-toggle,
 .purchase-create-form > label,
-.purchase-create-form footer,
-.purchase-create-form .finance-money-equation {
+.purchase-create-form footer {
   grid-column: 1 / -1;
 }
 .purchase-collection-toggle {
@@ -4825,14 +4924,6 @@ textarea:focus {
   line-height: 1.65;
 }
 
-.danger-confirmation-shortcuts {
-  margin-top: 14px;
-  display: block;
-  color: #857a72;
-  font-size: 10px;
-  letter-spacing: 0.02em;
-}
-
 .danger-confirmation-card form {
   display: grid;
   gap: 16px;
@@ -4855,6 +4946,9 @@ textarea:focus {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+.danger-confirmation-card label + .danger-confirmation-actions {
+  margin-top: 20px;
 }
 
 .danger-confirm-button {
@@ -5559,7 +5653,7 @@ textarea:focus {
   gap: 7px;
 }
 
-.session-top-actions button {
+.session-top-actions > button {
   min-height: 36px;
   padding: 0 17px;
   display: inline-flex;
@@ -5575,12 +5669,12 @@ textarea:focus {
   font-weight: 700;
 }
 
-.session-top-actions button:hover:not(:disabled) {
+.session-top-actions > button:hover:not(:disabled) {
   border-color: #a8bd45;
   background: rgba(217, 255, 67, 0.16);
 }
 
-.session-top-actions button svg {
+.session-top-actions > button svg {
   width: 18px;
   height: 18px;
 }
@@ -6405,12 +6499,6 @@ body.is-reordering-exercise * {
   font-weight: 700;
 }
 
-.session-workspace .set-add:hover {
-  color: var(--ink);
-  border-color: #adc62f;
-  background: rgba(217, 255, 67, 0.12);
-}
-
 .session-workspace .set-add svg {
   width: 12px;
 }
@@ -6487,11 +6575,11 @@ body.is-reordering-exercise * {
 }
 
 @media (max-width: 1180px) {
-  .session-top-actions button {
+  .session-top-actions > button {
     padding-inline: 10px;
   }
 
-  .session-top-actions button svg {
+  .session-top-actions > button svg {
     display: none;
   }
 
@@ -6525,7 +6613,7 @@ body.is-reordering-exercise * {
     overflow-x: auto;
   }
 
-  .session-top-actions button {
+  .session-top-actions > button {
     flex: 0 0 auto;
   }
 
@@ -6607,12 +6695,12 @@ body.is-reordering-exercise * {
     margin-left: auto;
   }
 
-  .session-top-actions button {
+  .session-top-actions > button {
     padding-inline: 14px;
     gap: 6px;
   }
 
-  .session-top-actions button svg {
+  .session-top-actions > button svg {
     display: block;
     width: 16px;
     height: 16px;
@@ -6907,6 +6995,7 @@ body.is-reordering-exercise * {
   width: min(620px, 100%);
   max-height: calc(100dvh - 44px);
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 26px;
   border-radius: 20px;
   background: #fffaf5;
@@ -7831,11 +7920,11 @@ body.is-reordering-exercise * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 46px;
+  min-height: 48px;
   padding: 0 8px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 800;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
   text-align: center;
   text-decoration: none;
   width: 100%;
@@ -7845,15 +7934,15 @@ body.is-reordering-exercise * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid #f1c5bb;
-  border-radius: 8px;
-  background: #fff6f2;
-  color: #d34f3c;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid #e8a99d;
+  border-radius: 10px;
+  background: var(--white);
+  color: #a93628;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
 }
 .calendar-delete-button:hover:not(:disabled) {
   border-color: #dc8978;
@@ -8131,22 +8220,15 @@ body.is-reordering-exercise * {
   gap: 10px;
   padding-top: 8px;
 }
-.scheduling-shortcut-hint {
-  color: #9a9b92;
-  font:
-    600 7px 'DM Mono',
-    monospace;
-  text-align: right;
-  letter-spacing: 0.07em;
-}
 .scheduling-form-actions {
   padding: 0;
 }
 .scheduling-form-actions > button {
-  min-height: 44px;
-  padding: 0 16px;
-  font-size: 11px;
-  font-weight: 800;
+  min-height: 48px;
+  padding: 0 20px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
 }
 .scheduling-form-actions .primary-button {
   border-color: #c1ed25;
@@ -8224,7 +8306,7 @@ body.is-reordering-exercise * {
     grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
     gap: 7px;
   }
-  .scheduling-time-fields > label:first-child {
+  .scheduling-time-fields > :first-child {
     grid-column: 1 / -1;
   }
   .scheduling-time-arrow {
@@ -8241,7 +8323,7 @@ body.is-reordering-exercise * {
     grid-column: 1 / -1;
   }
   .scheduling-form-actions > button {
-    min-height: 44px;
+    min-height: 48px;
     padding-inline: 10px;
   }
   .session-editor-form-body {
@@ -8252,9 +8334,6 @@ body.is-reordering-exercise * {
   }
   .session-editor-form-footer .scheduling-form-actions {
     display: flex;
-  }
-  .scheduling-shortcut-hint {
-    font-size: 7px;
   }
 }
 
@@ -9483,6 +9562,10 @@ body.is-reordering-exercise * {
   font-size: 12px;
   font-weight: 700;
 }
+.student-detail-profile-form input::placeholder {
+  color: #969a92;
+  opacity: 1;
+}
 .student-detail-profile-form footer {
   display: flex;
   justify-content: flex-end;
@@ -9504,7 +9587,7 @@ body.is-reordering-exercise * {
 .student-detail-page .student-schedule-heading {
   align-items: start;
 }
-.student-detail-page .student-schedule h2 {
+.student-detail-page .student-schedule-heading h2 {
   font-size: 21px;
 }
 .detail-add-button {
@@ -11243,9 +11326,9 @@ a.venue-course-purchase:focus-visible {
   padding-bottom: 18px;
 }
 .scheduling-dialog.profile:has(.finance-ledger-editor) > header {
-  padding-bottom: 16px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid var(--line);
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
 }
 .finance-ledger-editor {
   gap: 0;
@@ -11263,6 +11346,12 @@ a.venue-course-purchase:focus-visible {
 .finance-ledger-datetime {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 14px;
+}
+.finance-ledger-amount-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
   gap: 14px;
 }
@@ -11331,15 +11420,15 @@ a.venue-course-purchase:focus-visible {
   justify-content: center;
   gap: 8px;
   justify-self: start;
-  min-height: 40px;
+  min-height: 48px;
   margin-top: 2px;
-  padding: 0 14px;
+  padding: 0 20px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--white);
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1.3;
   text-decoration: none;
 }
@@ -11358,7 +11447,7 @@ a.venue-course-purchase:focus-visible {
 .finance-ledger-footer .danger-outline-button,
 .finance-ledger-footer .finance-ledger-restore {
   margin-right: auto;
-  min-height: 46px;
+  min-height: 48px;
 }
 .finance-ledger-footer {
   position: relative;
@@ -11383,14 +11472,14 @@ a.venue-course-purchase:focus-visible {
 @media (max-width: 600px) {
   .finance-ledger-footer {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 7px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
   .finance-ledger-footer > button {
     width: 100%;
     min-width: 0;
-    padding-inline: 5px;
-    font-size: 12px;
+    padding-inline: 12px;
+    font-size: 14px;
   }
   .finance-ledger-footer .danger-outline-button,
   .finance-ledger-footer .finance-ledger-restore {
@@ -11403,10 +11492,10 @@ a.venue-course-purchase:focus-visible {
     transform: none;
   }
   .finance-ledger-footer .finance-ledger-cancel {
-    grid-column: 3;
+    grid-column: 1;
   }
   .finance-ledger-footer .finance-ledger-save {
-    grid-column: 4;
+    grid-column: 2;
   }
 }
 .venue-course-records .venue-record.is-source-highlight {
@@ -12319,4 +12408,304 @@ a.venue-course-purchase:focus-visible {
   text-underline-offset: 3px;
   padding: 8px;
   cursor: pointer;
+}
+
+/* Shared choice, field, and action controls approved for the formal Web. */
+.field-control {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.scheduling-time-field .form-select-trigger {
+  min-height: 48px;
+  font-family: inherit;
+}
+
+/* Embedded setting forms share one title, field label, value, and spacing scale. */
+.ui-settings-dialog > header h2 {
+  margin-top: 8px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+.ui-settings-dialog > :is(.scheduling-form, .finance-editor, form, .capability-intro) {
+  margin-top: 24px;
+}
+.ui-settings-dialog .scheduling-form-body,
+.ui-settings-dialog .finance-editor form,
+.ui-settings-dialog.definition-editor form {
+  gap: 16px;
+}
+.ui-settings-dialog :is(.series-date-field, .scheduling-time-field, .field-control) {
+  gap: 8px;
+}
+.ui-settings-dialog .scheduling-time-field {
+  display: grid;
+}
+.ui-settings-dialog
+  :is(
+    .series-date-field > span,
+    .scheduling-time-field > span,
+    .field-control > span,
+    .venue-choice-label,
+    .scheduling-form label,
+    .finance-editor label,
+    .finance-ledger-direction > span,
+    .finance-ledger-source h3,
+    .editor-field > label,
+    label.editor-field,
+    .editor-field > strong,
+    .editor-field-heading strong,
+    .capability-secret > label
+  ) {
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.ui-settings-dialog :is(.scheduling-form label, .finance-editor label, .editor-field) {
+  gap: 8px;
+}
+.ui-settings-dialog
+  :is(
+    .series-date-trigger,
+    .form-select-trigger,
+    input:not([type='checkbox']):not([role='switch']),
+    textarea
+  ) {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.ui-settings-dialog :is(.series-date-trigger, .form-select-trigger) {
+  min-height: 48px;
+}
+@media (max-width: 640px) {
+  .ui-settings-dialog > header h2 {
+    font-size: 24px;
+  }
+}
+
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+input[type='checkbox']:not([role='switch']) {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  flex: 0 0 24px;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type='checkbox']:not([role='switch']):checked {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+input[type='checkbox']:not([role='switch']):checked::after {
+  content: '';
+  position: absolute;
+  display: block;
+  width: 7px;
+  height: 12px;
+  top: 2px;
+  left: 7px;
+  transform: rotate(45deg);
+  border-right: 2.5px solid var(--ink);
+  border-bottom: 2.5px solid var(--ink);
+}
+input[type='checkbox']:not([role='switch']):focus-visible {
+  outline: 3px solid rgba(169, 202, 45, 0.5);
+  outline-offset: 2px;
+}
+
+:is(button, a).ui-action-add,
+:is(button, a).ui-action-save,
+:is(button, a).ui-action-cancel,
+:is(button, a).ui-action-delete,
+:is(button, a).ui-action-general {
+  min-height: 48px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+}
+:is(button, a).ui-action-add {
+  color: var(--white);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+.secondary-button.ui-action-add,
+.primary-button.ui-action-add,
+.detail-add-button.ui-action-add {
+  color: var(--white);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+.primary-button.compact.ui-action-add {
+  color: var(--white);
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+.primary-button.compact.ui-action-add:hover:not(:disabled) {
+  color: var(--white);
+  background: var(--ink-soft);
+}
+:is(button, a).ui-action-save {
+  color: var(--ink);
+  border: 1px solid var(--lime);
+  background: var(--lime);
+}
+:is(button, a).ui-action-cancel,
+:is(button, a).ui-action-general {
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+:is(button, a).ui-action-delete {
+  color: #a93628;
+  border: 1px solid #e8a99d;
+  background: var(--white);
+}
+.danger-button.ui-action-delete,
+.text-button.danger-button.ui-action-delete {
+  color: #a93628;
+  border: 1px solid #e8a99d;
+  background: var(--white);
+}
+.primary-button,
+.secondary-button,
+.danger-button,
+.danger-outline-button {
+  min-height: 48px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.primary-button.compact {
+  min-height: 48px;
+}
+.secondary-button {
+  background: var(--white);
+}
+.danger-outline-button {
+  background: var(--white);
+}
+.ui-action-add:hover:not(:disabled) {
+  background: var(--ink-soft);
+}
+.ui-action-save:hover:not(:disabled) {
+  background: var(--lime-deep);
+}
+.ui-action-cancel:hover:not(:disabled),
+.ui-action-general:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: #bdbfb5;
+  background: #f2f2ed;
+}
+.ui-action-delete:hover:not(:disabled) {
+  background: #fff4f0;
+}
+:is(
+    .ui-action-add,
+    .ui-action-save,
+    .ui-action-cancel,
+    .ui-action-delete,
+    .ui-action-general
+  ):hover:not(:disabled) {
+  transform: none;
+}
+.ui-action-add:focus-visible,
+.ui-action-save:focus-visible,
+.ui-action-cancel:focus-visible,
+.ui-action-delete:focus-visible,
+.ui-action-general:focus-visible {
+  outline: 3px solid rgba(169, 202, 45, 0.5);
+  outline-offset: 2px;
+}
+button:disabled {
+  cursor: default !important;
+}
+.editor-tag-entry button {
+  color: var(--white);
+  background: var(--ink);
+  border-color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+.editor-tag-entry button:disabled {
+  color: var(--white);
+  background: var(--ink);
+  border-color: var(--ink);
+  opacity: 0.7;
+}
+.session-workspace .set-add.ui-action-add:hover:not(:disabled) {
+  color: #71746a;
+  border-color: #c8c9c1;
+  background: transparent;
+}
+.session-workspace .set-add.ui-action-add svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dialog dismissal: one quiet, readable X across desktop and mobile. */
+.icon-button[aria-label^='關閉'] {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 10px;
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 150ms ease;
+}
+.icon-button[aria-label^='關閉'] svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+}
+.icon-button[aria-label^='關閉']:hover:not(:disabled) {
+  color: var(--ink);
+  background: #e9e9e2;
+}
+.icon-button[aria-label^='關閉']:focus-visible {
+  outline: 2px solid #647b12;
+  outline-offset: 2px;
 }

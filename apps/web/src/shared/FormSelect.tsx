@@ -1,12 +1,19 @@
-import { Check, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { OptionItem } from './OptionItem'
 
-export type FormSelectOption = { value: string; label: string; disabled?: boolean }
+export type FormSelectOption = {
+  value: string
+  label: string
+  description?: string
+  disabled?: boolean
+}
 
 export function FormSelect({
   label,
   displayValue,
+  triggerLabel,
   options,
   value,
   defaultValue,
@@ -18,6 +25,7 @@ export function FormSelect({
 }: {
   label: string
   displayValue?: string
+  triggerLabel?: string
   options: FormSelectOption[]
   value?: string
   defaultValue?: string
@@ -31,6 +39,8 @@ export function FormSelect({
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
+  const menuToken = useRef(Symbol('form-select'))
+  const suppressTriggerClickUntil = useRef(0)
   const [internal, setInternal] = useState(defaultValue ?? options[0]?.value ?? '')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -41,12 +51,21 @@ export function FormSelect({
     options.findIndex((option) => option.value === selected)
   )
 
+  useEffect(() => {
+    const closeOtherMenu = (event: Event) => {
+      if ((event as CustomEvent).detail !== menuToken.current) setOpen(false)
+    }
+    document.addEventListener('ui-choice-menu-open', closeOtherMenu)
+    return () => document.removeEventListener('ui-choice-menu-open', closeOtherMenu)
+  }, [])
+
   const placeMenu = () => {
     const rect = trigger.current?.getBoundingClientRect()
     if (!rect) return
     const naturalHeight = Math.min(
       248,
-      (menu.current?.scrollHeight || options.length * 40 + 14) + 2
+      (menu.current?.scrollHeight ||
+        options.reduce((height, option) => height + (option.description ? 64 : 40), 8)) + 2
     )
     const spaceBelow = Math.max(0, window.innerHeight - rect.bottom - 12)
     const spaceAbove = Math.max(0, rect.top - 12)
@@ -66,7 +85,13 @@ export function FormSelect({
     placeMenu()
     const outside = (event: PointerEvent) => {
       const target = event.target as Node
-      if (!root.current?.contains(target) && !menu.current?.contains(target)) setOpen(false)
+      if (!root.current?.contains(target) && !menu.current?.contains(target)) {
+        // A wrapping label can forward its click to this button after pointerdown closes the menu.
+        // Consume that forwarded click so one click on the label cannot close and reopen it.
+        if (trigger.current?.closest('label')?.contains(target))
+          suppressTriggerClickUntil.current = event.timeStamp + 250
+        setOpen(false)
+      }
     }
     document.addEventListener('pointerdown', outside)
     window.addEventListener('resize', placeMenu)
@@ -84,9 +109,9 @@ export function FormSelect({
     if (!open || !list || !option) return
     const listRect = list.getBoundingClientRect()
     const optionRect = option.getBoundingClientRect()
-    if (optionRect.top < listRect.top + 7) list.scrollTop -= listRect.top + 7 - optionRect.top
-    else if (optionRect.bottom > listRect.bottom - 7)
-      list.scrollTop += optionRect.bottom - (listRect.bottom - 7)
+    if (optionRect.top < listRect.top + 4) list.scrollTop -= listRect.top + 4 - optionRect.top
+    else if (optionRect.bottom > listRect.bottom - 4)
+      list.scrollTop += optionRect.bottom - (listRect.bottom - 4)
   }, [active, open])
 
   const firstEnabled = (from: number, direction: 1 | -1, fallback = selectedIndex) => {
@@ -102,6 +127,7 @@ export function FormSelect({
   }
   const expand = () => {
     if (disabled) return
+    document.dispatchEvent(new CustomEvent('ui-choice-menu-open', { detail: menuToken.current }))
     setActive(firstEnabled(selectedIndex, 1))
     placeMenu()
     setOpen(true)
@@ -136,7 +162,7 @@ export function FormSelect({
       <button
         ref={trigger}
         type="button"
-        className="form-select-trigger"
+        className="form-select-trigger ui-text-body-compact"
         aria-label={label}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -144,11 +170,18 @@ export function FormSelect({
         aria-activedescendant={open ? `${id}-${active}` : undefined}
         aria-required={required || undefined}
         disabled={disabled}
-        onClick={() => (open ? setOpen(false) : expand())}
+        onClick={(event) => {
+          if (event.timeStamp <= suppressTriggerClickUntil.current) {
+            suppressTriggerClickUntil.current = 0
+            return
+          }
+          if (open) setOpen(false)
+          else expand()
+        }}
         onKeyDown={keyDown}
       >
         <span className="form-select-option-label">
-          {options.find((option) => option.value === selected)?.label ?? '請選擇'}
+          {triggerLabel ?? options.find((option) => option.value === selected)?.label ?? '請選擇'}
         </span>
         {displayValue && <span className="form-select-display-label">{displayValue}</span>}
         <ChevronDown aria-hidden="true" />
@@ -169,22 +202,21 @@ export function FormSelect({
             }}
           >
             {options.map((option, index) => (
-              <button
+              <OptionItem
                 id={`${id}-${index}`}
                 data-option-index={index}
                 key={option.value}
-                type="button"
                 role="option"
-                tabIndex={-1}
                 aria-selected={selected === option.value}
+                tabIndex={-1}
+                label={option.label}
+                description={option.description}
+                selected={selected === option.value}
+                active={index === active}
                 disabled={option.disabled}
-                className={`${index === active ? 'active' : ''} ${selected === option.value ? 'selected' : ''}`}
                 onPointerMove={() => !option.disabled && setActive(index)}
                 onClick={() => choose(option.value)}
-              >
-                <span>{option.label}</span>
-                {selected === option.value && <Check aria-hidden="true" />}
-              </button>
+              />
             ))}
           </div>,
           document.body

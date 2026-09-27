@@ -43,7 +43,7 @@ export function FinancePage({ session }: { session: Session }) {
     tracked = data?.coverage !== 'none',
     displayedMonth = data?.month ?? month,
     monthOptions = [
-      { value: '', label: !month && data ? monthLabel(data.month) : '回到本月' },
+      { value: '', label: !month && data ? monthLabel(data.month) : '返回' },
       ...[...new Set(history.data?.pages.flatMap((page) => page.months) ?? [])]
         .filter((value) => month || value !== data?.month)
         .map((value) => ({ value, label: monthLabel(value) })),
@@ -58,7 +58,7 @@ export function FinancePage({ session }: { session: Session }) {
     <section className="page income-page finance-page">
       <Link className="student-detail-back" to="/students">
         <ArrowLeft aria-hidden="true" />
-        回到學生列表
+        返回
       </Link>
       <section
         className="finance-overview finance-section-card"

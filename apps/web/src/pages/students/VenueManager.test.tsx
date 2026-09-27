@@ -748,7 +748,10 @@ it('edits the optional address in the name dialog and returns to Venue detail', 
         .find((button) => button.textContent?.includes('編輯名稱'))!
         .click()
     )
-    const address = host.querySelector<HTMLInputElement>('input[autocomplete="street-address"]')!
+    const address = [...host.querySelectorAll('label')]
+      .find((label) => label.textContent?.includes('場地位置或地址'))!
+      .querySelector('input')!
+    expect(address.autocomplete).toBe('off')
     expect(address.value).toBe('台北市測試路')
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(

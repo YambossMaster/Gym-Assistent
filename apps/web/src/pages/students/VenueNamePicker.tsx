@@ -96,6 +96,7 @@ export function VenueNamePicker({
             aria-label="新場地名稱"
             placeholder="輸入場地名稱"
             value={name}
+            autoComplete="off"
             maxLength={160}
             disabled={mutation.isPending}
             onChange={(event) => {

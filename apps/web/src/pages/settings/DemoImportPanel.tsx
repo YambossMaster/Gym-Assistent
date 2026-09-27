@@ -27,6 +27,7 @@ import {
   type LocalImport
 } from '../../local-resilience'
 import { Confirmation, SettingsPanelHeading } from '../../shared/primitives'
+import { Checkbox } from '../../shared/Checkbox'
 import { DEMO_STORAGE_KEY, downloadDemoBackup, phaseLabels, readDemoSource } from './demo-import'
 
 export function DemoImportPanel({
@@ -208,13 +209,13 @@ export function DemoImportPanel({
       </ol>
 
       <div className="import-source-actions">
-        <label className="secondary-button file-button">
+        <label className="secondary-button file-button ui-action-general">
           <FileJson /> 選擇 Demo JSON
           <input type="file" accept="application/json,.json" onChange={selectFile} />
         </label>
         {browserDemo && (
           <button
-            className="secondary-button"
+            className="secondary-button ui-action-general"
             type="button"
             onClick={() => choose(browserDemo, '這個瀏覽器的 Demo 資料')}
           >
@@ -229,22 +230,20 @@ export function DemoImportPanel({
             <span>{new TextEncoder().encode(sourceText).byteLength.toLocaleString()} bytes</span>
           </div>
           <button
-            className="secondary-button"
+            className="secondary-button ui-action-general"
             type="button"
             onClick={() => downloadDemoBackup(sourceText)}
           >
             <Download /> 下載完整備份
           </button>
-          <label className="confirmation-check">
-            <input
-              type="checkbox"
-              checked={backupConfirmed}
-              onChange={(event) => setBackupConfirmed(event.target.checked)}
-            />
-            我已確認備份下載完成
-          </label>
+          <Checkbox
+            className="confirmation-check"
+            label="我已確認備份下載完成"
+            checked={backupConfirmed}
+            onChange={setBackupConfirmed}
+          />
           <button
-            className="primary-button compact"
+            className="secondary-button ui-action-general"
             type="button"
             disabled={!backupConfirmed || busy}
             onClick={() => void inspect()}
@@ -293,12 +292,12 @@ export function DemoImportPanel({
           )}
           {!run && (
             <button
-              className="primary-button"
+              className="secondary-button ui-action-general"
               type="button"
               disabled={busy}
               onClick={() => void start()}
             >
-              開始匯入
+              {busy ? '處理中…' : '開始匯入'}
             </button>
           )}
         </section>
@@ -323,7 +322,7 @@ export function DemoImportPanel({
           </div>
           {run.status !== 'completed' && run.status !== 'rolled_back' && (
             <button
-              className="secondary-button"
+              className="secondary-button ui-action-general"
               type="button"
               disabled={busy}
               onClick={() => void retry()}
@@ -333,7 +332,7 @@ export function DemoImportPanel({
           )}
           {run.status !== 'rolled_back' && (
             <button
-              className="danger-outline-button"
+              className="danger-outline-button ui-action-delete"
               type="button"
               disabled={busy}
               onClick={() => setRollbackOpen(true)}
