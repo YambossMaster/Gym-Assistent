@@ -12,7 +12,7 @@
 | Package state      | **Venue/Finance Stage 1 checkpoint delivered; remaining acceptance stays open**                     |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
 | Branch baseline    | Code checkpoint `baddb7d` reached Main; CI run `36272037958` passed both jobs                       |
-| Worktree           | Venue/finance Sol slice plus preserved Stage 1 corrections; `output/` stays local and ignored       |
+| Worktree           | Venue/finance Sol slice plus mobile Finance scroll correction; `output/` stays local and ignored    |
 | Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
 | Production         | Not configured; no real customer data                                                               |
 
@@ -330,6 +330,13 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-27 — LOG-245 — Keep the mobile Finance ledger heading in view
+
+- **Scope:** Product Owner found that the mobile Finance page could keep scrolling after **收支明細** reached its intended position, moving the heading above the viewport; then requested using a little more space above the card.
+- **Outcome:** The no-deleted ledger now caps its mobile card height to the viewport, so populated rows scroll below the fixed heading. Mobile Finance bottom padding is 88px; the card cap was enlarged by 12px after visual review, moving its heading slightly higher while preserving the gap above the bottom navigation. Desktop rules are unchanged.
+- **Verification:** Authenticated 390×844 Chrome preview reproduced the defect before the change: with the outer page at its end, the card top would be about −37px. After the correction and follow-up adjustment, the page ends with the card top at 82px, heading top at 101px, card bottom at 756px, and bottom navigation top at 776px. The nine-row list scrolls internally to its total while the outer page stays at its limit. Desktop Chrome retained its existing card height and 20px page padding. Web TypeScript, focused Prettier, production build, and `git diff --check` passed; the build retained its existing chunk-size advisory. Physical-phone touch acceptance remains open. No commit, push, or remote CI is claimed.
+- **Next:** continue Product Owner Stage 1 review and remaining Venue/Finance acceptance; preserve development fixtures and the Stage 2/M8 boundary.
 
 ### 2026-09-27 — LOG-244 — M7.5 Venue and Finance Stage 1 delivery checkpoint
 

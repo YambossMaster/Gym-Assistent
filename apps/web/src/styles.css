@@ -11984,6 +11984,12 @@ a.venue-course-purchase:focus-visible {
   margin-top: 4px;
 }
 @media (max-width: 600px) {
+  .finance-page {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+  .finance-ledger.no-deleted {
+    max-height: calc(100dvh - 170px - env(safe-area-inset-bottom));
+  }
   .finance-section-card {
     margin-top: 14px;
     padding: 18px;
