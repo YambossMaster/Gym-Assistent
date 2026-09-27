@@ -9,20 +9,19 @@
 | ------------------ | --------------------------------------------------------------------------------------------------- |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
 | Current package    | **M7.5 interactive control and Finance detail review; Venue/Finance acceptance remains open**       |
-| Package state      | **Interactive-control review paused after local CI checks; remote checkpoint delivery pending**     |
+| Package state      | **Interactive-control Main checkpoint delivered; Product Owner review paused**                      |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
-| Branch baseline    | Code checkpoint `baddb7d` reached Main; CI run `36272037958` passed both jobs                       |
-| Worktree           | Shared controls, owning Web pages, and CSS review slice; `output/` stays local and ignored          |
+| Branch baseline    | Interactive-control checkpoint `c232364` reached Main; CI run `36346891642` passed both jobs        |
+| Worktree           | Checkpoint committed; `output/` stays local and ignored                                             |
 | Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
 | Production         | Not configured; no real customer data                                                               |
 
 ## Next handoff
 
 The Product Owner has paused review of the interactive-control corrections after the desktop-led
-Settings layout and option-control pass. Deliver this reviewed local slice as a Main checkpoint only
-after local checks and exact-SHA remote CI pass; this does not close Stage 1 or M7.5. When the Product
-Owner resumes, continue review of Venue management,
-Venue course records, Student course history, trajectory navigation, and Finance overview/month
+Settings layout and option-control pass. The Main checkpoint passed local checks and exact-SHA
+remote CI; this does not close Stage 1 or M7.5. When the Product Owner resumes, continue review of
+Venue management, Venue course records, Student course history, trajectory navigation, and Finance overview/month
 selector against the preserved 2026 development data (LOG-221–243; scenario index in local
 `output/M7.5-2026-venue-finance-review-data.md`). Take subsequent corrections only when the
 Product Owner resumes review; do not infer Stage 1 or M7.5 completion from this checkpoint.
@@ -338,8 +337,8 @@ local pass or successful push is not a remote CI completion claim.
 
 - **Scope:** The Product Owner paused the desktop-led Settings layout and shared option-control review and authorized CI plus a Main push if clean. This checkpoint includes the current Web control, owning-route, CSS, regression-test, and control-standard changes. Stage 1 Venue/Finance acceptance remains open.
 - **Outcome:** The local preflight found no migration changes or pending linked migrations. The first sandboxed root check could not start Vitest workers (`spawn EPERM`); the approved elevated rerun completed normally.
-- **Verification:** Elevated root `npm run check` passed formatting, API typecheck and 26 files/122 tests, and Web typecheck and 51 files/221 tests. Elevated root `npm run build` passed with the existing over-500-kB chunk advisory. Linked development `npm run db:push:dry` returned `upToDate: true` and no migrations; `git diff --check` passed. Remote CI is pending.
-- **Next:** Push the checked checkpoint to Main, verify the exact remote SHA and both GitHub Actions jobs, then leave the Product Owner's remaining Stage 1 review and acceptance open.
+- **Verification:** Elevated root `npm run check` passed formatting, API typecheck and 26 files/122 tests, and Web typecheck and 51 files/221 tests. Elevated root `npm run build` passed with the existing over-500-kB chunk advisory. Linked development `npm run db:push:dry` returned `upToDate: true` and no migrations; `git diff --check` passed. Code commit `c232364e1ab02390267b7b04293c81df98dffb48` reached `origin/main`; GitHub Actions run `36346891642` completed successfully with both `verify` and `migration-dry-run` green.
+- **Next:** Leave the Product Owner's remaining Stage 1 review and acceptance open until review resumes.
 
 ### 2026-09-28 — LOG-264 — Keep the desktop sidebar fixed when a dialog opens
 
