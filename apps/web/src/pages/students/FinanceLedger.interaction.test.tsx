@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { MonthlyFinance } from './finance-api'
 import { FinanceLedger } from './FinanceLedger'
+import { FinanceCurrencyProvider } from '../settings/finance-currency'
 
 const mutation = vi.hoisted(() => ({
   mutate: vi.fn(),
@@ -28,13 +29,11 @@ afterEach(() => {
   mutation.mutate.mockClear()
   mutation.reset.mockClear()
   deletedRequest.mockReset()
-  localStorage.removeItem('gym-assistant.default-purchase-currency')
   document.body.innerHTML = ''
 })
 
 it('uses the Settings currency for a new ledger entry without a currency field', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
-  localStorage.setItem('gym-assistant.default-purchase-currency', 'USD')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -43,24 +42,26 @@ it('uses the Settings currency for a new ledger entry without a currency field',
     await act(async () =>
       root.render(
         <QueryClientProvider client={queryClient}>
-          <MemoryRouter>
-            <FinanceLedger
-              session={{ access_token: 'test', user: { id: 'coach' } } as Session}
-              data={
-                {
-                  month: '2026-09',
-                  timeZone: 'Asia/Taipei',
-                  coverage: 'complete',
-                  totals: [
-                    { currency: 'TWD', incomeMinor: 100, expenseMinor: 0, differenceMinor: 100 }
-                  ],
-                  missing: [],
-                  venues: [],
-                  rows: []
-                } as MonthlyFinance
-              }
-            />
-          </MemoryRouter>
+          <FinanceCurrencyProvider currency="USD">
+            <MemoryRouter>
+              <FinanceLedger
+                session={{ access_token: 'test', user: { id: 'coach' } } as Session}
+                data={
+                  {
+                    month: '2026-09',
+                    timeZone: 'Asia/Taipei',
+                    coverage: 'complete',
+                    totals: [
+                      { currency: 'TWD', incomeMinor: 100, expenseMinor: 0, differenceMinor: 100 }
+                    ],
+                    missing: [],
+                    venues: [],
+                    rows: []
+                  } as MonthlyFinance
+                }
+              />
+            </MemoryRouter>
+          </FinanceCurrencyProvider>
         </QueryClientProvider>
       )
     )

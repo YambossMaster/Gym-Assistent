@@ -5,6 +5,7 @@ import type { WorkspaceSettings } from './workspace.js'
 export interface NewWorkspaceSettings {
   displayName: string
   timeZone: string
+  defaultCurrency?: WorkspaceSettings['defaultCurrency']
   expectedVersion: number
   now: Date
 }

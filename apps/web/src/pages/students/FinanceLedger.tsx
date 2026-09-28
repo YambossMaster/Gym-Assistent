@@ -6,7 +6,7 @@ import { ArrowUpRight, ChevronRight, Plus, Wrench } from 'lucide-react'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { TimeSelect } from '../../shared/TimeSelect'
 import { SeriesDatePicker } from './SeriesDatePicker'
-import { getDefaultFinanceCurrency } from './PurchaseMoneyFields'
+import { useDefaultFinanceCurrency } from '../settings/finance-currency'
 import { ApiError, request } from '../../api'
 import { numericInputKeyDown } from '../../shared/numeric-input'
 import {
@@ -95,6 +95,7 @@ export function financeSourceRoute(row: Row, params: URLSearchParams) {
   return `${path}?${next}${row.kind === 'purchase' ? '#purchase-history' : ''}`
 }
 export function FinanceLedger({ session, data }: { session: Session; data: MonthlyFinance }) {
+  const defaultFinanceCurrency = useDefaultFinanceCurrency()
   const [params, setParams] = useSearchParams()
   const formRef = useRef<HTMLFormElement>(null)
   const ascending = (a: Row, b: Row) =>
@@ -142,7 +143,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
           : `${row.date}T00:00`
     )
     setAmount(row === 'new' ? '' : String(row.amountMinor / moneyFactor(row.currency)))
-    setCurrency(row === 'new' ? getDefaultFinanceCurrency() : row.currency)
+    setCurrency(row === 'new' ? defaultFinanceCurrency : row.currency)
     setDirection(row === 'new' ? 'expense' : (row.direction as 'income' | 'expense'))
     setNote('')
   }

@@ -1,27 +1,102 @@
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
 import { useMutation } from '@tanstack/react-query'
-import { ArrowRight, KeyRound, LogOut, TimerReset, Trash2 } from 'lucide-react'
+import {
+  ArrowRight,
+  CircleCheck,
+  Database,
+  KeyRound,
+  LogOut,
+  SlidersHorizontal,
+  Shield,
+  Trash2,
+  UserRound,
+  X
+} from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { ApiError, deleteAccountImmediately, type WorkspaceSettings } from '../../api'
-import { changePassword, signOutCurrentDevice, updatePassword } from '../../account-auth'
+import {
+  changePassword,
+  passwordRecoveryRedirect,
+  requestPasswordReset,
+  signOutCurrentDevice,
+  updatePassword
+} from '../../account-auth'
 import { Confirmation, Page, SettingsPanelHeading } from '../../shared/primitives'
 import { supabase } from '../../supabase'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
 import { useTrainingMutations, useTrainingPreference } from '../training/queries'
 import { DemoImportPanel } from './DemoImportPanel'
-import {
-  getDefaultFinanceCurrency,
-  saveDefaultFinanceCurrency
-} from '../students/PurchaseMoneyFields'
+import { CoachLocalStore } from '../../local-resilience'
+import { useDialogBehavior } from '../../shared/useDialogBehavior'
+
+const settingsCategories = [
+  {
+    id: 'profile',
+    label: '教練與工作台',
+    icon: UserRound,
+    description: '管理教練名稱與工作時區。'
+  },
+  {
+    id: 'preferences',
+    label: '工作偏好',
+    icon: SlidersHorizontal,
+    description: '調整新增紀錄時使用的預設值。'
+  },
+  { id: 'security', label: '帳號與安全', icon: Shield, description: '管理登入方式與帳號狀態。' },
+  { id: 'data', label: '資料與裝置', icon: Database, description: '管理此裝置的暫存資料。' }
+] as const
+type SettingsCategory = (typeof settingsCategories)[number]['id']
+
+const commonTimeZones = [
+  ['Asia/Taipei', '台北'],
+  ['Asia/Tokyo', '東京'],
+  ['Asia/Seoul', '首爾'],
+  ['Asia/Hong_Kong', '香港'],
+  ['Asia/Shanghai', '上海'],
+  ['Asia/Singapore', '新加坡'],
+  ['Asia/Bangkok', '曼谷'],
+  ['Asia/Manila', '馬尼拉'],
+  ['Asia/Jakarta', '雅加達'],
+  ['Asia/Dubai', '杜拜'],
+  ['Europe/London', '倫敦'],
+  ['Europe/Paris', '巴黎'],
+  ['Europe/Berlin', '柏林'],
+  ['America/New_York', '紐約'],
+  ['America/Chicago', '芝加哥'],
+  ['America/Denver', '丹佛'],
+  ['America/Los_Angeles', '洛杉磯'],
+  ['America/Toronto', '多倫多'],
+  ['America/Vancouver', '溫哥華'],
+  ['Australia/Sydney', '雪梨'],
+  ['Pacific/Auckland', '奧克蘭']
+] as const
+
+function timeZoneOptions(current: string) {
+  const options: { value: string; label: string }[] = commonTimeZones.map(([value, city]) => ({
+    value,
+    label: `${city} · ${value}`
+  }))
+  for (const value of Intl.supportedValuesOf?.('timeZone') ?? []) {
+    if (!options.some((item) => item.value === value))
+      options.push({ value, label: value.replaceAll('_', ' ') })
+  }
+  if (!options.some((item) => item.value === current))
+    options.unshift({ value: current, label: `目前使用 · ${current}` })
+  return options
+}
 
 export function SettingsPage({ session }: { session: Session }) {
+  const [category, setCategory] = useState<SettingsCategory>('profile')
   const [message, setMessage] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordNotice, setPasswordNotice] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const [deletionRequestOpen, setDeletionRequestOpen] = useState(false)
   const [immediateDelete, setImmediateDelete] = useState(false)
   const [confirmation, setConfirmation] = useState('')
@@ -48,13 +123,30 @@ export function SettingsPage({ session }: { session: Session }) {
       setPassword('')
       setConfirmPassword('')
       setPasswordOpen(false)
-      setMessage('密碼已更新。')
+      setPasswordError('')
     },
-    onError: (error) => setMessage(readError(error))
+    onError: (error) => setPasswordError(readError(error))
   })
   const signOutMutation = useMutation({
     mutationFn: () => signOutCurrentDevice(supabase.auth),
-    onError: (error) => setMessage(readError(error))
+    onError: (error) => {
+      setSignOutOpen(false)
+      setMessage(readError(error))
+    },
+    onSuccess: () => setSignOutOpen(false)
+  })
+  const resetPasswordMutation = useMutation({
+    mutationFn: () =>
+      requestPasswordReset(
+        supabase.auth,
+        session.user.email || '',
+        passwordRecoveryRedirect(window.location.origin)
+      ),
+    onSuccess: () => {
+      setPasswordError('')
+      setPasswordNotice(true)
+    },
+    onError: (error) => setPasswordError(readError(error))
   })
   const deleteMutation = useMutation({
     mutationFn: () => deleteAccountImmediately(session.access_token),
@@ -64,89 +156,187 @@ export function SettingsPage({ session }: { session: Session }) {
   const profileState = selectSettingsPanelState(settingsQuery)
   const lifecycleState = selectSettingsPanelState(lifecycleQuery)
   const lifecycle = lifecycleQuery.data?.deletionDueAt ?? null
+  const selectedCategory = settingsCategories.find((item) => item.id === category)!
 
   return (
     <Page title="設定" eyebrow="帳號與工作台">
       <section className="settings-layout">
-        <WorkspaceProfile
-          state={profileState}
-          settings={settingsQuery.data}
-          isSaving={settingsMutation.isPending}
-          refreshFailed={Boolean(settingsQuery.data && settingsQuery.isError)}
-          onRetry={() => void settingsQuery.refetch()}
+        <nav className="settings-category-nav" aria-label="設定分類">
+          <span className="settings-category-nav-label">分類</span>
+          {settingsCategories.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              className={category === item.id ? 'is-active' : ''}
+              aria-current={category === item.id ? 'page' : undefined}
+              onClick={() => {
+                setCategory(item.id)
+                setMessage('')
+                window.scrollTo({ top: 0, behavior: 'instant' })
+              }}
+            >
+              <item.icon aria-hidden="true" />
+              <span>{item.label}</span>
+              <ArrowRight aria-hidden="true" className="settings-category-arrow" />
+            </button>
+          ))}
+        </nav>
+        <div className="settings-detail">
+          <header className="settings-detail-heading">
+            <span className="eyebrow dark">SETTINGS</span>
+            <h2>{selectedCategory.label}</h2>
+            <p>{selectedCategory.description}</p>
+          </header>
+          {message && (
+            <p className="settings-feedback" role="alert">
+              {message}
+            </p>
+          )}
+          {category === 'profile' && (
+            <WorkspaceProfile
+              state={profileState}
+              settings={settingsQuery.data}
+              refreshFailed={Boolean(settingsQuery.data && settingsQuery.isError)}
+              onRetry={() => void settingsQuery.refetch()}
+              onNameChange={(displayName) => {
+                setMessage('')
+                settingsMutation.mutate({ displayName })
+              }}
+              onTimeZoneChange={(timeZone) => {
+                setMessage('')
+                settingsMutation.mutate({ timeZone })
+              }}
+            />
+          )}
+          {category === 'security' && (
+            <section className="settings-panel account-settings-panel">
+              <div className="settings-row">
+                <div className="settings-row-copy">
+                  <strong>登入帳號</strong>
+                  <span>目前用於登入的電子郵件。</span>
+                </div>
+                <span className="settings-account-value">{session.user.email}</span>
+              </div>
+              <div className="settings-row">
+                <div className="settings-row-copy">
+                  <strong>{hasEmailIdentity(session) ? '登入密碼' : '建立登入密碼'}</strong>
+                  <span>在獨立視窗中更新帳號的登入密碼。</span>
+                </div>
+                <button
+                  type="button"
+                  className="settings-row-action"
+                  onClick={() => {
+                    setPasswordError('')
+                    setPasswordNotice(false)
+                    setPasswordOpen(true)
+                  }}
+                >
+                  {hasEmailIdentity(session) ? '修改密碼' : '建立密碼'}{' '}
+                  <ArrowRight aria-hidden="true" />
+                </button>
+              </div>
+              <div className="settings-row">
+                <div className="settings-row-copy">
+                  <strong>登出帳號</strong>
+                  <span>結束這台裝置目前的登入狀態。</span>
+                </div>
+                <button
+                  type="button"
+                  className="settings-row-action"
+                  disabled={signOutMutation.isPending}
+                  onClick={() => setSignOutOpen(true)}
+                >
+                  登出 <LogOut aria-hidden="true" />
+                </button>
+              </div>
+              <LifecycleSection
+                state={lifecycleState}
+                deletionDueAt={lifecycle}
+                saving={lifecycleMutation.isPending || deleteMutation.isPending}
+                onRetry={() => void lifecycleQuery.refetch()}
+                onRequest={() => setDeletionRequestOpen(true)}
+                onCancel={() => lifecycleMutation.mutate('cancel')}
+                onImmediateDelete={() => setImmediateDelete(true)}
+              />
+            </section>
+          )}
+          {category === 'preferences' && (
+            <>
+              <TrainingPreferencePanel session={session} />
+              <FinancePreferencePanel
+                settings={settingsQuery.data}
+                saving={settingsMutation.isPending}
+                onChange={(defaultCurrency) => {
+                  setMessage('')
+                  settingsMutation.mutate({ defaultCurrency })
+                }}
+              />
+            </>
+          )}
+          {category === 'data' && (
+            <>
+              <DeviceDataPanel session={session} />
+              {import.meta.env.DEV && settingsQuery.data && (
+                <details className="settings-dev-tools">
+                  <summary>開發工具：Demo 資料匯入</summary>
+                  <ImportPanelBoundary
+                    session={session}
+                    workspaceVersion={settingsQuery.data.version}
+                    onImported={() => {
+                      void settingsQuery.refetch()
+                      void lifecycleQuery.refetch()
+                    }}
+                  />
+                </details>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+      {passwordOpen && (
+        <PasswordDialog
+          emailIdentity={hasEmailIdentity(session)}
+          currentPassword={currentPassword}
+          password={password}
+          confirmPassword={confirmPassword}
+          error={passwordError}
+          notice={passwordNotice}
+          saving={passwordMutation.isPending || resetPasswordMutation.isPending}
+          onClose={() => {
+            setPasswordOpen(false)
+            setCurrentPassword('')
+            setPassword('')
+            setConfirmPassword('')
+            setPasswordError('')
+            setPasswordNotice(false)
+          }}
+          onForgotPassword={() => {
+            setPasswordError('')
+            setPasswordNotice(false)
+            resetPasswordMutation.mutate()
+          }}
+          onCurrentPasswordChange={setCurrentPassword}
+          onPasswordChange={setPassword}
+          onConfirmPasswordChange={setConfirmPassword}
           onSubmit={(event) => {
             event.preventDefault()
-            const settings = settingsQuery.data
-            if (!settings) return
-            setMessage('')
-            const values = new FormData(event.currentTarget)
-            settingsMutation.mutate({
-              displayName: String(values.get('displayName') || '').trim(),
-              timeZone: String(values.get('timeZone') || '').trim(),
-              version: settings.version
-            })
+            if (password !== confirmPassword) return setPasswordError('兩次輸入的新密碼不一致。')
+            setPasswordError('')
+            passwordMutation.mutate()
           }}
         />
-        <section className="settings-panel account-settings-panel">
-          <SettingsPanelHeading eyebrow="ACCOUNT & SECURITY" title="帳號安全" />
-          <div className="account-email">
-            <span>登入帳號</span>
-            <strong>{session.user.email}</strong>
-          </div>
-          <button
-            className="secondary-button security-button"
-            disabled={signOutMutation.isPending}
-            onClick={() => signOutMutation.mutate()}
-          >
-            登出帳號 <LogOut />
-          </button>
-          <PasswordSection
-            emailIdentity={hasEmailIdentity(session)}
-            open={passwordOpen}
-            currentPassword={currentPassword}
-            password={password}
-            confirmPassword={confirmPassword}
-            saving={passwordMutation.isPending}
-            onOpen={() => setPasswordOpen(true)}
-            onCancel={() => {
-              setPasswordOpen(false)
-              setCurrentPassword('')
-              setPassword('')
-              setConfirmPassword('')
-            }}
-            onCurrentPasswordChange={setCurrentPassword}
-            onPasswordChange={setPassword}
-            onConfirmPasswordChange={setConfirmPassword}
-            onSubmit={(event) => {
-              event.preventDefault()
-              if (password !== confirmPassword) return setMessage('兩次輸入的新密碼不一致。')
-              passwordMutation.mutate()
-            }}
-          />
-          <LifecycleSection
-            state={lifecycleState}
-            deletionDueAt={lifecycle}
-            saving={lifecycleMutation.isPending || deleteMutation.isPending}
-            onRetry={() => void lifecycleQuery.refetch()}
-            onRequest={() => setDeletionRequestOpen(true)}
-            onCancel={() => lifecycleMutation.mutate('cancel')}
-            onImmediateDelete={() => setImmediateDelete(true)}
-          />
-        </section>
-        <TrainingPreferencePanel session={session} />
-        <FinancePreferencePanel />
-        {settingsQuery.data && (
-          <ImportPanelBoundary
-            session={session}
-            workspaceVersion={settingsQuery.data.version}
-            onImported={() => {
-              void settingsQuery.refetch()
-              void lifecycleQuery.refetch()
-            }}
-          />
-        )}
-        {message && <p className="form-notice">{message}</p>}
-      </section>
+      )}
+      {signOutOpen && (
+        <Confirmation
+          title="確定登出？"
+          text="登出後，這台裝置需要重新登入才能使用工作台。"
+          confirmLabel="登出"
+          tone="neutral"
+          onCancel={() => setSignOutOpen(false)}
+          onConfirm={() => signOutMutation.mutate()}
+          disabled={signOutMutation.isPending}
+        />
+      )}
       {deletionRequestOpen && (
         <Confirmation
           title="刪除帳號？"
@@ -179,25 +369,133 @@ export function SettingsPage({ session }: { session: Session }) {
   )
 }
 
-function FinancePreferencePanel() {
-  const [currency, setCurrency] = useState(getDefaultFinanceCurrency)
+function FinancePreferencePanel({
+  settings,
+  saving,
+  onChange
+}: {
+  settings: WorkspaceSettings | undefined
+  saving: boolean
+  onChange: (value: WorkspaceSettings['defaultCurrency']) => void
+}) {
   return (
     <section className="settings-panel">
       <SettingsPanelHeading eyebrow="FINANCE" title="收支設定" />
-      <label>
-        預設幣別
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>預設幣別</strong>
+          <span>新增購課、場地收支與收支明細時使用；既有紀錄保留原幣別。</span>
+        </div>
         <FormSelect
           label="預設幣別"
-          value={currency}
-          onChange={(next) => {
-            setCurrency(next)
-            saveDefaultFinanceCurrency(next)
-          }}
+          value={settings?.defaultCurrency ?? 'TWD'}
+          disabled={!settings || saving}
+          onChange={(next) => onChange(next as WorkspaceSettings['defaultCurrency'])}
           options={['TWD', 'USD', 'JPY', 'EUR', 'HKD'].map((value) => ({ value, label: value }))}
         />
-      </label>
-      <p>新增購課、場地收支與收支明細時使用此幣別；既有紀錄保留原幣別。</p>
+      </div>
     </section>
+  )
+}
+
+function DeviceDataPanel({ session }: { session: Session }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <section className="settings-panel">
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>這台裝置的暫存</strong>
+          <span>管理尚未送出的變更、訓練草稿與本機介面偏好。</span>
+        </div>
+        <button className="settings-row-action" type="button" onClick={() => setOpen(true)}>
+          管理暫存 <ArrowRight aria-hidden="true" />
+        </button>
+      </div>
+      {open && <DeviceCacheDialog session={session} onClose={() => setOpen(false)} />}
+    </section>
+  )
+}
+
+function DeviceCacheDialog({ session, onClose }: { session: Session; onClose: () => void }) {
+  const [confirmation, setConfirmation] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, { focusDialog: true })
+  const clearCache = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      await new CoachLocalStore().clearCoach({
+        environment: import.meta.env.MODE,
+        coachId: session.user.id
+      })
+      onClose()
+    } catch {
+      setError('目前無法清除裝置暫存。')
+      setSaving(false)
+    }
+  }
+  return (
+    <div className="modal-backdrop" onPointerDown={onBackdropPointerDown}>
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="modal security-modal settings-operation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-cache-title"
+      >
+        <header>
+          <div>
+            <span className="eyebrow dark">資料與裝置</span>
+            <h2 id="settings-cache-title">管理裝置暫存</h2>
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="關閉暫存管理"
+            onClick={onClose}
+            disabled={saving}
+          >
+            <X aria-hidden="true" />
+          </button>
+        </header>
+        <p>
+          這台裝置保存訓練草稿、待送變更與介面偏好，協助中斷後繼續工作。清除後無法從裝置復原這些內容；雲端正式紀錄不受影響。
+        </p>
+        <label className="settings-cache-confirm">
+          輸入 CLEAR 以清除
+          <input
+            value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        {error && (
+          <p className="settings-dialog-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="settings-dialog-actions">
+          <button
+            type="button"
+            className="secondary-button ui-action-cancel"
+            onClick={onClose}
+            disabled={saving}
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            className="danger-outline-button ui-action-delete"
+            onClick={() => void clearCache()}
+            disabled={saving || confirmation !== 'CLEAR'}
+          >
+            {saving ? '清除中…' : '清除裝置暫存'}
+          </button>
+        </div>
+      </section>
+    </div>
   )
 }
 
@@ -251,8 +549,11 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
   return (
     <section className="settings-panel training-preference">
       <SettingsPanelHeading eyebrow="TRAINING" title="訓練設定" />
-      <label>
-        重量單位習慣
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>重量單位習慣</strong>
+          <span>用於新增訓練紀錄與表現顯示。</span>
+        </div>
         <FormSelect
           label="重量單位習慣"
           value={query.data.defaultWeightUnit}
@@ -269,9 +570,12 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
             { value: 'lb', label: '磅（lb）' }
           ]}
         />
-      </label>
-      <label>
-        距離單位習慣
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>距離單位習慣</strong>
+          <span>選擇公制或英制。</span>
+        </div>
         <FormSelect
           label="距離單位習慣"
           value={query.data.defaultDistanceUnit}
@@ -288,7 +592,7 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
             })
           }
         />
-      </label>
+      </div>
       <p>
         重量與距離習慣會套用至新增紀錄與表現顯示；既有紀錄保留原始數值與單位。時間可在每組以秒／分切換，距離可在同一制式內快速切換尺度。
       </p>
@@ -304,17 +608,17 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
 function WorkspaceProfile({
   state,
   settings,
-  isSaving,
   refreshFailed,
   onRetry,
-  onSubmit
+  onNameChange,
+  onTimeZoneChange
 }: {
   state: SettingsPanelState
   settings: WorkspaceSettings | undefined
-  isSaving: boolean
   refreshFailed: boolean
   onRetry: () => void
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onNameChange: (value: string) => void
+  onTimeZoneChange: (value: string) => void
 }) {
   if (state === 'loading')
     return (
@@ -325,73 +629,109 @@ function WorkspaceProfile({
   if (state === 'error' || !settings)
     return <PanelError title="暫時無法讀取教練資料" onRetry={onRetry} />
   return (
-    <form
-      className="settings-panel workspace-settings-panel"
-      onSubmit={onSubmit}
-      autoComplete="off"
-    >
-      <SettingsPanelHeading eyebrow="COACH PROFILE" title="教練資料" />
+    <section className="settings-panel workspace-settings-panel">
       {refreshFailed && <RefreshError onRetry={onRetry} />}
-      <label>
-        教練顯示名稱
-        <input name="displayName" defaultValue={settings.displayName} maxLength={120} required />
-      </label>
-      <label>
-        工作時區
-        <input name="timeZone" defaultValue={settings.timeZone} maxLength={64} required />
-      </label>
-      <button className="primary-button compact settings-submit ui-action-save" disabled={isSaving}>
-        {isSaving ? '儲存中…' : '儲存設定'}
-      </button>
-    </form>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>教練顯示名稱</strong>
+          <span>顯示在工作台上的名稱。</span>
+        </div>
+        <input
+          name="displayName"
+          aria-label="教練顯示名稱"
+          defaultValue={settings.displayName}
+          maxLength={120}
+          required
+          onBlur={(event) => {
+            const value = event.currentTarget.value.trim()
+            if (!value) {
+              event.currentTarget.value = settings.displayName
+              return
+            }
+            if (value !== settings.displayName) onNameChange(value)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+          }}
+        />
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>工作時區</strong>
+          <span>常用城市列在前面。改變後影響行事曆、今日與月份的顯示；既有課程時間不會改寫。</span>
+        </div>
+        <FormSelect
+          label="工作時區"
+          value={settings.timeZone}
+          onChange={(value) => {
+            if (value !== settings.timeZone) onTimeZoneChange(value)
+          }}
+          options={timeZoneOptions(settings.timeZone)}
+          required
+        />
+      </div>
+    </section>
   )
 }
 
-function PasswordSection({
+function PasswordDialog({
   emailIdentity,
-  open,
   currentPassword,
   password,
   confirmPassword,
+  error,
+  notice,
   saving,
-  onOpen,
-  onCancel,
+  onClose,
+  onForgotPassword,
   onCurrentPasswordChange,
   onPasswordChange,
   onConfirmPasswordChange,
   onSubmit
 }: {
   emailIdentity: boolean
-  open: boolean
   currentPassword: string
   password: string
   confirmPassword: string
+  error: string
+  notice: boolean
   saving: boolean
-  onOpen: () => void
-  onCancel: () => void
+  onClose: () => void
+  onForgotPassword: () => void
   onCurrentPasswordChange: (value: string) => void
   onPasswordChange: (value: string) => void
   onConfirmPasswordChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }) {
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, { focusDialog: true })
   return (
-    <section className="account-operation password-settings">
-      <div className="security-subsection-heading">
-        <KeyRound />
-        <div>
-          <h3>{emailIdentity ? '修改密碼' : '建立登入密碼'}</h3>
-        </div>
-      </div>
-      {!open ? (
-        <button className="secondary-button security-button" disabled={saving} onClick={onOpen}>
-          修改密碼 <ArrowRight />
-        </button>
-      ) : (
-        <form className="password-change-form" onSubmit={onSubmit}>
-          <div
-            className={emailIdentity ? 'password-fields email-password-fields' : 'password-fields'}
+    <div className="modal-backdrop" onPointerDown={onBackdropPointerDown}>
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="modal security-modal settings-operation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-password-title"
+      >
+        <header>
+          <div>
+            <span className="eyebrow dark">帳號與安全</span>
+            <h2 id="settings-password-title">{emailIdentity ? '修改密碼' : '建立登入密碼'}</h2>
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="關閉密碼設定"
+            onClick={onClose}
+            disabled={saving}
           >
-            {emailIdentity && (
+            <X aria-hidden="true" />
+          </button>
+        </header>
+        <form className="password-change-form" onSubmit={onSubmit}>
+          {emailIdentity && (
+            <div className="password-current-field">
               <label>
                 目前密碼
                 <input
@@ -400,42 +740,67 @@ function PasswordSection({
                   onChange={(event) => onCurrentPasswordChange(event.target.value)}
                   required
                   autoFocus
+                  autoComplete="current-password"
                 />
               </label>
-            )}
-            <label>
-              新密碼
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => onPasswordChange(event.target.value)}
-                minLength={12}
-                required
-                autoFocus={!emailIdentity}
-              />
-            </label>
-            <label>
-              再次輸入新密碼
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => onConfirmPasswordChange(event.target.value)}
-                minLength={12}
-                required
-              />
-            </label>
-          </div>
+              <button
+                type="button"
+                className="text-button"
+                onClick={onForgotPassword}
+                disabled={saving}
+              >
+                忘記密碼？
+              </button>
+              {notice && (
+                <p className="password-recovery-notice" role="status">
+                  <CircleCheck aria-hidden="true" />
+                  <span>密碼重設信已寄出，請查看電子郵件。</span>
+                </p>
+              )}
+            </div>
+          )}
+          <label>
+            新密碼
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => onPasswordChange(event.target.value)}
+              minLength={12}
+              required
+              autoFocus={!emailIdentity}
+            />
+          </label>
+          <label>
+            再次輸入新密碼
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => onConfirmPasswordChange(event.target.value)}
+              minLength={12}
+              required
+            />
+          </label>
+          {error && (
+            <p className="settings-dialog-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="password-form-actions">
-            <button className="secondary-button ui-action-cancel" type="button" onClick={onCancel}>
+            <button
+              className="secondary-button ui-action-cancel"
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+            >
               取消
             </button>
             <button className="primary-button compact ui-action-save" disabled={saving}>
-              {saving ? '更新中…' : '更新密碼'} <KeyRound />
+              {saving ? '更新中…' : '更新密碼'} <KeyRound aria-hidden="true" />
             </button>
           </div>
         </form>
-      )}
-    </section>
+      </section>
+    </div>
   )
 }
 
@@ -458,27 +823,28 @@ function LifecycleSection({
 }) {
   if (state === 'loading')
     return (
-      <section className="account-operation">
+      <div className="settings-row">
         <span className="panel-loading">正在載入刪除狀態</span>
-      </section>
+      </div>
     )
   if (state === 'error')
     return (
-      <section className="account-operation">
+      <div className="settings-row">
         <RefreshError onRetry={onRetry} />
-      </section>
+      </div>
     )
   return (
-    <section className="account-operation account-deletion-zone">
-      <div className="security-subsection-heading">
-        {deletionDueAt ? <TimerReset /> : <Trash2 />}
-        <div>
-          <h3>{deletionDueAt ? '刪除倒數已開始' : '刪除帳號'}</h3>
-          {deletionDueAt && <p>{new Date(deletionDueAt).toLocaleString('zh-TW')}</p>}
-        </div>
+    <div className="settings-row settings-danger-row">
+      <div className="settings-row-copy">
+        <strong>{deletionDueAt ? '刪除倒數已開始' : '刪除帳號'}</strong>
+        <span>
+          {deletionDueAt
+            ? `預計於 ${new Date(deletionDueAt).toLocaleString('zh-TW')} 永久刪除。`
+            : '帳號與工作台資料將在 14 天倒數結束後永久刪除。'}
+        </span>
       </div>
       {deletionDueAt ? (
-        <div className="deletion-countdown-actions">
+        <div className="settings-deletion-actions">
           <button
             className="secondary-button ui-action-general"
             disabled={saving}
@@ -486,15 +852,13 @@ function LifecycleSection({
           >
             取消刪除
           </button>
-          <div className="danger-operation-actions">
-            <button
-              className="danger-outline-button ui-action-delete"
-              disabled={saving}
-              onClick={onImmediateDelete}
-            >
-              立即刪除 <Trash2 />
-            </button>
-          </div>
+          <button
+            className="danger-outline-button ui-action-delete"
+            disabled={saving}
+            onClick={onImmediateDelete}
+          >
+            立即刪除 <Trash2 aria-hidden="true" />
+          </button>
         </div>
       ) : (
         <button
@@ -502,10 +866,10 @@ function LifecycleSection({
           disabled={saving}
           onClick={onRequest}
         >
-          刪除帳號 <Trash2 />
+          刪除帳號 <Trash2 aria-hidden="true" />
         </button>
       )}
-    </section>
+    </div>
   )
 }
 

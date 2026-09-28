@@ -175,6 +175,7 @@ export interface CreateStudentInput {
 export interface WorkspaceSettings {
   displayName: string
   timeZone: string
+  defaultCurrency: 'TWD' | 'USD' | 'JPY' | 'EUR' | 'HKD'
   version: number
   updatedAt: string
 }
@@ -285,6 +286,7 @@ export interface PerformanceEntry {
 export interface UpdateWorkspaceSettingsInput {
   displayName: string
   timeZone: string
+  defaultCurrency?: WorkspaceSettings['defaultCurrency']
   version: number
 }
 

@@ -2,25 +2,6 @@ import { useState } from 'react'
 import { numericInputKeyDown } from '../../shared/numeric-input'
 import { financeMoney, moneyFactor } from './finance-api'
 
-const currencyPreferenceKey = 'gym-assistant.default-purchase-currency'
-
-export function getDefaultFinanceCurrency() {
-  try {
-    const value = localStorage.getItem(currencyPreferenceKey)
-    return ['TWD', 'USD', 'JPY', 'EUR', 'HKD'].includes(value ?? '') ? value! : 'TWD'
-  } catch {
-    return 'TWD'
-  }
-}
-
-export function saveDefaultFinanceCurrency(value: string) {
-  try {
-    localStorage.setItem(currencyPreferenceKey, value)
-  } catch {
-    // Keep the selected UI preference usable for the current page when storage is unavailable.
-  }
-}
-
 export function PurchaseMoneyFields({
   count,
   amount,

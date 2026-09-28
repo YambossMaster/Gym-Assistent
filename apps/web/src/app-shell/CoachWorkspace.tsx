@@ -10,6 +10,7 @@ import { IncomePage } from '../pages/students/IncomePage'
 import { VenuePage } from '../pages/students/VenuePage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
+import { FinanceCurrencyProvider } from '../pages/settings/finance-currency'
 import { CalendarPage } from '../pages/calendar/CalendarPage'
 import { SessionPage } from '../pages/sessions/SessionPage'
 import { queryKeys } from '../query-keys'
@@ -81,30 +82,32 @@ export function CoachWorkspace({ session }: { session: Session }) {
           </nav>
         </header>
         <ResilienceStatus session={session} queryClient={queryClient} />
-        <Routes>
-          <Route path="/today" element={<TodayPage session={session} coachName={coach.name} />} />
-          <Route
-            path="/calendar"
-            element={<CalendarPage session={session} timeZone={timeZone} />}
-          />
-          <Route
-            path="/students"
-            element={<StudentsPage session={session} timeZone={timeZone} />}
-          />
-          <Route path="/students/finances" element={<IncomePage session={session} />} />
-          <Route path="/students/venues" element={<VenuePage session={session} />} />
-          <Route
-            path="/students/:studentId"
-            element={<StudentDetailPage session={session} timeZone={timeZone} />}
-          />
-          <Route
-            path="/sessions/:sessionId"
-            element={<SessionPage session={session} timeZone={timeZone} />}
-          />
-          <Route path="/exercises" element={<ExercisesPage session={session} />} />
-          <Route path="/settings" element={<SettingsPage session={session} />} />
-          <Route path="*" element={<Navigate to="/today" replace />} />
-        </Routes>
+        <FinanceCurrencyProvider currency={coachSettingsQuery.data?.defaultCurrency ?? 'TWD'}>
+          <Routes>
+            <Route path="/today" element={<TodayPage session={session} coachName={coach.name} />} />
+            <Route
+              path="/calendar"
+              element={<CalendarPage session={session} timeZone={timeZone} />}
+            />
+            <Route
+              path="/students"
+              element={<StudentsPage session={session} timeZone={timeZone} />}
+            />
+            <Route path="/students/finances" element={<IncomePage session={session} />} />
+            <Route path="/students/venues" element={<VenuePage session={session} />} />
+            <Route
+              path="/students/:studentId"
+              element={<StudentDetailPage session={session} timeZone={timeZone} />}
+            />
+            <Route
+              path="/sessions/:sessionId"
+              element={<SessionPage session={session} timeZone={timeZone} />}
+            />
+            <Route path="/exercises" element={<ExercisesPage session={session} />} />
+            <Route path="/settings" element={<SettingsPage session={session} />} />
+            <Route path="*" element={<Navigate to="/today" replace />} />
+          </Routes>
+        </FinanceCurrencyProvider>
       </main>
       <nav className="bottom-nav" aria-label="主要導覽">
         {navigation.slice(0, 4).map((item) => (

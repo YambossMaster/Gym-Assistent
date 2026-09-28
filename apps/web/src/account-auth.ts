@@ -73,6 +73,12 @@ export async function requestPasswordReset(
   await requireSuccess(auth.resetPasswordForEmail(normalizeEmail(email), { redirectTo }))
 }
 
+export function passwordRecoveryRedirect(origin: string): string {
+  // This exact origin is already on the development Auth redirect allowlist.
+  // The Supabase callback carries `type=recovery` in its fragment.
+  return origin
+}
+
 export async function resendEmailVerification(
   auth: CoachAuthClient,
   email: string,

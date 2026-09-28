@@ -23,7 +23,8 @@ import {
   type Venue,
   type VenueData
 } from './finance-api'
-import { getDefaultFinanceCurrency, PurchaseMoneyFields } from './PurchaseMoneyFields'
+import { PurchaseMoneyFields } from './PurchaseMoneyFields'
+import { useDefaultFinanceCurrency } from '../settings/finance-currency'
 import { VenueCourseRecords } from './VenueCourseRecords'
 import { workspaceInstant, workspaceWallTime } from './workspace-time'
 import { queryKeys } from '../../query-keys'
@@ -271,6 +272,7 @@ function VenueEditor({
   onNavigate: (e: Editor) => void
   highlightSessionId?: string
 }) {
+  const defaultFinanceCurrency = useDefaultFinanceCurrency()
   const mutation = useFinanceMutation(session),
     venue = 'venue' in editor ? editor.venue : null
   const studentQuery = useQuery({
@@ -315,7 +317,7 @@ function VenueEditor({
     [deleting, setDeleting] = useState(false),
     [pendingBody, setPendingBody] = useState<any>(null),
     [selected, setSelected] = useState<Record<string, boolean>>({})
-  const preferredCurrency = getDefaultFinanceCurrency()
+  const preferredCurrency = defaultFinanceCurrency
   const creditCurrency = ('credit' in editor ? editor.credit?.currency : null) ?? preferredCurrency
   const venueRules = venue ? (data?.rules.filter((rule) => rule.venueId === venue.id) ?? []) : []
   const venueCredits = venue

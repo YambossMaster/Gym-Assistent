@@ -62,6 +62,7 @@ interface LessonPurchaseRow {
 interface WorkspaceSettingsRow {
   display_name: string
   time_zone: string
+  default_currency: WorkspaceSettings['defaultCurrency']
   version: number
   updated_at: Date
 }
@@ -152,7 +153,7 @@ export class PostgresStudentRepository
 
   async getWorkspaceSettings(workspaceId: WorkspaceId): Promise<WorkspaceSettings> {
     const result = await this.#pool.query<WorkspaceSettingsRow>(
-      `SELECT display_name, time_zone, version, updated_at
+      `SELECT display_name, time_zone, default_currency, version, updated_at
        FROM app_private.workspace
        WHERE id = $1`,
       [workspaceId],
@@ -168,10 +169,19 @@ export class PostgresStudentRepository
   ): Promise<WorkspaceSettings> {
     const result = await this.#pool.query<WorkspaceSettingsRow>(
       `UPDATE app_private.workspace
-       SET display_name = $2, time_zone = $3, version = version + 1, updated_at = $4
-       WHERE id = $1 AND version = $5
-       RETURNING display_name, time_zone, version, updated_at`,
-      [workspaceId, input.displayName, input.timeZone, input.now, input.expectedVersion],
+       SET display_name = $2, time_zone = $3,
+           default_currency = COALESCE($4, default_currency),
+           version = version + 1, updated_at = $5
+       WHERE id = $1 AND version = $6
+       RETURNING display_name, time_zone, default_currency, version, updated_at`,
+      [
+        workspaceId,
+        input.displayName,
+        input.timeZone,
+        input.defaultCurrency ?? null,
+        input.now,
+        input.expectedVersion,
+      ],
     )
     const settings = result.rows[0]
     if (!settings) throw new WorkspaceVersionConflictError()
@@ -491,6 +501,7 @@ function mapWorkspaceSettings(row: WorkspaceSettingsRow): WorkspaceSettings {
   return {
     displayName: row.display_name,
     timeZone: row.time_zone,
+    defaultCurrency: row.default_currency,
     version: row.version,
     updatedAt: row.updated_at.toISOString(),
   }

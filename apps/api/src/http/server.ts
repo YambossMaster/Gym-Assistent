@@ -157,6 +157,7 @@ const updateWorkspaceSettingsBodySchema = {
   properties: {
     displayName: { type: 'string', minLength: 1, maxLength: 120 },
     timeZone: { type: 'string', minLength: 1, maxLength: 64 },
+    defaultCurrency: { type: 'string', enum: ['TWD', 'USD', 'JPY', 'EUR', 'HKD'] },
     version: { type: 'integer', minimum: 1 },
   },
 } as const

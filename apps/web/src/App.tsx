@@ -2,10 +2,11 @@ import type { Session } from '@supabase/supabase-js'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ArrowRight, KeyRound } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { isRegistrationEmailTaken } from './api'
 import {
   requestPasswordReset,
+  passwordRecoveryRedirect,
   resendEmailVerification,
   signInWithGoogle,
   signOutCurrentDevice,
@@ -18,7 +19,12 @@ import { Brand } from './shared/primitives'
 import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
 import { clearOtherCoachCapabilityLinks } from './pages/public/capability-link-session'
 import { createAppQueryClient } from './query-client'
-import { supabase } from './supabase'
+import {
+  initialAuthRedirectError,
+  initialRecoveryPending,
+  setRecoveryPending,
+  supabase
+} from './supabase'
 import { CoachLocalStore } from './local-resilience'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
@@ -36,10 +42,17 @@ export function App() {
 }
 
 function AuthenticatedApp() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [client] = useState(createAppQueryClient),
     [session, setSession] = useState<Session | null>(null),
     [ready, setReady] = useState(false),
-    [recovery, setRecovery] = useState(false),
+    [authLinkError, setAuthLinkError] = useState(initialAuthRedirectError),
+    [recoveryExitError, setRecoveryExitError] = useState(''),
+    [recoveryEntry, setRecoveryEntry] = useState(
+      () => initialRecoveryPending || window.location.pathname === '/account/recover'
+    ),
+    [recoveryVerified, setRecoveryVerified] = useState(false),
     previousSubject = useRef<string | null>(null)
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
@@ -61,14 +74,60 @@ function AuthenticatedApp() {
       }
       previousSubject.current = nextSubject
       setSession(next)
-      setRecovery(event === 'PASSWORD_RECOVERY')
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryPending(true)
+        setRecoveryEntry(true)
+        setRecoveryVerified(true)
+      } else if (event === 'SIGNED_OUT') {
+        setRecoveryPending(false)
+        setRecoveryEntry(false)
+        setRecoveryVerified(false)
+      }
       setReady(true)
     })
     return () => data.subscription.unsubscribe()
   }, [client])
+  const leaveRecovery = async () => {
+    if (recoveryEntry) {
+      try {
+        await signOutCurrentDevice(supabase.auth)
+      } catch (reason) {
+        setRecoveryExitError(readError(reason))
+        return
+      }
+    }
+    setRecoveryPending(false)
+    setRecoveryEntry(false)
+    setRecoveryVerified(false)
+    setAuthLinkError(false)
+    navigate('/', { replace: true })
+  }
   if (!ready) return <Loading />
-  if (session && recovery) return <Recovery onComplete={() => setRecovery(false)} />
-  if (!session) return <SignIn />
+  if (authLinkError)
+    return <AuthLinkError error={recoveryExitError} onReturn={() => void leaveRecovery()} />
+  if (recoveryEntry || location.pathname === '/account/recover') {
+    if (session && recoveryVerified)
+      return (
+        <Recovery
+          onComplete={() => {
+            setRecoveryEntry(false)
+            setRecoveryVerified(false)
+            setRecoveryPending(false)
+            navigate('/', { replace: true })
+          }}
+        />
+      )
+    return (
+      <SignIn
+        key="recovery-unavailable"
+        initialMode="reset"
+        initialNotice="重設連結已失效。請重新寄送密碼重設信。"
+        externalError={recoveryExitError}
+        onReturn={() => void leaveRecovery()}
+      />
+    )
+  }
+  if (!session) return <SignIn key="ordinary-sign-in" />
   return (
     <QueryClientProvider client={client}>
       <CoachWorkspace session={session} />
@@ -76,14 +135,24 @@ function AuthenticatedApp() {
   )
 }
 
-function SignIn() {
-  const [mode, setMode] = useState<Mode>('signin'),
+function SignIn({
+  initialMode = 'signin',
+  initialNotice = '',
+  externalError = '',
+  onReturn
+}: {
+  initialMode?: Mode
+  initialNotice?: string
+  externalError?: string
+  onReturn?: () => void
+}) {
+  const [mode, setMode] = useState<Mode>(initialMode),
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [confirm, setConfirm] = useState(''),
     [code, setCode] = useState(''),
     [error, setError] = useState(''),
-    [notice, setNotice] = useState(''),
+    [notice, setNotice] = useState(initialNotice),
     [submitting, setSubmitting] = useState(false),
     [verificationNeeded, setVerificationNeeded] = useState(false),
     [resendAvailableAt, setResendAvailableAt] = useState(0),
@@ -131,7 +200,11 @@ function SignIn() {
         await verifySignupEmail(supabase.auth, email, code)
         setNotice('Email 已驗證，正在開啟工作台…')
       } else {
-        await requestPasswordReset(supabase.auth, email, window.location.origin)
+        await requestPasswordReset(
+          supabase.auth,
+          email,
+          passwordRecoveryRedirect(window.location.origin)
+        )
         setNotice('若帳號存在，重設信已寄出。')
       }
     } catch (reason) {
@@ -248,6 +321,11 @@ function SignIn() {
               {error}
             </p>
           )}
+          {externalError && (
+            <p className="form-error" role="alert">
+              {externalError}
+            </p>
+          )}
           {verificationNeeded && mode === 'signin' && (
             <button type="button" className="auth-inline-action" onClick={() => change('verify')}>
               前往電子信箱驗證
@@ -298,7 +376,7 @@ function SignIn() {
                 </button>
               </span>
             ) : (
-              <button type="button" onClick={() => change('signin')}>
+              <button type="button" onClick={() => (onReturn ? onReturn() : change('signin'))}>
                 返回
               </button>
             )}
@@ -312,16 +390,31 @@ function SignIn() {
 function Recovery({ onComplete }: { onComplete: () => void }) {
   const [password, setPassword] = useState(''),
     [confirm, setConfirm] = useState(''),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (password !== confirm) return setError('兩次輸入的新密碼不一致。')
+    setBusy(true)
     try {
       await updatePassword(supabase.auth, password)
       await signOutCurrentDevice(supabase.auth)
       onComplete()
     } catch (reason) {
       setError(readError(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const cancel = async () => {
+    setBusy(true)
+    try {
+      await signOutCurrentDevice(supabase.auth)
+      onComplete()
+    } catch (reason) {
+      setError(readError(reason))
+    } finally {
+      setBusy(false)
     }
   }
   return (
@@ -353,10 +446,43 @@ function Recovery({ onComplete }: { onComplete: () => void }) {
             />
           </label>
           {error && <p className="form-error">{error}</p>}
-          <button className="primary-button ui-action-save">
-            更新密碼 <KeyRound />
-          </button>
+          <div className="password-form-actions">
+            <button
+              type="button"
+              className="secondary-button ui-action-cancel"
+              disabled={busy}
+              onClick={() => void cancel()}
+            >
+              取消重設並登出
+            </button>
+            <button className="primary-button ui-action-save" disabled={busy}>
+              {busy ? '處理中…' : '更新密碼'} <KeyRound />
+            </button>
+          </div>
         </form>
+      </section>
+    </main>
+  )
+}
+function AuthLinkError({ onReturn, error }: { onReturn: () => void; error: string }) {
+  return (
+    <main className="auth-layout">
+      <section className="auth-story">
+        <Brand />
+      </section>
+      <section className="auth-panel">
+        <div className="auth-card">
+          <h2>驗證連結無法使用</h2>
+          <p>連結可能已失效或已使用。若要重設密碼，請重新寄送密碼重設信。</p>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button type="button" className="primary-button" onClick={onReturn}>
+            返回
+          </button>
+        </div>
       </section>
     </main>
   )

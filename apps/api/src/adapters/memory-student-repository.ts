@@ -49,6 +49,7 @@ export class MemoryStudentRepository
     this.#settingsByWorkspace.set(workspaceId, {
       displayName: '我的工作台',
       timeZone: 'Asia/Taipei',
+      defaultCurrency: 'TWD',
       version: 1,
       updatedAt: new Date(0).toISOString(),
     })
@@ -101,6 +102,7 @@ export class MemoryStudentRepository
     const settings = {
       displayName: input.displayName,
       timeZone: input.timeZone,
+      defaultCurrency: input.defaultCurrency ?? current.defaultCurrency,
       version: current.version + 1,
       updatedAt: input.now.toISOString(),
     }

@@ -52,7 +52,8 @@ export function Confirmation({
   disabled,
   requiredWord = 'DELETE',
   confirmLabel = '永久刪除',
-  confirmOnDelete = false
+  confirmOnDelete = false,
+  tone = 'danger'
 }: {
   title: string
   text: string
@@ -64,6 +65,7 @@ export function Confirmation({
   requiredWord?: string
   confirmLabel?: string
   confirmOnDelete?: boolean
+  tone?: 'danger' | 'neutral'
 }) {
   const requiresText = onConfirmationChange !== undefined
   const canConfirm = !disabled && (!requiresText || confirmation === requiredWord)
@@ -107,7 +109,11 @@ export function Confirmation({
             取消
           </button>
           <button
-            className="danger-confirm-button ui-action-delete"
+            className={
+              tone === 'neutral'
+                ? 'primary-button compact'
+                : 'danger-confirm-button ui-action-delete'
+            }
             disabled={!canConfirm}
             onClick={onConfirm}
             aria-keyshortcuts={requiresText || confirmOnDelete ? 'Delete' : undefined}

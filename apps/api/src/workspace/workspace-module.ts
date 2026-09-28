@@ -34,6 +34,7 @@ export class WorkspaceModule {
     return this.#repository.updateWorkspaceSettings(workspaceId, {
       displayName: input.displayName,
       timeZone: input.timeZone,
+      ...(input.defaultCurrency ? { defaultCurrency: input.defaultCurrency } : {}),
       expectedVersion: input.version,
       now: this.#now(),
     })

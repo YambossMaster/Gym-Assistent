@@ -6,7 +6,8 @@ import {
   getAccountLifecycle,
   getWorkspaceSettings,
   requestAccountDeletion,
-  updateWorkspaceSettings
+  updateWorkspaceSettings,
+  type WorkspaceSettings
 } from '../../api'
 import { queryKeys } from '../../query-keys'
 import { invalidateTodayRoute } from '../today/queries'
@@ -36,12 +37,24 @@ export function useSettingsRouteMutations({
 }) {
   const queryClient = useQueryClient()
   const settings = useMutation({
-    mutationFn: (input: Parameters<typeof updateWorkspaceSettings>[1]) =>
-      updateWorkspaceSettings(session.access_token, input),
+    scope: { id: `workspace-settings-${session.user.id}` },
+    mutationFn: (
+      changes: Partial<Pick<WorkspaceSettings, 'displayName' | 'timeZone' | 'defaultCurrency'>>
+    ) => {
+      const current = queryClient.getQueryData<WorkspaceSettings>(
+        queryKeys.settings(session.user.id)
+      )
+      if (!current) throw new Error('目前無法讀取設定，請重新載入。')
+      return updateWorkspaceSettings(session.access_token, {
+        displayName: changes.displayName ?? current.displayName,
+        timeZone: changes.timeZone ?? current.timeZone,
+        defaultCurrency: changes.defaultCurrency ?? current.defaultCurrency,
+        version: current.version
+      })
+    },
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.settings(session.user.id), result)
       invalidateTodayRoute(queryClient, session.user.id)
-      onMessage('設定已儲存。')
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 409) {
@@ -60,7 +73,6 @@ export function useSettingsRouteMutations({
         : cancelAccountDeletion(session.access_token),
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.lifecycle(session.user.id), result)
-      onMessage(result.deletionDueAt ? '已開始 14 天刪除倒數。' : '已取消刪除。')
       onDeletionRequestClosed()
     },
     onError: (error) => onMessage(readRouteError(error))

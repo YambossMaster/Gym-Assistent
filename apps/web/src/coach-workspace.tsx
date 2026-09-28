@@ -1,7 +1,5 @@
-import {
-  getDefaultFinanceCurrency,
-  PurchaseMoneyFields
-} from './pages/students/PurchaseMoneyFields'
+import { PurchaseMoneyFields } from './pages/students/PurchaseMoneyFields'
+import { useDefaultFinanceCurrency } from './pages/settings/finance-currency'
 import { workspaceInstant, workspaceWallTime } from './pages/students/workspace-time'
 import { PurchaseCollectionFields } from './pages/students/PurchaseCollectionFields'
 import {
@@ -319,6 +317,7 @@ export function StudentDetailPage({
   timeZone?: string
 }) {
   const { studentId = '' } = useParams()
+  const defaultFinanceCurrency = useDefaultFinanceCurrency()
   const { hash, search } = useLocation()
   const navigate = useNavigate()
   const [notice, setNotice] = useState('')
@@ -727,7 +726,7 @@ export function StudentDetailPage({
                 <TimeSelect label="購買時間" value={purchaseTime} onChange={setPurchaseTime} />
               </div>
             </div>
-            <PurchaseMoneyFields currency={getDefaultFinanceCurrency()} />
+            <PurchaseMoneyFields currency={defaultFinanceCurrency} />
             <label>
               教練備註
               <textarea name="purchaseNote" maxLength={4000} />
@@ -1677,8 +1676,7 @@ export function SettingsPage({ session }: { session: Session }) {
             const values = new FormData(event.currentTarget)
             settingsMutation.mutate({
               displayName: String(values.get('displayName') || '').trim(),
-              timeZone: String(values.get('timeZone') || '').trim(),
-              version: settings.version
+              timeZone: String(values.get('timeZone') || '').trim()
             })
           }}
         >

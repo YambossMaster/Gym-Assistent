@@ -17,12 +17,14 @@ describe('WorkspaceModule', () => {
     const updated = await workspace.updateSettings(coach, {
       displayName: 'FORM Taipei',
       timeZone: 'Asia/Taipei',
+      defaultCurrency: 'USD',
       version: initial.version,
     })
 
     expect(updated).toEqual({
       displayName: 'FORM Taipei',
       timeZone: 'Asia/Taipei',
+      defaultCurrency: 'USD',
       version: 2,
       updatedAt: '2026-09-09T16:00:00.000Z',
     })

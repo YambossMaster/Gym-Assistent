@@ -551,6 +551,11 @@ reopen M3/M4 delivery or change the Stage 1/Stage 2 and M8 boundaries above.
 
 - Select hosting, domains, environments, observability, support, privacy, export, retention, incident,
   rollback, restore, and Beta exit policies.
+- Freeze a Beta-ready path for Coaches to obtain help, report a problem, and submit product feedback.
+  Define the entry points, contact or submission channel, triage owner, response expectations, and
+  privacy-safe handling of any diagnostic or account information. Keep these three user intents clear;
+  do not require a built-in ticketing system or automated support workflow unless the Contract calls
+  for one.
 
 #### Terra gate
 
@@ -562,11 +567,15 @@ reopen M3/M4 delivery or change the Stage 1/Stage 2 and M8 boundaries above.
 
 - Complete production onboarding, error surfaces, privacy/data controls, and one real-Coach Beta
   journey.
+- Make help, problem reporting, and product feedback discoverable in the deployed Coach experience;
+  verify the chosen contact or submission paths and their failure states on desktop and mobile.
 
 #### CI gate
 
 - Prove clean-environment rebuild, staging/production smoke, rollback, restore drill, dependency and
   secret scan, zero unresolved Security Advisor errors/warnings, full secret rotation, and remote CI.
+- Confirm that the deployed Beta help, problem-reporting, and product-feedback paths reach the
+  designated recipient and expose a usable recovery path when submission or contact fails.
 
 ### M9 — Post-V1 options — Deferred
 

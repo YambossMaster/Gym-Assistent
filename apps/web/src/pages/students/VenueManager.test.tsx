@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { expect, it, vi } from 'vitest'
 import { VenueManager } from './VenueManager'
+import { FinanceCurrencyProvider } from '../settings/finance-currency'
 
 const mutate = vi.hoisted(() => vi.fn())
 const venueFixtureState = vi.hoisted(() => ({ restored: false }))
@@ -671,7 +672,6 @@ it('keeps a name-only create fast and shows the detailed defaults in Venue manag
 
 it('uses the Settings currency for a new rent rule without another currency selector', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
-  localStorage.setItem('gym-assistant.default-purchase-currency', 'USD')
   const client = new QueryClient()
   const host = document.createElement('div')
   document.body.append(host)
@@ -680,9 +680,11 @@ it('uses the Settings currency for a new rent rule without another currency sele
     await act(async () =>
       root.render(
         <QueryClientProvider client={client}>
-          <MemoryRouter>
-            <VenueManager session={{ user: { id: 'coach' } } as Session} />
-          </MemoryRouter>
+          <FinanceCurrencyProvider currency="USD">
+            <MemoryRouter>
+              <VenueManager session={{ user: { id: 'coach' } } as Session} />
+            </MemoryRouter>
+          </FinanceCurrencyProvider>
         </QueryClientProvider>
       )
     )
@@ -727,7 +729,6 @@ it('uses the Settings currency for a new rent rule without another currency sele
     await act(async () => root.unmount())
     client.clear()
     host.remove()
-    localStorage.removeItem('gym-assistant.default-purchase-currency')
     vi.unstubAllGlobals()
     mutate.mockClear()
   }

@@ -1,22 +1,41 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-28. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-29. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
-| Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                     |
-| Package state      | **Student roster and purchase-history checkpoint delivered; Stage 1 remains open**                  |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
-| Branch baseline    | Student checkpoint `894a60a` reached Main; CI run `36420917850` passed both jobs                    |
-| Worktree           | Student checkpoint delivered; `output/` stays ignored                                               |
-| Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
-| Production         | Not configured; no real customer data                                                               |
+| Field              | Current value                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
+| Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                  |
+| Package state      | **Student roster and purchase-history checkpoint delivered; Stage 1 remains open**               |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
+| Branch baseline    | Student checkpoint `894a60a` reached Main; CI run `36420917850` passed both jobs                 |
+| Worktree           | Settings and Auth recovery checkpoint passed local CI gates; `output/` stays ignored             |
+| Linked database    | Development only; migrations through `20260928141736` applied; linked dry-run is up to date      |
+| Production         | Not configured; no real customer data                                                            |
+| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
 
 ## Next handoff
+
+Review the revised Settings page with the Product Owner at desktop and 390×844. Four categories
+separate Coach/Workspace, work preferences, account/security, and device data. Coach name saves on
+field exit; zone, unit, and currency choices save when selected. There is no page-level Save button or
+persistent success text. Account/security uses the shared row pattern, with password editing in its
+own dialog. Device-cache management opens a separate dialog; Demo import remains a collapsed
+development-only tool. Continue Product Owner review of the category grouping, copy, and device-data
+scope after this authorized delivery checkpoint. Calendar defaults, language, privacy controls, and plans remain later product
+decisions, not implemented settings.
+
+Account/security follow-up is in local review: password dialog now sends the same recovery email
+used from sign-in, and sign-out asks for confirmation. Recovery intent survives Auth token refresh
+and page reload; expired links show an error instead of opening Today. A fresh email link reached
+the new-password form in the development browser, reload stayed out of Today, and the test ended
+with recovery cancellation and local sign-out without changing the account password. Keep the active
+review open; the full password-update/sign-out/new-password-login sequence has not been rerun in
+this pass. The password-dialog recovery action now uses smaller secondary type and shows its
+confirmation directly below the action with the revised concise copy.
 
 Review the Student roster balance cards and Student purchase history with the Product Owner. The
 roster numerator remains total remaining lessons, the denominator is the latest dated purchase
@@ -348,6 +367,73 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-29 — LOG-288 — Settings and Auth recovery checkpoint preflight
+
+- **Scope:** Product Owner authorized a quick CI gate and Main push for the current Settings,
+  Auth recovery, finance-currency, and M8 help-scope changes.
+- **Verification:** root `npm run check` passed after the Windows sandbox blocked Vitest child
+  processes (API 26 files / 123 tests; Web 54 files / 229 tests). Root `npm run build` passed with
+  the existing large-chunk advisory. Linked development migration dry-run reported up to date, and
+  `git diff --check` passed. Remote Main matched local HEAD before delivery.
+- **Boundary:** this is a review checkpoint. The password-update/sign-out/re-login browser path,
+  Product Owner Settings review, and wider M7.5 Stage 1 acceptance remain open; it does not start
+  Stage 2 or M8 implementation.
+- **Next:** push this checkpoint, confirm exact-SHA GitHub Actions `verify` and
+  `migration-dry-run`, then record remote evidence.
+
+### 2026-09-29 — LOG-287 — Refine password recovery feedback in Settings
+
+- **Scope:** reduce the prominence of the password dialog's forgotten-password action and connect
+  the email-sent message to that action.
+- **Outcome:** use smaller secondary typography; show a highlighted confirmation immediately below
+  the action; use「密碼重設信已寄出，請查看電子郵件。」for this authenticated Settings flow.
+- **Verification:** desktop browser confirmed the new type scale and nearby highlighted notice;
+  exact 390 × 844 preview showed the password dialog fitting within the viewport. Web typecheck
+  and production build passed. No new email or password change was needed for this copy/layout pass.
+- **Next:** continue Product Owner review of the local Settings change before delivery.
+
+### 2026-09-29 — LOG-286 — Keep password recovery in its intended Auth flow
+
+- **Scope:** add the Settings password-forgotten entry, sign-out confirmation, and diagnose the
+  reported reset-email navigation failure.
+- **Outcome:** capture callback intent before Supabase consumes the URL; retain pending recovery
+  across token refresh and reload; require the recovery event before offering password update;
+  provide cancellation with local sign-out and an explicit invalid-link state. The sign-in and
+  Settings reset requests share the current allowlisted origin.
+- **Verification:** local Web regression reproduced the original event-order failure, then passed
+  after the fix; Web format/typecheck and 54 files/229 tests plus production build passed.
+  Desktop browser showed the new Settings controls. Development Auth logs confirmed
+  the older email link's one-time token was invalid; a new email arrived in Gmail and its branded
+  button opened the new-password form. Reload showed the invalid-link recovery entry instead of
+  Today; cancel signed out locally. No password was changed in the live account.
+- **Known issue:** the email template still contains both default English and branded content;
+  fresh-link password-update/sign-out/re-login and exact 390×844 review remain open. The recovery
+  Auth session is still a normal Supabase session at the API boundary; the Web gate is a UI safeguard.
+- **Next:** finish the local checks and Product Owner Settings review before deciding on delivery.
+
+### 2026-09-28 — LOG-285 — Align Settings save behavior and advanced panels
+
+- **Scope:** The Product Owner identified the isolated Save button and misplaced success message, inconsistent Account/Security typography, inline password editing, and weak Device/Data presentation in the Settings review slice.
+- **Outcome:** Coach display name now saves on blur or Enter; zone, training units, and finance currency save on selection. Workspace setting mutations are serialized against the latest cached version, so adjacent changes use current server state. Removed persistent success copy. Account/Security now uses the same two-column settings rows as the other categories; password editing opens a focused dialog. Device cache has a management dialog explaining local data and requiring explicit `CLEAR` before removal. Demo import remains collapsed and development-only.
+- **Verification:** Root `npm run check` passed (API 26 files/123 tests; Web 53 files/227 tests), root `npm run build` passed with the existing Vite chunk-size advisory, and `git diff --check` passed. Browser review passed for desktop and exact 390×844: password dialog opened, Escape closed and returned focus; mobile dialog fit the 390px viewport without horizontal overflow. Time-zone selection saved and was restored to `Asia/Taipei`.
+- **Known issue:** Product Owner review of the revised Settings layout and Device/Data scope is pending. No push or remote CI is claimed.
+- **Next:** Obtain Product Owner Settings acceptance, then resume the preserved M7.5 Stage 1 acceptance without entering Stage 2 or M8.
+
+### 2026-09-28 — LOG-284 — Settings category review implementation
+
+- **Scope:** The Product Owner authorized a first Settings-page implementation using category navigation and setting rows, following the supplied visual reference and the prior Settings discussion.
+- **Outcome:** Replaced the scattered panels with four focused categories and responsive row layouts. Work time zone is a city-labelled IANA dropdown with common zones first and supported zones available. The default finance currency now belongs to Workspace settings in the API and development database, and purchase, Venue, and ledger entry forms consume it. Existing training, account, and deletion operations remain in their owning categories. Demo import is folded under development-only tools; device cache clearing has an explicit confirmation.
+- **Verification:** Root `npm run check` passed (API 26 files/123 tests; Web 53 files/227 tests); root `npm run build` passed with the existing Vite chunk-size advisory. Migration `20260928141736` was applied to the linked development database and subsequent `npm run db:push:dry` reported up to date. Browser review passed on desktop and exact 390×844 without observed horizontal overflow; changing currency to USD survived reload and was restored to TWD. `git diff --check` passed. No push or remote CI is claimed.
+- **Known issue:** Product Owner visual and wording acceptance is pending. Calendar defaults, language selection, data export/privacy controls, and subscription flows were not implemented in this review slice.
+- **Next:** Have the Product Owner review Settings, then continue the existing M7.5 Stage 1 Student/Venue/Finance and public-page acceptance before any wider milestone transition.
+
+### 2026-09-28 — LOG-283 — Add Beta help and feedback scope
+
+- **Scope:** The Product Owner asked to schedule 「取得協助／回報問題／意見回饋」 and to choose whether it belongs before or after deployment.
+- **Outcome:** M8 now requires a Beta-ready path for all three intents before real-Coach Beta use. Its Contract will choose the entry points, channel, ownership, response expectations, and privacy handling; Sol will verify discoverability and the selected paths on desktop and mobile. No support system or product setting was implemented, and M9 subscription/payment scope is unchanged.
+- **Verification:** Roadmap and Status were reviewed together; targeted Prettier check and `git diff --check` passed. No application, browser, deployment, or CI evidence is claimed.
+- **Next:** Continue the current M7.5 Stage 1 Product Owner review and preserved acceptance. M8 begins only after M7.5 completion and Product Owner authorization.
 
 ### 2026-09-28 — LOG-282 — Deliver Student roster and purchase-history checkpoint
 

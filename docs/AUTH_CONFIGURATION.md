@@ -48,6 +48,21 @@ Supabase secret key、Google client secret 或任何可登入的帳號資料；�
   Email/password identity 先驗證目前密碼後才變更。帳號安全頁只提供目前帳號的登出，不提供額外的
   裝置工作階段控制。
 
+### Password recovery callback correction — 2026-09-29
+
+- 登入頁與已登入的「修改密碼」視窗都可寄送密碼重設信，沿用已允許的 Web origin 作為回跳網址。
+- Web 在 Supabase client 讀取回呼片段前記錄 recovery／error 標記；尚未完成的 recovery
+  會在這個瀏覽器保留輕量狀態，重新整理後不得顯示工作台。只有收到
+  `PASSWORD_RECOVERY` 事件才顯示設定新密碼表單。其後的 `TOKEN_REFRESHED` 或一般登入事件不可清除
+  recovery 狀態；一次性連結已失效時須顯示錯誤，不得落到工作台。
+- Recovery 連結按 Supabase 設計會建立 Auth session；持有有效郵件連結者已通過此種身分驗證。
+  頁面防護只限制正常 Web 導覽，不能聲稱限制該 session 對 API 的使用。完成新密碼設定或取消重設後，
+  此裝置登出並清除瀏覽器的 recovery 狀態。
+- 開發環境 live 核對：已用過的舊信連結在 Auth `/verify` 回傳 token invalid/expired，Web 顯示失效畫面；
+  新信的有效連結顯示設定新密碼表單；重新整理後只顯示重新寄信入口。測試最後取消 recovery 並登出，
+  沒有更新帳號密碼。信件目前同時包含英文預設段落與
+  品牌段落，模板整理留在部署前郵件內容檢查。
+
 ## Account lifecycle email budget
 
 下列是唯一允許寄送的應用郵件；重新寄送註冊 OTP 仍計為第一類，且必須遵守 provider interval 與 project
