@@ -2057,6 +2057,12 @@ svg {
   max-width: 690px;
 }
 
+.auth-mobile-intro,
+.auth-mobile-entry,
+.auth-mobile-back {
+  display: none;
+}
+
 .eyebrow {
   color: var(--lime);
   font:
@@ -7066,21 +7072,191 @@ body.is-reordering-exercise * {
 }
 
 @media (max-width: 480px) {
+  .auth-layout {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+  }
   .auth-story {
-    min-height: 300px;
-    padding: 24px 22px;
+    min-height: 0;
+    gap: 24px;
+    padding: calc(22px + env(safe-area-inset-top)) 24px 26px;
   }
-  .auth-copy h1 {
-    font-size: clamp(36px, 11.2vw, 44px);
+  .auth-story::before,
+  .auth-story::after,
+  .auth-copy {
+    display: none;
   }
-  .auth-copy p {
+  .auth-story .brand-logo {
+    width: 154px;
+  }
+  .auth-entry-welcome {
+    padding: calc(36px + env(safe-area-inset-top)) 0 calc(44px + env(safe-area-inset-bottom));
+    color: var(--white);
+    background: var(--ink);
+  }
+  .auth-entry-welcome .auth-story {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 30px;
+    padding: 0 24px;
+  }
+  .auth-entry-welcome .brand {
+    margin-top: clamp(72px, 25dvh, 210px);
+  }
+  .auth-entry-welcome .auth-story .brand-logo {
+    width: min(264px, 72vw);
+  }
+  .auth-entry-welcome .auth-mobile-intro {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    margin: auto auto 36px;
+    text-align: center;
+  }
+  .auth-mobile-kicker {
+    margin: 0 0 8px;
+    color: var(--lime);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+  }
+  .auth-mobile-intro h1 {
+    margin: 0 0 12px;
+    font-size: clamp(23px, 7.4vw, 29px);
+    line-height: 1.16;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+  }
+  .auth-mobile-intro h1 span {
+    color: var(--lime);
+  }
+  .auth-mobile-description {
+    margin: 0;
+    color: #c8cbbf;
     font-size: 13px;
+    line-height: 1.6;
+  }
+  .auth-entry-welcome .auth-mobile-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 0 24px;
+  }
+  .auth-mobile-entry button {
+    min-height: 58px;
+    padding: 0 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .auth-mobile-entry button:focus-visible,
+  .auth-mobile-back:focus-visible {
+    outline: 3px solid var(--lime);
+    outline-offset: 3px;
+  }
+  .auth-entry-signup {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--lime);
+    color: var(--ink);
+    background: var(--lime);
+  }
+  .auth-entry-signup svg {
+    position: absolute;
+    right: 20px;
+    width: 19px;
+  }
+  .auth-entry-signin {
+    border: 1px solid #a9ada0;
+    color: var(--white);
+    background: transparent;
+  }
+  .auth-entry-welcome .auth-panel {
+    display: none;
+  }
+  .auth-entry-form .auth-story {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .auth-entry-form .auth-mobile-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 2px;
+    border: 0;
+    color: #d5d7cc;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
   }
   .auth-panel {
-    padding: 40px 22px 64px;
+    flex: 1;
+    display: block;
+    padding: 30px 24px calc(36px + env(safe-area-inset-bottom));
+  }
+  .auth-entry-form .auth-panel {
+    animation: auth-form-enter 220ms ease-out both;
+  }
+  .auth-card {
+    width: min(420px, 100%);
+    margin: 0 auto;
+    gap: 18px;
   }
   .auth-card h2 {
-    font-size: 30px;
+    margin: 0 0 8px;
+    font-size: 29px;
+    line-height: 1.25;
+  }
+  .auth-card label {
+    gap: 7px;
+    font-size: 13px;
+  }
+  .auth-card input {
+    min-height: 54px;
+    font-size: 16px;
+  }
+  .auth-card .primary-button,
+  .auth-card .secondary-button {
+    min-height: 52px;
+    font-size: 14px;
+  }
+  .auth-card .primary-button {
+    position: relative;
+    justify-content: center;
+  }
+  .auth-card .primary-button svg {
+    position: absolute;
+    right: 20px;
+  }
+  .auth-field-action {
+    margin-top: -12px;
+  }
+  .auth-field-action button,
+  .auth-links button,
+  .auth-inline-action {
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .auth-links {
+    align-items: center;
+    font-size: 13px;
+  }
+  .auth-links-return {
+    display: none;
+  }
+  .auth-alternative {
+    gap: 14px;
   }
   .page-header {
     display: grid;
@@ -7113,6 +7289,17 @@ body.is-reordering-exercise * {
   .modal footer {
     display: grid;
     grid-template-columns: 0.8fr 1.2fr;
+  }
+}
+
+@keyframes auth-form-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

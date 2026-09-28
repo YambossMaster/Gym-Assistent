@@ -8,16 +8,32 @@
 | Field              | Current value                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
-| Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                  |
-| Package state      | **Student roster and purchase-history checkpoint delivered; Stage 1 remains open**               |
+| Current package    | **M7.5 Product Owner-led mobile route review**                                                   |
+| Package state      | **Mobile Auth checkpoint ready for Main; Stage 1 remains open**                                  |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
 | Branch baseline    | Settings/Auth checkpoint `c499e6b` reached Main; CI run `36455086192` passed both jobs           |
-| Worktree           | Settings and Auth recovery checkpoint delivered; `output/` stays ignored                         |
+| Worktree           | Mobile Auth presentation and embedded OAuth handoff are local; `output/` stays ignored           |
 | Linked database    | Development only; migrations through `20260928141736` applied; linked dry-run is up to date      |
 | Production         | Not configured; no real customer data                                                            |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
 
 ## Next handoff
+
+Resume the Product Owner's mobile route-by-route sweep with the next reported screen. The mobile
+Auth entrance is accepted for now. Its initial view presents FORM's private-Coach
+identity, value promise, and separate 建立帳號／登入 actions without form fields. Either action
+opens its corresponding form in the same component, with a single mobile return to the entrance;
+the existing desktop split layout remains. The current all-black entrance keeps the 264px FORM logo
+in its approved position, places the one-line value statement lower with a 36px gap above the first
+CTA at 390×844, and anchors the two centered CTA labels near the safe-area bottom. Google OAuth launched
+from the desktop-sized mobile preview now leaves its iframe for the top-level Google sign-in page;
+the ordinary top-level sign-in path remains unchanged. The mobile sign-in and signup forms center
+their 繼續 labels while keeping the arrows on the right. A physical-phone/PWA viewport check and
+completed Google account sign-in have not been claimed. The Product Owner previously mentioned a
+Google mark beside 使用 Google 繼續 and input placeholders as possible later form polish; return to
+them only when the Product Owner resumes Auth review. Keep subsequent corrections mobile-only
+unless the reported issue is global. This is local Stage 1 work; do not infer Stage 2, M7.5
+completion, or a remote CI delivery.
 
 Review the revised Settings page with the Product Owner at desktop and 390×844. Four categories
 separate Coach/Workspace, work preferences, account/security, and device data. Coach name saves on
@@ -367,6 +383,132 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-29 — LOG-297 — Mobile Auth Stage 1 Main checkpoint preflight
+
+- **Scope:** Product Owner accepted the current mobile Auth presentation for now, paused the wider
+  mobile sweep until tomorrow, and explicitly requested an early Main checkpoint.
+- **Outcome:** Preserve the two-level mobile entrance, centered actions, existing desktop layout,
+  and framed Google OAuth top-level handoff as the checkpoint scope. Stage 1 remains open; the next
+  review item comes from the Product Owner's next mobile screen report.
+- **Verification:** Complete root `npm run check` passed (API 26 files/123 tests; Web 54 files/231
+  tests), root `npm run build` passed with the existing Web chunk-size advisory, linked
+  `npm run db:push:dry` reported up-to-date with no migrations, and `git diff --check` passed.
+  The Git branch and fetched `origin/main` matched before delivery. Browser acceptance in
+  LOG-290–296 covers the 390×844 Auth paths and top-level Google sign-in page; account credentials
+  and physical-phone acceptance remain unverified.
+- **Next:** Commit/push this bounded checkpoint, confirm exact-SHA remote `verify` and
+  `migration-dry-run`, then resume Product Owner-led mobile review on the next reported screen.
+
+### 2026-09-29 — LOG-296 — Center the mobile Auth form action label
+
+- **Scope:** Product Owner requested centered 繼續 text on both the mobile account-creation and
+  sign-in forms while retaining the right-side arrow.
+- **Outcome:** Scope the shared Auth primary-button alignment to the mobile breakpoint. The label
+  is centered independently of the absolutely positioned arrow; desktop controls are untouched.
+- **Verification:** In the live 390×844 preview, both form buttons measured text center x=195px
+  equal to button center x=195px, with the arrow 20px from the right edge. Targeted CSS formatting
+  and `git diff --check` passed. No physical-phone or remote CI claim.
+- **Next:** Product Owner continues the mobile Auth and route sweep.
+
+### 2026-09-29 — LOG-295 — Lower the mobile Auth value statement
+
+- **Scope:** Product Owner approved the new logo size and position but preferred the value statement
+  lower, close to the 建立帳號 action rather than visually grouped with the logo.
+- **Outcome:** Keep the mobile logo at its existing 264px and y-position. Let the statement settle at
+  the bottom of the story with 36px separation from the first CTA. Button placement, forms, OAuth,
+  and desktop presentation are unchanged.
+- **Verification:** Live 390×844 preview retained logo y=246–334 and button y=664–800, moved the
+  statement group to y=538–628, and had no internal scroll. A 390×667 viewport also showed no
+  overlap or scroll. Targeted CSS formatting and `git diff --check` passed. Physical-phone review
+  and remote CI are not claimed.
+- **Next:** Product Owner reviews the actual phone/PWA Auth viewport, then continues the mobile
+  route sweep and pending Google icon/input-hint polish.
+
+### 2026-09-29 — LOG-294 — Rebalance mobile Auth entrance and release framed Google OAuth
+
+- **Scope:** Product Owner requested a smaller logo, a higher and tighter Logo/value group, bottom
+  anchored actions with more separation, and correction of a Google 403 seen inside the mobile
+  preview. Desktop Google login was reported working.
+- **Outcome:** At the mobile breakpoint, reduce the full logo to 264px at 390px, center the story
+  group, remove the slogan's bottom-pushing auto margin, and set a 20px action gap with 44px plus
+  safe-area bottom space. When the app is embedded in the mobile preview, request the Supabase
+  OAuth URL without automatic frame navigation and open it in the top-level window. Handle an
+  OAuth startup error in the form. Ordinary top-level Google flow remains unchanged.
+- **Verification:** Regression test failed before the OAuth handoff and passed after. Live 390×844
+  preview measured logo y=246–334, slogan group y=364–454, action group y=664–800, no internal
+  scroll, and the one-line value statement. Clicking Google from that preview reached the
+  top-level Google account sign-in page rather than an iframe 403; no account credentials were
+  entered. Web check passed (54 files, 231 tests), production build passed with its existing
+  large-chunk advisory, and `git diff --check` passed. Physical-phone and completed account
+  sign-in are not claimed; no commit, push, or remote CI is claimed.
+- **Next:** Product Owner reviews the actual phone/PWA Auth viewport and account sign-in, then
+  continues the mobile route sweep and pending Google icon/input-hint polish.
+
+### 2026-09-29 — LOG-293 — Align the mobile Auth welcome focal point
+
+- **Scope:** Product Owner found the first welcome composition visually divided by a duplicate
+  icon, mixed alignment, an abrupt black/cream boundary, excessive space, an awkward headline
+  wrap, and left-biased primary CTA text. Keep the working second-level forms intact.
+- **Outcome:** Remove the duplicate square F icon, use one enlarged full FORM logo near the
+  upper center, and give the welcome view a continuous black background. Center the Coach
+  statement and both action labels, keep the value sentence on one line at 390px, and use
+  brand lime for 建立帳號 with a white-outlined 登入 action. The signup arrow remains right-aligned
+  independently of its centered label. Desktop layout and form behavior are unchanged.
+- **Verification:** Live 390×844 browser preview checked the logo position, single-line
+  statement, centered CTA label, and visible two-button stack. Web typecheck, focused Auth tests
+  (3/3), production build, targeted Prettier, and `git diff --check` passed; the existing
+  large-chunk advisory remains. Physical-phone interaction and remote CI are not claimed.
+- **Next:** Product Owner mobile entrance review, then the noted Google icon/input-hint form
+  polish and remaining mobile route sweep.
+
+### 2026-09-29 — LOG-292 — Split mobile Auth into introduction and action
+
+- **Scope:** Product Owner requested progressive disclosure for the mobile entrance: a clean
+  first view for brand/value and 建立帳號／登入, then the corresponding Auth form only after a
+  deliberate choice. Keep the desktop Auth route unchanged.
+- **Outcome:** Add a mobile-only welcome view using FORM's existing icon, Coach-focused copy,
+  and two clear actions. Component state opens sign-in or sign-up in place. The short brand header
+  and one return action serve the form layer; recovery and verification keep their existing Auth
+  behavior. Add visible keyboard focus and reduced-motion-compatible transition styling.
+- **Verification:** Live 390×844 browser preview showed the field-free welcome view, both entry
+  actions within the app viewport, login form, return to welcome, and direct sign-up form. A
+  desktop browser view retained its existing split hero/form hierarchy. Focused Web Auth tests
+  passed 3/3, Web typecheck and production build passed, with the existing large-chunk advisory.
+  This is responsive browser evidence, not a physical-device claim. No push or remote CI is claimed.
+- **Next:** obtain Product Owner mobile Auth acceptance, then continue the mobile route sweep.
+
+### 2026-09-29 — LOG-291 — Give the mobile Auth entrance a product identity
+
+- **Scope:** Product Owner accepted the compact mobile sign-in controls but found the entrance
+  too anonymous for a first impression. Add a clear product introduction without restoring the
+  earlier oversized desktop marketing hero.
+- **Outcome:** The mobile sign-in brand section identifies FORM as a private Coach workspace,
+  presents "每一堂課，都有跡可循。", and names Student, Course, and Training records. The introduction
+  appears on sign-in only; sign-up, verification, and reset retain the shorter brand header.
+  Desktop Auth presentation and authentication behavior are unchanged.
+- **Verification:** Web typecheck, production build, targeted Prettier, and `git diff --check`
+  passed; the existing large-chunk build advisory remains. The live 390×844 responsive preview
+  showed the introduction above the complete sign-in action stack, then the compact sign-up form
+  after switching modes. This is not a physical-device claim. No push or remote CI is claimed.
+- **Next:** obtain Product Owner mobile sign-in acceptance, then continue the mobile route sweep.
+
+### 2026-09-29 — LOG-290 — Compact the mobile Auth entry
+
+- **Scope:** Product Owner began the final mobile route sweep and requested a clean, task-focused
+  sign-in page inspired by the ease of a mobile PWA, without copying its composition. Limit the
+  correction to the mobile breakpoint.
+- **Outcome:** Replace the tall mobile marketing hero with a short brand header and bring the form
+  directly below it. Tighten mobile form spacing, retain comfortable input and action sizes, and
+  use 16px input text to avoid iOS focus zoom. Desktop Auth styles and authentication behavior are
+  unchanged.
+- **Verification:** Web typecheck and production build passed; the build retains the existing
+  large-chunk advisory. The build needed the known elevated Windows path after sandbox `spawn
+EPERM`. `git diff --check` passed. The live 390×844 mobile preview showed the sign-in fields,
+  Google option, and account-creation entry within the app viewport; switching to reset and
+  sign-up rendered their compact forms without horizontal overflow. This is a desktop browser
+  responsive preview, not a physical-device claim. No push or remote CI is claimed.
+- **Next:** obtain Product Owner mobile sign-in acceptance, then continue the mobile route review.
 
 ### 2026-09-29 — LOG-289 — Deliver Settings and Auth recovery checkpoint
 

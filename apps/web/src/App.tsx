@@ -147,6 +147,9 @@ function SignIn({
   onReturn?: () => void
 }) {
   const [mode, setMode] = useState<Mode>(initialMode),
+    [mobileView, setMobileView] = useState<'welcome' | 'form'>(
+      initialMode === 'signin' ? 'welcome' : 'form'
+    ),
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [confirm, setConfirm] = useState(''),
@@ -171,6 +174,18 @@ function SignIn({
     setPassword('')
     setConfirm('')
     setCode('')
+  }
+  const openMobileForm = (next: Mode) => {
+    change(next)
+    setMobileView('form')
+  }
+  const leaveMobileForm = () => {
+    if (onReturn) {
+      onReturn()
+      return
+    }
+    change('signin')
+    setMobileView('welcome')
   }
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -229,10 +244,34 @@ function SignIn({
       setSubmitting(false)
     }
   }
+  const continueWithGoogle = async () => {
+    setError('')
+    try {
+      await signInWithGoogle(
+        supabase.auth,
+        window.location.origin,
+        window.self !== window.top ? (url) => window.top?.location.assign(url) : undefined
+      )
+    } catch (reason) {
+      setError(readError(reason))
+    }
+  }
   return (
-    <main className="auth-layout">
+    <main className={`auth-layout auth-entry-${mobileView}`}>
       <section className="auth-story">
         <Brand />
+        <button type="button" className="auth-mobile-back" onClick={leaveMobileForm}>
+          ← 返回
+        </button>
+        {mode === 'signin' && (
+          <div className="auth-mobile-intro">
+            <p className="auth-mobile-kicker">私人教練的工作台</p>
+            <h1>
+              每一堂課，<span>都有跡可循。</span>
+            </h1>
+            <p className="auth-mobile-description">學員、課程與訓練紀錄，清楚接續每一天。</p>
+          </div>
+        )}
         <div className="auth-copy">
           <span className="eyebrow">FORM COACH DESK</span>
           <h1>
@@ -242,6 +281,22 @@ function SignIn({
           </h1>
           <p>告別凌亂的備忘錄。系統化保留學員的完整軌跡，讓每一堂課都無縫接軌。</p>
         </div>
+      </section>
+      <section className="auth-mobile-entry" aria-label="開始使用">
+        <button
+          type="button"
+          className="auth-entry-signup"
+          onClick={() => openMobileForm('signup')}
+        >
+          建立帳號 <ArrowRight aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="auth-entry-signin"
+          onClick={() => openMobileForm('signin')}
+        >
+          登入
+        </button>
       </section>
       <section className="auth-panel">
         <form className="auth-card" onSubmit={submit}>
@@ -361,13 +416,13 @@ function SignIn({
               <button
                 type="button"
                 className="secondary-button auth-google"
-                onClick={() => void signInWithGoogle(supabase.auth, window.location.origin)}
+                onClick={() => void continueWithGoogle()}
               >
                 使用 Google 繼續
               </button>
             </div>
           )}
-          <div className="auth-links">
+          <div className={`auth-links${mode === 'signin' ? '' : ' auth-links-return'}`}>
             {mode === 'signin' ? (
               <span>
                 第一次使用？{' '}

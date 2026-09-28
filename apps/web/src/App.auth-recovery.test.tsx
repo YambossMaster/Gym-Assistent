@@ -29,6 +29,32 @@ afterEach(() => {
   window.history.replaceState(null, '', '/')
 })
 
+it('opens the selected mobile entry form and returns to the welcome view', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  auth.getSession.mockResolvedValue({ data: { session: null } })
+  auth.onAuthStateChange.mockReturnValue({
+    data: { subscription: { unsubscribe: vi.fn() } }
+  })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () => root.render(<App />))
+    const layout = host.querySelector('main.auth-layout')
+    expect(layout?.classList.contains('auth-entry-welcome')).toBe(true)
+    await act(async () => (host.querySelector('.auth-entry-signup') as HTMLButtonElement).click())
+    expect(layout?.classList.contains('auth-entry-form')).toBe(true)
+    expect(host.querySelector('.auth-card h2')?.textContent).toBe('建立教練帳號')
+    await act(async () => (host.querySelector('.auth-mobile-back') as HTMLButtonElement).click())
+    expect(layout?.classList.contains('auth-entry-welcome')).toBe(true)
+    await act(async () => (host.querySelector('.auth-entry-signin') as HTMLButtonElement).click())
+    expect(layout?.classList.contains('auth-entry-form')).toBe(true)
+    expect(host.querySelector('.auth-card h2')?.textContent).toBe('回到工作台')
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
 it('keeps the reset form open after the recovery session refreshes, until a new password is set', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const session = {

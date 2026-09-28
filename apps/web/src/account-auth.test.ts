@@ -70,6 +70,24 @@ describe('Coach account auth actions', () => {
     })
   })
 
+  it('hands an embedded Google sign-in to the top-level navigation', async () => {
+    const auth = createAuth({
+      signInWithOAuth: vi.fn().mockResolvedValue({
+        data: { url: 'https://auth.example.com/authorize' },
+        error: null
+      })
+    })
+    const navigateTop = vi.fn()
+
+    await signInWithGoogle(auth, 'https://app.example.com', navigateTop)
+
+    expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'https://app.example.com', skipBrowserRedirect: true }
+    })
+    expect(navigateTop).toHaveBeenCalledWith('https://auth.example.com/authorize')
+  })
+
   it('sends password recovery only to the supplied, trimmed email and redirect', async () => {
     const auth = createAuth()
 

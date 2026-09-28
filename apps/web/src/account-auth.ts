@@ -8,6 +8,10 @@ interface AuthSessionResponse extends AuthResponse {
   data: { session: unknown | null; user: unknown | null }
 }
 
+interface GoogleOAuthResponse extends AuthResponse {
+  data: { url: string | null } | null
+}
+
 export interface CoachAuthClient {
   signInWithPassword(params: { email: string; password: string }): Promise<AuthSessionResponse>
   signUp(params: {
@@ -18,8 +22,8 @@ export interface CoachAuthClient {
   verifyOtp(params: { email: string; token: string; type: 'email' }): Promise<AuthSessionResponse>
   signInWithOAuth(params: {
     provider: 'google'
-    options: { redirectTo: string }
-  }): Promise<AuthResponse>
+    options: { redirectTo: string; skipBrowserRedirect?: boolean }
+  }): Promise<GoogleOAuthResponse>
   resetPasswordForEmail(email: string, options: { redirectTo: string }): Promise<AuthResponse>
   resend(params: {
     type: 'signup'
@@ -61,8 +65,20 @@ export async function verifySignupEmail(
   )
 }
 
-export async function signInWithGoogle(auth: CoachAuthClient, redirectTo: string): Promise<void> {
-  await requireSuccess(auth.signInWithOAuth({ provider: 'google', options: { redirectTo } }))
+export async function signInWithGoogle(
+  auth: CoachAuthClient,
+  redirectTo: string,
+  navigateTop?: (url: string) => void
+): Promise<void> {
+  const response = await auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo, ...(navigateTop ? { skipBrowserRedirect: true } : {}) }
+  })
+  if (response.error) throw new Error(response.error.message)
+  if (navigateTop) {
+    if (!response.data?.url) throw new Error('目前無法開啟 Google 登入，請稍後再試。')
+    navigateTop(response.data.url)
+  }
 }
 
 export async function requestPasswordReset(
