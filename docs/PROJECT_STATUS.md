@@ -9,10 +9,10 @@
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
 | Current package    | **M7.5 Product Owner-led mobile route review**                                                   |
-| Package state      | **Mobile Auth checkpoint ready for Main; Stage 1 remains open**                                  |
+| Package state      | **Mobile Auth Main checkpoint delivered; Stage 1 remains open**                                  |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
-| Branch baseline    | Settings/Auth checkpoint `c499e6b` reached Main; CI run `36455086192` passed both jobs           |
-| Worktree           | Mobile Auth presentation and embedded OAuth handoff are local; `output/` stays ignored           |
+| Branch baseline    | Mobile Auth checkpoint `b8e0e8c` reached Main; CI run `36470778656` passed both jobs             |
+| Worktree           | Mobile Auth delivery recorded; `output/` stays ignored                                           |
 | Linked database    | Development only; migrations through `20260928141736` applied; linked dry-run is up to date      |
 | Production         | Not configured; no real customer data                                                            |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
@@ -32,8 +32,8 @@ their 繼續 labels while keeping the arrows on the right. A physical-phone/PWA 
 completed Google account sign-in have not been claimed. The Product Owner previously mentioned a
 Google mark beside 使用 Google 繼續 and input placeholders as possible later form polish; return to
 them only when the Product Owner resumes Auth review. Keep subsequent corrections mobile-only
-unless the reported issue is global. This is local Stage 1 work; do not infer Stage 2, M7.5
-completion, or a remote CI delivery.
+unless the reported issue is global. This Stage 1 checkpoint is on Main with exact-SHA CI; it does
+not complete Stage 1 or M7.5 or begin Stage 2.
 
 Review the revised Settings page with the Product Owner at desktop and 390×844. Four categories
 separate Coach/Workspace, work preferences, account/security, and device data. Coach name saves on
@@ -397,8 +397,10 @@ local pass or successful push is not a remote CI completion claim.
   The Git branch and fetched `origin/main` matched before delivery. Browser acceptance in
   LOG-290–296 covers the 390×844 Auth paths and top-level Google sign-in page; account credentials
   and physical-phone acceptance remain unverified.
-- **Next:** Commit/push this bounded checkpoint, confirm exact-SHA remote `verify` and
-  `migration-dry-run`, then resume Product Owner-led mobile review on the next reported screen.
+- **Delivery:** Commit `b8e0e8cc5e2e0c2c4bf2dc534ad1fce62d5cd150` reached `origin/main`;
+  GitHub Actions CI run `36470778656` completed successfully for that exact SHA, with both `verify`
+  and `migration-dry-run` green. The following Status-only commit records this evidence.
+- **Next:** Resume Product Owner-led mobile review on the next reported screen.
 
 ### 2026-09-29 — LOG-296 — Center the mobile Auth form action label
 
