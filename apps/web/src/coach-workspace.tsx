@@ -4,7 +4,12 @@ import {
 } from './pages/students/PurchaseMoneyFields'
 import { workspaceInstant, workspaceWallTime } from './pages/students/workspace-time'
 import { PurchaseCollectionFields } from './pages/students/PurchaseCollectionFields'
-import { financeReturnPath, suggestedStudentVenue, useVenues } from './pages/students/finance-api'
+import {
+  financeReturnPath,
+  suggestedStudentVenue,
+  useVenues,
+  type Venue
+} from './pages/students/finance-api'
 import { VenueField } from './pages/students/VenueField'
 import { MultiMetricTrend } from './pages/training/MultiMetricTrend'
 import { metricLabels, recordingTypes } from './pages/training/recording'
@@ -51,7 +56,12 @@ import {
   useStudentRouteMutations,
   useStudentsRouteQuery
 } from './pages/students/queries'
-import { selectStudentCourseRecords, selectStudentRosterResult } from './pages/students/state'
+import {
+  lessonBalanceProgress,
+  selectStudentCourseRecords,
+  selectStudentPurchaseRecords,
+  selectStudentRosterResult
+} from './pages/students/state'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './pages/settings/queries'
 import { invalidateTodayRoute } from './pages/today/queries'
 import { queryKeys } from './query-keys'
@@ -270,17 +280,17 @@ function StudentCard({
             }
           >
             {student.lessonSummary?.remaining ?? '—'}
-            <small> / {student.lessonSummary?.purchased ?? '—'}</small>
+            <small> / {student.latestPurchaseLessonCount ?? '—'}</small>
           </strong>
         </div>
         <div
           className="student-balance-track"
           role="img"
-          aria-label={`剩餘 ${student.lessonSummary?.remaining ?? '未知'} 堂，共購買 ${student.lessonSummary?.purchased ?? '未知'} 堂`}
+          aria-label={`剩餘 ${student.lessonSummary?.remaining ?? '未知'} 堂，最近一次購課 ${student.latestPurchaseLessonCount ?? '未知'} 堂`}
         >
           <span
             style={{
-              width: `${student.lessonSummary?.purchased ? Math.min(100, Math.max(0, (student.lessonSummary.remaining / student.lessonSummary.purchased) * 100)) : 0}%`
+              width: `${lessonBalanceProgress(student.lessonSummary?.remaining ?? 0, student.latestPurchaseLessonCount ?? null)}%`
             }}
           />
         </div>
@@ -314,6 +324,7 @@ export function StudentDetailPage({
   const [notice, setNotice] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [purchaseCreateOpen, setPurchaseCreateOpen] = useState(false)
+  const [purchaseHistoryOpen, setPurchaseHistoryOpen] = useState(false)
   const [purchaseDate, setPurchaseDate] = useState(() =>
     new Date().toLocaleDateString('sv-SE', { timeZone })
   )
@@ -360,6 +371,7 @@ export function StudentDetailPage({
   if (routeState === 'error' || !detailQuery.data)
     return <StudentDetailError onRetry={() => void detailQuery.refetch()} />
   const detail = detailQuery.data
+  const purchaseRecords = selectStudentPurchaseRecords(detail.purchases)
   const submitting =
     saveMutation.isPending ||
     purchaseMutation.isPending ||
@@ -623,53 +635,28 @@ export function StudentDetailPage({
                 .join(' · ')}
             </p>
           )}
-          {detail.purchases.length ? (
-            detail.purchases.map((item) => (
-              <div className="purchase-ledger-row" key={item.id}>
-                <span className="purchase-ledger-date">
-                  {new Date(item.purchasedAt).toLocaleDateString('zh-TW')}
-                </span>
-                <strong>+{item.lessonCount} 堂</strong>
-                <span className="purchase-ledger-money">
-                  {formatMoney(item.amountMinor, item.currency)}
-                  <small>
-                    {item.venueId
-                      ? (venueQuery.data?.venues.find((venue) => venue.id === item.venueId)?.name ??
-                        '場地')
-                      : '無固定場地'}{' '}
-                    · 購課總額 · 每堂
-                    {item.amountMinor % item.lessonCount ? '約 ' : ''}
-                    {formatMoney(item.amountMinor / item.lessonCount, item.currency)}
-                  </small>
-                </span>
-                <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
-                <span className="purchase-ledger-actions">
-                  <button
-                    type="button"
-                    className="purchase-ledger-icon"
-                    aria-label={`編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
-                    onClick={() => {
-                      setPurchaseConflict(null)
-                      setPurchaseEditor(item)
-                    }}
-                    disabled={submitting}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </button>
-                  <button
-                    className="purchase-ledger-icon danger-button"
-                    type="button"
-                    aria-label={`刪除 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
-                    onClick={() => setPurchaseToDelete({ id: item.id, version: item.version })}
-                    disabled={submitting}
-                  >
-                    <XCircle aria-hidden="true" />
-                  </button>
-                </span>
-              </div>
-            ))
+          {purchaseRecords.all.length ? (
+            <PurchaseLedgerRows
+              purchases={purchaseRecords.visible}
+              venues={venueQuery.data?.venues ?? []}
+              submitting={submitting}
+              onEdit={(item) => {
+                setPurchaseConflict(null)
+                setPurchaseEditor(item)
+              }}
+              onDelete={(item) => setPurchaseToDelete({ id: item.id, version: item.version })}
+            />
           ) : (
             <p>尚無購課紀錄。</p>
+          )}
+          {purchaseRecords.hasMore && (
+            <button
+              type="button"
+              className="student-course-record-more"
+              onClick={() => setPurchaseHistoryOpen(true)}
+            >
+              查看更多 <ArrowRight size={17} aria-hidden="true" />
+            </button>
           )}
         </section>
         {notice && (
@@ -678,6 +665,31 @@ export function StudentDetailPage({
           </p>
         )}
       </section>
+      {purchaseHistoryOpen && (
+        <SchedulingDialog
+          title="購課紀錄"
+          eyebrow="PURCHASE LEDGER"
+          variant="profile"
+          onClose={() => setPurchaseHistoryOpen(false)}
+        >
+          <div className="purchase-history-dialog">
+            <PurchaseLedgerRows
+              purchases={purchaseRecords.all}
+              venues={venueQuery.data?.venues ?? []}
+              submitting={submitting}
+              onEdit={(item) => {
+                setPurchaseHistoryOpen(false)
+                setPurchaseConflict(null)
+                setPurchaseEditor(item)
+              }}
+              onDelete={(item) => {
+                setPurchaseHistoryOpen(false)
+                setPurchaseToDelete({ id: item.id, version: item.version })
+              }}
+            />
+          </div>
+        </SchedulingDialog>
+      )}
       <div className="student-detail-management" aria-label="學生狀態管理">
         <div className="student-detail-hero-actions">
           <button
@@ -837,6 +849,61 @@ export function StudentDetailPage({
       )}
     </section>
   )
+}
+
+function PurchaseLedgerRows({
+  purchases,
+  venues,
+  submitting,
+  onEdit,
+  onDelete
+}: {
+  purchases: readonly LessonPurchase[]
+  venues: readonly Venue[]
+  submitting: boolean
+  onEdit: (purchase: LessonPurchase) => void
+  onDelete: (purchase: LessonPurchase) => void
+}) {
+  return purchases.map((item) => (
+    <div className="purchase-ledger-row" key={item.id}>
+      <span className="purchase-ledger-date">
+        {new Date(item.purchasedAt).toLocaleDateString('zh-TW')}
+      </span>
+      <strong>+{item.lessonCount} 堂</strong>
+      <span className="purchase-ledger-money">
+        {formatMoney(item.amountMinor, item.currency)}
+        <small>
+          {item.venueId
+            ? (venues.find((venue) => venue.id === item.venueId)?.name ?? '場地')
+            : '無固定場地'}{' '}
+          · 購課總額 · 每堂
+          {item.amountMinor % item.lessonCount ? '約 ' : ''}
+          {formatMoney(item.amountMinor / item.lessonCount, item.currency)}
+        </small>
+      </span>
+      <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
+      <span className="purchase-ledger-actions">
+        <button
+          type="button"
+          className="purchase-ledger-icon"
+          aria-label={`編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
+          onClick={() => onEdit(item)}
+          disabled={submitting}
+        >
+          <Pencil aria-hidden="true" />
+        </button>
+        <button
+          className="purchase-ledger-icon danger-button"
+          type="button"
+          aria-label={`刪除 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
+          onClick={() => onDelete(item)}
+          disabled={submitting}
+        >
+          <XCircle aria-hidden="true" />
+        </button>
+      </span>
+    </div>
+  ))
 }
 
 export function StudentCourseRecord({

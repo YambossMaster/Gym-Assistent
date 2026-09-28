@@ -94,5 +94,6 @@ export interface StudentDetail {
 
 export interface StudentRosterItem extends Student {
   lessonSummary: LessonSummary
+  latestPurchaseLessonCount: number | null
   nextSessionAt: string | null
 }

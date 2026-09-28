@@ -1,6 +1,14 @@
-import type { CalendarSession, Student } from '../../api'
+import type { CalendarSession, LessonPurchase, Student } from '../../api'
 
 export type StudentRosterResultState = 'first-empty' | 'filter-empty' | 'search-empty' | 'ready'
+
+export function lessonBalanceProgress(
+  remaining: number,
+  latestPurchaseLessonCount: number | null
+): number {
+  if (!latestPurchaseLessonCount || latestPurchaseLessonCount <= 0) return 0
+  return Math.min(100, Math.max(0, (remaining / latestPurchaseLessonCount) * 100))
+}
 
 export function selectStudentRosterResult({
   students,
@@ -33,4 +41,14 @@ export function selectStudentCourseRecords(schedule?: {
     .filter((session) => session.status === 'completed')
     .sort((left, right) => (right.startsAt ?? '').localeCompare(left.startsAt ?? ''))
   return schedule.nearestFuture ? [schedule.nearestFuture, ...completed] : completed
+}
+
+export function selectStudentPurchaseRecords(purchases: readonly LessonPurchase[]) {
+  const all = [...purchases].sort(
+    (left, right) =>
+      right.purchasedAt.localeCompare(left.purchasedAt) ||
+      right.createdAt.localeCompare(left.createdAt) ||
+      right.id.localeCompare(left.id)
+  )
+  return { all, visible: all.slice(0, 4), hasMore: all.length > 4 }
 }

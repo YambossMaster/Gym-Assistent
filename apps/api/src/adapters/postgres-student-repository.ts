@@ -42,6 +42,7 @@ interface StudentRow {
   created_at: Date
   updated_at: Date
   next_session_starts_at?: Date | null
+  latest_purchase_lesson_count?: number | null
 }
 
 interface LessonPurchaseRow {
@@ -127,7 +128,13 @@ export class PostgresStudentRepository
                  AND session.student_id = student.id
                  AND session.status = 'scheduled'
                  AND NOT session.is_legacy
-                 AND session.starts_at > now()) AS next_session_starts_at
+                 AND session.starts_at > now()) AS next_session_starts_at,
+              (SELECT purchase.lesson_count
+               FROM app_private.lesson_purchase purchase
+               WHERE purchase.workspace_id = student.workspace_id
+                 AND purchase.student_id = student.id
+               ORDER BY purchase.purchased_at DESC, purchase.created_at DESC, purchase.id DESC
+               LIMIT 1) AS latest_purchase_lesson_count
        FROM app_private.student student
        WHERE workspace_id = $1
        ORDER BY created_at, id`,
@@ -137,6 +144,7 @@ export class PostgresStudentRepository
       result.rows.map(async (student) => ({
         ...mapStudent(student),
         lessonSummary: (await this.lessonSummary(workspaceId, student.id))!,
+        latestPurchaseLessonCount: student.latest_purchase_lesson_count ?? null,
         nextSessionAt: student.next_session_starts_at?.toISOString() ?? null,
       })),
     )

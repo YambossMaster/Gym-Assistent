@@ -27,6 +27,7 @@ export interface Student {
   createdAt: string
   updatedAt: string
   lessonSummary?: { purchased: number; completed: number; remaining: number }
+  latestPurchaseLessonCount?: number | null
   nextSessionAt?: string | null
 }
 

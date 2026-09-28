@@ -161,6 +161,47 @@ describe('StudentModule', () => {
       students.deleteLessonPurchase(coachA, student.id, purchase!.id, 1),
     ).rejects.toMatchObject({ name: 'LessonPurchaseVersionConflictError' })
   })
+  it('uses the most recent purchase date for the roster denominator while retaining total remaining lessons', async () => {
+    const repository = new MemoryStudentRepository()
+    const students = new StudentModule({ repository })
+    const student = await students.create(coachA, { name: 'Alice' })
+    const workspaceId = await repository.resolveWorkspace(coachA)
+    const older = await students.createLessonPurchase(coachA, student.id, {
+      purchasedAt: '2026-09-01T00:00:00.000Z',
+      lessonCount: 8,
+      amountMinor: 8000,
+      currency: 'TWD',
+      privateNote: '',
+    })
+    for (let index = 0; index < 7; index++)
+      repository.recordCompletedSessionForTest(workspaceId, student.id)
+    expect(await students.list(coachA)).toMatchObject([
+      { lessonSummary: { remaining: 1 }, latestPurchaseLessonCount: 8 },
+    ])
+
+    await students.createLessonPurchase(coachA, student.id, {
+      purchasedAt: '2026-09-10T00:00:00.000Z',
+      lessonCount: 10,
+      amountMinor: 10000,
+      currency: 'TWD',
+      privateNote: '',
+    })
+    expect(await students.list(coachA)).toMatchObject([
+      { lessonSummary: { purchased: 18, remaining: 11 }, latestPurchaseLessonCount: 10 },
+    ])
+
+    await students.updateLessonPurchase(coachA, student.id, older!.id, {
+      purchasedAt: '2026-09-11T00:00:00.000Z',
+      lessonCount: 8,
+      amountMinor: 8000,
+      currency: 'TWD',
+      privateNote: '',
+      version: older!.version,
+    })
+    expect(await students.list(coachA)).toMatchObject([
+      { lessonSummary: { remaining: 11 }, latestPurchaseLessonCount: 8 },
+    ])
+  })
   it('keeps Venue entitlement on each purchase instead of changing the Student profile', async () => {
     const students = new StudentModule({ repository: new MemoryStudentRepository() })
     const student = await students.create(coachA, { name: 'Alice' })

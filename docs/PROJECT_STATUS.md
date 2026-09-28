@@ -5,18 +5,28 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                         |
-| ------------------ | ----------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                            |
-| Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                       |
-| Package state      | **Capability Link, public-page, and Venue dialog corrections locally verified; Stage 1 remains open** |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                         |
-| Branch baseline    | Stage 1 public/Venue checkpoint `2359c67` reached Main; CI run `36415220894` passed both jobs         |
-| Worktree           | Stage 1 checkpoint delivered; `output/` stays ignored                                                 |
-| Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass   |
-| Production         | Not configured; no real customer data                                                                 |
+| Field              | Current value                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
+| Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                     |
+| Package state      | **Student roster and purchase-history delivery preflight passed; Stage 1 remains open**             |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
+| Branch baseline    | Stage 1 public/Venue checkpoint `2359c67` reached Main; CI run `36415220894` passed both jobs       |
+| Worktree           | Stage 1 checkpoint delivered; `output/` stays ignored                                               |
+| Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
+| Production         | Not configured; no real customer data                                                               |
 
 ## Next handoff
+
+Review the Student roster balance cards and Student purchase history with the Product Owner. The
+roster numerator remains total remaining lessons, the denominator is the latest dated purchase
+count, and the track caps at 100%; the reported `1/16` case showed `1/8` at verification time.
+Purchase history now orders newest first, shows at most four rows on the page, and offers a complete
+dialog only when more than four exist. A five-purchase isolated Web test covers the four-row cutoff
+and complete-history selection. The preserved development Student examined in the browser has three
+purchases, so the five-row dialog still needs later live browser acceptance. No purchase data was
+changed for these checks. Continue the pending Stage 1 review below without treating this delivery
+checkpoint as M7.5 completion.
 
 Review the corrected Venue creation, expense-change, and prepaid dialogs with the Product Owner,
 alongside the corrected `/t/:token` and `/r/:token` presentation and date picker.
@@ -338,6 +348,30 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-28 — LOG-281 — Student roster and purchase-history delivery preflight
+
+- **Scope:** The Product Owner authorized full CI and a Main push if clean for the local Student roster denominator and purchase-history corrections in LOG-279–280. Add an isolated five-purchase selection check without changing preserved development review data.
+- **Outcome:** The five-purchase Web test verifies four visible records, all five available in complete history, and the more-entry threshold. The changes are ready for the authorized Stage 1 Main checkpoint; wider M7.5 acceptance stays open.
+- **Verification:** `npm ci` passed after stopping only the formal Web Vite process that held `esbuild.exe`; Demo at 5174 remained running. The standard root `npm run check` passed on its final run (API 26 files/123 tests, Web 53 files/227 tests), and root `npm run build` passed with the existing Vite chunk-size advisory. Linked development `npm run db:push:dry` is up to date with no migrations pending; `app_private` lint found no errors; advisors found only the existing leaked-password-protection and Capability Link permissive-policy warnings. `git diff --check` passed. Local `HEAD` and remote `refs/heads/main` both resolved to `5ed5881464fcbca1e81faf5b0f576ba9fa3567c6` before delivery. A first root check had two 5-second API test timeouts under load; the complete API suite passed with two workers, then the standard root check passed without source changes.
+- **Known issue:** The five-row dialog has isolated selection coverage but no live browser fixture. M7.5 Stage 1 Product Owner review remains open; this preflight is not remote CI evidence.
+- **Next:** Commit and push the scoped Student corrections, confirm exact remote SHA and both Actions jobs, then resume preserved Stage 1 review.
+
+### 2026-09-28 — LOG-280 — Bound Student purchase history to four newest rows
+
+- **Scope:** Apply the Product Owner's Student detail purchase-history rule: newest purchases first, four rows at most on the page, and a `查看更多` entry to the complete list when more exist. Follow the existing Course Record dialog interaction and preserve purchase edit/delete actions.
+- **Outcome:** Web sorts the detail projection by purchase date with deterministic ties, renders the latest four in the page card, and reuses the same purchase rows in a scrollable complete-history dialog. No API, schema, or purchase data changed in this correction; the preceding roster projection correction remains in the worktree.
+- **Verification:** Web format/typecheck and 53 files/226 tests passed; Web production build passed with the existing chunk-size advisory; `git diff --check` passed. The authenticated development browser showed the preserved three-purchase Student in `9/28 → 7/1 → 3/11` order, and the card fit at desktop and exact 390×844. The >4-row dialog condition was checked in code but was not exercised with live data because the preserved review Student has only three purchases.
+- **Known issue:** Stage 1 Product Owner review remains open; no commit, push, remote CI, or five-row live browser acceptance is claimed.
+- **Next:** Review Student purchase history and roster with the Product Owner, then continue the pending Venue/Finance, Capability Link, and public-page Stage 1 acceptance.
+
+### 2026-09-28 — LOG-279 — Show latest purchase count in Student roster balance cards
+
+- **Scope:** Apply the Product Owner's Student roster rule: total remaining lessons over the latest dated Lesson Purchase count, with a full track when the numerator is at least the denominator. Keep the card compact without explanatory text.
+- **Outcome:** The Workspace-scoped roster projection now includes the latest purchase count, ordered by purchase date with deterministic ties. The card retains the server-derived total remaining count, uses the latest count as denominator, and caps only the visual track at 100%. No schema, purchase record, or underlying entitlement calculation changed.
+- **Verification:** Elevated root `npm run check` passed (API 26 files/123 tests; Web 53 files/225 tests); root build and `git diff --check` passed. The authenticated development browser loaded all six roster cards and showed the reported first Student as `1/8`, with the other latest-purchase denominators populated. The initial sandbox check hit Windows `spawn EPERM`; the elevated rerun passed.
+- **Known issue:** This is a local Stage 1 correction; no commit, push, remote CI, or full Venue/Finance acceptance is claimed. The existing Vite bundle-size advisory remains.
+- **Next:** Continue Product Owner review of the Student roster and the preserved Stage 1 Venue/Finance, Capability Link, and public-page flows.
 
 ### 2026-09-28 — LOG-278 — Stage 1 public and Venue checkpoint delivered
 

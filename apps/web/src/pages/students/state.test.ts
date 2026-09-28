@@ -1,6 +1,76 @@
 import { describe, expect, it } from 'vitest'
-import type { CalendarSession, Student } from '../../api'
-import { selectStudentCourseRecords, selectStudentRosterResult } from './state'
+import type { CalendarSession, LessonPurchase, Student } from '../../api'
+import {
+  lessonBalanceProgress,
+  selectStudentCourseRecords,
+  selectStudentPurchaseRecords,
+  selectStudentRosterResult
+} from './state'
+
+describe('Student balance progress', () => {
+  it('fills the track when remaining lessons exceed the latest purchase', () => {
+    expect(lessonBalanceProgress(1, 8)).toBe(12.5)
+    expect(lessonBalanceProgress(11, 10)).toBe(100)
+    expect(lessonBalanceProgress(-1, 10)).toBe(0)
+    expect(lessonBalanceProgress(0, null)).toBe(0)
+  })
+})
+
+describe('Student purchase records', () => {
+  it('sorts newest purchase dates first without changing the source records', () => {
+    const purchase = (
+      id: string,
+      purchasedAt: string,
+      createdAt = purchasedAt
+    ): LessonPurchase => ({
+      id,
+      purchasedAt,
+      createdAt,
+      updatedAt: createdAt,
+      lessonCount: 8,
+      amountMinor: 8000,
+      currency: 'TWD',
+      privateNote: '',
+      version: 1
+    })
+    const records = [
+      purchase('older', '2026-03-11T00:00:00.000Z'),
+      purchase('same-day-earlier', '2026-09-28T00:00:00.000Z', '2026-09-27T00:00:00.000Z'),
+      purchase('middle', '2026-07-01T00:00:00.000Z'),
+      purchase('same-day-later', '2026-09-28T00:00:00.000Z', '2026-09-28T00:00:00.000Z')
+    ]
+
+    expect(selectStudentPurchaseRecords(records).all.map(({ id }) => id)).toEqual([
+      'same-day-later',
+      'same-day-earlier',
+      'middle',
+      'older'
+    ])
+    expect(records[0]?.id).toBe('older')
+  })
+
+  it('shows four records on the page and exposes all five in complete history', () => {
+    const purchases = Array.from({ length: 5 }, (_, index) => ({
+      id: `purchase-${index}`,
+      purchasedAt: `2026-09-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+      createdAt: `2026-09-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`
+    })) as LessonPurchase[]
+
+    const four = selectStudentPurchaseRecords(purchases.slice(0, 4))
+    expect(four.visible).toHaveLength(4)
+    expect(four.hasMore).toBe(false)
+
+    const five = selectStudentPurchaseRecords(purchases)
+    expect(five.visible.map(({ id }) => id)).toEqual([
+      'purchase-4',
+      'purchase-3',
+      'purchase-2',
+      'purchase-1'
+    ])
+    expect(five.all).toHaveLength(5)
+    expect(five.hasMore).toBe(true)
+  })
+})
 
 const student = (overrides: Partial<Student> = {}): Student => ({
   id: 'student-1',

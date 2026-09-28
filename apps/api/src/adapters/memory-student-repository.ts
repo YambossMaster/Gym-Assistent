@@ -113,6 +113,13 @@ export class MemoryStudentRepository
       (this.#studentsByWorkspace.get(workspaceId) ?? []).map(async (student) => ({
         ...student,
         lessonSummary: (await this.lessonSummary(workspaceId, student.id))!,
+        latestPurchaseLessonCount:
+          [...(this.#purchasesByWorkspace.get(workspaceId)?.get(student.id) ?? [])].sort(
+            (left, right) =>
+              right.purchasedAt.localeCompare(left.purchasedAt) ||
+              right.createdAt.localeCompare(left.createdAt) ||
+              right.id.localeCompare(left.id),
+          )[0]?.lessonCount ?? null,
         nextSessionAt: null,
       })),
     )

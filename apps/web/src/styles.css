@@ -4594,12 +4594,14 @@ textarea:focus {
 .student-course-record-more:focus-visible {
   background: rgba(21, 23, 17, 0.035);
 }
-.scheduling-dialog.profile:has(.student-course-record-dialog) {
+.scheduling-dialog.profile:has(.student-course-record-dialog),
+.scheduling-dialog.profile:has(.purchase-history-dialog) {
   width: min(900px, 100%);
   height: min(740px, calc(100dvh - 24px));
   overflow: hidden;
 }
-.student-course-record-dialog {
+.student-course-record-dialog,
+.purchase-history-dialog {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -4609,6 +4611,9 @@ textarea:focus {
 .student-course-record-dialog .student-course-record {
   border: 0;
   border-radius: 0;
+}
+.purchase-history-dialog {
+  padding: 0 30px 24px;
 }
 .student-course-record-row {
   min-height: 62px;
@@ -4955,7 +4960,9 @@ textarea:focus {
   white-space: nowrap;
 }
 .purchase-history .purchase-ledger-date,
-.purchase-history .purchase-ledger-money {
+.purchase-history .purchase-ledger-money,
+.purchase-history-dialog .purchase-ledger-date,
+.purchase-history-dialog .purchase-ledger-money {
   color: var(--muted);
   font-size: 13px;
 }
@@ -11376,8 +11383,12 @@ a.venue-course-purchase:focus-visible {
   background: var(--ink-soft);
 }
 @media (max-width: 600px) {
-  .scheduling-dialog.profile:has(.student-course-record-dialog) {
+  .scheduling-dialog.profile:has(.student-course-record-dialog),
+  .scheduling-dialog.profile:has(.purchase-history-dialog) {
     height: calc(100dvh - 20px);
+  }
+  .purchase-history-dialog {
+    padding: 0 16px 20px;
   }
 }
 .finance-ledger-row:hover {
