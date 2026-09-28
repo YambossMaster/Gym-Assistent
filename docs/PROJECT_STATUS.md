@@ -11,8 +11,8 @@
 | Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                  |
 | Package state      | **Student roster and purchase-history checkpoint delivered; Stage 1 remains open**               |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
-| Branch baseline    | Student checkpoint `894a60a` reached Main; CI run `36420917850` passed both jobs                 |
-| Worktree           | Settings and Auth recovery checkpoint passed local CI gates; `output/` stays ignored             |
+| Branch baseline    | Settings/Auth checkpoint `c499e6b` reached Main; CI run `36455086192` passed both jobs           |
+| Worktree           | Settings and Auth recovery checkpoint delivered; `output/` stays ignored                         |
 | Linked database    | Development only; migrations through `20260928141736` applied; linked dry-run is up to date      |
 | Production         | Not configured; no real customer data                                                            |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
@@ -28,7 +28,7 @@ development-only tool. Continue Product Owner review of the category grouping, c
 scope after this authorized delivery checkpoint. Calendar defaults, language, privacy controls, and plans remain later product
 decisions, not implemented settings.
 
-Account/security follow-up is in local review: password dialog now sends the same recovery email
+Account/security follow-up remains in Product Owner review: password dialog now sends the same recovery email
 used from sign-in, and sign-out asks for confirmation. Recovery intent survives Auth token refresh
 and page reload; expired links show an error instead of opening Today. A fresh email link reached
 the new-password form in the development browser, reload stayed out of Today, and the test ended
@@ -367,6 +367,17 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-29 — LOG-289 — Deliver Settings and Auth recovery checkpoint
+
+- **Scope:** complete the Product Owner-authorized Main delivery after the local gates in LOG-288.
+- **Outcome:** commit `c499e6b20dc1b4e08678d8ef52bb4be3d4c88563` reached `origin/main`.
+  This checkpoint includes Settings, Auth recovery, currency preference, and approved M8 help scope;
+  it does not close M7.5 Stage 1.
+- **Verification:** remote `refs/heads/main` resolved to the exact commit. GitHub Actions run
+  `36455086192` completed successfully for that SHA; both `verify` and `migration-dry-run` passed.
+- **Next:** continue Product Owner Settings and Stage 1 review, including the open live password
+  update/re-login path; do not enter Stage 2 or M8 implementation from this checkpoint.
 
 ### 2026-09-29 — LOG-288 — Settings and Auth recovery checkpoint preflight
 
