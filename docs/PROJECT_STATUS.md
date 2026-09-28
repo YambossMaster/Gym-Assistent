@@ -11,8 +11,8 @@
 | Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                       |
 | Package state      | **Capability Link, public-page, and Venue dialog corrections locally verified; Stage 1 remains open** |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                         |
-| Branch baseline    | Interactive-control checkpoint `c232364` reached Main; CI run `36346891642` passed both jobs          |
-| Worktree           | Stage 1 UI corrections, including Capability Link recovery, are local; `output/` stays ignored        |
+| Branch baseline    | Stage 1 public/Venue checkpoint `2359c67` reached Main; CI run `36415220894` passed both jobs         |
+| Worktree           | Stage 1 checkpoint delivered; `output/` stays ignored                                                 |
 | Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass   |
 | Production         | Not configured; no real customer data                                                                 |
 
@@ -26,8 +26,7 @@ Previously issued links whose one-time URL was already discarded cannot be recov
 server's digest-only record; avoid reissuing the preserved review link unless the Product Owner
 chooses to replace it. This Stage 1 change intentionally narrows M6's one-time browser-secret rule
 to per-tab `sessionStorage`; it requires acceptance as part of the current Product Owner review.
-This local Stage 1 correction does not close M7.5 or require remote delivery yet. The earlier
-interactive-control Main checkpoint passed local checks and exact-SHA remote CI. Then continue review of
+The Stage 1 checkpoint reached Main and passed exact-SHA remote CI; it does not close M7.5. Continue review of
 Venue management, Venue course records, Student course history, trajectory navigation, and Finance overview/month
 selector against the preserved 2026 development data (LOG-221–243; scenario index in local
 `output/M7.5-2026-venue-finance-review-data.md`). Take subsequent corrections only when the
@@ -339,6 +338,14 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-28 — LOG-278 — Stage 1 public and Venue checkpoint delivered
+
+- **Scope:** Deliver the Product Owner-authorized Stage 1 checkpoint after the complete local preflight in LOG-277.
+- **Outcome:** Commit `2359c67e8a413ade8a1b9cb22512ce5c7329e538` reached `origin/main`. M7.5 Stage 1 remains open for Product Owner review and wider Venue/Finance browser acceptance.
+- **Verification:** Remote `refs/heads/main` resolved to the exact commit. GitHub Actions run `36415220894` completed successfully for that SHA; both `verify` and `migration-dry-run` jobs succeeded. The push emitted a non-blocking credential-cache socket message, while the remote ref and Actions evidence confirmed delivery.
+- **Known issue:** An older active Capability Link whose raw URL was discarded remains unrecoverable; current-tab retention applies to newly issued links. The remaining Stage 1 browser acceptance is still open.
+- **Next:** Continue Product Owner review of the corrected Capability Link, public pages, and Venue dialogs; then complete the preserved Venue/Finance Stage 1 acceptance without entering Stage 2 or M8.
 
 ### 2026-09-28 — LOG-277 — Stage 1 public and Venue checkpoint preflight
 
