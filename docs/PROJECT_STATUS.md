@@ -9,10 +9,10 @@
 | ------------------ | --------------------------------------------------------------------------------------------------- |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
 | Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                     |
-| Package state      | **Student roster and purchase-history delivery preflight passed; Stage 1 remains open**             |
+| Package state      | **Student roster and purchase-history checkpoint delivered; Stage 1 remains open**                  |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
-| Branch baseline    | Stage 1 public/Venue checkpoint `2359c67` reached Main; CI run `36415220894` passed both jobs       |
-| Worktree           | Stage 1 checkpoint delivered; `output/` stays ignored                                               |
+| Branch baseline    | Student checkpoint `894a60a` reached Main; CI run `36420917850` passed both jobs                    |
+| Worktree           | Student checkpoint delivered; `output/` stays ignored                                               |
 | Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
 | Production         | Not configured; no real customer data                                                               |
 
@@ -348,6 +348,14 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-28 — LOG-282 — Deliver Student roster and purchase-history checkpoint
+
+- **Scope:** Complete the Product Owner-authorized Main delivery for the Student balance denominator and purchase-history corrections after the full preflight in LOG-281.
+- **Outcome:** Commit `894a60a2ec50f2076bdbdcf6417fadcab29e705e` reached `origin/main`. This is an M7.5 Stage 1 checkpoint; Product Owner review and wider Venue/Finance acceptance remain open.
+- **Verification:** Remote `refs/heads/main` resolved to the exact commit. GitHub Actions run `36420917850` completed successfully for that SHA; both `verify` and `migration-dry-run` jobs succeeded. The push's credential-cache socket message did not affect the confirmed remote ref. After `npm ci`, the formal API and Web dev services were restored and returned HTTP 200 on `/health` and `/`; Demo on port 5174 stayed available.
+- **Known issue:** The five-purchase complete-history dialog has isolated selection coverage but still needs live browser acceptance with more than four purchases; no preserved development purchase data was modified.
+- **Next:** Continue Product Owner review of the Student roster and purchase-history cards, then the preserved Venue/Finance, Capability Link, and public-page Stage 1 flows. Do not infer Stage 2 or M8 authorization.
 
 ### 2026-09-28 — LOG-281 — Student roster and purchase-history delivery preflight
 
