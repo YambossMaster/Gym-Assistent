@@ -16,6 +16,7 @@ import {
 import { CoachWorkspace } from './app-shell/CoachWorkspace'
 import { Brand } from './shared/primitives'
 import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
+import { clearOtherCoachCapabilityLinks } from './pages/public/capability-link-session'
 import { createAppQueryClient } from './query-client'
 import { supabase } from './supabase'
 import { CoachLocalStore } from './local-resilience'
@@ -44,6 +45,7 @@ function AuthenticatedApp() {
     void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       previousSubject.current = data.session?.user.id ?? null
+      clearOtherCoachCapabilityLinks(data.session?.user.id ?? null)
       setReady(true)
     })
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
@@ -51,6 +53,7 @@ function AuthenticatedApp() {
       const nextSubject = next?.user.id ?? null
       if (previous && previous !== nextSubject) {
         client.clear()
+        clearOtherCoachCapabilityLinks(nextSubject)
         void new CoachLocalStore().clearCoach({
           environment: import.meta.env.MODE,
           coachId: previous

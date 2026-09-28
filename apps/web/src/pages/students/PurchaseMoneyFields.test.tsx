@@ -18,6 +18,7 @@ it('preserves an indivisible exact total and exposes its approximate unit price'
       )
     )
     expect(host.textContent).toContain('每堂參考價（約）')
+    expect(host.textContent).toContain('3 堂 · 合計 $1,000 · $333.33 / 堂')
     expect(new FormData(host.querySelector('form')!).get('amountMinor')).toBe('1000')
     expect(host.querySelector('form')!.checkValidity()).toBe(true)
     expect((host.querySelector('[aria-label="每堂參考價"]') as HTMLInputElement).value).toBe(
@@ -49,6 +50,7 @@ it('lets the Coach clear zero from unit price before typing a new amount', async
         </form>
       )
     )
+    expect(host.textContent).not.toContain('輸入堂數')
     await edit(host.querySelector<HTMLInputElement>('input[name="lessonCount"]')!, '1')
     const unit = host.querySelector<HTMLInputElement>('[aria-label="每堂參考價"]')!
     await edit(unit, '0')

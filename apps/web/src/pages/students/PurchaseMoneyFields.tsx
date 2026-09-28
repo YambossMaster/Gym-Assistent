@@ -26,12 +26,14 @@ export function PurchaseMoneyFields({
   amount,
   currency = 'TWD',
   includeCount = true,
+  showSummary = true,
   totalLabel = '總金額'
 }: {
   count?: number
   amount?: number
   currency?: string
   includeCount?: boolean
+  showSummary?: boolean
   totalLabel?: string
 }) {
   const [lessons, setLessons] = useState(count === undefined ? '' : String(count)),
@@ -59,6 +61,15 @@ export function PurchaseMoneyFields({
         : ''
   const approximateUnit = n > 0 && minor !== null && !Number.isInteger(minor / n)
   const currencyDecimals = Math.round(Math.log10(factor))
+  const unitSummary =
+    unit !== ''
+      ? new Intl.NumberFormat('zh-TW', {
+          style: 'currency',
+          currency: code,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: Math.max(2, currencyDecimals)
+        }).format(Number(unit))
+      : null
   return (
     <div className="finance-money-fields">
       {includeCount && (
@@ -110,13 +121,11 @@ export function PurchaseMoneyFields({
       </label>
       <input type="hidden" name="amountMinor" value={minor ?? ''} />
       <input type="hidden" name="currency" value={code} />
-      <span className="finance-money-equation">
-        {n > 0 && minor !== null
-          ? `${n} 堂 · 合計 ${financeMoney(minor, code)}`
-          : n > 0
-            ? '輸入總金額'
-            : '輸入堂數'}
-      </span>
+      {showSummary && n > 0 && minor !== null && unitSummary && (
+        <span className="finance-money-equation">
+          {`${n} 堂 · 合計 ${financeMoney(minor, code)} · ${unitSummary} / 堂`}
+        </span>
+      )}
     </div>
   )
 }

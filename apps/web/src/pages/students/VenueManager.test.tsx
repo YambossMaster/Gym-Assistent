@@ -427,6 +427,9 @@ it('saves a new prepaid purchase directly from its form', async () => {
       )
     await click('預購場地')
     await click('登錄預購')
+    expect(host.querySelectorAll('.venue-credit-form .finance-money-fields > label')).toHaveLength(
+      3
+    )
     const count = host.querySelector<HTMLInputElement>('input[name="lessonCount"]')!
     const total = host.querySelector<HTMLInputElement>('input[aria-label="總金額"]')!
     await act(async () => {
@@ -496,6 +499,8 @@ it('changes an existing prepaid purchase directly from its form', async () => {
     await click('預購場地')
     await click('2026-05-17 · 14 堂')
     expect(host.querySelector('#scheduling-dialog-title')?.textContent).toBe('編輯場地預購')
+    expect(host.querySelector('.venue-credit-form .finance-money-fields')).not.toBeNull()
+    expect(host.querySelector('.venue-credit-form .finance-money-equation')).toBeNull()
     await act(async () =>
       host
         .querySelector<HTMLFormElement>('.finance-editor form')!
@@ -518,6 +523,49 @@ it('changes an existing prepaid purchase directly from its form', async () => {
     creditFixtures.length = 0
     vi.unstubAllGlobals()
     mutate.mockClear()
+  }
+})
+
+it('keeps the new Venue salary choice after prepaid purchase fields', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const client = new QueryClient()
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter>
+            <VenueManager session={{ user: { id: 'coach' } } as Session} />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    )
+    await act(async () =>
+      [...host.querySelectorAll<HTMLButtonElement>('button')]
+        .find((button) => button.textContent?.includes('新增場地'))!
+        .click()
+    )
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('[aria-label="場地支出類型"]')!.click()
+    )
+    await act(async () =>
+      [...document.querySelectorAll<HTMLButtonElement>('[role="option"]')]
+        .find((option) => option.textContent?.trim() === '預購場地堂數')!
+        .click()
+    )
+    const fields = host.querySelector<HTMLFieldSetElement>('.finance-form-fields')!
+    const money = fields.querySelector('.finance-money-fields')!
+    const salary = fields.querySelector('.student-series-toggle')!
+    expect(money.compareDocumentPosition(salary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(salary.querySelector('.venue-salary-state')?.textContent).toBe('無底薪')
+    expect(host.querySelector('.venue-prepaid-form')).not.toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+    client.clear()
+    host.remove()
+    vi.unstubAllGlobals()
   }
 })
 
@@ -855,7 +903,9 @@ it('returns from Venue settings to the Venue detail on close, cancel, and save',
     )
     await click('本月場地')
     await click('場地支出類型')
-    expect(host.querySelector('#scheduling-dialog-title')?.textContent).toBe('設定場地費用')
+    expect(host.querySelector('#scheduling-dialog-title')?.textContent).toBe('變更場地支出')
+    expect(host.querySelector('.venue-date-time-row')?.textContent).toContain('生效日期')
+    expect(host.querySelector('.venue-date-time-row')?.textContent).toContain('生效時間')
     await act(async () =>
       host.querySelector<HTMLButtonElement>('button[aria-label="關閉"]')!.click()
     )

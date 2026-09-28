@@ -306,6 +306,17 @@ describe('Calendar Day and Week gestures', () => {
       const dialog = host.querySelector('.scheduling-dialog')!
       expect(dialog.querySelector('.calendar-quick-time')?.textContent).toContain('教室')
       expect(
+        [...dialog.querySelectorAll('.calendar-quick-time-actions > *')].map((action) =>
+          action.textContent?.trim()
+        )
+      ).toEqual(['建立改期連結', '編輯安排'])
+      expect(
+        dialog
+          .querySelector<HTMLAnchorElement>('.calendar-quick-time-actions a')
+          ?.getAttribute('href')
+      ).toBe('/sessions/course-1?link=reschedule')
+      expect(dialog.querySelectorAll('a[href*="link=reschedule"]')).toHaveLength(1)
+      expect(
         [...dialog.querySelectorAll('.calendar-quick-actions > *')].map((action) =>
           action.textContent?.trim()
         )

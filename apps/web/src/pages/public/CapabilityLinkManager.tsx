@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Clipboard, Link2, Plus, RefreshCw, ShieldOff, X } from 'lucide-react'
+import { Clipboard, Link2, Plus, RefreshCw, ShieldOff, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   ApiError,
@@ -16,6 +16,11 @@ import {
 import { queryKeys } from '../../query-keys'
 import { Checkbox } from '../../shared/Checkbox'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
+import {
+  clearCapabilityLink,
+  readCapabilityLink,
+  saveCapabilityLink
+} from './capability-link-session'
 
 export function CapabilityLinkActions({
   session,
@@ -33,11 +38,45 @@ export function CapabilityLinkActions({
   const [purpose, setPurpose] = useState<CapabilityPurpose | null>(
     item.status === 'scheduled' ? initialPurpose : null
   )
+  const [retained, setRetained] = useState<{
+    coachId: string
+    sessionId: string
+    issued: IssuedCapabilityLink
+  } | null>(() => {
+    const value = initialPurpose
+      ? readCapabilityLink(session.user.id, item.id, initialPurpose)
+      : null
+    return value ? { coachId: session.user.id, sessionId: item.id, issued: value } : null
+  })
   const rescheduleButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!retained) return
+    const remaining = Date.parse(retained.issued.link.expiresAt) - Date.now()
+    if (remaining <= 0) {
+      clearCapabilityLink(retained.coachId, retained.sessionId, retained.issued.link.purpose)
+      setRetained(null)
+      return
+    }
+    const timer = window.setTimeout(() => {
+      clearCapabilityLink(retained.coachId, retained.sessionId, retained.issued.link.purpose)
+      setRetained(null)
+    }, remaining)
+    return () => window.clearTimeout(timer)
+  }, [retained])
+  const open = (nextPurpose: CapabilityPurpose) => {
+    const value = readCapabilityLink(session.user.id, item.id, nextPurpose)
+    setRetained(value ? { coachId: session.user.id, sessionId: item.id, issued: value } : null)
+    setPurpose(nextPurpose)
+  }
+  const updateIssued = (value: IssuedCapabilityLink | null) => {
+    if (value) saveCapabilityLink(session.user.id, item.id, value)
+    else if (purpose) clearCapabilityLink(session.user.id, item.id, purpose)
+    setRetained(value ? { coachId: session.user.id, sessionId: item.id, issued: value } : null)
+  }
   return (
     <>
       {item.status === 'completed' ? (
-        <button className="secondary-button" onClick={() => setPurpose('training_result')}>
+        <button className="secondary-button" onClick={() => open('training_result')}>
           <Link2 /> {compactLabels ? '分享結果' : '分享訓練結果'}
         </button>
       ) : null}
@@ -45,7 +84,7 @@ export function CapabilityLinkActions({
         <button
           ref={rescheduleButton}
           className="secondary-button"
-          onClick={() => setPurpose('reschedule_session')}
+          onClick={() => open('reschedule_session')}
         >
           <CalendarLinkIcon /> {compactLabels ? '改期連結' : '建立改期連結'}
         </button>
@@ -55,6 +94,12 @@ export function CapabilityLinkActions({
           session={session}
           sessionId={item.id}
           purpose={purpose}
+          issued={
+            retained?.coachId === session.user.id && retained.sessionId === item.id
+              ? retained.issued
+              : null
+          }
+          onIssuedChange={updateIssued}
           onClose={() => {
             setPurpose(null)
             onClose?.()
@@ -71,16 +116,22 @@ function CapabilityLinkDialog({
   session,
   sessionId,
   purpose,
+  issued,
+  onIssuedChange,
   onClose
 }: {
   session: Session
   sessionId: string
   purpose: CapabilityPurpose
+  issued: IssuedCapabilityLink | null
+  onIssuedChange: (value: IssuedCapabilityLink | null) => void
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
   const [includeNote, setIncludeNote] = useState(false)
-  const [issued, setIssued] = useState<IssuedCapabilityLink | null>(null)
+  const [confirmReissue, setConfirmReissue] = useState(false)
+  const confirmReissueRef = useRef<HTMLButtonElement>(null)
+  const reissueTriggerRef = useRef<HTMLButtonElement>(null)
   const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>('idle')
   const [notice, setNotice] = useState('')
   const key = queryKeys.capabilityLinks(session.user.id, sessionId)
@@ -88,12 +139,38 @@ function CapabilityLinkDialog({
     queryKey: key,
     queryFn: () => listCapabilityLinks(session.access_token, sessionId)
   })
-  const current = issued?.link ?? query.data?.find((link) => link.purpose === purpose) ?? null
+  const current = query.data?.find((link) => link.purpose === purpose) ?? null
+  const availableIssued =
+    current &&
+    issued &&
+    current.id === issued.link.id &&
+    current.status === 'active' &&
+    Date.parse(current.expiresAt) > Date.now()
+      ? issued
+      : null
   useEffect(() => {
-    if (!issued && current?.purpose === 'training_result') {
+    if (current?.purpose === 'training_result') {
       setIncludeNote(current.includeTrainingNote)
     }
-  }, [current?.id, current?.includeTrainingNote, current?.purpose, issued])
+  }, [current?.id, current?.includeTrainingNote, current?.purpose])
+  useEffect(() => {
+    if (confirmReissue) requestAnimationFrame(() => confirmReissueRef.current?.focus())
+  }, [confirmReissue])
+  useEffect(() => {
+    if (
+      issued &&
+      query.isSuccess &&
+      !query.isFetching &&
+      (current?.id !== issued.link.id || current.status !== 'active')
+    ) {
+      onIssuedChange(null)
+    }
+  }, [current?.id, current?.status, issued, onIssuedChange, query.isFetching, query.isSuccess])
+  const updateCurrent = (link: CapabilityLinkMetadata) =>
+    queryClient.setQueryData<CapabilityLinkMetadata[]>(key, (links = []) => [
+      ...links.filter((value) => value.purpose !== link.purpose),
+      link
+    ])
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: key })
   }
@@ -105,7 +182,8 @@ function CapabilityLinkDialog({
       }),
     retry: false,
     onSuccess: (value) => {
-      setIssued(value)
+      updateCurrent(value.link)
+      onIssuedChange(value)
       setNotice('')
       void refresh()
     },
@@ -126,8 +204,10 @@ function CapabilityLinkDialog({
       }),
     retry: false,
     onSuccess: (value) => {
-      setIssued(value)
-      setNotice('舊連結已失效，請改用下方新連結。')
+      updateCurrent(value.link)
+      onIssuedChange(value)
+      setConfirmReissue(false)
+      setNotice('')
       void refresh()
     },
     onError: () => {
@@ -138,8 +218,10 @@ function CapabilityLinkDialog({
   const revoke = useMutation({
     mutationFn: (link: CapabilityLinkMetadata) =>
       revokeCapabilityLink(session.access_token, link.id, link.version),
-    onSuccess: () => {
-      setIssued(null)
+    onSuccess: (link) => {
+      updateCurrent(link)
+      onIssuedChange(null)
+      setConfirmReissue(false)
       setNotice('連結已撤銷。')
       void refresh()
     },
@@ -151,7 +233,6 @@ function CapabilityLinkDialog({
   const pending = issue.isPending || reissue.isPending || revoke.isPending
   const close = () => {
     if (pending) return
-    setIssued(null)
     onClose()
   }
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(close, { submitOnEnter: true })
@@ -180,8 +261,8 @@ function CapabilityLinkDialog({
       window.removeEventListener('keydown', keydown)
     }
   }, [])
-  const rawUrl = issued
-    ? `${window.location.origin}/${purpose === 'training_result' ? 't' : 'r'}/${issued.token}`
+  const rawUrl = availableIssued
+    ? `${window.location.origin}/${purpose === 'training_result' ? 't' : 'r'}/${availableIssued.token}`
     : ''
   return (
     <div
@@ -207,7 +288,7 @@ function CapabilityLinkDialog({
           </button>
         </header>
         <p className="capability-intro">連結會在 24 小時後失效。只有持有連結的人能查看這項內容。</p>
-        {purpose === 'training_result' ? (
+        {purpose === 'training_result' && !current ? (
           <Checkbox
             className="capability-note"
             label="一併分享教練筆記"
@@ -224,15 +305,15 @@ function CapabilityLinkDialog({
           </button>
         ) : null}
         {current ? <LinkMetadata link={current} /> : null}
+        {notice ? (
+          <p className="form-notice" role="status">
+            {notice}
+          </p>
+        ) : null}
         {rawUrl ? (
           <div className="capability-secret">
-            <label htmlFor="capability-url">只會顯示這一次</label>
-            <input
-              id="capability-url"
-              readOnly
-              value={rawUrl}
-              onFocus={(event) => event.currentTarget.select()}
-            />
+            <label htmlFor="capability-url">目前連結</label>
+            <input id="capability-url" readOnly value={rawUrl} />
             <button
               className="secondary-button ui-action-general"
               onClick={() => void copy(rawUrl, setCopyState)}
@@ -248,48 +329,80 @@ function CapabilityLinkDialog({
             </span>
           </div>
         ) : null}
-        {notice ? (
-          <p className="form-notice" role="status">
-            {notice}
-          </p>
+        {confirmReissue && current?.allowedActions.canReissue ? (
+          <div className="capability-reissue">
+            <strong>重新建立連結</strong>
+            <p>新連結建立後，先前的網址會立即失效。請將新網址分享給需要的人。</p>
+            {purpose === 'training_result' ? (
+              <Checkbox
+                label="新連結一併分享教練筆記"
+                description="只有新連結會顯示本堂筆記。"
+                checked={includeNote}
+                onChange={setIncludeNote}
+              />
+            ) : null}
+            <div className="capability-reissue-actions">
+              <button
+                className="secondary-button"
+                disabled={pending}
+                onClick={() => {
+                  setConfirmReissue(false)
+                  requestAnimationFrame(() => reissueTriggerRef.current?.focus())
+                }}
+              >
+                取消
+              </button>
+              <button
+                ref={confirmReissueRef}
+                className="primary-button"
+                disabled={pending}
+                onClick={() => reissue.mutate(current)}
+              >
+                {reissue.isPending ? '處理中…' : '確認重新建立'}
+              </button>
+            </div>
+          </div>
         ) : null}
-        <footer>
-          {!current ? (
-            <button
-              className="primary-button ui-action-add"
-              disabled={pending || query.isLoading}
-              onClick={() => issue.mutate()}
-            >
-              {issue.isPending ? (
-                '處理中…'
-              ) : (
-                <>
-                  <Plus aria-hidden="true" />
-                  建立連結
-                </>
-              )}
-            </button>
-          ) : null}
-          {current?.allowedActions.canRevoke ? (
-            <button
-              className="danger-outline-button ui-action-delete"
-              disabled={pending}
-              onClick={() => revoke.mutate(current)}
-            >
-              <ShieldOff /> {revoke.isPending ? '處理中…' : '撤銷連結'}
-            </button>
-          ) : null}
-          {current?.allowedActions.canReissue ? (
-            <button
-              className="secondary-button ui-action-general"
-              disabled={pending}
-              onClick={() => reissue.mutate(current)}
-            >
-              <RefreshCw /> {reissue.isPending ? '處理中…' : '重新建立連結'}
-            </button>
-          ) : null}
-        </footer>
-        {current?.allowedActions.canReissue ? (
+        {!confirmReissue ? (
+          <footer>
+            {!current ? (
+              <button
+                className="primary-button ui-action-add"
+                disabled={pending || query.isLoading}
+                onClick={() => issue.mutate()}
+              >
+                {issue.isPending ? (
+                  '處理中…'
+                ) : (
+                  <>
+                    <Plus aria-hidden="true" />
+                    建立連結
+                  </>
+                )}
+              </button>
+            ) : null}
+            {current?.allowedActions.canRevoke ? (
+              <button
+                className="danger-outline-button ui-action-delete"
+                disabled={pending}
+                onClick={() => revoke.mutate(current)}
+              >
+                <ShieldOff /> {revoke.isPending ? '處理中…' : '撤銷連結'}
+              </button>
+            ) : null}
+            {current?.allowedActions.canReissue ? (
+              <button
+                ref={reissueTriggerRef}
+                className="secondary-button ui-action-general"
+                disabled={pending}
+                onClick={() => setConfirmReissue(true)}
+              >
+                <RefreshCw /> {reissue.isPending ? '處理中…' : '重新建立連結'}
+              </button>
+            ) : null}
+          </footer>
+        ) : null}
+        {current?.allowedActions.canReissue && !confirmReissue ? (
           <small className="capability-warning">重新建立會立即讓先前的 URL 失效。</small>
         ) : null}
       </section>
@@ -300,7 +413,9 @@ function CapabilityLinkDialog({
 function LinkMetadata({ link }: { link: CapabilityLinkMetadata }) {
   const labels = { active: '使用中', expired: '已過期', revoked: '已撤銷', used: '已使用' }
   return (
-    <dl className="capability-metadata">
+    <dl
+      className={`capability-metadata${link.purpose === 'reschedule_session' ? ' capability-metadata-two' : ''}`}
+    >
       <div>
         <dt>狀態</dt>
         <dd data-status={link.status}>{labels[link.status]}</dd>

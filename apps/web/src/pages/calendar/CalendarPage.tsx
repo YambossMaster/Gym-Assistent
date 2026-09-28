@@ -610,7 +610,7 @@ function Editor({
         <div className="calendar-session-quickview">
           <div className="calendar-quick-time">
             <CalendarClock aria-hidden="true" />
-            <div>
+            <div className="calendar-quick-details">
               <span>{dateLabel}</span>
               <strong>
                 {draft.start}–{draft.end}
@@ -621,15 +621,25 @@ function Editor({
               </small>
             </div>
             {current.status === 'scheduled' ? (
-              <button
-                ref={quickEditRef}
-                type="button"
-                className="calendar-quick-edit"
-                disabled={pending}
-                onClick={beginEdit}
-              >
-                編輯安排
-              </button>
+              <div className="calendar-quick-time-actions">
+                {current.startsAt ? (
+                  <Link
+                    className="calendar-quick-link"
+                    to={`/sessions/${current.id}?link=reschedule`}
+                  >
+                    建立改期連結
+                  </Link>
+                ) : null}
+                <button
+                  ref={quickEditRef}
+                  type="button"
+                  className="calendar-quick-edit"
+                  disabled={pending}
+                  onClick={beginEdit}
+                >
+                  編輯安排
+                </button>
+              </div>
             ) : null}
           </div>
           {error ? (
@@ -674,13 +684,6 @@ function Editor({
               </button>
             ) : null}
           </div>
-          {current.status === 'scheduled' && current.startsAt ? (
-            <div className="calendar-quick-secondary">
-              <Link className="text-button" to={`/sessions/${current.id}?link=reschedule`}>
-                建立改期連結
-              </Link>
-            </div>
-          ) : null}
         </div>
       </SchedulingDialog>
     )

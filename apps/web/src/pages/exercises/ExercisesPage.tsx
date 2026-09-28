@@ -202,6 +202,14 @@ export function ExercisesPage({ session }: { session: Session }) {
                 </div>
                 <footer>
                   <button
+                    className="text-button danger ui-action-delete"
+                    disabled={busy}
+                    onClick={() => setDeleting(definition)}
+                  >
+                    <Trash2 />
+                    刪除
+                  </button>
+                  <button
                     className="text-button"
                     disabled={busy}
                     onClick={() => {
@@ -211,14 +219,6 @@ export function ExercisesPage({ session }: { session: Session }) {
                   >
                     <Pencil />
                     編輯
-                  </button>
-                  <button
-                    className="text-button danger ui-action-delete"
-                    disabled={busy}
-                    onClick={() => setDeleting(definition)}
-                  >
-                    <Trash2 />
-                    刪除
                   </button>
                 </footer>
               </article>

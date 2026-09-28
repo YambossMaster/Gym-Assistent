@@ -1,7 +1,7 @@
 import { formatMeasurements } from '../training/recording'
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
-import { CalendarClock, Check, Download, Dumbbell, RefreshCw } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { CalendarClock, Check, Download, Dumbbell, RefreshCw, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   ApiError,
@@ -14,6 +14,7 @@ import {
 } from '../../api'
 import { Brand } from '../../shared/primitives'
 import { useModalScrollLock } from '../../shared/useDialogBehavior'
+import { createTrainingResultImage } from './trainingResultImage'
 
 export function PublicCapabilityApp({ purpose }: { purpose: 'training' | 'reschedule' }) {
   const [client] = useState(
@@ -43,108 +44,13 @@ function PublicFrame({ children }: { children: React.ReactNode }) {
   )
 }
 
-const trainingResultStyles = {
-  heading: { padding: 32, gap: 24 },
-  eyebrow: {
-    display: 'block',
-    marginBottom: 8,
-    color: 'var(--lime)',
-    fontSize: 12,
-    fontWeight: 600,
-    lineHeight: 1,
-    letterSpacing: '0.04em'
-  },
-  title: {
-    margin: '0 0 12px',
-    color: 'var(--white)',
-    fontSize: 'clamp(32px, 4vw, 36px)',
-    fontWeight: 700,
-    lineHeight: 1.2
-  },
-  session: { color: '#bdc0b3', fontSize: 14, fontWeight: 400, lineHeight: 1.5 },
-  coachSeal: { padding: '12px 16px' },
-  coachLabel: { fontSize: 12, fontWeight: 600, lineHeight: 1, letterSpacing: '0.04em' },
-  coachName: { color: 'var(--white)', fontSize: 14, fontWeight: 600, lineHeight: 1.5 },
-  exerciseList: { padding: '16px 24px' },
-  exercise: { padding: '32px 0' },
-  exerciseHeading: { gap: 16 },
-  exerciseNumber: {
-    color: 'var(--text-supplementary)',
-    fontSize: 12,
-    fontWeight: 600,
-    lineHeight: 1,
-    letterSpacing: '0.04em'
-  },
-  exerciseTitle: {
-    margin: '0 0 16px',
-    color: 'var(--text-primary)',
-    fontSize: 'clamp(24px, 3vw, 28px)',
-    fontWeight: 700,
-    lineHeight: 1.25
-  },
-  set: { minHeight: 56, padding: '8px 12px' },
-  setLabel: {
-    color: 'var(--text-primary)',
-    fontSize: 12,
-    fontWeight: 600,
-    lineHeight: 1,
-    letterSpacing: '0.04em'
-  },
-  measurement: {
-    color: 'var(--text-primary)',
-    fontSize: 14,
-    fontWeight: 600,
-    lineHeight: 1.5
-  },
-  rpe: { color: 'var(--text-secondary)', fontSize: 14, fontWeight: 400, lineHeight: 1.5 },
-  resultBadge: {
-    padding: '4px 8px',
-    fontSize: 12,
-    fontWeight: 600,
-    lineHeight: 1,
-    letterSpacing: '0.04em'
-  },
-  emptyTitle: {
-    margin: '16px 0 0',
-    color: 'var(--text-primary)',
-    fontSize: 'clamp(24px, 3vw, 28px)',
-    fontWeight: 700,
-    lineHeight: 1.25
-  },
-  note: { margin: '8px 24px 32px', padding: 24 },
-  noteLabel: {
-    color: 'var(--text-primary)',
-    fontSize: 12,
-    fontWeight: 600,
-    lineHeight: 1,
-    letterSpacing: '0.04em'
-  },
-  noteText: {
-    margin: '8px 0 0',
-    color: 'var(--text-primary)',
-    fontSize: 16,
-    fontWeight: 400,
-    lineHeight: 1.5
-  },
-  download: { padding: '0 24px 48px' },
-  downloadStatus: {
-    color: 'var(--text-supplementary)',
-    fontSize: 12,
-    fontWeight: 400,
-    lineHeight: 1.5
-  },
-  downloadError: { color: '#a43827', fontSize: 12, fontWeight: 600, lineHeight: 1.5 }
-} satisfies Record<string, CSSProperties>
-
 function TrainingResultPage() {
   const { token = '' } = useParams()
   const query = useQuery({
     queryKey: ['public-training-result', token],
     queryFn: () => getPublicTrainingResult(token)
   })
-  const [downloadState, setDownloadState] = useState<'idle' | 'pending' | 'success' | 'error'>(
-    'idle'
-  )
+  const [downloadState, setDownloadState] = useState<'idle' | 'pending' | 'error'>('idle')
   if (query.isLoading)
     return (
       <PublicFrame>
@@ -171,13 +77,11 @@ function TrainingResultPage() {
   return (
     <PublicFrame>
       <article className="public-result-card">
-        <header className="public-result-heading" style={trainingResultStyles.heading}>
+        <header className="public-result-heading">
           <div>
-            <span className="eyebrow dark" style={trainingResultStyles.eyebrow}>
-              TRAINING RESULT
-            </span>
-            <h1 style={trainingResultStyles.title}>{result.studentDisplayName} 的訓練結果</h1>
-            <p style={trainingResultStyles.session}>
+            <span className="eyebrow dark">TRAINING RESULT</span>
+            <h1>{result.studentDisplayName} 的訓練結果</h1>
+            <p>
               {formatSession(
                 result.session.startsAt,
                 result.session.endsAt,
@@ -186,52 +90,55 @@ function TrainingResultPage() {
               · {result.session.durationMinutes} 分鐘
             </p>
           </div>
-          <div className="public-coach-seal" style={trainingResultStyles.coachSeal}>
-            <small style={trainingResultStyles.coachLabel}>COACH</small>
-            <strong style={trainingResultStyles.coachName}>{result.coachDisplayName}</strong>
+          <div className="public-result-actions">
+            <div className="public-coach-seal">
+              <small>COACH</small>
+              <strong>{result.coachDisplayName}</strong>
+            </div>
+            <button
+              className="secondary-button ui-action-general public-download-button"
+              disabled={downloadState === 'pending'}
+              onClick={() => void downloadResult(result, setDownloadState)}
+            >
+              <Download /> {downloadState === 'pending' ? '正在製作圖片…' : '下載圖片'}
+            </button>
+            {downloadState === 'error' ? (
+              <span role="status" className="public-download-error">
+                無法下載圖片，請再試一次。
+              </span>
+            ) : null}
           </div>
         </header>
         {result.exercises.length ? (
-          <div className="public-exercise-list" style={trainingResultStyles.exerciseList}>
-            {result.exercises.map((exercise) => (
-              <section
-                className="public-exercise"
-                style={trainingResultStyles.exercise}
-                key={exercise.position}
-              >
-                <header style={trainingResultStyles.exerciseHeading}>
-                  <span style={trainingResultStyles.exerciseNumber}>
-                    {String(exercise.position).padStart(2, '0')}
-                  </span>
-                  <h2 style={trainingResultStyles.exerciseTitle}>{exercise.definitionName}</h2>
+          <div className="public-exercise-list">
+            {result.exercises.map((exercise, exerciseIndex) => (
+              <section className="public-exercise" key={exercise.position}>
+                <header>
+                  <span>{String(exerciseIndex + 1).padStart(2, '0')}</span>
+                  <h2>{exercise.definitionName}</h2>
                 </header>
                 <div className="public-set-grid">
-                  {exercise.sets.map((set) => (
-                    <div className="public-set" style={trainingResultStyles.set} key={set.position}>
-                      <strong style={trainingResultStyles.setLabel}>SET {set.position}</strong>
+                  {exercise.sets.map((set, setIndex) => (
+                    <div className="public-set" key={set.position}>
+                      <strong>SET {setIndex + 1}</strong>
                       {exercise.recording && set.measurements ? (
-                        <span style={trainingResultStyles.measurement}>
+                        <span className="public-set-measurement recording">
                           {formatMeasurements(exercise.recording, set.measurements)}
                         </span>
                       ) : (
                         <>
-                          <span style={trainingResultStyles.measurement}>
+                          <span className="public-set-measurement">
                             {value(set.plannedWeight)} {set.plannedWeight === null ? '' : set.unit}
                           </span>
-                          <span style={trainingResultStyles.measurement}>
+                          <span className="public-set-reps">
                             {set.actualReps === null ? '—' : `× ${set.actualReps}`}
                           </span>
                         </>
                       )}
-                      {set.rpe !== null ? (
-                        <span style={trainingResultStyles.rpe}>RPE {set.rpe}</span>
-                      ) : (
-                        <span style={trainingResultStyles.rpe}>RPE —</span>
-                      )}
-                      <em
-                        data-result={set.result ?? 'none'}
-                        style={trainingResultStyles.resultBadge}
-                      >
+                      <span className="public-set-rpe">RPE {set.rpe ?? '—'}</span>
+                      <em data-result={set.result ?? 'none'}>
+                        {set.result === 'completed' ? <Check aria-hidden="true" /> : null}
+                        {set.result === 'incomplete' ? <X aria-hidden="true" /> : null}
                         {setResult(set.result)}
                       </em>
                     </div>
@@ -243,38 +150,15 @@ function TrainingResultPage() {
         ) : (
           <section className="public-no-record">
             <Dumbbell />
-            <h2 style={trainingResultStyles.emptyTitle}>這堂課沒有動作紀錄。</h2>
+            <h2>這堂課沒有動作紀錄。</h2>
           </section>
         )}
         {result.trainingNote !== undefined ? (
-          <section className="public-note" style={trainingResultStyles.note}>
-            <span style={trainingResultStyles.noteLabel}>教練給你的話</span>
-            <p style={trainingResultStyles.noteText}>{result.trainingNote || '—'}</p>
+          <section className="public-note">
+            <span>教練筆記</span>
+            <p>{result.trainingNote || '—'}</p>
           </section>
         ) : null}
-        <div className="public-download" style={trainingResultStyles.download}>
-          <button
-            className="secondary-button ui-action-general"
-            disabled={downloadState === 'pending'}
-            onClick={() => void downloadResult(result, setDownloadState)}
-          >
-            <Download /> {downloadState === 'pending' ? '正在製作圖片…' : '下載圖片'}
-          </button>
-          <span
-            role="status"
-            style={
-              downloadState === 'error'
-                ? trainingResultStyles.downloadError
-                : trainingResultStyles.downloadStatus
-            }
-          >
-            {downloadState === 'success'
-              ? '圖片已下載'
-              : downloadState === 'error'
-                ? '無法下載圖片，請再試一次。'
-                : ''}
-          </span>
-        </div>
       </article>
     </PublicFrame>
   )
@@ -285,6 +169,7 @@ function ReschedulePage() {
   const headingRef = useRef<HTMLHeadingElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
   const [selected, setSelected] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   useModalScrollLock(confirming)
   const [used, setUsed] = useState<PublicUsedReschedule | null>(null)
@@ -315,9 +200,6 @@ function ReschedulePage() {
       }
     }
   })
-  useEffect(() => {
-    if (!selected && query.data?.slots[0]) setSelected(query.data.slots[0].startsAt)
-  }, [query.data, selected])
   useEffect(() => {
     if (rateDelay <= 0) return
     const timer = window.setInterval(() => setRateDelay((value) => Math.max(0, value - 1)), 1000)
@@ -395,6 +277,7 @@ function ReschedulePage() {
     )
   const data = query.data
   const groups = groupSlots(data)
+  const activeDate = groups.some(([date]) => date === selectedDate) ? selectedDate : groups[0]?.[0]
   return (
     <PublicFrame>
       <article className="public-reschedule-card">
@@ -416,32 +299,57 @@ function ReschedulePage() {
           </p>
         ) : null}
         {groups.length ? (
-          <div className="public-slot-groups">
-            {groups.map(([date, slots]) => (
-              <section key={date}>
-                <h2>{formatLocalDate(slots[0]!.startsAt, data.timeZone)}</h2>
-                <div className="public-slots">
-                  {slots.map((slot) => (
-                    <button
-                      key={slot.startsAt}
-                      data-slot-start={slot.startsAt}
-                      className={selected === slot.startsAt ? 'selected' : ''}
-                      aria-pressed={selected === slot.startsAt}
-                      aria-label={`${formatLocalDate(slot.startsAt, data.timeZone)} ${formatRange(slot.startsAt, slot.endsAt, data.timeZone)}`}
-                      onClick={() => {
-                        setSelected(slot.startsAt)
-                        setConflict(false)
-                        setConfirming(true)
-                      }}
-                    >
-                      <span>{period(slot.startsAt, data.timeZone)}</span>
-                      <strong>{formatRange(slot.startsAt, slot.endsAt, data.timeZone)}</strong>
-                      {selected === slot.startsAt ? <Check /> : null}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
+          <div className="public-slot-picker">
+            <h2 className="public-picker-label">選擇日期</h2>
+            <div className="public-slot-dates" aria-label="選擇日期">
+              {groups.map(([date, slots]) => (
+                <button
+                  key={date}
+                  type="button"
+                  className={date === activeDate ? 'active' : ''}
+                  aria-pressed={date === activeDate}
+                  onClick={() => {
+                    setSelectedDate(date)
+                    setSelected(null)
+                    setConflict(false)
+                  }}
+                >
+                  {formatLocalDate(slots[0]!.startsAt, data.timeZone)}
+                </button>
+              ))}
+            </div>
+            <h2 className="public-picker-label public-times-label">選擇時間</h2>
+            <div className="public-slot-groups">
+              {groups
+                .filter(([date]) => date === activeDate)
+                .map(([date, slots]) => (
+                  <section
+                    key={date}
+                    aria-label={formatLocalDate(slots[0]!.startsAt, data.timeZone)}
+                  >
+                    <div className="public-slots">
+                      {slots.map((slot) => (
+                        <button
+                          key={slot.startsAt}
+                          data-slot-start={slot.startsAt}
+                          className={selected === slot.startsAt ? 'selected' : ''}
+                          aria-pressed={selected === slot.startsAt}
+                          aria-label={`${formatLocalDate(slot.startsAt, data.timeZone)} ${formatRange(slot.startsAt, slot.endsAt, data.timeZone)}`}
+                          onClick={() => {
+                            setSelected(slot.startsAt)
+                            setConflict(false)
+                            setConfirming(true)
+                          }}
+                        >
+                          <span>{period(slot.startsAt, data.timeZone)}</span>
+                          <strong>{formatRange(slot.startsAt, slot.endsAt, data.timeZone)}</strong>
+                          {selected === slot.startsAt ? <Check /> : null}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+            </div>
           </div>
         ) : (
           <section className="public-no-slots">
@@ -675,72 +583,21 @@ function focusSelectedSlot(selected: string | null) {
 
 async function downloadResult(
   result: PublicTrainingResult,
-  setState: (state: 'idle' | 'pending' | 'success' | 'error') => void
+  setState: (state: 'idle' | 'pending' | 'error') => void
 ) {
   setState('pending')
   try {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1200
-    canvas.height = Math.max(
-      720,
-      420 +
-        result.exercises.reduce((n, item) => n + 100 + item.sets.length * 54, 0) +
-        (result.trainingNote !== undefined ? 180 : 0)
+    const blob = await createTrainingResultImage(
+      result,
+      formatSession(result.session.startsAt, result.session.endsAt, result.session.timeZone)
     )
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('canvas unavailable')
-    context.fillStyle = '#f2f0e9'
-    context.fillRect(0, 0, canvas.width, canvas.height)
-    context.fillStyle = '#151711'
-    context.font = '700 26px sans-serif'
-    context.fillText('FORM  ·  TRAINING RESULT', 72, 72)
-    context.font = '700 52px sans-serif'
-    context.fillText(`${result.studentDisplayName} 的訓練結果`, 72, 150)
-    context.font = '24px sans-serif'
-    context.fillText(
-      formatSession(result.session.startsAt, result.session.endsAt, result.session.timeZone),
-      72,
-      196
-    )
-    let y = 270
-    for (const exercise of result.exercises) {
-      context.font = '700 30px sans-serif'
-      context.fillText(`${exercise.position}. ${exercise.definitionName}`, 72, y)
-      y += 50
-      context.font = '22px sans-serif'
-      for (const set of exercise.sets) {
-        context.fillText(
-          `SET ${set.position}    ${exercise.recording && set.measurements ? formatMeasurements(exercise.recording, set.measurements) : `${value(set.plannedWeight)} ${set.plannedWeight === null ? '' : set.unit}    ${set.actualReps === null ? '—' : `× ${set.actualReps}`}`}    ${set.rpe === null ? 'RPE —' : `RPE ${set.rpe}`}    ${setResult(set.result)}`,
-          100,
-          y
-        )
-        y += 45
-      }
-      y += 30
-    }
-    if (result.exercises.length === 0) {
-      context.font = '28px sans-serif'
-      context.fillText('這堂課沒有動作紀錄。', 72, y)
-      y += 70
-    }
-    if (result.trainingNote !== undefined) {
-      context.fillStyle = '#d9ff43'
-      context.fillRect(56, y, 1088, 130)
-      context.fillStyle = '#151711'
-      context.font = '700 20px sans-serif'
-      context.fillText('教練給你的話', 80, y + 38)
-      context.font = '24px sans-serif'
-      context.fillText(result.trainingNote || '—', 80, y + 84, 1020)
-    }
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
-    if (!blob) throw new Error('image unavailable')
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `FORM-訓練結果-${localParts(result.session.startsAt, result.session.timeZone).date}.png`
     link.click()
-    URL.revokeObjectURL(url)
-    setState('success')
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setState('idle')
   } catch {
     setState('error')
   }

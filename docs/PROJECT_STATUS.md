@@ -5,22 +5,29 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
-| Current package    | **M7.5 interactive control and Finance detail review; Venue/Finance acceptance remains open**       |
-| Package state      | **Interactive-control Main checkpoint delivered; Product Owner review paused**                      |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
-| Branch baseline    | Interactive-control checkpoint `c232364` reached Main; CI run `36346891642` passed both jobs        |
-| Worktree           | Checkpoint committed; `output/` stays local and ignored                                             |
-| Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass |
-| Production         | Not configured; no real customer data                                                               |
+| Field              | Current value                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                            |
+| Current package    | **M7.5 Product Owner-led public-page and Venue/Finance review**                                       |
+| Package state      | **Capability Link, public-page, and Venue dialog corrections locally verified; Stage 1 remains open** |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                         |
+| Branch baseline    | Interactive-control checkpoint `c232364` reached Main; CI run `36346891642` passed both jobs          |
+| Worktree           | Stage 1 UI corrections, including Capability Link recovery, are local; `output/` stays ignored        |
+| Linked database    | Development only; migrations through `20260926205307` applied; dry-run and private-schema lint pass   |
+| Production         | Not configured; no real customer data                                                                 |
 
 ## Next handoff
 
-The Product Owner has paused review of the interactive-control corrections after the desktop-led
-Settings layout and option-control pass. The Main checkpoint passed local checks and exact-SHA
-remote CI; this does not close Stage 1 or M7.5. When the Product Owner resumes, continue review of
+Review the corrected Venue creation, expense-change, and prepaid dialogs with the Product Owner,
+alongside the corrected `/t/:token` and `/r/:token` presentation and date picker.
+Review the M7.5 Capability Link correction: new links are retained in this browser tab across
+dialog close and page reload, then cleared on revocation, reissue, expiry, or Coach sign-out/change.
+Previously issued links whose one-time URL was already discarded cannot be recovered from the
+server's digest-only record; avoid reissuing the preserved review link unless the Product Owner
+chooses to replace it. This Stage 1 change intentionally narrows M6's one-time browser-secret rule
+to per-tab `sessionStorage`; it requires acceptance as part of the current Product Owner review.
+This local Stage 1 correction does not close M7.5 or require remote delivery yet. The earlier
+interactive-control Main checkpoint passed local checks and exact-SHA remote CI. Then continue review of
 Venue management, Venue course records, Student course history, trajectory navigation, and Finance overview/month
 selector against the preserved 2026 development data (LOG-221–243; scenario index in local
 `output/M7.5-2026-venue-finance-review-data.md`). Take subsequent corrections only when the
@@ -332,6 +339,99 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-28 — LOG-277 — Stage 1 public and Venue checkpoint preflight
+
+- **Scope:** The Product Owner explicitly requested full CI and a Main push if clean for the current Stage 1 Web corrections. This checkpoint includes the Capability Link, public pages and result image, Calendar quick action, Exercise card actions, RPE surface, and Venue/prepaid form layout already recorded in LOG-266–276.
+- **Outcome:** The changes remain a bounded Stage 1 checkpoint; wider Venue/Finance browser acceptance and M7.5 completion remain open. No schema or API source changed.
+- **Verification:** Elevated root `npm run check` passed (API 26 files/122 tests; Web 53 files/224 tests), root production build passed with the existing Vite chunk-size advisory, and `git diff --check` passed. Linked development migration dry-run is up to date; `app_private` lint found no schema errors. Advisors returned the accepted development leaked-password-protection warning and existing Capability Link permissive-policy performance warnings, with no errors. The initial sandbox check was blocked by Windows `spawn EPERM`; the elevated rerun passed. Remote Main matched local `ea92b194` before delivery.
+- **Known issue:** The previously issued active link whose raw URL was discarded remains unrecoverable from its digest-only server record. Product Owner review and wider M7.5 Stage 1 acceptance remain open.
+- **Next:** Commit and push this checkpoint, verify the exact remote SHA and both Actions jobs, then continue the preserved Stage 1 Product Owner review.
+
+### 2026-09-28 — LOG-276 — Refine Capability Link copy field and explain older unrecoverable URLs
+
+- **Scope:** The Product Owner asked to restore the light copy button and white URL field, stop automatic full-URL selection on input focus, and investigated another active Training Result link without a visible URL.
+- **Outcome:** The copy action is light again, the URL input has a white surface and native caret/selection behavior, and the two-field reschedule status no longer reserves an empty third column. The missing Training Result URL was issued before the tab-retention correction; its original token was already discarded and the digest-only server record cannot reconstruct it. The existing grant was not reissued or revoked. The Product Owner then confirmed no further persistence redesign is needed if newly issued links remain available; the current behavior is scoped to the issuing browser tab.
+- **Verification:** Focused Web regression was red on the old focus-select behavior, then passed after the edit. Web check passed 53 files/224 tests; Web production build passed with the existing chunk-size advisory. Status Prettier and `git diff --check` passed. No live link mutation, push, or remote CI claim is made.
+- **Known issue:** The older active link can still be used by someone who has its URL, but the Coach dialog cannot reconstruct that exact URL. Product Owner review and wider M7.5 Stage 1 acceptance remain open.
+- **Next:** Continue Product Owner review of the corrected share dialog and preserved public/Venue work, then resume Stage 1 Venue/Finance acceptance.
+
+### 2026-09-28 — LOG-275 — Retain active sharing URLs across dialog close and page reload
+
+- **Scope:** The Product Owner reported that an active Training Result link disappeared on reopening/reloading the share dialog, causing unnecessary reissue, and asked to remove the duplicate new-link notice.
+- **Outcome:** The dialog keeps an issued URL in the current tab's `sessionStorage` under Coach, Session, and purpose scope, reconciles it with server metadata, and removes it on revocation, reissue, expiry, or Coach change/sign-out. Active links show a clear copy action; reissue has a separate confirmation and note-consent choice. Removed both the reload-recovery banner and the redundant new-link notice. This M7.5 correction deliberately changes the M6 browser-secret handling rule while preserving digest-only server storage and one active link per purpose.
+- **Verification:** A red-before/green-after Web regression covers issue, close/reopen, full component remount, reissue, and revoke; a storage test covers scope, expiry, and Coach change. Web check passed 53 files/224 tests and Web production build passed with the existing chunk-size advisory; `git diff --check` passed. Authenticated Chrome inspected the pre-existing active-link state and confirmation layout before the final copy change. No live link was reissued or revoked for browser testing; no push or remote CI claim is made.
+- **Known issue:** A link issued before this correction whose URL was already discarded cannot be recovered from server metadata. Stage 1 Venue/Finance acceptance and Product Owner review remain open.
+- **Next:** Review the Capability Link secret-retention choice and corrected share dialog alongside the preserved public/Venue work, then resume Stage 1 Venue/Finance acceptance.
+
+### 2026-09-28 — LOG-274 — Give Training Record RPE inputs a white surface
+
+- **Scope:** Product Owner requested the RPE input background match the other Training Record numeric fields in white.
+- **Outcome:** The direct RPE field now has a white background and a subtle border in normal and focused states; its centered numeric text remains unchanged. Other form fields retain their existing styles.
+- **Verification:** Targeted CSS Prettier check and `git diff --check` passed. This focused CSS change was not browser checked; no commit, push, or remote CI claim is made.
+- **Known issue:** Product Owner review and wider M7.5 Stage 1 Venue/Finance browser acceptance remain open.
+- **Next:** Continue Product Owner review of the current local UI corrections, then resume Stage 1 Venue/Finance acceptance.
+
+### 2026-09-28 — LOG-273 — Center Training Record RPE values
+
+- **Scope:** Product Owner requested RPE numbers align centrally with the other Training Record measurements.
+- **Outcome:** The direct set-row RPE input is centered in both current and legacy recording layouts. Measurement inputs and other form controls are unaffected.
+- **Verification:** Targeted CSS Prettier check, Web production build, and `git diff --check` passed. The first sandboxed build hit Windows Vite `spawn EPERM`; the elevated rerun passed with the existing chunk-size advisory. No browser, commit, push, or remote CI claim is made for this small correction.
+- **Known issue:** Product Owner review and wider M7.5 Stage 1 Venue/Finance browser acceptance remain open.
+- **Next:** Continue Product Owner review of the current local UI corrections, then resume Stage 1 Venue/Finance acceptance.
+
+### 2026-09-28 — LOG-272 — Finish prepaid Venue form grouping and salary hierarchy
+
+- **Scope:** Apply the Product Owner's follow-up screenshots to prepaid registration/editing and the new Venue form.
+- **Outcome:** Registration and editing now place lesson count, total, and unit reference price on one desktop row; the editing form omits its redundant amount summary. New Venue prepaid creation places the independent salary choice below the prepaid money row, and its salary state uses quieter, smaller text than the field heading. The mobile money layout remains two columns with the unit price below.
+- **Verification:** Targeted Prettier, Web typecheck, focused Venue/money tests (2 files, 18 tests), production build, and `git diff --check` passed. Authenticated Chrome visually checked desktop new Venue, prepaid registration/editing, and exact 390×844 prepaid editing. The test/build runs used the approved elevated path for the known Windows Vite `spawn EPERM` restriction. No database change, commit, push, or remote CI claim is made.
+- **Known issue:** Wider M7.5 Stage 1 Venue/Finance browser acceptance and Product Owner review remain open.
+- **Next:** Continue Product Owner review of these Venue dialogs and the preserved public pages, then resume Stage 1 Venue/Finance acceptance.
+
+### 2026-09-28 — LOG-271 — Refine Venue creation, expense, and prepaid forms
+
+- **Scope:** Apply the Product Owner's six screenshot corrections to Venue creation, expense changes, and prepaid purchase editing without changing Venue accounting or persistence.
+- **Outcome:** Renamed the expense dialog to 「變更場地支出」; grouped effective date/time and prepaid deduction date/time; placed deduction timing below the expense type; put 「場地供客」 before 「教練自帶客源」 in a two-column rate row. New Venue prepaid money fields use one desktop row for count, total, and unit price. The purchase summary shows all three values when complete and no incomplete 「輸入堂數」 hint.
+- **Verification:** Targeted Prettier, Web typecheck, focused Venue/money tests (2 files, 17 tests), production build, and `git diff --check` passed. Authenticated Chrome visually checked desktop creation, source-based commission, prepaid creation, prepaid editing, and expense-change title; the 390×844 prepaid form retained readable stacked timing and two-column money inputs. Vitest/build required elevated reruns after sandbox `spawn EPERM`. No database change, commit, push, or remote CI claim is made.
+- **Known issue:** M7.5 Stage 1 browser acceptance for the wider Venue/Finance workflows and Product Owner review remain open.
+- **Next:** Continue Product Owner review of these Venue dialogs and the preserved public pages, then resume the Stage 1 Venue/Finance acceptance handoff.
+
+### 2026-09-28 — LOG-270 — Move Calendar reschedule link beside schedule editing
+
+- **Scope:** Product Owner requested 「建立改期連結」 on the same row as 「編輯安排」 in the Calendar course quick view, removing its former bottom row.
+- **Outcome:** The scheduled course time card now groups the two actions at its right edge. The reschedule route remains `/sessions/:id?link=reschedule`, and narrow layouts keep both actions together on one row within the card.
+- **Verification:** Targeted Prettier, Web typecheck, focused Calendar gesture tests (10/10), and `git diff --check` passed. Vitest required an elevated rerun after sandbox `spawn EPERM`. No local Web server was listening for browser acceptance; no commit, push, or remote CI claim is made.
+- **Known issue:** The Product Owner's public-page and Venue/Finance Stage 1 acceptance remain open.
+- **Next:** Continue Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
+
+### 2026-09-28 — LOG-269 — Finish public-page background and portrait result export
+
+- **Scope:** Apply the next Product Owner screenshot corrections to both Student-facing public pages and the downloaded result image during M7.5 Stage 1.
+- **Outcome:** The full page background is black on result and reschedule links, with a readable light footer. The Result page removes the download-success line, softens SET labels, aligns every measurement column across rows on mobile, labels the note `教練筆記`, and restores its bottom spacing. The downloaded PNG now uses the official FORM logo, a composed portrait layout near phone screen proportions, numbered exercises and sets, aligned measurements, completion icons, and the Coach note.
+- **Verification:** Live Chrome review covered desktop and exact 390×844 layouts for both pages, with no horizontal overflow. The downloaded 1080×1920 PNG was opened and visually inspected. At 390px, the first three set rows had identical x coordinates for all five columns. Web check passed (51 files, 221 tests), and production build passed with the existing chunk-size advisory. The initial sandbox test attempt hit the known Windows `spawn EPERM`; the approved rerun passed. No database change, push, or remote CI occurred.
+- **Next:** Product Owner reviews the corrected public pages; continue the preserved M7.5 Stage 1 acceptance afterwards.
+
+### 2026-09-28 — LOG-268 — Refine public pages from Product Owner screenshots
+
+- **Scope:** Apply the Product Owner's four screenshot corrections to the local M7.5 Stage 1 public pages.
+- **Outcome:** Both pages restore the official horizontal FORM logo against a black brandbar. Reschedule has a smaller page and confirmation title, tighter confirmation spacing, and distinct date/time groups with FORM-aligned button type. Training Result numbers visible exercises and sets from 1, spreads measurements into columns, adds completion or incomplete icons, places image download beside the Coach label, and tightens the note typography.
+- **Verification:** Desktop and exact 390×844 live Chrome review of valid development links passed; both mobile pages had no horizontal overflow. The mobile confirmation dialog opened, cancelled, and returned focus to the selected slot. Web check passed (51 files, 221 tests), production build passed with the existing chunk-size advisory, and `git diff --check` passed. No public redemption, database change, push, or remote CI occurred.
+- **Next:** Product Owner reviews the corrected public pages; continue the preserved M7.5 Stage 1 acceptance afterwards.
+
+### 2026-09-28 — LOG-267 — Compact public result and reschedule pages
+
+- **Scope:** Product Owner requested a Demo-led visual correction to the two Student-facing public pages within M7.5 Stage 1.
+- **Outcome:** `/t/:token` now uses a narrow, light document with consistent type, compact exercise rows, restrained note styling, and a readable FORM wordmark. `/r/:token` uses the same card scale and shows one day of slots at a time through visible date choices. Existing public data, terminal states, image download, and final redemption confirmation remain intact.
+- **Verification:** Web check passed (51 files, 221 tests), Web production build passed with the existing bundle-size advisory, and `git diff --check` passed. Live Chrome review used a valid development result/reschedule link on desktop and exact 390×844; both had no horizontal overflow. Date switching, confirmation dialog, cancel, and focus return worked. No redemption, database change, push, or remote CI was performed.
+- **Next:** Product Owner reviews both compact public pages; continue the preserved M7.5 Stage 1 acceptance afterwards.
+
+### 2026-09-28 — LOG-266 — Swap Exercise Library card actions
+
+- **Scope:** Product Owner requested 「刪除」 on the left and 「編輯」 on the right of each Exercise Library card.
+- **Outcome:** Reordered the two card buttons in the formal Web. Their existing icons, styles, disabled states, and click actions remain attached to the correct labels.
+- **Verification:** Targeted Prettier check, Web typecheck, and `git diff --check` passed. No browser, commit, push, or remote CI claim is made for this focused layout correction.
+- **Known issue:** The Product Owner's Venue/Finance Stage 1 acceptance remains open.
+- **Next:** Continue Product Owner visual review, then resume the preserved Venue/Finance Stage 1 acceptance.
 
 ### 2026-09-28 — LOG-265 — Interactive-control and Settings checkpoint preflight
 

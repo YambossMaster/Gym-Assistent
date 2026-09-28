@@ -383,7 +383,7 @@ function VenueEditor({
         : editor.kind === 'rename'
           ? '編輯場地名稱'
           : editor.kind === 'rule'
-            ? '設定場地費用'
+            ? '變更場地支出'
             : editor.kind === 'salary'
               ? '設定場地底薪'
               : editor.kind === 'credit'
@@ -687,7 +687,13 @@ function VenueEditor({
           </>
         ) : (
           <form
-            className={editor.kind === 'credit' ? 'venue-credit-form' : undefined}
+            className={
+              editor.kind === 'credit'
+                ? 'venue-credit-form'
+                : editor.kind === 'create' && kind === 'prepaid'
+                  ? 'venue-prepaid-form'
+                  : undefined
+            }
             autoComplete="off"
             onKeyDown={(event) => {
               if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
@@ -904,37 +910,65 @@ function VenueEditor({
               )}
               {['rule', 'credit', 'salary'].includes(editor.kind) ||
               (editor.kind === 'create' && (kind !== 'untracked' || salaryEnabled)) ? (
-                <SeriesDatePicker
-                  label={editor.kind === 'credit' ? '購買日期' : '生效日期'}
-                  value={date}
-                  onChange={(v) => {
-                    setDate(v)
-                    setPreview(null)
-                  }}
-                />
-              ) : null}
-              {(editor.kind === 'rule' || (editor.kind === 'create' && kind !== 'untracked')) && (
-                <div className="field-control">
-                  <span>生效時間</span>
-                  <TimeSelect
-                    label="生效時間"
-                    name="ruleTime"
-                    defaultValue={
-                      editor.kind === 'rule' && venue?.currentRule?.effectiveAt
-                        ? workspaceWallTime(
-                            venue.currentRule.effectiveAt,
-                            data?.timeZone ?? 'Asia/Taipei'
-                          ).slice(11)
-                        : workspaceWallTime(
-                            new Date().toISOString(),
-                            data?.timeZone ?? 'Asia/Taipei'
-                          ).slice(11)
-                    }
+                <div
+                  className={
+                    editor.kind === 'rule' || (editor.kind === 'create' && kind !== 'untracked')
+                      ? 'venue-date-time-row'
+                      : 'venue-date-time-single'
+                  }
+                >
+                  <SeriesDatePicker
+                    label={editor.kind === 'credit' ? '購買日期' : '生效日期'}
+                    value={date}
+                    onChange={(v) => {
+                      setDate(v)
+                      setPreview(null)
+                    }}
                   />
+                  {(editor.kind === 'rule' ||
+                    (editor.kind === 'create' && kind !== 'untracked')) && (
+                    <div className="field-control">
+                      <span>生效時間</span>
+                      <TimeSelect
+                        label="生效時間"
+                        name="ruleTime"
+                        defaultValue={
+                          editor.kind === 'rule' && venue?.currentRule?.effectiveAt
+                            ? workspaceWallTime(
+                                venue.currentRule.effectiveAt,
+                                data?.timeZone ?? 'Asia/Taipei'
+                              ).slice(11)
+                            : workspaceWallTime(
+                                new Date().toISOString(),
+                                data?.timeZone ?? 'Asia/Taipei'
+                              ).slice(11)
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
+              ) : null}
+              {(editor.kind === 'rule' || editor.kind === 'create') && (
+                <>
+                  <label>
+                    場地支出類型
+                    <FormSelect
+                      label="場地支出類型"
+                      value={kind}
+                      onChange={(v) => {
+                        setKind(v as Rule['kind'])
+                        setPreview(null)
+                      }}
+                      options={Object.entries(ruleLabels).map(([value, label]) => ({
+                        value,
+                        label
+                      }))}
+                    />
+                  </label>
+                </>
               )}
               {(editor.kind === 'credit' || (editor.kind === 'create' && kind === 'prepaid')) && (
-                <>
+                <div className="venue-date-time-row">
                   <SeriesDatePicker
                     label="開始扣堂日期"
                     value={deductDate}
@@ -955,25 +989,10 @@ function VenueEditor({
                       }
                     />
                   </div>
-                </>
+                </div>
               )}
               {(editor.kind === 'rule' || editor.kind === 'create') && (
                 <>
-                  <label>
-                    場地支出類型
-                    <FormSelect
-                      label="場地支出類型"
-                      value={kind}
-                      onChange={(v) => {
-                        setKind(v as Rule['kind'])
-                        setPreview(null)
-                      }}
-                      options={Object.entries(ruleLabels).map(([value, label]) => ({
-                        value,
-                        label
-                      }))}
-                    />
-                  </label>
                   {kind === 'commission' && (
                     <>
                       <label>
@@ -991,26 +1010,28 @@ function VenueEditor({
                           ]}
                         />
                       </label>
-                      {(dual ? ['coachRate', 'venueRate'] : ['rate']).map((key) => (
-                        <label key={key}>
-                          {key === 'coachRate'
-                            ? '教練提供客源'
-                            : key === 'venueRate'
-                              ? '場地供客'
-                              : '抽成比例'}
-                          （%）
-                          <input
-                            name={key}
-                            type="number"
-                            onKeyDown={numericInputKeyDown}
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            defaultValue={venue?.currentRule?.[key as 'rate'] ?? 0}
-                            required
-                          />
-                        </label>
-                      ))}
+                      <div className={dual ? 'venue-commission-rates' : 'venue-commission-rate'}>
+                        {(dual ? ['venueRate', 'coachRate'] : ['rate']).map((key) => (
+                          <label key={key}>
+                            {key === 'coachRate'
+                              ? '教練自帶客源'
+                              : key === 'venueRate'
+                                ? '場地供客'
+                                : '抽成比例'}
+                            （%）
+                            <input
+                              name={key}
+                              type="number"
+                              onKeyDown={numericInputKeyDown}
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              defaultValue={venue?.currentRule?.[key as 'rate'] ?? 0}
+                              required
+                            />
+                          </label>
+                        ))}
+                      </div>
                     </>
                   )}
                   {kind === 'rent' && (
@@ -1041,15 +1062,21 @@ function VenueEditor({
                   count={editor.credit?.lessonCount}
                   amount={editor.credit?.amountMinor}
                   currency={creditCurrency}
+                  showSummary={!editor.credit}
                   totalLabel="總金額"
                 />
+              )}
+              {editor.kind === 'create' && kind === 'prepaid' && (
+                <PurchaseMoneyFields currency={preferredCurrency} totalLabel="總金額" />
               )}
               {(editor.kind === 'salary' || editor.kind === 'create') && (
                 <>
                   <label className="student-series-toggle">
                     底薪與否？
                     <span>
-                      <strong>{salaryEnabled ? '有底薪' : '無底薪'}</strong>
+                      <span className="venue-salary-state">
+                        {salaryEnabled ? '有底薪' : '無底薪'}
+                      </span>
                       <input
                         type="checkbox"
                         role="switch"
@@ -1094,9 +1121,6 @@ function VenueEditor({
                     </div>
                   )}
                 </>
-              )}
-              {editor.kind === 'create' && kind === 'prepaid' && (
-                <PurchaseMoneyFields currency={preferredCurrency} totalLabel="總金額" />
               )}
               {(editor.kind === 'credit' || (editor.kind === 'create' && kind === 'prepaid')) && (
                 <label className="venue-credit-note">
