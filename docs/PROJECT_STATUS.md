@@ -9,15 +9,22 @@
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
 | Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                        |
-| Package state      | **Mobile and Calendar checkpoint passed local delivery gate; Stage 1 review remains open**       |
+| Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**         |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
-| Branch baseline    | Mobile Auth checkpoint `b8e0e8c` reached Main; CI run `36470778656` passed both jobs             |
-| Worktree           | Mobile and Calendar changes ready for Main checkpoint; `output/` stays ignored                   |
+| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs     |
+| Worktree           | Delivery code on Main; `output/` stays ignored                                                   |
 | Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date      |
 | Production         | Not configured; no real customer data                                                            |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
 
 ## Next handoff
+
+Review the first Today PWA visual experiment at 390×844 and on a physical installed PWA: the mobile
+schedule card has a quiet shadow, the bottom navigation uses one solid surface and lime icon/text
+selection, and the shell applies viewport safe-area padding. Keep desktop presentation unchanged.
+These experimental changes were unintentionally included in the concurrent `47370fe` checkpoint
+before Product Owner confirmation; do not treat their inclusion as visual acceptance. Decide whether
+to keep or revise this direction before extending it to other mobile routes.
 
 Continue the Product Owner's mobile route-by-route sweep. In each newly reported Settings or edit
 dialog, verify that the title/close action and bottom action row remain visible while only the fields
@@ -58,7 +65,7 @@ scope after this authorized delivery checkpoint. Calendar display hours, week st
 Course Session duration now have an M7.5 Stage 1 Contract and local implementation. The linked
 development migration is applied; during browser checks, the existing review account was restored
 to 06:00–22:00, Monday, and 60 minutes. Product Owner acceptance remains open; this checkpoint is
-in the Main delivery flow.
+on Main with exact-SHA CI.
 Language, privacy controls, and plans remain later product decisions.
 
 Account/security follow-up remains in Product Owner review: password dialog now sends the same recovery email
@@ -400,6 +407,37 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-29 — LOG-310 — Deliver mobile and Calendar checkpoint to Main
+
+- **Scope:** Complete the Product Owner-authorized early Main checkpoint and confirm remote CI for
+  its exact commit.
+- **Outcome:** Commit `47370fe1452f1e5844fedc0b859e2326d3f8224c` was pushed to Main. The
+  checkpoint contains the accumulated mobile corrections and Calendar preferences contract,
+  implementation, and migration. Formal local API and Web were restarted and both returned HTTP 200.
+- **Verification:** GitHub Actions CI run `36539030534` targeted that exact SHA. Both `verify` and
+  `migration-dry-run` completed successfully. Remote Main resolved to the same SHA.
+- **Known issue:** Stage 1 Product Owner acceptance and physical-phone/PWA checks remain open. The
+  concurrent Today PWA visual experiment in LOG-309 also entered this commit before visual review.
+- **Next:** Continue Product Owner-led mobile route and Today PWA review, then Calendar preferences
+  review without marking M7.5 complete.
+
+### 2026-09-29 — LOG-309 — First Today PWA visual experiment
+
+- **Scope:** Product Owner requested a mobile-only trial of quieter Today card depth, edge-to-edge
+  safe areas, and a bottom navigation whose active state uses lime icon and text without a tile.
+- **Outcome:** Reduced the mobile Today schedule shadow, made the mobile navigation a solid dark
+  surface with equal-size icons and a visible keyboard focus ring, added top safe-area spacing, and
+  enabled `viewport-fit=cover`. Desktop CSS rules were not changed. Concurrent staging included
+  these changes in commit `47370fe` before Product Owner review, contrary to the requested hold on
+  Main delivery for this experiment.
+- **Verification:** Targeted Prettier check and `git diff --check` passed. Web production build passed
+  after a sandbox `spawn EPERM` retry. Authenticated Chrome 390×844 preview visually showed the
+  Today schedule and four-item bottom navigation; no physical-device safe-area check was run.
+- **Known issue:** Product Owner visual acceptance is pending. The concurrent checkpoint commit
+  already contains the experiment; this log makes no independent remote CI claim.
+- **Next:** Review the Today preview with the Product Owner, verify an installed PWA on a phone,
+  then revise the mobile direction without extending unaccepted styling to other routes.
 
 ### 2026-09-29 — LOG-308 — Mobile and Calendar Main checkpoint preflight
 
