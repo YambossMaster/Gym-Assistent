@@ -1,9 +1,10 @@
 import { ApiError, listStudents } from '../../api'
 import type { Session } from '@supabase/supabase-js'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, MapPin, ChevronRight, Pencil, X } from 'lucide-react'
+import { Plus, MapPin, ChevronRight, Pencil, Search, X } from 'lucide-react'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { SeriesDatePicker } from './SeriesDatePicker'
 import { FormSelect } from '../../shared/FormSelect'
@@ -104,11 +105,21 @@ export function VenueManager({ session }: { session: Session }) {
   const query = useVenues(session),
     [editor, setEditor] = useState<Editor | null>(null),
     [editorStack, setEditorStack] = useState<Editor[]>([]),
-    [archived, setArchived] = useState(false)
+    [archived, setArchived] = useState(false),
+    [searchOpen, setSearchOpen] = useState(false),
+    [search, setSearch] = useState(''),
+    [mobileActionSlot, setMobileActionSlot] = useState<HTMLElement | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchButtonRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    setMobileActionSlot(document.getElementById('mobile-header-action-slot'))
+  }, [])
   const venues = query.data?.venues ?? []
   const activeCount = venues.filter((venue) => venue.active).length
   const archivedCount = venues.length - activeCount
-  const visibleVenues = venues.filter((venue) => venue.active !== archived)
+  const visibleVenues = venues.filter(
+    (venue) => venue.active !== archived && venue.name.includes(search.trim())
+  )
   const venueId = params.get('venue'),
     creditId = params.get('credit'),
     courseId = params.get('course')
@@ -177,10 +188,25 @@ export function VenueManager({ session }: { session: Session }) {
   }
   return (
     <section id="venue-management" className="venue-management finance-section-card">
+      {mobileActionSlot &&
+        createPortal(
+          <button
+            className="mobile-route-header-add venue-mobile-add"
+            type="button"
+            aria-label="新增場地"
+            onClick={() => setEditor({ kind: 'create' })}
+          >
+            <Plus aria-hidden="true" />
+          </button>,
+          mobileActionSlot
+        )}
       <header>
         <div>
           <span className="eyebrow dark">場地</span>
-          <h2>場地與支出</h2>
+          <h2>
+            <span className="venue-desktop-title">場地與支出</span>
+            <span className="venue-mobile-title">場地管理與支出</span>
+          </h2>
         </div>
         <button
           className="secondary-button venue-add-button ui-action-add"
@@ -203,8 +229,13 @@ export function VenueManager({ session }: { session: Session }) {
               更新失敗，目前顯示先前場地。<button onClick={() => void query.refetch()}>重試</button>
             </p>
           )}
-          <div className="venue-status-toolbar">
-            <div className="student-view-switch" role="group" aria-label="場地狀態">
+          <div className="venue-status-toolbar" data-search-open={searchOpen}>
+            <div
+              className="student-view-switch"
+              role="group"
+              aria-label="場地狀態"
+              data-view={archived ? 'archived' : 'active'}
+            >
               <button type="button" onClick={() => setArchived(false)} aria-pressed={!archived}>
                 進行中 <span>{activeCount}</span>
               </button>
@@ -212,6 +243,43 @@ export function VenueManager({ session }: { session: Session }) {
                 已封存 <span>{archivedCount}</span>
               </button>
             </div>
+            <label className="venue-mobile-search-box">
+              <input
+                id="venue-search-input"
+                ref={searchInputRef}
+                aria-label="搜尋場地"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setSearch('')
+                    setSearchOpen(false)
+                    searchButtonRef.current?.focus()
+                  }
+                }}
+                placeholder="搜尋場地"
+                autoComplete="off"
+              />
+            </label>
+            <button
+              ref={searchButtonRef}
+              className="venue-mobile-search-toggle"
+              type="button"
+              aria-label={searchOpen ? '關閉搜尋' : '搜尋場地'}
+              aria-controls="venue-search-input"
+              aria-expanded={searchOpen}
+              onClick={() => {
+                if (searchOpen) {
+                  setSearch('')
+                  setSearchOpen(false)
+                } else {
+                  setSearchOpen(true)
+                  requestAnimationFrame(() => searchInputRef.current?.focus())
+                }
+              }}
+            >
+              {searchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+            </button>
           </div>
           <div className="venue-list" aria-live="polite">
             {visibleVenues.map((v) => (
@@ -238,7 +306,11 @@ export function VenueManager({ session }: { session: Session }) {
           </div>
           {visibleVenues.length === 0 && (
             <p className="finance-context">
-              {venues.length === 0 ? '新增常用場地，也可以先只記錄名稱。' : '這個分類尚無場地。'}
+              {venues.length === 0
+                ? '新增常用場地，也可以先只記錄名稱。'
+                : search.trim()
+                  ? '找不到符合搜尋的場地。'
+                  : '這個分類尚無場地。'}
             </p>
           )}
         </>

@@ -7,10 +7,22 @@ import {
 } from '../training/recording'
 import { ProgressMetricSelector } from '../training/ProgressMetricSelector'
 import type { Session } from '@supabase/supabase-js'
-import { Check, ChevronDown, Dumbbell, Heart, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import {
+  Check,
+  ChevronDown,
+  Dumbbell,
+  Heart,
+  Pencil,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  X
+} from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { ExerciseDefinition } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
+import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 import { Confirmation, Page } from '../../shared/primitives'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { useExerciseLibrary, useTrainingMutations } from '../training/queries'
@@ -23,6 +35,31 @@ type DefinitionFields = Pick<
 >
 
 export function ExercisesPage({ session }: { session: Session }) {
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(true)
+  const [filterShelfHeight, setFilterShelfHeight] = useState(0)
+  const filterShelfRef = useRef<HTMLElement>(null)
+  const lastScrollY = useRef(0)
+  const filterOpenedAt = useRef(0)
+  const filterTouchStartY = useRef<number | null>(null)
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
+  const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollY = window.scrollY
+      if (
+        window.matchMedia('(max-width: 720px)').matches &&
+        scrollY > 80 &&
+        scrollY - lastScrollY.current > 8 &&
+        Date.now() - filterOpenedAt.current > 500
+      ) {
+        setMobileFiltersOpen(false)
+      }
+      lastScrollY.current = scrollY
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   const [q, setQ] = useState(''),
     [view, setView] = useState<'all' | 'favorite' | 'custom'>('all'),
     [equipment, setEquipment] = useState(''),
@@ -33,6 +70,15 @@ export function ExercisesPage({ session }: { session: Session }) {
     [message, setMessage] = useState('')
   const query = useExerciseLibrary(session),
     mutations = useTrainingMutations(session)
+  useLayoutEffect(() => {
+    const shelf = filterShelfRef.current
+    if (!shelf) return
+    const updateHeight = () => setFilterShelfHeight(shelf.getBoundingClientRect().height)
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(shelf)
+    return () => observer.disconnect()
+  }, [query.data])
   const definitions = useMemo(
     () =>
       filterExerciseDefinitions(query.data?.definitions ?? [], {
@@ -53,6 +99,17 @@ export function ExercisesPage({ session }: { session: Session }) {
   return (
     <Page
       className="exercises-page"
+      beforeHeader={
+        <MobilePageAppBar
+          title="動作庫"
+          count={query.data?.totals.all}
+          addLabel="新增自訂動作"
+          onAdd={() => {
+            setMessage('')
+            setEditing(null)
+          }}
+        />
+      }
       title="動作庫"
       eyebrow={query.data ? `${query.data.totals.all} EXERCISES` : 'EXERCISE LIBRARY'}
       actions={
@@ -68,75 +125,157 @@ export function ExercisesPage({ session }: { session: Session }) {
         </button>
       }
     >
-      <section className="library-toolbar">
-        <label className="library-search">
-          <Search />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="搜尋名稱、器材、類型或部位"
-            autoComplete="off"
-          />
-        </label>
-        <div className="library-tabs">
-          {(
-            [
-              ['all', '全部'],
-              ['favorite', '常用'],
-              ['custom', '自訂']
-            ] as const
-          ).map(([key, label]) => (
-            <button key={key} aria-pressed={view === key} onClick={() => setView(key)}>
-              {label}
-              <small>{query.data?.totals[key] ?? 0}</small>
-            </button>
-          ))}
-        </div>
-      </section>
-      {query.data && (
-        <section className="filter-shelf" aria-label="篩選動作">
-          <FormSelect
-            label="器材"
-            value={equipment}
-            onChange={setEquipment}
-            options={[
-              { value: '', label: '所有器材' },
-              ...query.data.filters.equipment.map((x) => ({ value: x, label: x }))
-            ]}
-          />
-          <FormSelect
-            label="動作類型"
-            value={movementType}
-            onChange={setMovementType}
-            options={[
-              { value: '', label: '所有類型' },
-              ...query.data.filters.movementTypes.map((x) => ({ value: x, label: x }))
-            ]}
-          />
-          <div className="body-part-filters">
-            {query.data.filters.bodyParts.map((part) => (
-              <button
-                key={part}
-                aria-pressed={bodyParts.includes(part)}
-                onClick={() =>
-                  setBodyParts((items) =>
-                    items.includes(part) ? items.filter((x) => x !== part) : [...items, part]
-                  )
+      <div className="library-controls">
+        <section className="library-toolbar" data-search-open={mobileSearchOpen}>
+          <label className="library-search">
+            <Search aria-hidden="true" />
+            <input
+              id="exercise-search-input"
+              ref={mobileSearchInputRef}
+              aria-label="搜尋動作"
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && mobileSearchOpen) {
+                  setQ('')
+                  setMobileSearchOpen(false)
+                  mobileSearchButtonRef.current?.focus()
                 }
-              >
-                {part}
+              }}
+              placeholder={mobileSearchOpen ? '搜尋動作' : '搜尋名稱、器材、類型或部位'}
+              autoComplete="off"
+            />
+          </label>
+          <div className="library-tabs" data-view={view} role="group" aria-label="動作分類">
+            {(
+              [
+                ['all', '全部'],
+                ['favorite', '常用'],
+                ['custom', '自訂']
+              ] as const
+            ).map(([key, label]) => (
+              <button key={key} aria-pressed={view === key} onClick={() => setView(key)}>
+                {label}
+                <small>{query.data?.totals[key] ?? 0}</small>
               </button>
             ))}
           </div>
-          {(q || equipment || movementType || bodyParts.length > 0) && (
-            <button className="text-button" onClick={clear}>
-              <X />
-              清除篩選
-            </button>
-          )}
+          <button
+            ref={mobileSearchButtonRef}
+            className="library-mobile-search-toggle"
+            type="button"
+            aria-label={mobileSearchOpen ? '關閉搜尋' : '搜尋動作'}
+            aria-controls="exercise-search-input"
+            aria-expanded={mobileSearchOpen}
+            onClick={() => {
+              if (mobileSearchOpen) {
+                setQ('')
+                setMobileSearchOpen(false)
+              } else {
+                setMobileFiltersOpen(false)
+                setMobileSearchOpen(true)
+                requestAnimationFrame(() => mobileSearchInputRef.current?.focus())
+              }
+            }}
+          >
+            {mobileSearchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+          </button>
+          <button
+            className="library-mobile-filter-toggle"
+            type="button"
+            aria-label={mobileFiltersOpen ? '收起篩選' : '展開篩選'}
+            aria-controls="exercise-filter-shelf"
+            aria-expanded={mobileFiltersOpen}
+            data-active={Boolean(equipment || movementType || bodyParts.length)}
+            onClick={() => {
+              if (!mobileFiltersOpen) {
+                filterOpenedAt.current = Date.now()
+                if (window.scrollY > 80)
+                  window.scrollBy({ top: -filterShelfHeight, behavior: 'instant' })
+              }
+              setMobileFiltersOpen((open) => !open)
+            }}
+          >
+            <SlidersHorizontal aria-hidden="true" />
+            {(equipment || movementType || bodyParts.length > 0) && (
+              <span className="library-filter-dot" />
+            )}
+          </button>
         </section>
-      )}
+        {query.data && (
+          <div
+            className="filter-shelf-reveal"
+            style={{ height: mobileFiltersOpen ? filterShelfHeight : 0 }}
+          >
+            <section
+              ref={filterShelfRef}
+              id="exercise-filter-shelf"
+              className="filter-shelf"
+              data-mobile-open={mobileFiltersOpen}
+              aria-label="篩選動作"
+              onWheel={(event) => {
+                if (mobileFiltersOpen && event.deltaY > 0) setMobileFiltersOpen(false)
+              }}
+              onTouchStart={(event) => {
+                filterTouchStartY.current = event.touches[0]?.clientY ?? null
+              }}
+              onTouchEnd={(event) => {
+                if (
+                  mobileFiltersOpen &&
+                  filterTouchStartY.current !== null &&
+                  filterTouchStartY.current -
+                    (event.changedTouches[0]?.clientY ?? filterTouchStartY.current) >
+                    24
+                ) {
+                  setMobileFiltersOpen(false)
+                }
+                filterTouchStartY.current = null
+              }}
+            >
+              <FormSelect
+                label="器材"
+                value={equipment}
+                onChange={setEquipment}
+                options={[
+                  { value: '', label: '所有器材' },
+                  ...query.data.filters.equipment.map((x) => ({ value: x, label: x }))
+                ]}
+              />
+              <FormSelect
+                label="動作類型"
+                value={movementType}
+                onChange={setMovementType}
+                options={[
+                  { value: '', label: '所有類型' },
+                  ...query.data.filters.movementTypes.map((x) => ({ value: x, label: x }))
+                ]}
+              />
+              <div className="body-part-filters">
+                {query.data.filters.bodyParts.map((part) => (
+                  <button
+                    key={part}
+                    aria-pressed={bodyParts.includes(part)}
+                    onClick={() =>
+                      setBodyParts((items) =>
+                        items.includes(part) ? items.filter((x) => x !== part) : [...items, part]
+                      )
+                    }
+                  >
+                    {part}
+                  </button>
+                ))}
+              </div>
+              {(q || equipment || movementType || bodyParts.length > 0) && (
+                <button className="text-button" onClick={clear}>
+                  <X />
+                  清除篩選
+                </button>
+              )}
+            </section>
+          </div>
+        )}
+      </div>
       {message && editing === undefined && (
         <p className="form-notice" role="status">
           {message}
@@ -165,6 +304,29 @@ export function ExercisesPage({ session }: { session: Session }) {
               <article className="exercise-library-card" key={definition.id}>
                 <header className="exercise-card-heading">
                   <EquipmentGlyph equipment={definition.equipment} />
+                  <div className="exercise-card-mobile-actions">
+                    <button
+                      className="icon-button danger"
+                      type="button"
+                      aria-label={`刪除 ${definition.name}`}
+                      disabled={busy}
+                      onClick={() => setDeleting(definition)}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </button>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      aria-label={`編輯 ${definition.name}`}
+                      disabled={busy}
+                      onClick={() => {
+                        setMessage('')
+                        setEditing(definition)
+                      }}
+                    >
+                      <Pencil aria-hidden="true" />
+                    </button>
+                  </div>
                   <button
                     className="icon-button favorite-button"
                     aria-label={definition.favorite ? '取消常用' : '加入常用'}
@@ -185,6 +347,11 @@ export function ExercisesPage({ session }: { session: Session }) {
                   <p>
                     {definition.equipment} · {definition.movementType}
                   </p>
+                  <div className="tag-row" aria-label="部位">
+                    {definition.bodyParts.map((part) => (
+                      <span key={part}>{part}</span>
+                    ))}
+                  </div>
                 </div>
                 {definition.recording && (
                   <p className="exercise-recording-label">
@@ -195,11 +362,6 @@ export function ExercisesPage({ session }: { session: Session }) {
                       : ' · 已鎖定'}
                   </p>
                 )}
-                <div className="tag-row">
-                  {definition.bodyParts.map((part) => (
-                    <span key={part}>{part}</span>
-                  ))}
-                </div>
                 <footer>
                   <button
                     className="text-button danger ui-action-delete"
@@ -411,219 +573,221 @@ export function DefinitionEditor({
           </button>
         </header>
         <form className="ui-settings-dialog-content" onSubmit={submit} autoComplete="off">
-          <div className="editor-top-grid">
-            <label className="editor-field">
-              動作名稱
-              <input
-                name="name"
-                defaultValue={definition?.name}
-                required
-                maxLength={120}
-                autoComplete="off"
-              />
-            </label>
-            <div className="editor-field equipment-field" ref={equipmentRef}>
-              <label htmlFor="editor-equipment">器材</label>
-              <div className="equipment-combobox">
+          <div className="definition-editor-fields">
+            <div className="editor-top-grid">
+              <label className="editor-field">
+                動作名稱
                 <input
-                  id="editor-equipment"
-                  name="equipment"
-                  autoComplete="off"
-                  value={equipment}
-                  onChange={(event) => {
-                    setEquipment(event.target.value)
-                    setEquipmentQuery(event.target.value)
-                    setEquipmentActive(0)
-                    setEquipmentOpen(true)
-                  }}
-                  onClick={() => {
-                    setEquipmentQuery(null)
-                    setEquipmentOpen(true)
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && equipmentOpen) {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      setEquipmentOpen(false)
-                    } else if (event.key === 'ArrowDown' && equipmentSuggestions.length) {
-                      event.preventDefault()
-                      setEquipmentOpen(true)
-                      setEquipmentActive((index) =>
-                        Math.min(index + 1, equipmentSuggestions.length - 1)
-                      )
-                    } else if (event.key === 'ArrowUp' && equipmentSuggestions.length) {
-                      event.preventDefault()
-                      setEquipmentActive((index) => Math.max(index - 1, 0))
-                    } else if (
-                      event.key === 'Enter' &&
-                      equipmentOpen &&
-                      equipmentSuggestions.length
-                    ) {
-                      event.preventDefault()
-                      chooseEquipment(equipmentSuggestions[equipmentActive])
-                      event.currentTarget.blur()
-                    }
-                  }}
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-expanded={equipmentOpen && equipmentSuggestions.length > 0}
-                  aria-controls={equipmentOpen ? 'equipment-suggestions' : undefined}
-                  aria-activedescendant={
-                    equipmentOpen && equipmentSuggestions.length
-                      ? `equipment-option-${equipmentActive}`
-                      : undefined
-                  }
+                  name="name"
+                  defaultValue={definition?.name}
                   required
                   maxLength={120}
+                  autoComplete="off"
                 />
-                <button
-                  type="button"
-                  aria-label="選擇器材"
-                  aria-expanded={equipmentOpen}
-                  onClick={() => {
-                    setEquipmentQuery(null)
-                    setEquipmentActive(0)
-                    setEquipmentOpen((current) => !current)
-                  }}
-                >
-                  <ChevronDown aria-hidden="true" />
-                </button>
-                {equipmentOpen && equipmentSuggestions.length > 0 && (
-                  <div
-                    id="equipment-suggestions"
-                    className="equipment-suggestions"
-                    role="listbox"
-                    aria-label="器材選項"
+              </label>
+              <div className="editor-field equipment-field" ref={equipmentRef}>
+                <label htmlFor="editor-equipment">器材</label>
+                <div className="equipment-combobox">
+                  <input
+                    id="editor-equipment"
+                    name="equipment"
+                    autoComplete="off"
+                    value={equipment}
+                    onChange={(event) => {
+                      setEquipment(event.target.value)
+                      setEquipmentQuery(event.target.value)
+                      setEquipmentActive(0)
+                      setEquipmentOpen(true)
+                    }}
+                    onClick={() => {
+                      setEquipmentQuery(null)
+                      setEquipmentOpen(true)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape' && equipmentOpen) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        setEquipmentOpen(false)
+                      } else if (event.key === 'ArrowDown' && equipmentSuggestions.length) {
+                        event.preventDefault()
+                        setEquipmentOpen(true)
+                        setEquipmentActive((index) =>
+                          Math.min(index + 1, equipmentSuggestions.length - 1)
+                        )
+                      } else if (event.key === 'ArrowUp' && equipmentSuggestions.length) {
+                        event.preventDefault()
+                        setEquipmentActive((index) => Math.max(index - 1, 0))
+                      } else if (
+                        event.key === 'Enter' &&
+                        equipmentOpen &&
+                        equipmentSuggestions.length
+                      ) {
+                        event.preventDefault()
+                        chooseEquipment(equipmentSuggestions[equipmentActive])
+                        event.currentTarget.blur()
+                      }
+                    }}
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={equipmentOpen && equipmentSuggestions.length > 0}
+                    aria-controls={equipmentOpen ? 'equipment-suggestions' : undefined}
+                    aria-activedescendant={
+                      equipmentOpen && equipmentSuggestions.length
+                        ? `equipment-option-${equipmentActive}`
+                        : undefined
+                    }
+                    required
+                    maxLength={120}
+                  />
+                  <button
+                    type="button"
+                    aria-label="選擇器材"
+                    aria-expanded={equipmentOpen}
+                    onClick={() => {
+                      setEquipmentQuery(null)
+                      setEquipmentActive(0)
+                      setEquipmentOpen((current) => !current)
+                    }}
                   >
-                    {equipmentSuggestions.map((item, index) => (
-                      <button
-                        type="button"
-                        role="option"
-                        id={`equipment-option-${index}`}
-                        aria-selected={item === equipment}
-                        className={index === equipmentActive ? 'active' : ''}
-                        key={item}
-                        onPointerDown={(event) => {
-                          event.preventDefault()
-                          chooseEquipment(item)
-                        }}
-                        onClick={() => chooseEquipment(item)}
-                      >
-                        {item}
-                        {item === equipment && <Check aria-hidden="true" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    <ChevronDown aria-hidden="true" />
+                  </button>
+                  {equipmentOpen && equipmentSuggestions.length > 0 && (
+                    <div
+                      id="equipment-suggestions"
+                      className="equipment-suggestions"
+                      role="listbox"
+                      aria-label="器材選項"
+                    >
+                      {equipmentSuggestions.map((item, index) => (
+                        <button
+                          type="button"
+                          role="option"
+                          id={`equipment-option-${index}`}
+                          aria-selected={item === equipment}
+                          className={index === equipmentActive ? 'active' : ''}
+                          key={item}
+                          onPointerDown={(event) => {
+                            event.preventDefault()
+                            chooseEquipment(item)
+                          }}
+                          onClick={() => chooseEquipment(item)}
+                        >
+                          {item}
+                          {item === equipment && <Check aria-hidden="true" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="editor-field editor-body-parts">
-            <div className="editor-field-heading">
-              <strong>部位標籤</strong>
-              <small>可複選</small>
-            </div>
-            <div className="body-part-filters">
-              {filters?.bodyParts.map((part) => (
-                <button
-                  type="button"
-                  key={part}
-                  aria-pressed={parts.includes(part)}
-                  onClick={() =>
-                    setParts((items) =>
-                      items.includes(part) ? items.filter((x) => x !== part) : [...items, part]
-                    )
-                  }
-                >
-                  {parts.includes(part) && <Check aria-hidden="true" />}
-                  {part}
-                </button>
-              ))}
-            </div>
-            <div className="editor-tag-entry">
-              <input
-                aria-label="新增部位標籤"
-                autoComplete="off"
-                placeholder="輸入其他部位"
-                value={customPart}
-                onChange={(event) => setCustomPart(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    addCustomPart()
-                    event.currentTarget.blur()
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="ui-action-add"
-                disabled={!customPart.trim() || parts.length >= 12}
-                onClick={addCustomPart}
-              >
-                <Plus aria-hidden="true" />
-                加入
-              </button>
-            </div>
-            {customParts.length > 0 && (
-              <div className="editor-custom-tags" aria-label="已新增部位">
-                {customParts.map((part) => (
+            <div className="editor-field editor-body-parts">
+              <div className="editor-field-heading">
+                <strong>部位標籤</strong>
+                <small>可複選</small>
+              </div>
+              <div className="body-part-filters">
+                {filters?.bodyParts.map((part) => (
                   <button
                     type="button"
                     key={part}
-                    onClick={() => setParts(parts.filter((item) => item !== part))}
+                    aria-pressed={parts.includes(part)}
+                    onClick={() =>
+                      setParts((items) =>
+                        items.includes(part) ? items.filter((x) => x !== part) : [...items, part]
+                      )
+                    }
                   >
+                    {parts.includes(part) && <Check aria-hidden="true" />}
                     {part}
-                    <X aria-hidden="true" />
                   </button>
                 ))}
               </div>
+              <div className="editor-tag-entry">
+                <input
+                  aria-label="新增部位標籤"
+                  autoComplete="off"
+                  placeholder="輸入其他部位"
+                  value={customPart}
+                  onChange={(event) => setCustomPart(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      addCustomPart()
+                      event.currentTarget.blur()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="ui-action-add"
+                  disabled={!customPart.trim() || parts.length >= 12}
+                  onClick={addCustomPart}
+                >
+                  <Plus aria-hidden="true" />
+                  加入
+                </button>
+              </div>
+              {customParts.length > 0 && (
+                <div className="editor-custom-tags" aria-label="已新增部位">
+                  {customParts.map((part) => (
+                    <button
+                      type="button"
+                      key={part}
+                      onClick={() => setParts(parts.filter((item) => item !== part))}
+                    >
+                      {part}
+                      <X aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="editor-choice-grid">
+              <div className="editor-field" role="group" aria-label="動作類型">
+                <strong className="editor-field-label">動作類型</strong>
+                <div className="editor-segmented">
+                  {(['系統動作', '局部動作'] as const).map((option) => (
+                    <button
+                      type="button"
+                      key={option}
+                      aria-pressed={movement === option}
+                      onClick={() => setMovement(option)}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="editor-field">
+                <strong className="editor-field-label">紀錄類型</strong>
+                <FormSelect
+                  label="紀錄類型"
+                  value={recording.type}
+                  options={Object.entries(recordingTypes).map(([value, item]) => ({
+                    value,
+                    label: item.label
+                  }))}
+                  onChange={(value) =>
+                    setRecording({
+                      type: value as RecordingType,
+                      metrics: [...recordingTypes[value as RecordingType].metrics]
+                    })
+                  }
+                />
+                <strong className="editor-field-label">主要進步指標</strong>
+                <ProgressMetricSelector
+                  recording={recording}
+                  onChoose={(metric) => setRecording(choosePrimaryMetric(recording, metric))}
+                />
+              </div>
+            </div>
+            {saveError && (
+              <p className="form-error" role="alert">
+                {saveError}
+              </p>
             )}
           </div>
-          <div className="editor-choice-grid">
-            <div className="editor-field" role="group" aria-label="動作類型">
-              <strong className="editor-field-label">動作類型</strong>
-              <div className="editor-segmented">
-                {(['系統動作', '局部動作'] as const).map((option) => (
-                  <button
-                    type="button"
-                    key={option}
-                    aria-pressed={movement === option}
-                    onClick={() => setMovement(option)}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="editor-field">
-              <strong className="editor-field-label">紀錄類型</strong>
-              <FormSelect
-                label="紀錄類型"
-                value={recording.type}
-                options={Object.entries(recordingTypes).map(([value, item]) => ({
-                  value,
-                  label: item.label
-                }))}
-                onChange={(value) =>
-                  setRecording({
-                    type: value as RecordingType,
-                    metrics: [...recordingTypes[value as RecordingType].metrics]
-                  })
-                }
-              />
-              <strong className="editor-field-label">主要進步指標</strong>
-              <ProgressMetricSelector
-                recording={recording}
-                onChoose={(metric) => setRecording(choosePrimaryMetric(recording, metric))}
-              />
-            </div>
-          </div>
-          {saveError && (
-            <p className="form-error" role="alert">
-              {saveError}
-            </p>
-          )}
           <footer>
             <p className="editor-note">修改動作庫不會覆寫已保存的課堂內容。</p>
             <div className="editor-actions">
@@ -641,7 +805,16 @@ export function DefinitionEditor({
                     <span className="desktop-action-label">
                       {definition ? '儲存修改' : '建立動作'}
                     </span>
-                    <span className="mobile-action-label">{definition ? '儲存' : '+新增'}</span>
+                    <span className="mobile-action-label">
+                      {definition ? (
+                        '儲存'
+                      ) : (
+                        <>
+                          <Plus aria-hidden="true" />
+                          新增
+                        </>
+                      )}
+                    </span>
                   </>
                 )}
               </button>

@@ -444,12 +444,27 @@ function trainingPlanDescription(plan: { exerciseCount: number; status: string }
 
 function TodaySkeleton() {
   return (
-    <section className="today-signals" aria-label="載入中">
-      <div className="skeleton-block" />
-      <div className="skeleton-block" />
-      <div className="skeleton-block" />
-      <div className="skeleton-block" />
-    </section>
+    <div role="status" aria-label="正在載入今日資訊">
+      <section className="today-signals today-signals-skeleton" aria-hidden="true">
+        <div className="skeleton-block" />
+        <div className="skeleton-block" />
+        <div className="skeleton-block" />
+        <div className="skeleton-block" />
+      </section>
+      <div className="today-workspace today-workspace-skeleton" aria-hidden="true">
+        <section className="today-schedule today-schedule-skeleton">
+          <div className="today-schedule-skeleton-heading">
+            <span className="skeleton-line skeleton-heading-label" />
+            <span className="skeleton-line skeleton-heading-title" />
+          </div>
+          <div className="today-schedule-skeleton-row">
+            <span className="skeleton-line skeleton-time" />
+            <span className="skeleton-line skeleton-person" />
+            <span className="skeleton-line skeleton-detail" />
+          </div>
+        </section>
+      </div>
+    </div>
   )
 }
 function TodayError({ error, onRetry }: { error: unknown; onRetry: () => void }) {

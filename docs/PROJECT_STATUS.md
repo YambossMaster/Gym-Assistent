@@ -12,19 +12,76 @@
 | Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**         |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
 | Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs     |
-| Worktree           | Delivery code on Main; `output/` stays ignored                                                   |
+| Worktree           | Product Owner chose to retain the local mobile UI checkpoint; physical PWA review stays open     |
 | Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date      |
 | Production         | Not configured; no real customer data                                                            |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
 
 ## Next handoff
 
+The Product Owner approved retaining the current mobile UI changes in a local commit. Continue the
+route-by-route review below; this checkpoint does not claim physical-PWA acceptance or authorize a
+Main push.
+
+Review the Student and Exercise Library pinned mobile switch/search bars and the compact Exercise
+cards on a physical installed PWA. Exercise filters now expand within the pinned controls and reserve
+their own height, leaving the first card fully visible below them on initial entry. They remain
+available anywhere in the list, then collapse on continued downward scrolling or a second tap. Opening
+Search hides Filter, shifts the close button to the far right, and gives the input the freed space.
+The Filter shelf now fades and moves upward over 220ms when closing, with reduced-motion support.
+Confirm touch scrolling, expanded search/filter controls, 320px width, and the transparent
+edit/delete icon targets. This is a local Product Owner review change; do not push Main yet.
+
+Review the four mobile subpage back actions and the compact Training Record toolbar on an
+installed PWA. Student detail, Training Record, Monthly Finances, and Venue management now use a
+safe-area-aware Back action in the dark app bar instead of the Logo and in-page Back. Training
+Record keeps the student avatar/name, session actions, and visible save status in one mobile row;
+long offline or sync messages can wrap below the actions. Confirm touch targets and narrow-phone
+layout before accepting this local experiment. Do not push Main yet.
+
+Review the mobile Venue management page at 390×844 and on an installed PWA. The page keeps the
+Back action in its dark header, places the Venue Add action beside Settings, removes the large in-page
+title, and puts its status switch and expanding name search on one row. The card heading now reads
+「場地管理與支出」 on mobile; desktop retains its original layout and wording. Confirm the mobile
+spacing and touch behavior before accepting this local experiment. Do not push Main yet.
+
+Review the mobile Settings header and pinned category switcher at 390×844 and on an installed PWA.
+Settings now uses the same safe-area-aware dark app bar as Student, Calendar, and Exercise Library;
+its in-page title is hidden on mobile. Tapping the Settings icon again returns to the route from
+which Settings was opened, including a deep route; direct Settings entry falls back to Today. The
+category switcher stays directly below the app bar while Settings content scrolls. Desktop sidebar,
+page title, and category layout remain unchanged. Keep this experiment local until visual acceptance.
+
+Review the mobile Exercise create/edit dialog on a physical installed PWA. Its Add action now uses
+the same Plus icon as the nearby tag action; the fields own the scroll region, which ends above the
+fixed footer. The mobile in-app scrollbar rule now covers all descendants of the Web root, while
+portaled choice panels retain their olive scrollbar. The browser window's own scrollbar is outside
+this UI scope. Check touch scrolling and opened choice menus on the device before visual acceptance.
+
+Review the mobile dialog action rows in Exercise editing, Student creation, and other route dialogs.
+Their sticky footer now uses the dialog's own surface color and has no separate top border, so the
+actions no longer sit in a contrasting rectangular strip. Keep the mobile and desktop page palette
+as a separate Product Owner visual decision; the current paper, card, and dialog shades remain in
+place. Verify the footer treatment on a physical installed PWA before accepting the experiment.
+
+Review the matching Student, Calendar, and Exercise Library mobile headers at 390×844 and on a
+physical installed PWA. Each now places its route title and Add action beside Settings in the dark,
+safe-area-aware app bar; Student and Exercise Library show total counts. Calendar opens its existing
+scheduling dialog from the new Add control. Student and Exercise Library use one-row segment/Search
+toolbars: opening Search expands an input while the segments narrow and hide counts; closing it
+clears the text filter. Exercise Library's three segments use the same sliding white selection as
+Student. The Calendar's in-page title is hidden on mobile and its wheel-driven header collapse is
+disabled there because the app bar now owns the title. Desktop remains unchanged. Keep these
+experiments local until the Product Owner chooses the direction.
+
 Review the first Today PWA visual experiment at 390×844 and on a physical installed PWA: the mobile
 schedule card has a quiet shadow, the bottom navigation uses one solid surface and lime icon/text
-selection, and the shell applies viewport safe-area padding. Keep desktop presentation unchanged.
+selection, and the shell applies viewport safe-area padding. Local follow-ups add 16px of visible
+space below navigation items, a 44px Settings target, a mobile Today schedule skeleton, and a short
+fade between bottom-navigation routes while the shell stays fixed. Keep desktop presentation unchanged.
 These experimental changes were unintentionally included in the concurrent `47370fe` checkpoint
 before Product Owner confirmation; do not treat their inclusion as visual acceptance. Decide whether
-to keep or revise this direction before extending it to other mobile routes.
+to keep or revise this direction during the mobile route-by-route sweep.
 
 Continue the Product Owner's mobile route-by-route sweep. In each newly reported Settings or edit
 dialog, verify that the title/close action and bottom action row remain visible while only the fields
@@ -407,6 +464,286 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-29 — LOG-327 — Retain the mobile UI review checkpoint locally
+
+- **Scope:** Product Owner approved keeping the current mobile UI changes and requested one commit.
+- **Outcome:** The Today, Student, Calendar, Exercise Library, Settings, Venue, Training Record, and
+  dialog presentation changes are retained together as a local checkpoint. Physical-PWA review and
+  the M7.5 Stage 1 acceptance boundary remain open; no Main push was requested.
+- **Verification:** `npm run check` passed (26 API files/124 tests and 54 Web files/233 tests);
+  `npm run build` passed for API and Web. Earlier authenticated Chrome 390×844 previews covered the
+  named route changes; `git diff --check` passed before committing.
+- **Known issue:** Physical installed-PWA touch and narrow-phone acceptance remain open.
+- **Next:** Continue the Product Owner mobile route-by-route sweep from the first handoff above.
+
+### 2026-09-29 — LOG-326 — Keep the first Exercise card clear of mobile filters
+
+- **Scope:** Product Owner reported that the initially expanded Filter shelf covered the first
+  Exercise card, hiding 「低背槓深蹲」 on page entry.
+- **Outcome:** The Filter shelf now occupies measured height within the sticky controls while its
+  220ms reveal animates. The card list follows below with an 18px gap. Opening filters in the middle
+  of the list moves visible cards down instead of placing the shelf over them. No Main push was made.
+- **Verification:** Web production build, targeted Prettier, and `git diff --check` passed. Chrome
+  390×844 authenticated preview showed 「低背槓深蹲」 completely visible below the filters after
+  navigating into Exercise Library, and showed the list shift below the reopened shelf mid-scroll.
+- **Known issue:** Physical installed-PWA touch and motion acceptance remain open.
+- **Next:** Product Owner reviews initial entry and mid-list reopening on a device.
+
+### 2026-09-29 — LOG-325 — Soften the mobile Exercise filter collapse
+
+- **Scope:** Product Owner reported that the swipe-to-close Filter shelf disappeared too abruptly.
+- **Outcome:** The mobile floating shelf now eases upward 12px while fading over 220ms, and reverses
+  the motion when reopened. It becomes noninteractive during the closed state. Reduced-motion
+  preference disables the transition. No Main push was made.
+- **Verification:** Web production build and targeted Prettier passed. Chrome 390×844 preview showed
+  the Filter toggle close the shelf while the pinned toolbar and cards remained usable. `git diff
+--check` passed before the Status update.
+- **Known issue:** Physical installed-PWA motion and touch acceptance remain open.
+- **Next:** Product Owner reviews the filter motion on a device with the rest of the mobile route.
+
+### 2026-09-29 — LOG-324 — Make Exercise filters available throughout the mobile list
+
+- **Scope:** Product Owner requested transparent backgrounds for the mobile Exercise card's Delete
+  and Edit icons, an immediately accessible Filter panel from any scroll position, more space for
+  expanded Search by temporarily replacing Filter, and breathing room above the first card.
+- **Outcome:** The Filter shelf floats below the pinned toolbar, closes on further downward scroll,
+  upward touch swipe within the shelf, or a second Filter tap, and keeps selected values. Opening
+  Search closes the shelf, hides Filter, moves its close button to the right edge, and widens the
+  input. Mobile card Delete/Edit icons now use transparent backgrounds; the grid starts 18px below
+  the toolbar. Desktop presentation and existing actions remain intact. No Main push was made.
+- **Verification:** Web production build passed. Chrome 390×844 preview showed the floating Filter
+  shelf opening over cards from a scrolled list position, the expanded Search layout, transparent
+  card actions, and the first-card gap. Prettier and `git diff --check` passed after the change.
+- **Known issue:** Physical installed-PWA touch and 320px viewport acceptance remain open.
+- **Next:** Product Owner reviews Filter/Search behavior and card spacing on a device.
+
+### 2026-09-29 — LOG-323 — Pin mobile roster and Exercise controls; compact Exercise cards
+
+- **Scope:** Product Owner requested the Student switch/Search row also remain visible when scrolling,
+  the Exercise Library row follow it, filters collapse during downward scrolling with a small reopen
+  control, and mobile Exercise cards use a denser layout with icon-only edit/delete beside Favorite.
+- **Outcome:** Both mobile toolbars are sticky below the dark app bar. Exercise filters retain their
+  values when hidden and show an active indicator on the reopen icon. Exercise cards move body-part
+  chips beside equipment/type, reduce heading size and spacing, and remove the mobile footer row.
+  Desktop card actions retain their existing footer. No Main push was made.
+- **Verification:** Web production build passed after a sandbox-only `spawn EPERM` retry with normal
+  process-spawn permission. Chrome 390×844 preview showed the compact cards and sticky Exercise
+  toolbar; scrolling collapsed the filter shelf while the filter button remained visible. The Student
+  switch/Search row rendered in the same sticky position. `git diff --check` passed before the Status
+  update.
+- **Known issue:** Physical installed-PWA touch and narrow-phone checks remain open; the Student
+  sticky behavior has not yet been independently confirmed by a full scroll capture.
+- **Next:** Product Owner reviews the two pinned rows, filter reopen, and card touch targets on a device.
+
+### 2026-09-29 — LOG-322 — Move mobile subpage Back into the app bar
+
+- **Scope:** Product Owner requested the Logo replaced by Back in the mobile Student detail,
+  Training Record, Monthly Finances, and Venue pages. Training Record should move student identity
+  beside its actions and remove the repeated date/time in that white toolbar. A follow-up identified
+  that the save indicator must remain visible.
+- **Outcome:** Shared mobile subpage header provides Back and Settings, plus the existing Venue Add
+  action where applicable. In-page Back remains for desktop and is hidden only on mobile. Training
+  Record shows avatar/name, actions, and save status on one mobile row; longer offline/error status
+  wraps within the toolbar. Its dark session context still shows the session date/time. No Main push
+  was made.
+- **Verification:** Web build and 25 focused Session/Training tests passed. Chrome 390×844 preview showed each subpage's app-bar Back;
+  Training Record Back returned to its originating Student page, and the compact toolbar displayed
+  「✓ 已儲存」 beside its actions. Desktop Chrome retained the original Venue Back and heading.
+- **Known issue:** Physical installed-PWA safe areas and touch behavior remain unverified.
+- **Next:** Product Owner reviews mobile Back and Training Record toolbar on a device.
+
+### 2026-09-29 — LOG-321 — Compact mobile Venue management
+
+- **Scope:** Product Owner requested the Venue page's large title removed on mobile, its Add action
+  moved to the dark header as a Plus icon, a stronger 「場地管理與支出」 card title, and a single row for
+  active/archive switching with an expanding search.
+- **Outcome:** Venue keeps the Logo and safe-area-aware header. Its Plus action opens the existing
+  creation dialog. The mobile card title, segmented switch, and venue-name search now follow the
+  Student interaction pattern. Desktop retains its title, Add button, and original card heading.
+  No Main push was made.
+- **Verification:** Web production build, 16 focused Venue tests, targeted Prettier, and
+  `git diff --check` passed. Chrome 390×844 preview showed the new header and single-row controls;
+  searching 「健美」 reduced the list to one matching Venue, and the Plus opened the creation dialog.
+  Desktop Chrome showed the original heading and Add button.
+- **Known issue:** Physical installed-PWA safe areas and touch behavior remain unverified.
+- **Next:** Product Owner reviews the Venue layout and interaction on mobile; continue the route
+  sweep without Main delivery until approved.
+
+### 2026-09-29 — LOG-320 — Give mobile Settings its app bar and pinned category switcher
+
+- **Scope:** Product Owner requested the Settings page title in the mobile dark app bar, a second
+  Settings tap to return to the entry route, and a category switcher that remains visible while the
+  Settings content scrolls.
+- **Outcome:** Settings joins the shared mobile route-header slot, with its in-page heading hidden
+  only on mobile. The shared mobile Settings link stores the current route when opening Settings and
+  uses it as the return destination on the next tap; direct entry returns to Today. The category
+  grid uses sticky positioning immediately below the safe-area-aware header, with an opaque surface
+  over scrolling content. Desktop navigation and presentation remain unchanged. No Main push was made.
+- **Verification:** Chrome 390×844 preview showed the dark Settings title, and scrolling Work
+  Preferences kept the category grid immediately below the 113px header, including at the bottom
+  of the long category.
+  Settings returned to Today and Calendar from their respective entry links. Desktop Chrome still
+  showed the sidebar Settings item and original page heading. Web build, targeted Prettier, and
+  `git diff --check` passed.
+- **Known issue:** Physical installed-PWA safe areas and touch scrolling remain unverified.
+- **Next:** Product Owner reviews the mobile Settings header, return action, and pinned categories.
+
+### 2026-09-29 — LOG-319 — Align mobile in-app scrollbars and Exercise dialog regions
+
+- **Scope:** Product Owner spotted a tiny literal Plus in Exercise creation, a thick native dialog
+  scrollbar with arrows, and a scrollbar that extended alongside fixed action buttons. Requested
+  an audit of interface scrollbars against the recently established mobile standard.
+- **Outcome:** Exercise create/edit uses the same Plus icon component as the tag Add action, sized
+  for the footer button. Its form fields scroll in a separate pane above the fixed footer. A
+  low-specificity mobile rule gives all scrollable descendants of the Web root a 4px transparent
+  track, pale rounded thumb, and hidden arrows; existing choice-list rules retain their olive
+  thumb. The 35 explicit CSS overflow declarations and three portal usages were reviewed: the only
+  scrollable portals are FormSelect and SeriesDatePicker, which already use the choice-list rule.
+  Desktop styling remains unchanged; no Main push was made.
+- **Verification:** Chrome 390×844 preview measured the Exercise field pane at 220–694px and the
+  footer beginning at 710px. The pane scrollbar computed to 4px, pale thumb, and no arrow buttons;
+  the Plus icon measured 18px. Scrolling the fields left the footer visible. Web build, the four
+  existing Exercise Page tests, targeted Prettier, and `git diff --check` passed. Vite/Vitest needed
+  the approved Windows process-permission retry after sandbox `spawn EPERM`.
+- **Known issue:** Physical-phone rendering and touch scrolling are not yet verified. The desktop
+  browser scrollbar around the 390×844 preview is outside the app UI.
+- **Next:** Product Owner reviews this dialog and the in-app scrollbar appearance on a phone.
+
+### 2026-09-29 — LOG-318 — Remove contrasting mobile dialog action strips
+
+- **Scope:** Product Owner identified a boxed, mismatched action row in Exercise editing and Student
+  creation and asked for the recurring dialog pattern to be corrected. Background colors across
+  pages were raised as a separate, lower-priority visual concern.
+- **Outcome:** The shared mobile sticky action row now takes its surface color from the containing
+  dialog and drops its separate top border. Exercise, scheduling, and modal dialogs each declare
+  that surface once. Action placement, button handlers, and desktop colors remain unchanged. No
+  Main push was made.
+- **Verification:** Chrome's 390×844 preview showed the Exercise edit and Student create dialogs
+  without the contrasting footer strip; both action rows remained visible. Web build, targeted
+  Prettier, and `git diff --check` passed. The first sandboxed Vite build hit Windows `spawn EPERM`;
+  the approved elevated retry passed.
+- **Known issue:** Other dialog variants and physical installed-PWA scrolling remain to be checked.
+- **Next:** Review the action-row treatment across mobile dialogs, then decide separately whether
+  to consolidate the page and card palette across desktop and mobile.
+
+### 2026-09-29 — LOG-317 — Extend Student app bar and compact search to Calendar and Exercises
+
+- **Scope:** Product Owner approved the Student mobile pattern for Calendar and Exercise Library,
+  including top-bar titles/Add actions and the Exercise Library's All/Favorite/Custom selector.
+- **Outcome:** A small shared mobile app-bar component renders the route title, optional total,
+  existing Add action, and Settings link in the shell for all three routes. Calendar's duplicate
+  mobile page heading is hidden; its content height tracks the taller header and its desktop-only
+  wheel collapse no longer intercepts mobile scrolling. Exercise Library's three-state selector
+  uses a sliding white plate, and its search shares one row with a compressing selector. Desktop
+  presentation and the existing query/filter/add handlers remain unchanged. No Main push was made.
+- **Verification:** Web build, targeted Prettier, and `git diff --check` passed. Authenticated Chrome
+  390×844 preview opened and closed the Calendar scheduling dialog from the app bar; Exercise Library
+  switched to Favorite and Custom, expanded Search, filtered to an empty result, then restored the
+  list on close. Student's app bar still rendered after switching back. Desktop Chrome showed the
+  original Calendar and Exercise Library headings and toolbar.
+- **Known issue:** Physical installed-PWA safe areas and touch/keyboard transitions remain to be
+  checked on a phone.
+- **Next:** Product Owner reviews the three mobile route headers and the Exercise Library search
+  interaction before further presentation changes or Main delivery.
+
+### 2026-09-29 — LOG-316 — Condense Student search and rebalance its mobile header
+
+- **Scope:** Product Owner requested a one-row Student status/search control with an expanding
+  search field, a roomier page header with stronger title, restored Settings action, and subtle
+  depth at the header and controls.
+- **Outcome:** On mobile, the status switch occupies the toolbar until Search is tapped; Search
+  then expands left, the switch narrows and hides counts, and the input takes focus. Closing Search
+  clears its filter and restores the full switch. The header gained vertical breathing room, a
+  stronger title, Settings beside Add, and a soft shadow. The toolbar uses the taller header offset.
+  Desktop Student layout remains unchanged. No Main push was made.
+- **Verification:** Authenticated Chrome 390×844 preview showed the closed and expanded one-row
+  toolbar, six-card roster, filtering/empty result, and restored list after closing Search. Desktop
+  Chrome retained the original search field, status switch, title, and add button. Final Web build,
+  targeted Prettier, and `git diff --check` validate this revision.
+- **Known issue:** Physical installed-PWA safe-area and touch/keyboard motion still need review.
+- **Next:** Product Owner reviews the Student mobile interaction before more visual changes or Main
+  delivery.
+
+### 2026-09-29 — LOG-315 — Extend top inset to every mobile app header
+
+- **Scope:** Product Owner pointed out that the previous top inset correction covered only the
+  Student route, leaving the shared Logo header on other routes visually close to a notch.
+- **Outcome:** The authenticated mobile shell now owns one top-inset and header-height pair, using
+  at least 40px or the larger device `safe-area-inset-top` on all routes. Student search and the
+  session workspace topbar follow that height when sticky. Public capability pages now include a
+  top safe-area allowance; Auth already used the device inset in its mobile layout. The change is
+  mobile-only and remains local without a Main push.
+- **Verification:** Authenticated 390×844 Chrome preview showed clear space above the shared Logo
+  on Today, Calendar, Exercise Library, and a Course Session, and above the title/add action on
+  Student. The Session toolbar appeared below the shared header. Final Web build, targeted Prettier,
+  and `git diff --check` validate this revision.
+- **Known issue:** The desktop-sized preview reports no physical display cutout. Installed-PWA
+  behavior and the actual status-bar/safe-area geometry remain to be checked on a phone.
+- **Next:** Product Owner reviews shared top spacing on mobile before settling the PWA proportions.
+
+### 2026-09-29 — LOG-314 — Reserve visible top inset for Student app bar
+
+- **Scope:** Product Owner noticed that the new Student app bar appeared too close to a possible
+  phone notch or Dynamic Island in the 390×844 desktop preview.
+- **Outcome:** The Student-only mobile header now uses the larger of a 40px visual top inset and
+  `safe-area-inset-top`; its dark background still reaches the viewport edge. The sticky Student
+  toolbar offset uses the same inset so scrolling does not place it under the taller header.
+  Desktop and other mobile routes are unchanged. This adjustment remains local, with no Main push.
+- **Verification:** The authenticated 390×844 Chrome preview showed clear dark space above the
+  Student title and add button, with search, segments, and cards below. Web build, targeted Prettier,
+  and `git diff --check` are the final local checks for this adjustment.
+- **Known issue:** Desktop responsive preview reports no physical display cutout; an installed PWA
+  on a notched phone must still confirm the actual safe-area value and status-bar appearance.
+- **Next:** Product Owner reviews the new top spacing on mobile before settling the Student design.
+
+### 2026-09-29 — LOG-313 — Try Student roster mobile app bar and segmented control
+
+- **Scope:** Product Owner requested a mobile-only Student roster trial that puts the title/count and
+  add action in the top app bar and gives active/archived selection a sliding, inset segment.
+- **Outcome:** On `/students`, the mobile shell replaces the Logo and Settings control with
+  `學生 (count)` and a 44×44px add button wired to the existing CreateStudentDialog. The duplicate
+  roster heading is hidden at mobile widths, moving search and cards upward. A white plate with a
+  subtle shadow slides across the gray active/archived track; button semantics and filtered results
+  are preserved. Desktop heading, add action, and layout remain unchanged. No Main push was made.
+- **Verification:** Web production build and `git diff --check` passed. Authenticated Chrome mobile
+  preview at 390×844 showed the condensed bar, six cards, the archived empty state after switching,
+  and the original add dialog opened and closed from the new action. Desktop Chrome showed the
+  original heading and add button with the six-card grid.
+- **Known issue:** Sliding motion was seen in the preview, but physical installed-PWA safe-area and
+  device behavior remain unverified.
+- **Next:** Product Owner reviews this Student visual direction on mobile before further roster
+  changes or Main delivery.
+
+### 2026-09-29 — LOG-312 — Try mobile Today loading and route continuity
+
+- **Scope:** Product Owner approved a first mobile-only experiment with a Today schedule skeleton,
+  a 44×44px Settings target, and a subtle fade between bottom-navigation routes.
+- **Outcome:** Today now reserves a schedule-card shape while initial data loads at mobile widths;
+  its four signal placeholders match the mobile two-column surface. Bottom navigation links request
+  a short View Transition, with the fixed header and bar excluded from the content fade and reduced
+  motion respected. The Settings button measures 44×44px. Desktop presentation and navigation are
+  unchanged. This work and LOG-311 remain local; no Main push is authorized for this experiment.
+- **Verification:** Targeted Prettier, `git diff --check`, and Web production build passed.
+  Authenticated Chrome 390×844 preview switched from Students to Today through the bottom bar and
+  rendered the fixed shell without visible overflow. The brief animation and initial-loading
+  skeleton were not separately captured; physical installed-PWA behavior remains unverified.
+- **Next:** Product Owner reviews Today at 390×844 and on an installed phone, including a cold-load
+  skeleton and reduced-motion setting, before extending the pattern to other routes.
+
+### 2026-09-29 — LOG-311 — Lift mobile navigation above the gesture area
+
+- **Scope:** Product Owner compared the mobile bottom navigation with LINE and found its icons and
+  labels too close to the screen edge.
+- **Outcome:** Added 16px of fixed space below the navigation items in addition to
+  `safe-area-inset-bottom`, raising the mobile navigation height from 68px to 84px plus the inset.
+  Adjusted the mobile Today, Calendar, Finance, and capability-dialog clearances that depend on that
+  height. Desktop styling was not changed; the revision remains local pending visual review.
+- **Verification:** Authenticated Chrome 390×844 preview showed a visible gap beneath all four labels
+  while the dark bar still reached the frame bottom. Targeted Prettier, `git diff --check`, and Web
+  production build passed. Physical installed-PWA safe-area behavior remains unverified.
+- **Next:** Have the Product Owner review the 390×844 spacing and check it on a phone before settling
+  the bottom-navigation proportions or extending the PWA treatment.
 
 ### 2026-09-29 — LOG-310 — Deliver mobile and Calendar checkpoint to Main
 

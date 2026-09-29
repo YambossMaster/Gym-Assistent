@@ -30,6 +30,7 @@ import { useTrainingMutations, useTrainingPreference } from '../training/queries
 import { DemoImportPanel } from './DemoImportPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
+import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
 const settingsCategories = [
   {
@@ -159,7 +160,12 @@ export function SettingsPage({ session }: { session: Session }) {
   const selectedCategory = settingsCategories.find((item) => item.id === category)!
 
   return (
-    <Page title="設定" eyebrow="帳號與工作台">
+    <Page
+      title="設定"
+      eyebrow="帳號與工作台"
+      className="settings-page"
+      beforeHeader={<MobilePageAppBar title="設定" />}
+    >
       <section className="settings-layout">
         <nav className="settings-category-nav" aria-label="設定分類">
           <span className="settings-category-nav-label">分類</span>

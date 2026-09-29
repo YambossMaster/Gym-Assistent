@@ -32,6 +32,7 @@ import {
   TimerReset,
   Trash2,
   UserRound,
+  X,
   XCircle
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
@@ -69,6 +70,7 @@ import { SchedulingDialog } from './pages/calendar/SchedulingDialog'
 import { SeriesDatePicker } from './pages/students/SeriesDatePicker'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
+import { MobilePageAppBar } from './shared/MobilePageAppBar'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
 import type { PerformanceEntry } from './api'
@@ -99,6 +101,9 @@ export function StudentsPage({
   const [query, setQuery] = useState('')
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [createOpen, setCreateOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
+  const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
   const { students: studentsQuery } = useStudentsRouteQuery(session)
   const students = studentsQuery.data ?? []
   const activeCount = students.filter((student) => student.active).length
@@ -116,6 +121,14 @@ export function StudentsPage({
 
   return (
     <Page
+      beforeHeader={
+        <MobilePageAppBar
+          title="學生"
+          count={studentsQuery.data ? students.length : undefined}
+          addLabel="新增學生"
+          onAdd={() => setCreateOpen(true)}
+        />
+      }
       className="students-page"
       title="學生"
       eyebrow={`學生名單 · ${students.length}`}
@@ -129,17 +142,27 @@ export function StudentsPage({
         </button>
       }
     >
-      <div className="toolbar">
+      <div className="toolbar" data-search-open={mobileSearchOpen}>
         <label className="search-box">
-          <Search />
+          <Search aria-hidden="true" />
           <input
+            id="student-search-input"
+            ref={mobileSearchInputRef}
+            aria-label="搜尋學生"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜尋姓名或學生簡介"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && mobileSearchOpen) {
+                setQuery('')
+                setMobileSearchOpen(false)
+                mobileSearchButtonRef.current?.focus()
+              }
+            }}
+            placeholder={mobileSearchOpen ? '搜尋學生' : '搜尋姓名或學生簡介'}
             autoComplete="off"
           />
         </label>
-        <div className="student-view-switch" role="group" aria-label="學生狀態">
+        <div className="student-view-switch" role="group" aria-label="學生狀態" data-view={view}>
           <button type="button" onClick={() => setView('active')} aria-pressed={view === 'active'}>
             進行中 <span>{activeCount}</span>
           </button>
@@ -151,6 +174,25 @@ export function StudentsPage({
             已封存 <span>{archivedCount}</span>
           </button>
         </div>
+        <button
+          ref={mobileSearchButtonRef}
+          className="student-mobile-search-toggle"
+          type="button"
+          aria-label={mobileSearchOpen ? '關閉搜尋' : '搜尋學生'}
+          aria-controls="student-search-input"
+          aria-expanded={mobileSearchOpen}
+          onClick={() => {
+            if (mobileSearchOpen) {
+              setQuery('')
+              setMobileSearchOpen(false)
+            } else {
+              setMobileSearchOpen(true)
+              requestAnimationFrame(() => mobileSearchInputRef.current?.focus())
+            }
+          }}
+        >
+          {mobileSearchOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+        </button>
         {studentsQuery.isFetching && (
           <div className="cloud-state" role="status">
             <Cloud /> 更新中

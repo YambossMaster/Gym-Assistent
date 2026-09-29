@@ -1054,15 +1054,19 @@ function TrainingEditor({
           <span className="mini-avatar">{initial.session.studentName.slice(-2)}</span>
           <span>
             <strong>{initial.session.studentName}</strong>
-            <small>
+            <small className="session-title-date">
               {formatSessionRange(initial.session.startsAt, initial.session.endsAt, timeZone)}
             </small>
           </span>
         </Link>
         <div className="session-top-actions">
           {headerActions}
-          <span className={`session-save-status ${saveState}`} role="status" aria-live="polite">
-            {saveState === 'saved' || saveState === 'idle' ? <Check /> : null}
+          <span
+            className={`session-save-status ${saveState}${offline ? ' offline' : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            {!offline && (saveState === 'saved' || saveState === 'idle') ? <Check /> : null}
             {statusText}
           </span>
         </div>

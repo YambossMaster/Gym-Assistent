@@ -24,6 +24,7 @@ import {
   type Ref
 } from 'react'
 import { Link } from 'react-router-dom'
+import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 import {
   ApiError,
   type CalendarBlock,
@@ -145,6 +146,7 @@ export function CalendarPage({
     const page = pageRef.current
     if (!page) return
     const handleWheel = (event: WheelEvent) => {
+      if (window.matchMedia('(max-width: 720px)').matches) return
       if (document.querySelector('[aria-modal="true"]')) return
       const now = performance.now()
       if (now < headerGestureLockUntilRef.current) {
@@ -172,6 +174,7 @@ export function CalendarPage({
       ref={pageRef}
       className={`page calendar-page compact-calendar-page${collapsed ? ' calendar-focus-mode' : ''}`}
     >
+      <MobilePageAppBar title="行事曆" addLabel="安排課程" onAdd={() => setDraft(initialDraft())} />
       <div className="calendar-collapsible-header">
         <div className="calendar-header-inner">
           <header className="page-header reveal">

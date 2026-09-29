@@ -1,12 +1,13 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
-import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { ArrowLeft, CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { getWorkspaceSettings } from '../api'
 import { ExercisesPage } from '../pages/exercises/ExercisesPage'
 import { StudentDetailPage, StudentsPage } from '../pages/students/StudentsPage'
 import { IncomePage } from '../pages/students/IncomePage'
+import { financeReturnPath } from '../pages/students/finance-api'
 import { VenuePage } from '../pages/students/VenuePage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
@@ -15,6 +16,7 @@ import { CalendarPage } from '../pages/calendar/CalendarPage'
 import { SessionPage } from '../pages/sessions/SessionPage'
 import { queryKeys } from '../query-keys'
 import { Brand } from '../shared/primitives'
+import { MobileSettingsLink } from '../shared/MobilePageAppBar'
 import { resolveCoachIdentity } from './coach-identity'
 import { ResilienceStatus } from './ResilienceStatus'
 import { prefetchPrimaryCoachRoutes } from '../route-prefetch'
@@ -29,6 +31,31 @@ const navigation = [
 
 export function CoachWorkspace({ session }: { session: Session }) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const isStudentDetail =
+    /^\/students\/[^/]+$/.test(location.pathname) &&
+    !['/students/finances', '/students/venues'].includes(location.pathname)
+  const isMobileSubpage =
+    isStudentDetail ||
+    ['/students/finances', '/students/venues'].includes(location.pathname) ||
+    /^\/sessions\/[^/]+$/.test(location.pathname)
+  const returnParams = new URLSearchParams(location.search)
+  const mobileBackPath =
+    location.pathname === '/students/finances'
+      ? '/students'
+      : returnParams.get('from') === 'finances'
+        ? financeReturnPath(returnParams)
+        : '/students'
+  const mobileRouteTitle =
+    location.pathname === '/students'
+      ? '學生'
+      : location.pathname === '/calendar'
+        ? '行事曆'
+        : location.pathname === '/exercises'
+          ? '動作庫'
+          : location.pathname === '/settings'
+            ? '設定'
+            : null
   const queryClient = useQueryClient()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -74,12 +101,37 @@ export function CoachWorkspace({ session }: { session: Session }) {
       </aside>
       <main className="main-content">
         <header className="mobile-header">
-          <Brand />
-          <nav aria-label="行動版主要導覽">
-            <NavLink to="/settings" aria-label="設定">
-              <Settings />
-            </NavLink>
-          </nav>
+          {isMobileSubpage ? (
+            <div className="mobile-subpage-header">
+              {location.pathname.startsWith('/sessions/') ? (
+                <button type="button" className="mobile-subpage-back" onClick={() => navigate(-1)}>
+                  <ArrowLeft aria-hidden="true" />
+                  <span>返回</span>
+                </button>
+              ) : (
+                <Link className="mobile-subpage-back" to={mobileBackPath}>
+                  <ArrowLeft aria-hidden="true" />
+                  <span>返回</span>
+                </Link>
+              )}
+              <nav className="mobile-subpage-actions" aria-label="行動版主要導覽">
+                <span id="mobile-header-action-slot" />
+                <MobileSettingsLink />
+              </nav>
+            </div>
+          ) : mobileRouteTitle ? (
+            <div className="mobile-route-header-slot" id="mobile-route-header-slot">
+              <span className="mobile-route-header-fallback">{mobileRouteTitle}</span>
+            </div>
+          ) : (
+            <>
+              <Brand />
+              <nav aria-label="行動版主要導覽">
+                <span id="mobile-header-action-slot" />
+                <MobileSettingsLink />
+              </nav>
+            </>
+          )}
         </header>
         <ResilienceStatus session={session} queryClient={queryClient} />
         <FinanceCurrencyProvider currency={coachSettingsQuery.data?.defaultCurrency ?? 'TWD'}>
@@ -123,7 +175,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
       </main>
       <nav className="bottom-nav" aria-label="主要導覽">
         {navigation.slice(0, 4).map((item) => (
-          <NavLink key={item.to} to={item.to}>
+          <NavLink key={item.to} to={item.to} viewTransition>
             <item.icon />
             <span>{item.label}</span>
           </NavLink>
