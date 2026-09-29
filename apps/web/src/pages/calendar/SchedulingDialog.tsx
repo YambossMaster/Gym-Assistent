@@ -102,7 +102,7 @@ export function SchedulingDialog({
             <X aria-hidden="true" />
           </button>
         </header>
-        {children}
+        <div className="ui-settings-dialog-content">{children}</div>
       </section>
     </div>
   )

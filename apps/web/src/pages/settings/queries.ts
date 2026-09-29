@@ -39,7 +39,18 @@ export function useSettingsRouteMutations({
   const settings = useMutation({
     scope: { id: `workspace-settings-${session.user.id}` },
     mutationFn: (
-      changes: Partial<Pick<WorkspaceSettings, 'displayName' | 'timeZone' | 'defaultCurrency'>>
+      changes: Partial<
+        Pick<
+          WorkspaceSettings,
+          | 'displayName'
+          | 'timeZone'
+          | 'defaultCurrency'
+          | 'calendarStartHour'
+          | 'calendarEndHour'
+          | 'calendarWeekStart'
+          | 'defaultSessionMinutes'
+        >
+      >
     ) => {
       const current = queryClient.getQueryData<WorkspaceSettings>(
         queryKeys.settings(session.user.id)
@@ -49,6 +60,10 @@ export function useSettingsRouteMutations({
         displayName: changes.displayName ?? current.displayName,
         timeZone: changes.timeZone ?? current.timeZone,
         defaultCurrency: changes.defaultCurrency ?? current.defaultCurrency,
+        calendarStartHour: changes.calendarStartHour ?? current.calendarStartHour,
+        calendarEndHour: changes.calendarEndHour ?? current.calendarEndHour,
+        calendarWeekStart: changes.calendarWeekStart ?? current.calendarWeekStart,
+        defaultSessionMinutes: changes.defaultSessionMinutes ?? current.defaultSessionMinutes,
         version: current.version
       })
     },

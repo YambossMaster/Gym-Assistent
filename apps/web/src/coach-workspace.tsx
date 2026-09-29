@@ -311,10 +311,12 @@ function StudentCard({
 
 export function StudentDetailPage({
   session,
-  timeZone = 'Asia/Taipei'
+  timeZone = 'Asia/Taipei',
+  defaultSessionMinutes = 60
 }: {
   session: Session
   timeZone?: string
+  defaultSessionMinutes?: number
 }) {
   const { studentId = '' } = useParams()
   const defaultFinanceCurrency = useDefaultFinanceCurrency()
@@ -580,7 +582,14 @@ export function StudentDetailPage({
                   取消
                 </button>
                 <button className="primary-button compact ui-action-save" disabled={submitting}>
-                  {saveMutation.isPending ? '儲存中…' : '儲存資料'}
+                  {saveMutation.isPending ? (
+                    '儲存中…'
+                  ) : (
+                    <>
+                      <span className="desktop-action-label">儲存資料</span>
+                      <span className="mobile-action-label">儲存</span>
+                    </>
+                  )}
                 </button>
               </footer>
             </form>
@@ -593,6 +602,7 @@ export function StudentDetailPage({
           studentId={studentId}
           studentName={detail.student.name}
           timeZone={timeZone}
+          defaultSessionMinutes={defaultSessionMinutes}
           schedule={detail.schedule}
         />
         <StudentPerformance
@@ -753,7 +763,8 @@ export function StudentDetailPage({
                 ) : (
                   <>
                     <Plus aria-hidden="true" />
-                    新增購課紀錄
+                    <span className="desktop-action-label">新增購課紀錄</span>
+                    <span className="mobile-action-label">新增</span>
                   </>
                 )}
               </button>
@@ -1003,12 +1014,14 @@ function StudentSchedule({
   studentId,
   studentName,
   timeZone,
+  defaultSessionMinutes,
   schedule
 }: {
   session: Session
   studentId: string
   studentName: string
   timeZone: string
+  defaultSessionMinutes: number
   schedule?: {
     nearestFuture: import('./api').CalendarSession | null
     history: import('./api').CalendarSession[]
@@ -1109,6 +1122,7 @@ function StudentSchedule({
           initialVenueId={defaultVenue?.id ?? null}
           initialLocation={defaultVenue?.name ?? ''}
           timeZone={timeZone}
+          defaultSessionMinutes={defaultSessionMinutes}
           pending={mutations.createSeries.isPending || mutations.updateSeries.isPending}
           onClose={() => setEditor(null)}
           onDelete={
@@ -1202,6 +1216,7 @@ function SeriesEditor({
   initialVenueId,
   initialLocation,
   timeZone,
+  defaultSessionMinutes,
   pending,
   onClose,
   onDelete,
@@ -1214,6 +1229,7 @@ function SeriesEditor({
   initialVenueId: string | null
   initialLocation: string
   timeZone: string
+  defaultSessionMinutes: number
   pending: boolean
   onClose: () => void
   onDelete?: () => void
@@ -1233,7 +1249,7 @@ function SeriesEditor({
     : { date: new Date().toISOString().slice(0, 10), time: '09:00' }
   const [date, setDate] = useState(initial.date),
     [start, setStart] = useState(initial.time)
-  const [duration, setDuration] = useState(series?.durationMinutes ?? 60),
+  const [duration, setDuration] = useState(series?.durationMinutes ?? defaultSessionMinutes),
     [location, setLocation] = useState(series?.location ?? initialLocation)
   const [venueId, setVenueId] = useState(series?.venueId ?? initialVenueId),
     [customerSource, setCustomerSource] = useState(series?.customerSource ?? null)
@@ -1381,14 +1397,22 @@ function SeriesEditor({
               onClick={onDelete}
             >
               <Trash2 aria-hidden="true" />
-              刪除固定課表
+              <span className="desktop-action-label">刪除固定課表</span>
+              <span className="mobile-action-label">刪除</span>
             </button>
           )}
           <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
             取消
           </button>
           <button className="primary-button compact ui-action-save" disabled={pending}>
-            {pending ? '儲存中…' : '儲存固定課表'}
+            {pending ? (
+              '儲存中…'
+            ) : (
+              <>
+                <span className="desktop-action-label">儲存固定課表</span>
+                <span className="mobile-action-label">儲存</span>
+              </>
+            )}
           </button>
         </div>
       </form>
@@ -1939,7 +1963,8 @@ function CreateStudentDialog({
             ) : (
               <>
                 <Plus aria-hidden="true" />
-                建立學生
+                <span className="desktop-action-label">建立學生</span>
+                <span className="mobile-action-label">新增</span>
               </>
             )}
           </button>

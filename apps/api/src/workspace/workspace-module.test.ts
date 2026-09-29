@@ -18,6 +18,10 @@ describe('WorkspaceModule', () => {
       displayName: 'FORM Taipei',
       timeZone: 'Asia/Taipei',
       defaultCurrency: 'USD',
+      calendarStartHour: 7,
+      calendarEndHour: 23,
+      calendarWeekStart: 0,
+      defaultSessionMinutes: 90,
       version: initial.version,
     })
 
@@ -25,6 +29,10 @@ describe('WorkspaceModule', () => {
       displayName: 'FORM Taipei',
       timeZone: 'Asia/Taipei',
       defaultCurrency: 'USD',
+      calendarStartHour: 7,
+      calendarEndHour: 23,
+      calendarWeekStart: 0,
+      defaultSessionMinutes: 90,
       version: 2,
       updatedAt: '2026-09-09T16:00:00.000Z',
     })
@@ -47,5 +55,27 @@ describe('WorkspaceModule', () => {
         version: 1,
       }),
     ).rejects.toThrow('valid IANA')
+  })
+
+  it('rejects inverted calendar hours and unsupported lesson durations', async () => {
+    const workspace = new WorkspaceModule({ repository: new MemoryStudentRepository() })
+    const initial = await workspace.getSettings(coach)
+    await expect(
+      workspace.updateSettings(coach, {
+        displayName: initial.displayName,
+        timeZone: initial.timeZone,
+        version: initial.version,
+        calendarStartHour: 20,
+        calendarEndHour: 8,
+      }),
+    ).rejects.toThrow('calendarEndHour')
+    await expect(
+      workspace.updateSettings(coach, {
+        displayName: initial.displayName,
+        timeZone: initial.timeZone,
+        version: initial.version,
+        defaultSessionMinutes: 75 as 60,
+      }),
+    ).rejects.toThrow()
   })
 })

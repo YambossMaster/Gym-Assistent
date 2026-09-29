@@ -597,7 +597,9 @@ it('offers simple confirmation only for archived Venue deletion and keeps restor
     expect(host.textContent).toContain('恢復場地')
     await act(async () =>
       [...host.querySelectorAll<HTMLButtonElement>('button')]
-        .find((button) => button.textContent?.trim() === '刪除場地')!
+        .find(
+          (button) => button.querySelector('.desktop-action-label')?.textContent === '刪除場地'
+        )!
         .click()
     )
     const confirmation = host.querySelector('[role="alertdialog"]')!

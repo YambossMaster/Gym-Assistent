@@ -6,6 +6,10 @@ export interface NewWorkspaceSettings {
   displayName: string
   timeZone: string
   defaultCurrency?: WorkspaceSettings['defaultCurrency']
+  calendarStartHour?: number
+  calendarEndHour?: number
+  calendarWeekStart?: 0 | 1
+  defaultSessionMinutes?: WorkspaceSettings['defaultSessionMinutes']
   expectedVersion: number
   now: Date
 }

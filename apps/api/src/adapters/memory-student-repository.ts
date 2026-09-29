@@ -50,6 +50,10 @@ export class MemoryStudentRepository
       displayName: '我的工作台',
       timeZone: 'Asia/Taipei',
       defaultCurrency: 'TWD',
+      calendarStartHour: 6,
+      calendarEndHour: 22,
+      calendarWeekStart: 1,
+      defaultSessionMinutes: 60,
       version: 1,
       updatedAt: new Date(0).toISOString(),
     })
@@ -99,10 +103,17 @@ export class MemoryStudentRepository
     const current = this.#settingsByWorkspace.get(workspaceId)
     if (!current) throw new Error('Workspace does not exist')
     if (current.version !== input.expectedVersion) throw new WorkspaceVersionConflictError()
+    const calendarStartHour = input.calendarStartHour ?? current.calendarStartHour
+    const calendarEndHour = input.calendarEndHour ?? current.calendarEndHour
+    if (calendarEndHour <= calendarStartHour) throw new Error('Calendar end must be after start')
     const settings = {
       displayName: input.displayName,
       timeZone: input.timeZone,
       defaultCurrency: input.defaultCurrency ?? current.defaultCurrency,
+      calendarStartHour,
+      calendarEndHour,
+      calendarWeekStart: input.calendarWeekStart ?? current.calendarWeekStart,
+      defaultSessionMinutes: input.defaultSessionMinutes ?? current.defaultSessionMinutes,
       version: current.version + 1,
       updatedAt: input.now.toISOString(),
     }

@@ -29,6 +29,7 @@ import {
   type CalendarBlock,
   type CalendarProjection,
   type CalendarSession,
+  type WorkspaceSettings,
   type Student
 } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
@@ -81,7 +82,27 @@ type Draft =
       action: 'add' | 'remove'
     }
 
-export function CalendarPage({ session, timeZone }: { session: Session; timeZone: string }) {
+type CalendarPreferences = Pick<
+  WorkspaceSettings,
+  'calendarStartHour' | 'calendarEndHour' | 'calendarWeekStart' | 'defaultSessionMinutes'
+>
+const defaultCalendarPreferences: CalendarPreferences = {
+  calendarStartHour: 6,
+  calendarEndHour: 22,
+  calendarWeekStart: 1,
+  defaultSessionMinutes: 60
+}
+
+export function CalendarPage({
+  session,
+  timeZone,
+  settings
+}: {
+  session: Session
+  timeZone: string
+  settings?: WorkspaceSettings
+}) {
+  const preferences = settings ?? defaultCalendarPreferences
   const [view, setView] = useState<CalendarView>(() =>
     window.matchMedia('(max-width: 720px)').matches ? 'agenda' : 'week'
   )
@@ -93,7 +114,7 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
   const calendarViewportRef = useRef<HTMLDivElement | null>(null)
   const collapsedRef = useRef(false)
   const headerGestureLockUntilRef = useRef(0)
-  const range = rangeFor(anchor, view)
+  const range = rangeFor(anchor, view, preferences.calendarWeekStart)
   const query = useCalendarRouteQuery(session, range)
   const students =
     useStudentsRouteQuery(session).students.data?.filter((student) => student.active) ?? []
@@ -105,11 +126,12 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
     isFetching: query.isFetching,
     error: query.error
   })
-  const initialDraft = (date = anchor, start = '09:00', end = '10:00'): Draft => ({
+  const preferredStart = preferredSessionStart(preferences)
+  const initialDraft = (date = anchor, start = preferredStart): Draft => ({
     kind: 'session',
     date,
     start,
-    end,
+    end: minutesToTime(timeMinutes(start) + preferences.defaultSessionMinutes),
     studentId: students[0]?.id ?? '',
     venueId: suggestedStudentVenue(venueQuery.data, students[0]?.id ?? '')?.id ?? null,
     location: suggestedStudentVenue(venueQuery.data, students[0]?.id ?? '')?.name ?? ''
@@ -260,6 +282,7 @@ export function CalendarPage({ session, timeZone }: { session: Session; timeZone
             {view === 'day' || view === 'week' ? (
               <Timeline
                 calendar={query.data}
+                preferences={preferences}
                 viewportRef={calendarViewportRef}
                 defaultStudentId={students[0]?.id ?? ''}
                 onDraft={(next) => {
@@ -953,7 +976,8 @@ function Editor({
                 onClick={() => setDeleteTarget('block')}
                 disabled={pending}
               >
-                刪除封鎖
+                <span className="desktop-action-label">刪除封鎖</span>
+                <span className="mobile-action-label">刪除</span>
               </button>
             ) : null}
             <button
@@ -964,11 +988,16 @@ function Editor({
               取消
             </button>
             <button className="primary-button compact ui-action-save" disabled={pending}>
-              {pending
-                ? '儲存中…'
-                : draft.kind === 'block' && draft.current
-                  ? '儲存修改'
-                  : '儲存安排'}
+              {pending ? (
+                '儲存中…'
+              ) : (
+                <>
+                  <span className="desktop-action-label">
+                    {draft.kind === 'block' && draft.current ? '儲存修改' : '儲存安排'}
+                  </span>
+                  <span className="mobile-action-label">儲存</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -979,18 +1008,24 @@ function Editor({
 
 function Timeline({
   calendar,
+  preferences,
   onDraft,
   onMove,
   defaultStudentId,
   viewportRef
 }: {
   calendar: CalendarProjection
+  preferences: CalendarPreferences
   onDraft: (draft: Draft) => void
   onMove: (draft: Extract<Draft, { kind: 'session' | 'block' }>, done: () => void) => void
   defaultStudentId: string
   viewportRef: Ref<HTMLDivElement>
 }) {
   const days = dateRange(calendar.range.start, calendar.range.end)
+  const hours = timelineHours(calendar, preferences)
+  const firstMinute = hours.start * 60
+  const lastMinute = hours.end * 60
+  const timelineHeight = Math.max(720, (hours.end - hours.start) * 45)
   type ItemDraft = Extract<Draft, { kind: 'session' | 'block' }>
   type Preview = { date: string; start: string; end: string; kind: 'create' | 'move' }
   type Gesture = {
@@ -1047,8 +1082,18 @@ function Timeline({
     return {
       date: days[index] ?? days[0]!,
       minute: Math.max(
-        360,
-        Math.min(1320, timeMinutes(yToTime(y - (grid?.getBoundingClientRect().top ?? 0))))
+        firstMinute,
+        Math.min(
+          lastMinute,
+          timeMinutes(
+            yToTime(
+              y - (grid?.getBoundingClientRect().top ?? 0),
+              firstMinute,
+              lastMinute,
+              timelineHeight
+            )
+          )
+        )
       )
     }
   }
@@ -1056,7 +1101,7 @@ function Timeline({
     const target = point(x, y)
     if (!gesture.item) {
       const startMinute = Math.min(gesture.minute, target.minute)
-      const endMinute = Math.min(1320, Math.max(gesture.minute, target.minute) + 15)
+      const endMinute = Math.min(lastMinute, 1425, Math.max(gesture.minute, target.minute) + 15)
       return {
         date: gesture.date,
         start: minutesToTime(startMinute),
@@ -1065,7 +1110,10 @@ function Timeline({
       }
     }
     const duration = timeMinutes(gesture.item.end) - timeMinutes(gesture.item.start)
-    const startMinute = Math.max(360, Math.min(1320 - duration, target.minute - gesture.grabOffset))
+    const startMinute = Math.max(
+      firstMinute,
+      Math.min(lastMinute - duration, 1425 - duration, target.minute - gesture.grabOffset)
+    )
     return {
       date: target.date,
       start: minutesToTime(startMinute),
@@ -1151,12 +1199,12 @@ function Timeline({
     if (!gesture.dragging) {
       if (gesture.item) onDraft(gesture.item)
       else {
-        const start = Math.min(1260, gesture.minute)
+        const start = Math.min(1425 - preferences.defaultSessionMinutes, gesture.minute)
         onDraft({
           kind: 'session',
           date: gesture.date,
           start: minutesToTime(start),
-          end: minutesToTime(start + 60),
+          end: minutesToTime(start + preferences.defaultSessionMinutes),
           studentId: defaultStudentId,
           location: ''
         })
@@ -1196,7 +1244,13 @@ function Timeline({
       <div
         ref={timelineRef}
         className={`calendar-timeline${days.length === 1 ? ' single-day' : ''}`}
-        style={{ '--calendar-days': days.length } as CSSProperties}
+        style={
+          {
+            '--calendar-days': days.length,
+            '--timeline-height': `${timelineHeight}px`,
+            '--hour-height': `${timelineHeight / (hours.end - hours.start)}px`
+          } as CSSProperties
+        }
         onPointerMove={move}
         onPointerUp={finish}
         onPointerCancel={() => {
@@ -1231,9 +1285,9 @@ function Timeline({
           </div>
         ))}
         <div className="calendar-time-axis" aria-hidden="true">
-          {Array.from({ length: 17 }, (_, index) => (
-            <span key={index} style={{ top: `${(index / 16) * 100}%` }}>
-              {String(index + 6).padStart(2, '0')}:00
+          {Array.from({ length: hours.end - hours.start + 1 }, (_, index) => (
+            <span key={index} style={{ top: `${(index / (hours.end - hours.start)) * 100}%` }}>
+              {String(index + hours.start).padStart(2, '0')}:00
             </span>
           ))}
         </div>
@@ -1248,8 +1302,11 @@ function Timeline({
               onDraft({
                 kind: 'session',
                 date,
-                start: '09:00',
-                end: '10:00',
+                start: preferredSessionStart(preferences),
+                end: minutesToTime(
+                  timeMinutes(preferredSessionStart(preferences)) +
+                    preferences.defaultSessionMinutes
+                ),
                 studentId: defaultStudentId,
                 location: ''
               })
@@ -1261,7 +1318,7 @@ function Timeline({
               {(calendar.availabilityByDate[date] ?? []).map((window) => (
                 <span
                   key={`${window.startTime}-${window.endTime}`}
-                  style={timeStyle(window.startTime, window.endTime)}
+                  style={timeStyle(window.startTime, window.endTime, hours)}
                   title={`可排課 ${window.startTime}–${window.endTime}`}
                 />
               ))}
@@ -1273,7 +1330,7 @@ function Timeline({
                 return (
                   <button
                     className="calendar-block positioned"
-                    style={timeStyle(local.start, local.end)}
+                    style={timeStyle(local.start, local.end, hours)}
                     key={block.id}
                     onPointerDown={(event) => begin(event, date, local)}
                     onClick={(event) => {
@@ -1298,7 +1355,7 @@ function Timeline({
                 return (
                   <button
                     className={`calendar-session positioned ${calendarSessionVisualState(entry.session)}${entry.conflicts.length ? ' has-conflict' : ''}`}
-                    style={timeStyle(local.start, local.end)}
+                    style={timeStyle(local.start, local.end, hours)}
                     key={entry.session.id}
                     onPointerDown={(event) => {
                       event.stopPropagation()
@@ -1321,7 +1378,7 @@ function Timeline({
             {preview?.date === date ? (
               <div
                 className={`calendar-drag-preview${preview.kind === 'move' ? ' moving' : ''}`}
-                style={timeStyle(preview.start, preview.end)}
+                style={timeStyle(preview.start, preview.end, hours)}
                 aria-hidden="true"
               >
                 <strong>
@@ -1551,15 +1608,57 @@ function blockDraft(item: CalendarBlock, timeZone: string): Extract<Draft, { kin
     current: item
   }
 }
-function timeStyle(start: string, end: string): CSSProperties {
+function preferredSessionStart(preferences: CalendarPreferences) {
+  const minutes = Math.min(
+    1425 - preferences.defaultSessionMinutes,
+    Math.max(
+      preferences.calendarStartHour * 60,
+      Math.min(540, preferences.calendarEndHour * 60 - preferences.defaultSessionMinutes)
+    )
+  )
+  return minutesToTime(Math.max(0, Math.floor(minutes / 15) * 15))
+}
+
+export function timelineHours(calendar: CalendarProjection, preferences: CalendarPreferences) {
+  let start = preferences.calendarStartHour
+  let end = preferences.calendarEndHour
+  const include = (startsAt: string, endsAt: string) => {
+    const localStart = isoToLocalDateTime(startsAt, calendar.timeZone)
+    if (localStart.date < calendar.range.start || localStart.date >= calendar.range.end) return
+    const localEnd = isoToLocalDateTime(endsAt, calendar.timeZone)
+    start = Math.min(start, Number(localStart.time.slice(0, 2)))
+    end = Math.max(
+      end,
+      localEnd.date === localStart.date ? Math.ceil(timeMinutes(localEnd.time) / 60) : 24
+    )
+  }
+  for (const { session } of calendar.sessions) {
+    if (session.status !== 'cancelled' && session.startsAt && session.endsAt)
+      include(session.startsAt, session.endsAt)
+  }
+  for (const block of calendar.blocks) include(block.startsAt, block.endsAt)
+  return { start, end: Math.min(24, end) }
+}
+function timeStyle(
+  start: string,
+  end: string,
+  hours: { start: number; end: number }
+): CSSProperties {
   const minutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3))
+  const totalMinutes = (hours.end - hours.start) * 60
   return {
-    top: `${((minutes(start) - 360) / 960) * 100}%`,
-    height: `${Math.max(2, ((minutes(end) - minutes(start)) / 960) * 100)}%`
+    top: `${((minutes(start) - hours.start * 60) / totalMinutes) * 100}%`,
+    height: `${Math.max(2, (((minutes(end) <= minutes(start) ? 1440 : minutes(end)) - minutes(start)) / totalMinutes) * 100)}%`
   }
 }
-function yToTime(y: number) {
-  const minutes = Math.max(0, Math.min(945, Math.round(((y / 720) * 960) / 15) * 15)) + 360
+function yToTime(y: number, firstMinute: number, lastMinute: number, height: number) {
+  const minutes = Math.max(
+    firstMinute,
+    Math.min(
+      Math.min(lastMinute - 15, 1410),
+      Math.round(((y / height) * (lastMinute - firstMinute)) / 15) * 15 + firstMinute
+    )
+  )
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }
 function timeMinutes(value: string) {
@@ -1571,16 +1670,16 @@ function validTime(value: string) {
 function minutesToTime(value: number) {
   return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
 }
-export function rangeFor(anchor: string, view: CalendarView) {
+export function rangeFor(anchor: string, view: CalendarView, weekStart: 0 | 1 = 1) {
   if (view === 'day') return { start: anchor, end: addDays(anchor, 1) }
   if (view === 'month') {
-    const start = monthGridStart(anchor)
+    const start = monthGridStart(anchor, weekStart)
     const [year, month] = anchor.split('-').map(Number)
     const nextMonth = new Date(Date.UTC(year!, month!, 1)).toISOString().slice(0, 10)
-    const lastWeekStart = monday(nextMonth)
+    const lastWeekStart = startOfWeek(nextMonth, weekStart)
     return { start, end: nextMonth === lastWeekStart ? lastWeekStart : addDays(lastWeekStart, 7) }
   }
-  const start = monday(anchor)
+  const start = startOfWeek(anchor, weekStart)
   return { start, end: addDays(start, 7) }
 }
 export function shiftPeriod(anchor: string, view: CalendarView, direction: -1 | 1) {
@@ -1598,12 +1697,12 @@ function addDays(date: string, days: number) {
   value.setUTCDate(value.getUTCDate() + days)
   return value.toISOString().slice(0, 10)
 }
-function monday(date: string) {
+function startOfWeek(date: string, weekStart: 0 | 1) {
   const value = new Date(`${date}T12:00:00Z`)
-  return addDays(date, -((value.getUTCDay() + 6) % 7))
+  return addDays(date, -((value.getUTCDay() - weekStart + 7) % 7))
 }
-function monthGridStart(date: string) {
-  return monday(`${date.slice(0, 7)}-01`)
+function monthGridStart(date: string, weekStart: 0 | 1) {
+  return startOfWeek(`${date.slice(0, 7)}-01`, weekStart)
 }
 function localDate(value: Date, timeZone: string) {
   return new Intl.DateTimeFormat('en-CA', {

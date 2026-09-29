@@ -87,7 +87,13 @@ export function CoachWorkspace({ session }: { session: Session }) {
             <Route path="/today" element={<TodayPage session={session} coachName={coach.name} />} />
             <Route
               path="/calendar"
-              element={<CalendarPage session={session} timeZone={timeZone} />}
+              element={
+                <CalendarPage
+                  session={session}
+                  timeZone={timeZone}
+                  settings={coachSettingsQuery.data}
+                />
+              }
             />
             <Route
               path="/students"
@@ -97,7 +103,13 @@ export function CoachWorkspace({ session }: { session: Session }) {
             <Route path="/students/venues" element={<VenuePage session={session} />} />
             <Route
               path="/students/:studentId"
-              element={<StudentDetailPage session={session} timeZone={timeZone} />}
+              element={
+                <StudentDetailPage
+                  session={session}
+                  timeZone={timeZone}
+                  defaultSessionMinutes={coachSettingsQuery.data?.defaultSessionMinutes ?? 60}
+                />
+              }
             />
             <Route
               path="/sessions/:sessionId"

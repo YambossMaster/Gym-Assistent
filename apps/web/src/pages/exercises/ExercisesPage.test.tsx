@@ -172,7 +172,8 @@ it('shows saving progress until the edit request completes', async () => {
     expect(save.textContent).toBe('儲存中…')
     expect(save.disabled).toBe(true)
     await act(async () => finishSave())
-    expect(save.textContent).toBe('儲存修改')
+    expect(save.querySelector('.desktop-action-label')?.textContent).toBe('儲存修改')
+    expect(save.querySelector('.mobile-action-label')?.textContent).toBe('儲存')
   } finally {
     await act(async () => root.unmount())
   }

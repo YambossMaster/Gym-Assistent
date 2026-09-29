@@ -46,6 +46,11 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
     callback(0)
     return 1
   })
+  const writeText = vi.fn().mockResolvedValue(undefined)
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText }
+  })
   let currentLink: CapabilityLinkMetadata | null = null
   api.list.mockImplementation(async () => (currentLink ? [currentLink] : []))
   api.issue.mockImplementation(async () => {
@@ -97,12 +102,20 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
     expect(urlInput.selectionEnd).toBe(4)
     expect(button('複製連結').className).toContain('secondary-button')
     expect(sessionStorage.length).toBe(1)
+    expect(button('複製連結').getAttribute('data-copy-state')).toBe('idle')
+    await act(async () => button('複製連結').click())
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(button('複製連結').getAttribute('data-copy-state')).toBe('success')
+    expect(
+      button('複製連結').querySelector('.capability-copy-mobile')?.getAttribute('class')
+    ).toContain('lucide-check')
     await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="關閉"]')!.click())
     await act(async () => button('分享訓練結果').click())
     expect(host.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
       'test-capability-token'
     )
     expect(button('複製連結')).toBeTruthy()
+    expect(button('複製連結').getAttribute('data-copy-state')).toBe('idle')
     expect(api.issue).toHaveBeenCalledTimes(1)
     await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="關閉"]')!.click())
     await act(async () => root.unmount())
@@ -122,6 +135,8 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
         'test-capability-token'
       )
     )
+    await act(async () => button('複製連結').click())
+    expect(button('複製連結').getAttribute('data-copy-state')).toBe('success')
     await act(async () => button('重新建立連結').click())
     expect(host.textContent).toContain('新連結建立後，先前的網址會立即失效。')
     await act(async () => button('確認重新建立').click())
@@ -129,6 +144,7 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
     expect(host.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
       'replacement-token'
     )
+    expect(button('複製連結').getAttribute('data-copy-state')).toBe('idle')
     expect(sessionStorage.getItem(sessionStorage.key(0)!)).toContain('replacement-token')
     expect(host.textContent).not.toContain('新連結已建立，先前的連結已失效。')
     await act(async () => button('撤銷連結').click())
@@ -144,6 +160,7 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
 afterEach(() => {
   document.body.innerHTML = ''
   sessionStorage.clear()
+  Reflect.deleteProperty(navigator, 'clipboard')
   vi.clearAllMocks()
   vi.unstubAllGlobals()
 })

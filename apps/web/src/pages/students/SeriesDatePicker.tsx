@@ -104,7 +104,7 @@ export function SeriesDatePicker({
         createPortal(
           <div
             ref={calendar}
-            className="series-date-calendar"
+            className="series-date-calendar ui-choice-scroll"
             role="dialog"
             aria-label={`選擇${label}`}
             style={position}

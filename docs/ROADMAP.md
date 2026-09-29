@@ -501,6 +501,15 @@ The product and evidence contract being revised is
 [`M7.5-MONTHLY-FINANCE-CONTRACT.md`](M7.5-MONTHLY-FINANCE-CONTRACT.md). This addition does not
 reopen M3/M4 delivery or change the Stage 1/Stage 2 and M8 boundaries above.
 
+#### Product Owner-approved Stage 1 addition — Calendar preferences
+
+On 2026-09-29, the Product Owner added Workspace-owned Calendar display hours, Monday/Sunday
+week start, and default Course Session length to the current Settings review. The approved
+lengths are 30/45/60/90/120 minutes with 60 as the initial value; existing arrangements outside
+the chosen display hours remain visible. The bounded behavior, authority, and acceptance path
+are in [`M7.5-CALENDAR-PREFERENCES-CONTRACT.md`](M7.5-CALENDAR-PREFERENCES-CONTRACT.md).
+This Stage 1 correction stays local for review under the operating model above.
+
 #### Contract gate
 
 - Reproduce each reported problem and freeze the expected Coach or Student outcome, affected route,

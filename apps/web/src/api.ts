@@ -176,6 +176,10 @@ export interface WorkspaceSettings {
   displayName: string
   timeZone: string
   defaultCurrency: 'TWD' | 'USD' | 'JPY' | 'EUR' | 'HKD'
+  calendarStartHour: number
+  calendarEndHour: number
+  calendarWeekStart: 0 | 1
+  defaultSessionMinutes: 30 | 45 | 60 | 90 | 120
   version: number
   updatedAt: string
 }
@@ -287,6 +291,10 @@ export interface UpdateWorkspaceSettingsInput {
   displayName: string
   timeZone: string
   defaultCurrency?: WorkspaceSettings['defaultCurrency']
+  calendarStartHour?: number
+  calendarEndHour?: number
+  calendarWeekStart?: WorkspaceSettings['calendarWeekStart']
+  defaultSessionMinutes?: WorkspaceSettings['defaultSessionMinutes']
   version: number
 }
 

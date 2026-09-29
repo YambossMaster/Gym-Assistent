@@ -158,6 +158,10 @@ const updateWorkspaceSettingsBodySchema = {
     displayName: { type: 'string', minLength: 1, maxLength: 120 },
     timeZone: { type: 'string', minLength: 1, maxLength: 64 },
     defaultCurrency: { type: 'string', enum: ['TWD', 'USD', 'JPY', 'EUR', 'HKD'] },
+    calendarStartHour: { type: 'integer', minimum: 0, maximum: 23 },
+    calendarEndHour: { type: 'integer', minimum: 1, maximum: 24 },
+    calendarWeekStart: { type: 'integer', enum: [0, 1] },
+    defaultSessionMinutes: { type: 'integer', enum: [30, 45, 60, 90, 120] },
     version: { type: 'integer', minimum: 1 },
   },
 } as const

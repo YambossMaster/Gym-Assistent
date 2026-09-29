@@ -35,6 +35,16 @@ export class WorkspaceModule {
       displayName: input.displayName,
       timeZone: input.timeZone,
       ...(input.defaultCurrency ? { defaultCurrency: input.defaultCurrency } : {}),
+      ...(input.calendarStartHour !== undefined
+        ? { calendarStartHour: input.calendarStartHour }
+        : {}),
+      ...(input.calendarEndHour !== undefined ? { calendarEndHour: input.calendarEndHour } : {}),
+      ...(input.calendarWeekStart !== undefined
+        ? { calendarWeekStart: input.calendarWeekStart }
+        : {}),
+      ...(input.defaultSessionMinutes !== undefined
+        ? { defaultSessionMinutes: input.defaultSessionMinutes }
+        : {}),
       expectedVersion: input.version,
       now: this.#now(),
     })

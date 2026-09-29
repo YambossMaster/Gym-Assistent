@@ -666,7 +666,8 @@ function VenueEditor({
                     setDeleting(true)
                   }}
                 >
-                  刪除場地
+                  <span className="desktop-action-label">刪除場地</span>
+                  <span className="mobile-action-label">刪除</span>
                 </button>
               )}
               <span className="venue-detail-footer-actions">
@@ -1311,7 +1312,8 @@ function VenueEditor({
                     setDeleting(true)
                   }}
                 >
-                  刪除預購紀錄
+                  <span className="desktop-action-label">刪除預購紀錄</span>
+                  <span className="mobile-action-label">刪除</span>
                 </button>
               )}
               <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
@@ -1332,7 +1334,14 @@ function VenueEditor({
                     )
                   }
                 >
-                  {mutation.isPending ? '處理中…' : '確認套用'}
+                  {mutation.isPending ? (
+                    '處理中…'
+                  ) : (
+                    <>
+                      <span className="desktop-action-label">確認套用</span>
+                      <span className="mobile-action-label">確認</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
@@ -1355,17 +1364,34 @@ function VenueEditor({
                     (editor.kind === 'credit' && !editor.credit)) ? (
                     <Plus aria-hidden="true" />
                   ) : null}
-                  {mutation.isPending
-                    ? '處理中…'
-                    : editor.kind === 'history' || editor.kind === 'rule'
-                      ? '預覽變更'
-                      : editor.kind === 'credit'
-                        ? editor.credit
-                          ? '變更'
-                          : '登錄預購'
-                        : editor.kind === 'coach-supplied'
-                          ? '加入自帶客'
-                          : '儲存'}
+                  {mutation.isPending ? (
+                    '處理中…'
+                  ) : (
+                    <>
+                      <span className="desktop-action-label">
+                        {editor.kind === 'history' || editor.kind === 'rule'
+                          ? '預覽變更'
+                          : editor.kind === 'credit'
+                            ? editor.credit
+                              ? '變更'
+                              : '登錄預購'
+                            : editor.kind === 'coach-supplied'
+                              ? '加入自帶客'
+                              : '儲存'}
+                      </span>
+                      <span className="mobile-action-label">
+                        {editor.kind === 'history' || editor.kind === 'rule'
+                          ? '預覽'
+                          : editor.kind === 'credit'
+                            ? editor.credit
+                              ? '變更'
+                              : '新增'
+                            : editor.kind === 'coach-supplied'
+                              ? '新增'
+                              : '儲存'}
+                      </span>
+                    </>
+                  )}
                 </button>
               )}
             </footer>

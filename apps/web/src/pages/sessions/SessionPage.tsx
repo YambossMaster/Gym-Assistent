@@ -348,14 +348,23 @@ export function SessionEditor({
               className="danger-text-button ui-action-delete"
               onClick={onRequestDelete}
             >
-              <Trash2 /> 刪除課堂
+              <Trash2 />
+              <span className="desktop-action-label">刪除課堂</span>
+              <span className="mobile-action-label">刪除</span>
             </button>
             <button type="button" className="secondary-button ui-action-cancel" onClick={onClose}>
               取消
             </button>
             {item.status === 'scheduled' ? (
               <button className="primary-button compact ui-action-save" disabled={pending}>
-                {pending ? '儲存中…' : '儲存變更'}
+                {pending ? (
+                  '儲存中…'
+                ) : (
+                  <>
+                    <span className="desktop-action-label">儲存變更</span>
+                    <span className="mobile-action-label">儲存</span>
+                  </>
+                )}
               </button>
             ) : null}
           </div>

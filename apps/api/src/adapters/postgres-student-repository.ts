@@ -63,6 +63,10 @@ interface WorkspaceSettingsRow {
   display_name: string
   time_zone: string
   default_currency: WorkspaceSettings['defaultCurrency']
+  calendar_start_hour: number
+  calendar_end_hour: number
+  calendar_week_start: 0 | 1
+  default_session_minutes: WorkspaceSettings['defaultSessionMinutes']
   version: number
   updated_at: Date
 }
@@ -153,7 +157,8 @@ export class PostgresStudentRepository
 
   async getWorkspaceSettings(workspaceId: WorkspaceId): Promise<WorkspaceSettings> {
     const result = await this.#pool.query<WorkspaceSettingsRow>(
-      `SELECT display_name, time_zone, default_currency, version, updated_at
+      `SELECT display_name, time_zone, default_currency, calendar_start_hour,
+              calendar_end_hour, calendar_week_start, default_session_minutes, version, updated_at
        FROM app_private.workspace
        WHERE id = $1`,
       [workspaceId],
@@ -171,14 +176,23 @@ export class PostgresStudentRepository
       `UPDATE app_private.workspace
        SET display_name = $2, time_zone = $3,
            default_currency = COALESCE($4, default_currency),
-           version = version + 1, updated_at = $5
-       WHERE id = $1 AND version = $6
-       RETURNING display_name, time_zone, default_currency, version, updated_at`,
+           calendar_start_hour = COALESCE($5, calendar_start_hour),
+           calendar_end_hour = COALESCE($6, calendar_end_hour),
+           calendar_week_start = COALESCE($7, calendar_week_start),
+           default_session_minutes = COALESCE($8, default_session_minutes),
+           version = version + 1, updated_at = $9
+       WHERE id = $1 AND version = $10
+       RETURNING display_name, time_zone, default_currency, calendar_start_hour,
+                 calendar_end_hour, calendar_week_start, default_session_minutes, version, updated_at`,
       [
         workspaceId,
         input.displayName,
         input.timeZone,
         input.defaultCurrency ?? null,
+        input.calendarStartHour ?? null,
+        input.calendarEndHour ?? null,
+        input.calendarWeekStart ?? null,
+        input.defaultSessionMinutes ?? null,
         input.now,
         input.expectedVersion,
       ],
@@ -502,6 +516,10 @@ function mapWorkspaceSettings(row: WorkspaceSettingsRow): WorkspaceSettings {
     displayName: row.display_name,
     timeZone: row.time_zone,
     defaultCurrency: row.default_currency,
+    calendarStartHour: row.calendar_start_hour,
+    calendarEndHour: row.calendar_end_hour,
+    calendarWeekStart: row.calendar_week_start,
+    defaultSessionMinutes: row.default_session_minutes,
     version: row.version,
     updatedAt: row.updated_at.toISOString(),
   }

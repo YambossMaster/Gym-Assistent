@@ -519,7 +519,16 @@ export function VenueCourseRecords({
                       className="primary-button compact ui-action-save"
                       disabled={mutation.isPending}
                     >
-                      {mutation.isPending ? '處理中…' : preview ? '儲存' : '預覽變更'}
+                      {mutation.isPending ? (
+                        '處理中…'
+                      ) : preview ? (
+                        '儲存'
+                      ) : (
+                        <>
+                          <span className="desktop-action-label">預覽變更</span>
+                          <span className="mobile-action-label">預覽</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

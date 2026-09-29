@@ -8,18 +8,31 @@
 | Field              | Current value                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
-| Current package    | **M7.5 Product Owner-led mobile route review**                                                   |
-| Package state      | **Mobile Auth Main checkpoint delivered; Stage 1 remains open**                                  |
+| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                        |
+| Package state      | **Mobile and Calendar checkpoint passed local delivery gate; Stage 1 review remains open**       |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
 | Branch baseline    | Mobile Auth checkpoint `b8e0e8c` reached Main; CI run `36470778656` passed both jobs             |
-| Worktree           | Mobile Auth delivery recorded; `output/` stays ignored                                           |
-| Linked database    | Development only; migrations through `20260928141736` applied; linked dry-run is up to date      |
+| Worktree           | Mobile and Calendar changes ready for Main checkpoint; `output/` stays ignored                   |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date      |
 | Production         | Not configured; no real customer data                                                            |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
 
 ## Next handoff
 
-Resume the Product Owner's mobile route-by-route sweep with the next reported screen. The mobile
+Continue the Product Owner's mobile route-by-route sweep. In each newly reported Settings or edit
+dialog, verify that the title/close action and bottom action row remain visible while only the fields
+scroll; keep Delete left and Cancel/Save right on one row where space permits, with concise mobile
+labels and matching action-button sizes. Check that internal and choice-menu scrollbars stay slim at
+the outer edge without taking field width, and that wheel/touch scrolling works over their content. The
+authenticated desktop preview has covered fixed-Series editing, purchase creation, Exercise Library
+creation, Course History wheel scrolling, and trajectory history scrolling; a 320 CSS-pixel viewport
+confirmed that three footer buttons shrink together without wrapping or horizontal overflow. Other
+dialog variants and physical-phone/PWA behavior remain for the route-by-route sweep.
+The two capability-link dialogs now have mobile-specific paired metadata, inline copy actions with
+URL-scoped checkmark feedback and no visible status row, and action rows above the bottom navigation. Continue Product Owner review from
+these states without changing the shared dialog rules.
+Then review the locally implemented Calendar preferences in Settings → 工作偏好 at desktop and 390×844.
+The mobile
 Auth entrance is accepted for now. Its initial view presents FORM's private-Coach
 identity, value promise, and separate 建立帳號／登入 actions without form fields. Either action
 opens its corresponding form in the same component, with a single mobile return to the entrance;
@@ -41,8 +54,12 @@ field exit; zone, unit, and currency choices save when selected. There is no pag
 persistent success text. Account/security uses the shared row pattern, with password editing in its
 own dialog. Device-cache management opens a separate dialog; Demo import remains a collapsed
 development-only tool. Continue Product Owner review of the category grouping, copy, and device-data
-scope after this authorized delivery checkpoint. Calendar defaults, language, privacy controls, and plans remain later product
-decisions, not implemented settings.
+scope after this authorized delivery checkpoint. Calendar display hours, week start, and default
+Course Session duration now have an M7.5 Stage 1 Contract and local implementation. The linked
+development migration is applied; during browser checks, the existing review account was restored
+to 06:00–22:00, Monday, and 60 minutes. Product Owner acceptance remains open; this checkpoint is
+in the Main delivery flow.
+Language, privacy controls, and plans remain later product decisions.
 
 Account/security follow-up remains in Product Owner review: password dialog now sends the same recovery email
 used from sign-in, and sign-out asks for confirmation. Recovery intent survives Auth token refresh
@@ -383,6 +400,232 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-29 — LOG-308 — Mobile and Calendar Main checkpoint preflight
+
+- **Scope:** Product Owner authorized pushing the current mobile corrections and Calendar preferences
+  implementation to Main as an early review checkpoint.
+- **Outcome:** Preserved the M7.5 Stage 1 review boundary. This delivery includes the Calendar
+  contract and migration plus the accumulated mobile route and dialog corrections.
+- **Verification:** `npm ci` completed with zero vulnerabilities. Root `npm run check` passed Prettier,
+  API typecheck and 124 tests, and Web typecheck and 233 tests. Root `npm run build` passed. Linked
+  `npm run db:push:dry` reported up to date. Linked Supabase database lint and advisors completed
+  without errors; the known Auth leaked-password and capability-link permissive-policy warnings
+  remain. Main matched local HEAD before the checkpoint push.
+- **Known issue:** Remote exact-SHA CI, Product Owner Stage 1 acceptance, and physical-phone/PWA
+  behavior remain unverified at this preflight point.
+- **Next:** Push the authorized checkpoint, confirm exact-SHA `verify` and `migration-dry-run`, then
+  resume Product Owner-led mobile and Calendar review.
+
+### 2026-09-29 — LOG-307 — Tie mobile copy feedback to the current link
+
+- **Scope:** Product Owner found that a newly reissued training-result link still displayed the
+  previous link's copied message. Requested an icon-only success checkmark, no visible status row or
+  reserved space, and a reset whenever the dialog is reopened.
+- **Outcome:** Copy feedback is associated with the exact URL that was copied. A new token therefore
+  starts with the copy icon even if the prior link was copied; closing and reopening also resets the
+  state. On mobile, successful copy replaces the icon with a checkmark, while the live status remains
+  visually hidden for assistive technology. Copy failure shows a red error icon and accessible name.
+  The desktop copy button and visible feedback remain as before.
+- **Verification:** The focused capability-link test covers copy success, close/reopen reset, and
+  reissue reset (1 file/1 test passed). Authenticated Chrome 390×844 preview showed the initial copy
+  icon, a checkmark after copying, and the copy icon again after closing and reopening. The mobile
+  link card measured 116.6px before and after success, without a visible status row. Web typecheck,
+  production build, changed-file Prettier, and `git diff --check` passed.
+- **Known issue:** Physical-phone/PWA behavior remains unverified. The browser check did not reissue
+  or revoke the preserved development link. This local correction has no commit, push, or remote CI.
+- **Next:** Continue Product Owner-led mobile route review, then Calendar preferences review.
+
+### 2026-09-29 — LOG-306 — Refine the two mobile capability-link dialogs
+
+- **Scope:** Product Owner marked the reschedule and training-result link dialogs for narrow mobile
+  corrections: pair metadata fields, put an icon-only copy action beside the URL, remove the white
+  action strip, match baseline bottom spacing, reserve copy-feedback space, and keep reissue actions
+  visible and centered. The shared dialog rules and desktop presentation remain in place.
+- **Outcome:** Mobile metadata uses a smaller status column and wider detail column; training-result
+  expiry occupies the next full row. The URL has a 48px copy-icon action with an accessible name.
+  Copy feedback reserves two text lines before it appears. The footer uses the dialog paper color,
+  full-width paired actions or one full-width action after revocation, and the baseline 28px
+  button-to-dialog-bottom spacing. Confirmation actions align their text centrally, and the mobile
+  backdrop ends above the 68px bottom navigation.
+- **Verification:** Authenticated Chrome 390×844 preview inspected an active training-result link,
+  a revoked reschedule link, and both reissue-confirmation layouts without issuing or revoking a
+  link. The reschedule metadata columns measured 119px/212px and its date fit on one line; its sole
+  action was 50px tall with a 28px bottom gap and clear of the 68px navigation. Copy feedback
+  occupied 32px before and after success, with the link card remaining 158.6px tall. The two
+  confirmation buttons computed `justify-content: center` and were fully visible. Web typecheck,
+  focused capability-link test, production build, changed-file Prettier, and `git diff --check`
+  passed. Vite test/build needed the approved Windows process-permission retry after sandbox
+  `spawn EPERM`.
+- **Known issue:** Physical-phone/PWA behavior remains unverified; other mobile dialogs remain in
+  Product Owner review. These corrections remain local; no commit, push, or remote CI is claimed.
+- **Next:** Continue the Product Owner's mobile route-by-route sweep, then review Calendar preferences.
+
+### 2026-09-29 — LOG-305 — Set mobile dialog basic actions to 90×50
+
+- **Scope:** Product Owner refined the shared mobile dialog action size to 90×50px without changing
+  its text size; the cropped reference image measured 98×58px, and the final requested size was
+  90×50px.
+- **Outcome:** Delete, Cancel, Save, Add, and General/Confirm action buttons in shared mobile dialog
+  footers use a 90px flex basis and 50px minimum height. The existing one-row shrink behavior and
+  desktop action rules remain unchanged.
+- **Verification:** Authenticated Chrome at 390×844 measured Delete/Cancel/Save as 90×50px with
+  14px text on one line and document width equal to 390px. At 320×844, fixed-Series
+  Delete/Cancel/Save each measured about 84×50px on one line; the footer remained visible and
+  document width equaled 320px. Changed-file Prettier, Web production build, and `git diff --check`
+  passed. No new test was needed for this scoped CSS dimension change.
+- **Known issue:** Other mobile dialogs and physical-phone/PWA behavior remain for route-by-route
+  review. Changes remain local; no commit, push, or remote CI is claimed.
+- **Next:** Continue the mobile route-by-route review from the Next handoff.
+
+### 2026-09-29 — LOG-304 — Make mobile choice scrollbars a reusable rule
+
+- **Scope:** Product Owner clarified that the olive mobile scrollbar should be a common dropdown and
+  option-panel standard, rather than a list of current component selectors.
+- **Outcome:** The mobile CSS rule now targets semantic `[role='listbox']` automatically, including
+  portaled `FormSelect` menus and equipment suggestions. Choice panels without listbox semantics use
+  the reusable `ui-choice-scroll` class; the date calendar and Training exercise-picker results opt
+  in. Their visual scrollbar width/color/arrow rules are defined once, while desktop styling and
+  choice behavior remain unchanged.
+- **Verification:** Authenticated Chrome 390×844 preview reopened 新增學生 → 年齡區間 and measured the
+  semantic listbox scrollbar at 4px with the existing `rgb(169, 177, 139)` olive thumb; the menu
+  retained scroll height 328px and client height 246px. Web build, changed-file Prettier, and
+  `git diff --check` passed. No separate unit test was added for this mobile CSS consolidation.
+- **Known issue:** Physical-phone/PWA rendering and unvisited option panels remain for route-by-route
+  review. Changes remain local; no commit, push, or remote CI is claimed.
+- **Next:** Continue the mobile route-by-route review from the Next handoff.
+
+### 2026-09-29 — LOG-303 — Apply olive mobile scrollbars to choice menus
+
+- **Scope:** Product Owner requested the new mobile internal-scrollbar standard for dropdowns and
+  other option lists while retaining the existing olive-green thumb color.
+- **Outcome:** Mobile `FormSelect` portal menus, equipment suggestions, date calendars, and picker
+  results use a thin olive scrollbar against a transparent track without end arrows. Dropdown and
+  suggestion lists use their existing right padding for the track rather than reducing option width.
+  Desktop selectors and choice behavior remain unchanged.
+- **Verification:** Authenticated Chrome 390×844 preview of 新增學生 → 年齡區間 measured the menu's
+  border-plus-scrollbar width falling from 21px to 5px (about 3px of scrollbar); the first option's
+  right edge gained about 18px. The scrollbar appeared at the menu edge in olive green without arrows.
+  Wheeling over an option scrolled the menu through its 82px range and kept 未設定 selected; the menu
+  was returned to its starting position. CSS Prettier, Web build, and changed-file `git diff --check`
+  passed. No new test was needed for the scoped visual CSS change.
+- **Known issue:** Other option surfaces and physical-phone/PWA rendering remain for route-by-route
+  review. Changes remain local; no commit, push, or remote CI is claimed.
+- **Next:** Continue the mobile route-by-route review from the Next handoff.
+
+### 2026-09-29 — LOG-302 — Slim mobile internal scrollbars and repair Course History wheel
+
+- **Scope:** Product Owner requested that mobile interface scrollbars use edge space instead of
+  reserving content width, with slimmer and lighter thumbs and inconspicuous end controls. Course
+  History also failed to respond to the wheel over its rows.
+- **Outcome:** Shared mobile dialog scrollers extend 12px into the right inset while their content
+  stays aligned with the fixed header. Internal scrollbars use a 4px transparent track, pale thumb,
+  and no arrow buttons in Chrome; Firefox retains its thin scrollbar. Mobile Course History, purchase
+  history, and Venue course records now let the outer dialog pane own scrolling rather than nesting
+  an unscrollable child that traps wheel events. The trajectory history scrollbar moves into its
+  surrounding inset. Calendar timeline, Finance ledger rows, and notification lists use the same
+  mobile scrollbar appearance without changing desktop rules.
+- **Verification:** Authenticated Chrome 390×844 preview reproduced Course History wheel failure:
+  its inner list had 2038px client and scroll height, while its outer pane had 707px client and
+  2058px scroll height. After the change, wheeling over a course row moved the outer pane from
+  scrollTop 1142.5 to 0; the Chrome scrollbar measured about 3px wide and the course-row right
+  edge aligned within 1px of the header right edge. Fixed-Series editing kept its fields and footer
+  aligned; trajectory history scrolled 17.5px over its records with a 3px scrollbar near the edge.
+  CSS Prettier, Web production build, and CSS `git diff --check` passed. The build's chunk-size
+  advisory remains. No new unit test was added for this CSS/layout and browser-wheel correction.
+- **Known issue:** Other mobile dialogs and physical-phone/PWA scrollbar rendering still await the
+  Product Owner's route-by-route review. Changes remain local; no commit, push, or remote CI is
+  claimed.
+- **Next:** Continue the mobile route-by-route review from the Next handoff.
+
+### 2026-09-29 — LOG-301 — Match mobile dialog action-button sizes
+
+- **Scope:** Product Owner found Cancel/Save too narrow beside Delete in fixed-Series editing, and
+  Cancel too narrow beside Add in purchase creation. Requested equal standard sizing when space
+  permits, with compression only on constrained screens.
+- **Outcome:** The shared mobile Settings/edit-dialog action rule gives Delete, Cancel, Save, and Add
+  a 96px basis and 56px minimum height. Flex shrink retains one row on narrower screens. Desktop
+  sizes and wording remain under the existing rules.
+- **Verification:** Authenticated Chrome review of fixed-Series editing measured all three actions
+  at about 96×56 on a roomy mobile viewport and about 76px wide each at 320 CSS pixels. Purchase
+  creation measured Cancel and Add at about 96×56 each. Both rows stayed aligned; the 320px check
+  found document scroll width equal to viewport width. Prettier, Web build, and `git diff --check`
+  passed after this CSS edit.
+- **Known issue:** Physical-phone/PWA behavior and unvisited dialog variants remain for Product
+  Owner review. Changes remain local; no commit, push, or remote CI is claimed.
+- **Next:** Continue the mobile route-by-route review from the Next handoff.
+
+### 2026-09-29 — LOG-300 — Keep mobile dialog actions visible and compact
+
+- **Scope:** Product Owner extended the shared mobile Settings dialog rule to the bottom action row
+  and requested compact mobile button labels, with Delete left and Cancel/Save right on one row.
+- **Outcome:** Mobile dialog content retains its own vertical scroller while shared action rows and
+  button footers stick to its bottom. The fixed-Series editor shows one-line Delete/Cancel/Save;
+  Calendar, Session, Exercise Library, Settings, Venue, purchase, and student edit actions use shorter
+  mobile labels where the previous wording occupied extra width. Desktop wording remains available.
+- **Verification:** Authenticated desktop browser preview at 390×844 and a shorter mobile viewport
+  showed the fixed-Series action row and title staying in place as content scrolled; the short viewport
+  measured content scroll 28/29px with the header and footer boundaries fixed. Exercise Library
+  creation displayed a fixed Cancel/Add footer without horizontal overflow. Web typecheck, production
+  build, and complete Web test suite passed (54 files, 233 tests); Prettier and `git diff --check`
+  passed. Vite tests/build required the approved Windows process permission path after sandbox
+  `spawn EPERM`.
+- **Known issue:** Physical-phone/PWA behavior and unvisited dialog variants remain for the Product
+  Owner's mobile sweep. This is local work; no commit, push, or remote CI is claimed. The existing
+  Calendar preferences package still awaits acceptance.
+- **Next:** Continue the mobile dialog and route-by-route review from the Next handoff, then review
+  Calendar preferences.
+
+### 2026-09-29 — LOG-299 — Keep mobile Settings dialog headers visible and remove horizontal scroll
+
+- **Scope:** Product Owner requested a reusable mobile rule for Settings and edit dialogs: persistent
+  title and close action, a distinct header divider, and content-only vertical scrolling. Follow-up
+  screenshot showed an unwanted horizontal scrollbar in the Exercise Library editor.
+- **Outcome:** Applied the mobile dialog layout to Exercise Library editing, Calendar scheduling,
+  capability-link management, and Settings security/device operations. Fixed the editor footer's
+  inherited negative margin that widened its scroll content; the shared mobile content rule now
+  suppresses horizontal scrolling. Desktop layout remains under the existing rules.
+- **Verification:** Web typecheck and focused Exercise/Calendar tests passed (3 files, 11 tests).
+  Prettier check and `git diff --check` passed. Web production build passed after a Windows sandbox
+  `spawn EPERM` retry with normal process permissions (existing large-chunk advisory). In the
+  authenticated 390×844 desktop preview, scrolling the Exercise editor moved content from 0 to
+  175px while header/close coordinates remained fixed; content `scrollWidth` equaled `clientWidth`
+  at 331px. Device Cache dialog also showed equal scroll/client widths at 311px. No saved data
+  was changed during browser checks.
+- **Known issue:** Other dialog variants and physical-phone/PWA behavior remain to be reviewed.
+  This correction is local; no commit, push, or remote CI is claimed. Calendar preferences remain
+  locally implemented and await Product Owner acceptance.
+- **Next:** Continue the mobile route-by-route review, checking each newly reported Settings or
+  edit dialog against the shared rule, then review Calendar preferences.
+
+### 2026-09-29 — LOG-298 — Add Calendar display and lesson defaults to Settings
+
+- **Scope:** Product Owner requested configurable Calendar start/end hours, Monday/Sunday week
+  start, and default lesson duration. Product Owner selected 30/45/60/90/120-minute options with
+  60 as the initial value and automatic display extension for existing lessons beyond chosen hours.
+  The bounded Stage 1 behavior is frozen in `M7.5-CALENDAR-PREFERENCES-CONTRACT.md`.
+- **Outcome:** Added four versioned Workspace preferences with database constraints and API
+  validation. Settings → 工作偏好 saves selections immediately. Calendar week/month ranges and
+  day/week timeline use them; existing sessions and blocks extend the timeline when needed, and
+  availability shading stays within it. New Calendar sessions and Student fixed-series editors
+  use the saved default duration. Existing scheduled instants and durations were not rewritten.
+- **Verification:** Complete root check passed before the final HTTP schema/CSS follow-up (API
+  26 files/124 tests; Web 54 files/232 tests). Focused post-follow-up API tests passed 2 files/14
+  tests and Web Calendar tests passed 2 files/14 tests, including an out-of-hours lesson regression.
+  Final root build passed with the existing
+  large-chunk advisory. Linked development migration `20260928194356` applied, schema query
+  confirmed all four non-null defaults, and linked dry-run is up to date. Security advisor showed
+  only the existing Auth leaked-password-protection advisory. Authenticated desktop browser
+  confirmed Sunday-first week, 120-minute 09:00–11:00 new-course draft, and visibility of an
+  18:00 lesson with display end set to 16:00. Exact 390×844 desktop preview showed usable setting
+  rows and an open custom selector without horizontal overflow. The review account preferences
+  were restored to 06:00–22:00, Monday, and 60 minutes. This is a desktop responsive preview,
+  not physical-phone evidence.
+- **Known issue:** Product Owner acceptance is pending. M7 Demo import still warns about skipped
+  calendar-hour fields under its completed contract; this Settings correction does not revise
+  historical import behavior. No commit, push, or remote CI is claimed for this local Stage 1 work.
+- **Next:** Product Owner reviews Calendar preferences and the remaining Settings category
+  decisions, then resumes the mobile route review from the Next handoff.
 
 ### 2026-09-29 — LOG-297 — Mobile Auth Stage 1 Main checkpoint preflight
 

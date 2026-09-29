@@ -262,6 +262,14 @@ export function SettingsPage({ session }: { session: Session }) {
           )}
           {category === 'preferences' && (
             <>
+              <CalendarPreferencePanel
+                settings={settingsQuery.data}
+                saving={settingsMutation.isPending}
+                onChange={(changes) => {
+                  setMessage('')
+                  settingsMutation.mutate(changes)
+                }}
+              />
               <TrainingPreferencePanel session={session} />
               <FinancePreferencePanel
                 settings={settingsQuery.data}
@@ -369,6 +377,115 @@ export function SettingsPage({ session }: { session: Session }) {
   )
 }
 
+function CalendarPreferencePanel({
+  settings,
+  saving,
+  onChange
+}: {
+  settings: WorkspaceSettings | undefined
+  saving: boolean
+  onChange: (
+    changes: Partial<
+      Pick<
+        WorkspaceSettings,
+        'calendarStartHour' | 'calendarEndHour' | 'calendarWeekStart' | 'defaultSessionMinutes'
+      >
+    >
+  ) => void
+}) {
+  const [rangeError, setRangeError] = useState('')
+  const hourLabel = (hour: number) =>
+    hour === 24 ? '24:00（午夜）' : `${String(hour).padStart(2, '0')}:00`
+  const changeHour = (key: 'calendarStartHour' | 'calendarEndHour', value: number) => {
+    const start = key === 'calendarStartHour' ? value : settings!.calendarStartHour
+    const end = key === 'calendarEndHour' ? value : settings!.calendarEndHour
+    if (end <= start) {
+      setRangeError('結束時間必須晚於開始時間。')
+      return
+    }
+    setRangeError('')
+    onChange({ [key]: value })
+  }
+  return (
+    <section className="settings-panel">
+      <SettingsPanelHeading eyebrow="CALENDAR" title="行事曆設定" />
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>顯示開始時間</strong>
+          <span>日／週行事曆的主要顯示時段。</span>
+        </div>
+        <FormSelect
+          label="顯示開始時間"
+          value={String(settings?.calendarStartHour ?? 6)}
+          disabled={!settings || saving}
+          onChange={(value) => changeHour('calendarStartHour', Number(value))}
+          options={Array.from({ length: 24 }, (_, hour) => ({
+            value: String(hour),
+            label: hourLabel(hour)
+          }))}
+        />
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>顯示結束時間</strong>
+          <span>已有安排超出時段時，行事曆會自動延伸顯示。</span>
+        </div>
+        <FormSelect
+          label="顯示結束時間"
+          value={String(settings?.calendarEndHour ?? 22)}
+          disabled={!settings || saving}
+          onChange={(value) => changeHour('calendarEndHour', Number(value))}
+          options={Array.from({ length: 24 }, (_, index) => index + 1).map((hour) => ({
+            value: String(hour),
+            label: hourLabel(hour)
+          }))}
+        />
+      </div>
+      {rangeError && (
+        <p role="alert" className="field-error">
+          {rangeError}
+        </p>
+      )}
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>每週第一天</strong>
+          <span>決定週視圖與月曆的排列。</span>
+        </div>
+        <FormSelect
+          label="每週第一天"
+          value={String(settings?.calendarWeekStart ?? 1)}
+          disabled={!settings || saving}
+          onChange={(value) => onChange({ calendarWeekStart: Number(value) as 0 | 1 })}
+          options={[
+            { value: '1', label: '星期一' },
+            { value: '0', label: '星期日' }
+          ]}
+        />
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>預設每堂課時間</strong>
+          <span>新增課程時預先帶入；既有課程不變。</span>
+        </div>
+        <FormSelect
+          label="預設每堂課時間"
+          value={String(settings?.defaultSessionMinutes ?? 60)}
+          disabled={!settings || saving}
+          onChange={(value) =>
+            onChange({
+              defaultSessionMinutes: Number(value) as WorkspaceSettings['defaultSessionMinutes']
+            })
+          }
+          options={[30, 45, 60, 90, 120].map((minutes) => ({
+            value: String(minutes),
+            label: `${minutes} 分鐘`
+          }))}
+        />
+      </div>
+    </section>
+  )
+}
+
 function FinancePreferencePanel({
   settings,
   saving,
@@ -460,39 +577,48 @@ function DeviceCacheDialog({ session, onClose }: { session: Session; onClose: ()
             <X aria-hidden="true" />
           </button>
         </header>
-        <p>
-          這台裝置保存訓練草稿、待送變更與介面偏好，協助中斷後繼續工作。清除後無法從裝置復原這些內容；雲端正式紀錄不受影響。
-        </p>
-        <label className="settings-cache-confirm">
-          輸入 CLEAR 以清除
-          <input
-            value={confirmation}
-            onChange={(event) => setConfirmation(event.target.value)}
-            autoComplete="off"
-          />
-        </label>
-        {error && (
-          <p className="settings-dialog-error" role="alert">
-            {error}
+        <div className="ui-settings-dialog-content">
+          <p>
+            這台裝置保存訓練草稿、待送變更與介面偏好，協助中斷後繼續工作。清除後無法從裝置復原這些內容；雲端正式紀錄不受影響。
           </p>
-        )}
-        <div className="settings-dialog-actions">
-          <button
-            type="button"
-            className="secondary-button ui-action-cancel"
-            onClick={onClose}
-            disabled={saving}
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            className="danger-outline-button ui-action-delete"
-            onClick={() => void clearCache()}
-            disabled={saving || confirmation !== 'CLEAR'}
-          >
-            {saving ? '清除中…' : '清除裝置暫存'}
-          </button>
+          <label className="settings-cache-confirm">
+            輸入 CLEAR 以清除
+            <input
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+              autoComplete="off"
+            />
+          </label>
+          {error && (
+            <p className="settings-dialog-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="settings-dialog-actions">
+            <button
+              type="button"
+              className="secondary-button ui-action-cancel"
+              onClick={onClose}
+              disabled={saving}
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              className="danger-outline-button ui-action-delete"
+              onClick={() => void clearCache()}
+              disabled={saving || confirmation !== 'CLEAR'}
+            >
+              {saving ? (
+                '清除中…'
+              ) : (
+                <>
+                  <span className="desktop-action-label">清除裝置暫存</span>
+                  <span className="mobile-action-label">清除</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </section>
     </div>
@@ -729,7 +855,7 @@ function PasswordDialog({
             <X aria-hidden="true" />
           </button>
         </header>
-        <form className="password-change-form" onSubmit={onSubmit}>
+        <form className="password-change-form ui-settings-dialog-content" onSubmit={onSubmit}>
           {emailIdentity && (
             <div className="password-current-field">
               <label>
@@ -795,7 +921,15 @@ function PasswordDialog({
               取消
             </button>
             <button className="primary-button compact ui-action-save" disabled={saving}>
-              {saving ? '更新中…' : '更新密碼'} <KeyRound aria-hidden="true" />
+              {saving ? (
+                '更新中…'
+              ) : (
+                <>
+                  <span className="desktop-action-label">更新密碼</span>
+                  <span className="mobile-action-label">儲存</span>
+                </>
+              )}{' '}
+              <KeyRound aria-hidden="true" />
             </button>
           </div>
         </form>

@@ -96,9 +96,15 @@ it('uses the compact Session editor structure with a separated action footer', a
     expect(host.querySelector('.session-editor-form-footer')).not.toBeNull()
     expect(
       [...host.querySelectorAll<HTMLButtonElement>('.session-editor-form-footer button')].map(
-        (button) => button.textContent?.trim()
+        (button) =>
+          button.querySelector('.desktop-action-label')?.textContent ?? button.textContent?.trim()
       )
     ).toEqual(['刪除課堂', '取消', '儲存變更'])
+    expect(
+      [...host.querySelectorAll('.session-editor-form-footer .mobile-action-label')].map(
+        (label) => label.textContent
+      )
+    ).toEqual(['刪除', '儲存'])
   } finally {
     await act(async () => root.unmount())
   }

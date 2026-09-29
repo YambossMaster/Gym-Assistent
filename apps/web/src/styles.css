@@ -515,8 +515,8 @@
   border: 1px solid var(--line);
   background: var(--white);
 }
-.capability-secret label,
-.capability-secret span {
+.capability-secret > label,
+.capability-secret > span {
   grid-column: 1 / -1;
   color: var(--muted);
   font-size: 11px;
@@ -529,6 +529,9 @@
 }
 .capability-secret .secondary-button {
   white-space: nowrap;
+}
+.capability-copy-mobile {
+  display: none;
 }
 .capability-reissue {
   display: grid;
@@ -5330,6 +5333,9 @@ textarea:focus {
 }
 
 @media (max-width: 720px) {
+  .today-schedule {
+    box-shadow: 0 3px 12px rgba(21, 23, 17, 0.045);
+  }
   html {
     overscroll-behavior-y: none;
   }
@@ -5348,7 +5354,7 @@ textarea:focus {
     z-index: 19;
     top: 0;
     min-height: 58px;
-    padding: max(9px, env(safe-area-inset-top)) 16px 9px;
+    padding: calc(9px + env(safe-area-inset-top)) 16px 9px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5384,9 +5390,7 @@ textarea:focus {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(21, 23, 17, 0.96);
-    box-shadow: 0 -14px 38px rgba(21, 23, 17, 0.2);
-    backdrop-filter: blur(18px);
+    background: var(--ink);
   }
   .bottom-nav a {
     display: grid;
@@ -5394,15 +5398,22 @@ textarea:focus {
     align-content: center;
     gap: 4px;
     min-width: 0;
-    border-radius: 12px;
     color: #818578;
     text-decoration: none;
     font-size: 10px;
     font-weight: 700;
   }
+  .bottom-nav a svg {
+    width: 23px;
+    height: 23px;
+  }
   .bottom-nav a.active {
     color: var(--lime);
-    background: rgba(217, 255, 67, 0.08);
+  }
+  .bottom-nav a:focus-visible {
+    outline: 2px solid var(--lime);
+    outline-offset: -4px;
+    border-radius: 8px;
   }
   .sidebar-bottom {
     margin: 0;
@@ -7326,6 +7337,7 @@ body.is-reordering-exercise * {
 .availability-layer {
   position: absolute;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
 }
 .availability-layer span {
@@ -7851,7 +7863,7 @@ body.is-reordering-exercise * {
 .calendar-timeline {
   min-width: 0;
   grid-template-columns: 54px repeat(var(--calendar-days), minmax(0, 1fr));
-  grid-template-rows: 54px 720px;
+  grid-template-rows: 54px var(--timeline-height, 720px);
 }
 .calendar-time-corner,
 .calendar-day-header {
@@ -7912,7 +7924,7 @@ body.is-reordering-exercise * {
   transform: none;
 }
 .calendar-time-grid {
-  height: 720px;
+  height: var(--timeline-height, 720px);
   touch-action: none;
   user-select: none;
   cursor: crosshair;
@@ -7921,8 +7933,8 @@ body.is-reordering-exercise * {
     repeating-linear-gradient(
       to bottom,
       transparent 0,
-      transparent 44px,
-      rgba(21, 23, 17, 0.07) 45px
+      transparent calc(var(--hour-height, 45px) - 1px),
+      rgba(21, 23, 17, 0.07) var(--hour-height, 45px)
     ),
     #fff;
 }
@@ -7931,8 +7943,8 @@ body.is-reordering-exercise * {
     repeating-linear-gradient(
       to bottom,
       transparent 0,
-      transparent 44px,
-      rgba(21, 23, 17, 0.07) 45px
+      transparent calc(var(--hour-height, 45px) - 1px),
+      rgba(21, 23, 17, 0.07) var(--hour-height, 45px)
     ),
     #f8faed;
 }
@@ -11342,7 +11354,7 @@ body.is-reordering-exercise * {
   scrollbar-gutter: stable;
   padding-right: 12px;
 }
-.scheduling-dialog.profile:has(> .venue-course-records) {
+.scheduling-dialog.profile:has(.venue-course-records) {
   width: min(900px, 100%);
   height: min(900px, calc(100dvh - 24px));
   overflow: hidden;
@@ -12854,8 +12866,12 @@ a.venue-course-purchase:focus-visible {
   line-height: 1.25;
   letter-spacing: -0.03em;
 }
-.ui-settings-dialog > :is(.scheduling-form, .finance-editor, form, .capability-intro) {
+:is(.ui-settings-dialog, .ui-settings-dialog-content)
+  > :is(.scheduling-form, .finance-editor, form, .capability-intro) {
   margin-top: 24px;
+}
+.ui-settings-dialog-content:not(form) {
+  display: contents;
 }
 .ui-settings-dialog .scheduling-form-body,
 .ui-settings-dialog .finance-editor form,
@@ -13422,5 +13438,467 @@ button:disabled {
   .settings-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 11px;
+  }
+}
+
+@media (max-width: 640px) {
+  :is(.ui-settings-dialog, .settings-operation-dialog) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  :is(.ui-settings-dialog, .settings-operation-dialog) > header {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto;
+    align-items: center;
+    margin: 0;
+    padding: 0 0 16px;
+    border-bottom: 2px solid #cdd0c3;
+    background: inherit;
+  }
+  :is(.ui-settings-dialog, .settings-operation-dialog) > header > .icon-button {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+  }
+  :is(.ui-settings-dialog, .settings-operation-dialog) > .ui-settings-dialog-content {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: calc(100% + 12px);
+    max-width: none;
+    margin-top: 0;
+    margin-right: -12px;
+    padding: 20px 8px 0 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: auto;
+  }
+  /* The outer pane owns mobile dialog scrolling; nested empty scrollers trap the wheel. */
+  .ui-settings-dialog-content
+    :is(.student-course-record-dialog, .purchase-history-dialog, .venue-course-records) {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
+    overscroll-behavior: auto;
+    scrollbar-gutter: auto;
+  }
+  .trajectory .trajectory-history {
+    margin-right: -12px;
+    padding-right: 14px;
+    scrollbar-gutter: auto;
+  }
+  .finance-ledger > .finance-ledger-rows {
+    margin-right: -8px;
+    padding-right: 4px;
+    scrollbar-gutter: auto;
+  }
+  :is(
+      .scheduling-dialog,
+      .settings-operation-dialog,
+      .performance-trend.trajectory,
+      .exercise-picker,
+      .purchase-editor
+    )
+    :is(
+      .ui-settings-dialog-content,
+      .trajectory-history,
+      .exercise-picker-list,
+      .performance-all-list,
+      .venue-credit-list,
+      .venue-history-selection,
+      .scheduling-form-body,
+      .session-editor-form-body
+    ),
+  .today-notification-scroll,
+  .calendar-timeline-scroll,
+  .finance-ledger > .finance-ledger-rows {
+    scrollbar-width: thin;
+    scrollbar-color: #c6c9bd transparent;
+    scrollbar-gutter: auto;
+  }
+  :is(
+      .scheduling-dialog,
+      .settings-operation-dialog,
+      .performance-trend.trajectory,
+      .exercise-picker,
+      .purchase-editor
+    )
+    :is(
+      .ui-settings-dialog-content,
+      .trajectory-history,
+      .exercise-picker-list,
+      .performance-all-list,
+      .venue-credit-list,
+      .venue-history-selection,
+      .scheduling-form-body,
+      .session-editor-form-body
+    )::-webkit-scrollbar,
+  .today-notification-scroll::-webkit-scrollbar,
+  .calendar-timeline-scroll::-webkit-scrollbar,
+  .finance-ledger > .finance-ledger-rows::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  :is(
+      .scheduling-dialog,
+      .settings-operation-dialog,
+      .performance-trend.trajectory,
+      .exercise-picker,
+      .purchase-editor
+    )
+    :is(
+      .ui-settings-dialog-content,
+      .trajectory-history,
+      .exercise-picker-list,
+      .performance-all-list,
+      .venue-credit-list,
+      .venue-history-selection,
+      .scheduling-form-body,
+      .session-editor-form-body
+    )::-webkit-scrollbar-thumb,
+  .today-notification-scroll::-webkit-scrollbar-thumb,
+  .calendar-timeline-scroll::-webkit-scrollbar-thumb,
+  .finance-ledger > .finance-ledger-rows::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background: #c6c9bd;
+  }
+  :is(
+      .scheduling-dialog,
+      .settings-operation-dialog,
+      .performance-trend.trajectory,
+      .exercise-picker,
+      .purchase-editor
+    )
+    :is(
+      .ui-settings-dialog-content,
+      .trajectory-history,
+      .exercise-picker-list,
+      .performance-all-list,
+      .venue-credit-list,
+      .venue-history-selection,
+      .scheduling-form-body,
+      .session-editor-form-body
+    )::-webkit-scrollbar-track,
+  .today-notification-scroll::-webkit-scrollbar-track,
+  .calendar-timeline-scroll::-webkit-scrollbar-track,
+  .finance-ledger > .finance-ledger-rows::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  :is(
+      .scheduling-dialog,
+      .settings-operation-dialog,
+      .performance-trend.trajectory,
+      .exercise-picker,
+      .purchase-editor
+    )
+    :is(
+      .ui-settings-dialog-content,
+      .trajectory-history,
+      .exercise-picker-list,
+      .performance-all-list,
+      .venue-credit-list,
+      .venue-history-selection,
+      .scheduling-form-body,
+      .session-editor-form-body
+    )::-webkit-scrollbar-button,
+  .today-notification-scroll::-webkit-scrollbar-button,
+  .calendar-timeline-scroll::-webkit-scrollbar-button,
+  .finance-ledger > .finance-ledger-rows::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  @supports selector(::-webkit-scrollbar) {
+    :is(
+        .scheduling-dialog,
+        .settings-operation-dialog,
+        .performance-trend.trajectory,
+        .exercise-picker,
+        .purchase-editor
+      )
+      :is(
+        .ui-settings-dialog-content,
+        .trajectory-history,
+        .exercise-picker-list,
+        .performance-all-list,
+        .venue-credit-list,
+        .venue-history-selection,
+        .scheduling-form-body,
+        .session-editor-form-body
+      ),
+    .today-notification-scroll,
+    .calendar-timeline-scroll,
+    .finance-ledger > .finance-ledger-rows {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+  }
+  /* Portaled listboxes inherit this mobile rule; other choice panels opt in via ui-choice-scroll. */
+  :is([role='listbox'], .ui-choice-scroll) {
+    scrollbar-gutter: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #a9b18b transparent;
+  }
+  :is(.form-select-menu, .equipment-suggestions) {
+    padding-right: 2px;
+  }
+  .picker-results {
+    padding-right: 0;
+  }
+  :is([role='listbox'], .ui-choice-scroll)::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  :is([role='listbox'], .ui-choice-scroll)::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background: #a9b18b;
+  }
+  :is([role='listbox'], .ui-choice-scroll)::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  :is([role='listbox'], .ui-choice-scroll)::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  @supports selector(::-webkit-scrollbar) {
+    :is([role='listbox'], .ui-choice-scroll) {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+  }
+  :is(.ui-settings-dialog, .settings-operation-dialog) > form.ui-settings-dialog-content {
+    display: grid;
+    align-content: start;
+  }
+  .ui-settings-dialog-content > :first-child {
+    margin-top: 0;
+  }
+  .definition-editor > .ui-settings-dialog-content > footer {
+    bottom: 0;
+    margin: 0;
+    padding: 12px 0 0;
+  }
+  .ui-settings-dialog-content :is(form, .student-series-editor) {
+    overflow: visible;
+  }
+  .ui-settings-dialog-content
+    :is(
+      .scheduling-form-actions,
+      .scheduling-form-footer,
+      .purchase-editor-actions,
+      .finance-actions,
+      .settings-dialog-actions,
+      .password-form-actions,
+      .editor-actions,
+      .venue-course-detail-actions,
+      .venue-detail-footer,
+      footer:has(> button)
+    ) {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: #fffefa;
+  }
+  .ui-settings-dialog-content
+    :is(
+      .scheduling-form-actions,
+      .purchase-editor-actions,
+      .finance-actions,
+      .settings-dialog-actions,
+      .password-form-actions,
+      .editor-actions,
+      .venue-course-detail-actions,
+      footer:has(> .ui-action-save, > .ui-action-cancel)
+    ) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px 0 calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+  }
+  .ui-settings-dialog-content .venue-detail-footer,
+  .ui-settings-dialog-content
+    footer:has(> button):not(:has(> .ui-action-save, > .ui-action-cancel)) {
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+  }
+  .ui-settings-dialog-content
+    :is(
+      .scheduling-form-actions,
+      .purchase-editor-actions,
+      .finance-actions,
+      .settings-dialog-actions,
+      .password-form-actions,
+      .editor-actions,
+      .venue-course-detail-actions,
+      footer:has(> .ui-action-save, > .ui-action-cancel)
+    )
+    > .ui-action-delete {
+    margin-right: auto;
+    order: -1;
+  }
+  .ui-settings-dialog-content
+    :is(
+      .scheduling-form-actions,
+      .purchase-editor-actions,
+      .finance-actions,
+      .settings-dialog-actions,
+      .password-form-actions,
+      .editor-actions,
+      .venue-course-detail-actions,
+      footer:has(> .ui-action-save, > .ui-action-cancel)
+    )
+    > button {
+    width: auto;
+    min-width: 0;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    padding-inline: 12px;
+  }
+  .ui-settings-dialog-content
+    :is(
+      .scheduling-form-actions,
+      .purchase-editor-actions,
+      .finance-actions,
+      .settings-dialog-actions,
+      .password-form-actions,
+      .editor-actions,
+      .venue-course-detail-actions,
+      footer:has(> .ui-action-save, > .ui-action-cancel)
+    )
+    > :is(
+      .ui-action-delete,
+      .ui-action-cancel,
+      .ui-action-save,
+      .ui-action-add,
+      .ui-action-general
+    ) {
+    width: 90px;
+    min-width: 0;
+    min-height: 50px;
+    flex: 0 1 90px;
+    padding-inline: 8px;
+  }
+  .desktop-action-label {
+    display: none;
+  }
+  .mobile-action-label {
+    display: inline;
+  }
+}
+@media (min-width: 641px) {
+  .mobile-action-label {
+    display: none;
+  }
+}
+
+/* The two private-link dialogs keep their mobile actions clear of the app navigation. */
+@media (max-width: 640px) {
+  .capability-dialog-backdrop {
+    bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+  .capability-dialog {
+    max-height: calc(100dvh - 88px - env(safe-area-inset-bottom));
+  }
+  .capability-dialog > .ui-settings-dialog-content {
+    padding-bottom: 0;
+  }
+  .capability-metadata,
+  .capability-metadata-two {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr);
+  }
+  .capability-metadata:not(.capability-metadata-two) > div:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .capability-metadata:not(.capability-metadata-two) > div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .capability-metadata > div {
+    min-width: 0;
+  }
+  .capability-secret {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    align-items: center;
+  }
+  .capability-secret > label,
+  .capability-secret > span {
+    grid-column: 1 / -1;
+  }
+  .capability-secret > span[role='status'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .capability-secret .capability-copy-button {
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+  .capability-copy-desktop,
+  .capability-copy-label {
+    display: none;
+  }
+  .capability-copy-mobile {
+    display: block;
+    width: 21px;
+    height: 21px;
+  }
+  .capability-copy-button[data-copy-state='error'] {
+    color: var(--red);
+    border-color: var(--red);
+  }
+  .capability-dialog.ui-settings-dialog .ui-settings-dialog-content > footer {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .capability-dialog.ui-settings-dialog .ui-settings-dialog-content > footer > button {
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    justify-content: center;
+    padding-inline: 8px;
+    white-space: nowrap;
+  }
+  .capability-dialog.ui-settings-dialog .ui-settings-dialog-content > footer > button:only-child {
+    grid-column: 1 / -1;
+  }
+  .capability-reissue-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding-bottom: 4px;
+  }
+  .capability-reissue-actions > button {
+    min-width: 0;
+    min-height: 50px;
+    padding-inline: 8px;
+    justify-content: center;
+    text-align: center;
   }
 }

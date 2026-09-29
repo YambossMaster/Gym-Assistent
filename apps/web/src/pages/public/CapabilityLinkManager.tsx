@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clipboard, Link2, Plus, RefreshCw, ShieldOff, X } from 'lucide-react'
+import { Check, Clipboard, Copy, Link2, Plus, RefreshCw, ShieldOff, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   ApiError,
@@ -132,7 +132,10 @@ function CapabilityLinkDialog({
   const [confirmReissue, setConfirmReissue] = useState(false)
   const confirmReissueRef = useRef<HTMLButtonElement>(null)
   const reissueTriggerRef = useRef<HTMLButtonElement>(null)
-  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>('idle')
+  const [copyFeedback, setCopyFeedback] = useState<{
+    url: string
+    state: 'success' | 'error'
+  } | null>(null)
   const [notice, setNotice] = useState('')
   const key = queryKeys.capabilityLinks(session.user.id, sessionId)
   const query = useQuery({
@@ -264,6 +267,7 @@ function CapabilityLinkDialog({
   const rawUrl = availableIssued
     ? `${window.location.origin}/${purpose === 'training_result' ? 't' : 'r'}/${availableIssued.token}`
     : ''
+  const copyState = copyFeedback?.url === rawUrl ? copyFeedback.state : 'idle'
   return (
     <div
       className="modal-backdrop capability-dialog-backdrop"
@@ -287,124 +291,146 @@ function CapabilityLinkDialog({
             <X />
           </button>
         </header>
-        <p className="capability-intro">連結會在 24 小時後失效。只有持有連結的人能查看這項內容。</p>
-        {purpose === 'training_result' && !current ? (
-          <Checkbox
-            className="capability-note"
-            label="一併分享教練筆記"
-            description="只有這個連結會顯示本堂筆記。"
-            checked={includeNote}
-            onChange={setIncludeNote}
-          />
-        ) : null}
-        {query.isLoading ? (
-          <p role="status">正在確認連結狀態…</p>
-        ) : query.isError ? (
-          <button className="secondary-button" onClick={() => void query.refetch()}>
-            <RefreshCw /> 重新載入
-          </button>
-        ) : null}
-        {current ? <LinkMetadata link={current} /> : null}
-        {notice ? (
-          <p className="form-notice" role="status">
-            {notice}
+        <div className="ui-settings-dialog-content">
+          <p className="capability-intro">
+            連結會在 24 小時後失效。只有持有連結的人能查看這項內容。
           </p>
-        ) : null}
-        {rawUrl ? (
-          <div className="capability-secret">
-            <label htmlFor="capability-url">目前連結</label>
-            <input id="capability-url" readOnly value={rawUrl} />
-            <button
-              className="secondary-button ui-action-general"
-              onClick={() => void copy(rawUrl, setCopyState)}
-            >
-              <Clipboard /> 複製連結
+          {purpose === 'training_result' && !current ? (
+            <Checkbox
+              className="capability-note"
+              label="一併分享教練筆記"
+              description="只有這個連結會顯示本堂筆記。"
+              checked={includeNote}
+              onChange={setIncludeNote}
+            />
+          ) : null}
+          {query.isLoading ? (
+            <p role="status">正在確認連結狀態…</p>
+          ) : query.isError ? (
+            <button className="secondary-button" onClick={() => void query.refetch()}>
+              <RefreshCw /> 重新載入
             </button>
-            <span role="status">
-              {copyState === 'success'
-                ? '連結已複製。'
-                : copyState === 'error'
-                  ? '無法自動複製，請選取上方連結手動複製。'
-                  : ''}
-            </span>
-          </div>
-        ) : null}
-        {confirmReissue && current?.allowedActions.canReissue ? (
-          <div className="capability-reissue">
-            <strong>重新建立連結</strong>
-            <p>新連結建立後，先前的網址會立即失效。請將新網址分享給需要的人。</p>
-            {purpose === 'training_result' ? (
-              <Checkbox
-                label="新連結一併分享教練筆記"
-                description="只有新連結會顯示本堂筆記。"
-                checked={includeNote}
-                onChange={setIncludeNote}
-              />
-            ) : null}
-            <div className="capability-reissue-actions">
+          ) : null}
+          {current ? <LinkMetadata link={current} /> : null}
+          {notice ? (
+            <p className="form-notice" role="status">
+              {notice}
+            </p>
+          ) : null}
+          {rawUrl ? (
+            <div className="capability-secret">
+              <label htmlFor="capability-url">目前連結</label>
+              <input id="capability-url" readOnly value={rawUrl} />
               <button
-                className="secondary-button"
-                disabled={pending}
-                onClick={() => {
-                  setConfirmReissue(false)
-                  requestAnimationFrame(() => reissueTriggerRef.current?.focus())
-                }}
+                className="secondary-button ui-action-general capability-copy-button"
+                aria-label={
+                  copyState === 'success'
+                    ? '連結已複製'
+                    : copyState === 'error'
+                      ? '複製失敗，請手動選取連結'
+                      : '複製連結'
+                }
+                data-copy-state={copyState}
+                onClick={() =>
+                  void copy(rawUrl, (state) => setCopyFeedback({ url: rawUrl, state }))
+                }
               >
-                取消
-              </button>
-              <button
-                ref={confirmReissueRef}
-                className="primary-button"
-                disabled={pending}
-                onClick={() => reissue.mutate(current)}
-              >
-                {reissue.isPending ? '處理中…' : '確認重新建立'}
-              </button>
-            </div>
-          </div>
-        ) : null}
-        {!confirmReissue ? (
-          <footer>
-            {!current ? (
-              <button
-                className="primary-button ui-action-add"
-                disabled={pending || query.isLoading}
-                onClick={() => issue.mutate()}
-              >
-                {issue.isPending ? (
-                  '處理中…'
+                <Clipboard className="capability-copy-desktop" aria-hidden="true" />
+                {copyState === 'success' ? (
+                  <Check className="capability-copy-mobile" aria-hidden="true" />
+                ) : copyState === 'error' ? (
+                  <X className="capability-copy-mobile" aria-hidden="true" />
                 ) : (
-                  <>
-                    <Plus aria-hidden="true" />
-                    建立連結
-                  </>
+                  <Copy className="capability-copy-mobile" aria-hidden="true" />
                 )}
+                <span className="capability-copy-label">複製連結</span>
               </button>
-            ) : null}
-            {current?.allowedActions.canRevoke ? (
-              <button
-                className="danger-outline-button ui-action-delete"
-                disabled={pending}
-                onClick={() => revoke.mutate(current)}
-              >
-                <ShieldOff /> {revoke.isPending ? '處理中…' : '撤銷連結'}
-              </button>
-            ) : null}
-            {current?.allowedActions.canReissue ? (
-              <button
-                ref={reissueTriggerRef}
-                className="secondary-button ui-action-general"
-                disabled={pending}
-                onClick={() => setConfirmReissue(true)}
-              >
-                <RefreshCw /> {reissue.isPending ? '處理中…' : '重新建立連結'}
-              </button>
-            ) : null}
-          </footer>
-        ) : null}
-        {current?.allowedActions.canReissue && !confirmReissue ? (
-          <small className="capability-warning">重新建立會立即讓先前的 URL 失效。</small>
-        ) : null}
+              <span role="status">
+                {copyState === 'success'
+                  ? '連結已複製。'
+                  : copyState === 'error'
+                    ? '無法自動複製，請選取上方連結手動複製。'
+                    : ''}
+              </span>
+            </div>
+          ) : null}
+          {confirmReissue && current?.allowedActions.canReissue ? (
+            <div className="capability-reissue">
+              <strong>重新建立連結</strong>
+              <p>新連結建立後，先前的網址會立即失效。請將新網址分享給需要的人。</p>
+              {purpose === 'training_result' ? (
+                <Checkbox
+                  label="新連結一併分享教練筆記"
+                  description="只有新連結會顯示本堂筆記。"
+                  checked={includeNote}
+                  onChange={setIncludeNote}
+                />
+              ) : null}
+              <div className="capability-reissue-actions">
+                <button
+                  className="secondary-button"
+                  disabled={pending}
+                  onClick={() => {
+                    setConfirmReissue(false)
+                    requestAnimationFrame(() => reissueTriggerRef.current?.focus())
+                  }}
+                >
+                  取消
+                </button>
+                <button
+                  ref={confirmReissueRef}
+                  className="primary-button"
+                  disabled={pending}
+                  onClick={() => reissue.mutate(current)}
+                >
+                  {reissue.isPending ? '處理中…' : '確認重新建立'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {current?.allowedActions.canReissue && !confirmReissue ? (
+            <small className="capability-warning">重新建立會立即讓先前的 URL 失效。</small>
+          ) : null}
+          {!confirmReissue ? (
+            <footer>
+              {!current ? (
+                <button
+                  className="primary-button ui-action-add"
+                  disabled={pending || query.isLoading}
+                  onClick={() => issue.mutate()}
+                >
+                  {issue.isPending ? (
+                    '處理中…'
+                  ) : (
+                    <>
+                      <Plus aria-hidden="true" />
+                      建立連結
+                    </>
+                  )}
+                </button>
+              ) : null}
+              {current?.allowedActions.canRevoke ? (
+                <button
+                  className="danger-outline-button ui-action-delete"
+                  disabled={pending}
+                  onClick={() => revoke.mutate(current)}
+                >
+                  <ShieldOff /> {revoke.isPending ? '處理中…' : '撤銷連結'}
+                </button>
+              ) : null}
+              {current?.allowedActions.canReissue ? (
+                <button
+                  ref={reissueTriggerRef}
+                  className="secondary-button ui-action-general"
+                  disabled={pending}
+                  onClick={() => setConfirmReissue(true)}
+                >
+                  <RefreshCw /> {reissue.isPending ? '處理中…' : '重新建立連結'}
+                </button>
+              ) : null}
+            </footer>
+          ) : null}
+        </div>
       </section>
     </div>
   )
@@ -438,7 +464,7 @@ function LinkMetadata({ link }: { link: CapabilityLinkMetadata }) {
   )
 }
 
-async function copy(value: string, setState: (state: 'idle' | 'success' | 'error') => void) {
+async function copy(value: string, setState: (state: 'success' | 'error') => void) {
   try {
     await navigator.clipboard.writeText(value)
     setState('success')

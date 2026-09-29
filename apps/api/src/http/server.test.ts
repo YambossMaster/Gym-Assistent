@@ -349,10 +349,25 @@ describe('workspace settings HTTP interface', () => {
       method: 'PATCH',
       url: '/v1/workspace-settings',
       headers,
-      payload: { displayName: 'FORM Taipei', timeZone: 'Asia/Taipei', version: 1 },
+      payload: {
+        displayName: 'FORM Taipei',
+        timeZone: 'Asia/Taipei',
+        calendarStartHour: 8,
+        calendarEndHour: 23,
+        calendarWeekStart: 0,
+        defaultSessionMinutes: 120,
+        version: 1,
+      },
     })
     expect(updateResponse.statusCode).toBe(200)
-    expect(updateResponse.json().settings).toMatchObject({ displayName: 'FORM Taipei', version: 2 })
+    expect(updateResponse.json().settings).toMatchObject({
+      displayName: 'FORM Taipei',
+      calendarStartHour: 8,
+      calendarEndHour: 23,
+      calendarWeekStart: 0,
+      defaultSessionMinutes: 120,
+      version: 2,
+    })
 
     const staleResponse = await server.inject({
       method: 'PATCH',

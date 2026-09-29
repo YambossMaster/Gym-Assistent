@@ -1834,17 +1834,17 @@ export function ExercisePicker({
           </p>
         )}
         {query.isLoading ? (
-          <div className="picker-results">
+          <div className="picker-results ui-choice-scroll">
             <p>載入動作庫中…</p>
           </div>
         ) : query.isError ? (
-          <div className="picker-results">
+          <div className="picker-results ui-choice-scroll">
             <p>
               無法載入動作庫。 <button onClick={() => void query.refetch()}>重試</button>
             </p>
           </div>
         ) : definitions.length ? (
-          <div className="picker-results">
+          <div className="picker-results ui-choice-scroll">
             <div className="picker-list">
               {definitions.map((definition) => {
                 const busy =
@@ -1903,7 +1903,7 @@ export function ExercisePicker({
             </div>
           </div>
         ) : (
-          <div className="picker-results">
+          <div className="picker-results ui-choice-scroll">
             <div className="empty-state">
               <strong>沒有符合的動作</strong>
               <button

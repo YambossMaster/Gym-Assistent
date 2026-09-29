@@ -410,7 +410,7 @@ export function DefinitionEditor({
             <X />
           </button>
         </header>
-        <form onSubmit={submit} autoComplete="off">
+        <form className="ui-settings-dialog-content" onSubmit={submit} autoComplete="off">
           <div className="editor-top-grid">
             <label className="editor-field">
               動作名稱
@@ -634,7 +634,16 @@ export function DefinitionEditor({
                 className="primary-button compact ui-action-save"
                 disabled={saving || parts.length === 0}
               >
-                {saving ? '儲存中…' : definition ? '儲存修改' : '建立動作'}
+                {saving ? (
+                  '儲存中…'
+                ) : (
+                  <>
+                    <span className="desktop-action-label">
+                      {definition ? '儲存修改' : '建立動作'}
+                    </span>
+                    <span className="mobile-action-label">{definition ? '儲存' : '+新增'}</span>
+                  </>
+                )}
               </button>
             </div>
           </footer>
