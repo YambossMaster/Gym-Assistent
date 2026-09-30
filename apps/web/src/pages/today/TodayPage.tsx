@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -100,7 +101,10 @@ function TodaySignals({
           </span>
           <div>
             <span>{formatPeriod(today.summary.incomePeriod)}</span>
-            <strong className="today-finance-label">收支明細概覽</strong>
+            <strong className="today-finance-label">
+              <span className="today-finance-desktop-label">收支明細概覽</span>
+              <span className="today-finance-mobile-label">收支明細</span>
+            </strong>
           </div>
           <ChevronRight className="today-signal-chevron" aria-hidden="true" />
         </Link>
@@ -130,11 +134,22 @@ function TodayNotificationCenter({
   timeZone: string
 }) {
   const [open, setOpen] = useState(false)
+  const [mobileSlot, setMobileSlot] = useState<HTMLElement | null>(null)
   const root = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const unreadCount = notifications.filter((item) => !item.readAt).length
   const [actionError, setActionError] = useState('')
+  useEffect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 760px)')
+    const syncSlot = () =>
+      setMobileSlot(
+        mobileQuery.matches ? document.getElementById('mobile-header-action-slot') : null
+      )
+    syncSlot()
+    mobileQuery.addEventListener('change', syncSlot)
+    return () => mobileQuery.removeEventListener('change', syncSlot)
+  }, [])
   const mutation = useMutation({
     mutationFn: (id: string) => readTodayNotification(session.access_token, id),
     onSuccess: ({ id, readAt }) => {
@@ -195,20 +210,26 @@ function TodayNotificationCenter({
       navigate(item.targetRoute!)
     })
   }
-  return (
+  const center = (
     <div
       className={`today-signal today-notification-center${open ? ' is-open' : ''}${unreadCount ? ' has-unread' : ''}`}
       ref={root}
     >
       <button
         type="button"
+        aria-label={unreadCount ? `通知，${unreadCount} 則未讀` : '通知，沒有未讀通知'}
         aria-expanded={open}
         aria-controls="today-notification-list"
         onClick={() => setOpen((value) => !value)}
       >
         <span className="today-signal-icon">
-          <Bell />
+          <Bell aria-hidden="true" />
         </span>
+        {unreadCount > 0 ? (
+          <span className="today-notification-badge" aria-hidden="true">
+            {unreadCount}
+          </span>
+        ) : null}
         <span className="today-notification-summary">
           <span>待處理與課程提醒</span>
           <strong>{unreadCount}</strong>
@@ -302,6 +323,7 @@ function TodayNotificationCenter({
       ) : null}
     </div>
   )
+  return mobileSlot ? createPortal(center, mobileSlot) : center
 }
 
 function TrainingQuote() {

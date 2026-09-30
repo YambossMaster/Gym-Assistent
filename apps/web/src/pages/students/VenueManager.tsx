@@ -557,144 +557,147 @@ function VenueEditor({
       <div className={`finance-editor${editor.kind === 'venue' ? ' venue-detail-editor' : ''}`}>
         {editor.kind === 'venue' ? (
           <>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault()
-                onClose()
-              }}
-              className="venue-detail-submit"
-            />
-            <button
-              className="venue-setting-link"
-              onClick={() => onNavigate({ kind: 'rule', venue: venue! })}
-            >
-              <span>
-                場地支出類型{' '}
-                <small>
-                  {ruleLabels[venue!.currentRule?.kind ?? 'untracked']}
-                  {commissionSummary ? `（${commissionSummary}）` : ''}
-                  {rentSummary ? `（${rentSummary}／堂）` : ''}
-                </small>
-              </span>
-              <ChevronRight size={16} aria-hidden="true" />
-            </button>
-            <button
-              className="venue-setting-link"
-              onClick={() => onNavigate({ kind: 'salary', venue: venue! })}
-            >
-              <span>
-                底薪與否？{' '}
-                <small>
-                  {currentSalary?.enabled
-                    ? `${financeMoney(currentSalary.amountMinor ?? 0, currentSalary.currency ?? preferredCurrency)} · 每月 ${currentSalary.payDay} 日發薪`
-                    : '無底薪'}
-                </small>
-              </span>
-              <ChevronRight size={16} aria-hidden="true" />
-            </button>
-            {hasCoachSection && (
-              <section className="venue-detail-section venue-coach-section">
-                <div className="venue-detail-section-heading">
-                  <h3>教練自帶客</h3>
-                  <small className="venue-coach-meta">
-                    （未標記的學生依場地供客計算） 共 {coachSuppliedIds.size} 名
+            <div className="venue-detail-fields">
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  onClose()
+                }}
+                className="venue-detail-submit"
+              />
+              <button
+                className="venue-setting-link"
+                onClick={() => onNavigate({ kind: 'rule', venue: venue! })}
+              >
+                <span>
+                  場地支出類型{' '}
+                  <small>
+                    {ruleLabels[venue!.currentRule?.kind ?? 'untracked']}
+                    {commissionSummary ? `（${commissionSummary}）` : ''}
+                    {rentSummary ? `（${rentSummary}／堂）` : ''}
                   </small>
-                  <button
-                    className="finance-text-button"
-                    onClick={() => onNavigate({ kind: 'coach-supplied', venue: venue! })}
-                  >
-                    <Plus size={15} aria-hidden="true" />
-                    加入自帶客
-                  </button>
-                </div>
-                <div className="venue-coach-chips">
-                  {studentQuery.data
-                    ?.filter((student) => coachSuppliedIds.has(student.id))
-                    .map((student) => (
-                      <span className="venue-coach-chip" key={student.id}>
-                        {student.name}
-                        <button
-                          type="button"
-                          aria-label={`移除自帶客 ${student.name}`}
-                          disabled={mutation.isPending}
-                          onClick={() =>
-                            mutation.mutate(
-                              {
-                                path: `/venues/${venue!.id}/coach-supplied-students`,
-                                body: { version, studentId: student.id, coachSupplied: false }
-                              },
-                              { onSuccess: () => setVersion((value) => value + 1) }
-                            )
-                          }
-                        >
-                          <X size={13} aria-hidden="true" />
-                        </button>
-                      </span>
-                    ))}
-                </div>
-              </section>
-            )}
-            {hasPrepaidSection && (
-              <section className="venue-detail-section venue-prepaid-section">
-                <div className="venue-detail-section-heading">
-                  <h3>
-                    場地堂數 <small>（剩餘 {venue!.remaining} 堂）</small>
-                  </h3>
-                  {venue!.active && venue!.currentRule?.kind === 'prepaid' && (
+                </span>
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+              <button
+                className="venue-setting-link"
+                onClick={() => onNavigate({ kind: 'salary', venue: venue! })}
+              >
+                <span>
+                  底薪與否？{' '}
+                  <small>
+                    {currentSalary?.enabled
+                      ? `${financeMoney(currentSalary.amountMinor ?? 0, currentSalary.currency ?? preferredCurrency)} · 每月 ${currentSalary.payDay} 日發薪`
+                      : '無底薪'}
+                  </small>
+                </span>
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+              {hasCoachSection && (
+                <section className="venue-detail-section venue-coach-section">
+                  <div className="venue-detail-section-heading">
+                    <h3>教練自帶客</h3>
+                    <small className="venue-coach-meta">
+                      （未標記的學生依場地供客計算） 共 {coachSuppliedIds.size} 名
+                    </small>
                     <button
                       className="finance-text-button"
-                      onClick={() => onNavigate({ kind: 'credit', venue: venue! })}
+                      onClick={() => onNavigate({ kind: 'coach-supplied', venue: venue! })}
                     >
                       <Plus size={15} aria-hidden="true" />
-                      登錄預購
+                      加入自帶客
                     </button>
-                  )}
-                </div>
-                <div className="venue-credit-list">
-                  {venueCredits
-                    .slice()
-                    .sort(
-                      (a, b) =>
-                        b.purchasedOn.localeCompare(a.purchasedOn) || b.id.localeCompare(a.id)
-                    )
-                    .map((p) => (
+                  </div>
+                  <div className="venue-coach-chips">
+                    {studentQuery.data
+                      ?.filter((student) => coachSuppliedIds.has(student.id))
+                      .map((student) => (
+                        <span className="venue-coach-chip" key={student.id}>
+                          {student.name}
+                          <button
+                            type="button"
+                            aria-label={`移除自帶客 ${student.name}`}
+                            disabled={mutation.isPending}
+                            onClick={() =>
+                              mutation.mutate(
+                                {
+                                  path: `/venues/${venue!.id}/coach-supplied-students`,
+                                  body: { version, studentId: student.id, coachSupplied: false }
+                                },
+                                { onSuccess: () => setVersion((value) => value + 1) }
+                              )
+                            }
+                          >
+                            <X size={13} aria-hidden="true" />
+                          </button>
+                        </span>
+                      ))}
+                  </div>
+                </section>
+              )}
+              {hasPrepaidSection && (
+                <section className="venue-detail-section venue-prepaid-section">
+                  <div className="venue-detail-section-heading">
+                    <h3>
+                      場地堂數 <small>（剩餘 {venue!.remaining} 堂）</small>
+                    </h3>
+                    {venue!.active && venue!.currentRule?.kind === 'prepaid' && (
                       <button
-                        className="venue-record"
-                        key={p.id}
-                        onClick={() => onNavigate({ kind: 'credit', venue: venue!, credit: p })}
+                        className="finance-text-button"
+                        onClick={() => onNavigate({ kind: 'credit', venue: venue! })}
                       >
-                        <span>
-                          {p.purchasedOn} · {p.lessonCount} 堂{' '}
-                          <small>（剩餘 {p.remainingLessons} 堂）</small>
-                        </span>
-                        <span>
-                          {financeMoney(p.amountMinor, p.currency)}
-                          <small>
-                            （每堂{' '}
-                            {financeMoney(Math.round(p.amountMinor / p.lessonCount), p.currency)}）
-                          </small>
-                          <ChevronRight size={16} />
-                        </span>
+                        <Plus size={15} aria-hidden="true" />
+                        登錄預購
                       </button>
-                    ))}
-                </div>
-              </section>
-            )}
-            <button
-              className="venue-setting-link"
-              onClick={() => onNavigate({ kind: 'course-records', venue: venue! })}
-            >
-              <span>場地課程紀錄</span>
-              <ChevronRight size={16} aria-hidden="true" />
-            </button>
-            {hasHistoryCandidates && (
+                    )}
+                  </div>
+                  <div className="venue-credit-list">
+                    {venueCredits
+                      .slice()
+                      .sort(
+                        (a, b) =>
+                          b.purchasedOn.localeCompare(a.purchasedOn) || b.id.localeCompare(a.id)
+                      )
+                      .map((p) => (
+                        <button
+                          className="venue-record"
+                          key={p.id}
+                          onClick={() => onNavigate({ kind: 'credit', venue: venue!, credit: p })}
+                        >
+                          <span>
+                            {p.purchasedOn} · {p.lessonCount} 堂{' '}
+                            <small>（剩餘 {p.remainingLessons} 堂）</small>
+                          </span>
+                          <span>
+                            {financeMoney(p.amountMinor, p.currency)}
+                            <small>
+                              （每堂{' '}
+                              {financeMoney(Math.round(p.amountMinor / p.lessonCount), p.currency)}
+                              ）
+                            </small>
+                            <ChevronRight size={16} />
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </section>
+              )}
               <button
-                className="finance-text-button venue-history-link"
-                onClick={() => onNavigate({ kind: 'history', venue: venue! })}
+                className="venue-setting-link"
+                onClick={() => onNavigate({ kind: 'course-records', venue: venue! })}
               >
-                關聯既有課程
+                <span>場地課程紀錄</span>
+                <ChevronRight size={16} aria-hidden="true" />
               </button>
-            )}
+              {hasHistoryCandidates && (
+                <button
+                  className="finance-text-button venue-history-link"
+                  onClick={() => onNavigate({ kind: 'history', venue: venue! })}
+                >
+                  關聯既有課程
+                </button>
+              )}
+            </div>
             <div
               className={`venue-detail-footer${hasCoachSection || hasPrepaidSection || hasRuleHistory || hasHistoryCandidates ? ' has-sections' : ''}`}
             >

@@ -253,72 +253,74 @@ export function VenueCourseRecords({
         {selected ? (
           record ? (
             <section className="venue-course-detail">
-              <header className="venue-course-detail-heading">
-                <h3>
-                  {venue.name} - {record.studentName}
-                </h3>
-                <time>
-                  {displayTime(record.startsAt, { dateStyle: 'medium', timeStyle: 'short' })} –{' '}
-                  {displayTime(record.endsAt, { timeStyle: 'short' })}
-                </time>
-              </header>
-              <details className="venue-course-rule">
-                <summary>
-                  <span>
-                    <strong>{description(record).title}</strong>
-                    <small>{description(record).detail}</small>
-                  </span>
-                  <ChevronRight size={18} aria-hidden="true" />
-                </summary>
-                <div className="venue-course-rule-detail">
-                  <p>
-                    適用規則：{ruleLabels[record.rule?.kind ?? 'untracked']}
-                    {record.rule?.effectiveAt &&
-                      ` · ${workspaceWallTime(record.rule.effectiveAt, timeZone).replace('T', ' ')} 起生效`}
-                  </p>
-                  {record.status === 'recorded-at-purchase' && (
-                    <p>整包抽成已在購課月份記入；這堂課不另列支。</p>
-                  )}
-                  {record.credit && (
+              <div className="venue-course-detail-fields">
+                <header className="venue-course-detail-heading">
+                  <h3>
+                    {venue.name} - {record.studentName}
+                  </h3>
+                  <time>
+                    {displayTime(record.startsAt, { dateStyle: 'medium', timeStyle: 'short' })} –{' '}
+                    {displayTime(record.endsAt, { timeStyle: 'short' })}
+                  </time>
+                </header>
+                <details className="venue-course-rule">
+                  <summary>
+                    <span>
+                      <strong>{description(record).title}</strong>
+                      <small>{description(record).detail}</small>
+                    </span>
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </summary>
+                  <div className="venue-course-rule-detail">
                     <p>
-                      預購批次：{record.credit.purchasedOn} 購買 ·{' '}
-                      {record.credit.startsDeductingAt
-                        ? workspaceWallTime(record.credit.startsDeductingAt, timeZone).replace(
-                            'T',
-                            ' '
-                          )
-                        : record.credit.purchasedOn}{' '}
-                      起扣 · 本堂扣 1 堂 · 目前此批剩餘 {record.credit.remainingLessons} 堂
+                      適用規則：{ruleLabels[record.rule?.kind ?? 'untracked']}
+                      {record.rule?.effectiveAt &&
+                        ` · ${workspaceWallTime(record.rule.effectiveAt, timeZone).replace('T', ' ')} 起生效`}
                     </p>
-                  )}
-                  {record.calculation && (
-                    <p>
-                      購課時 {rate(record, true)}，這堂課 {rate(record)}；依購課 {price(record)}{' '}
-                      計算。
-                    </p>
-                  )}
-                </div>
-              </details>
-              {record.purchaseRoute ? (
-                <Link
-                  className="venue-course-purchase"
-                  to={`${record.purchaseRoute}#purchase-history`}
-                  aria-label={`查看${record.studentName}的購課來源：${purchaseSummary}`}
-                >
-                  <span>
-                    <small>學生購課來源</small>
-                    <span>{purchaseSummary}</span>
-                  </span>
-                  <ChevronRight size={19} aria-hidden="true" />
-                </Link>
-              ) : (
-                <div className="venue-course-purchase" aria-disabled="true">
-                  <span>
-                    <small>學生購課來源</small>
-                    <span>{purchaseSummary}</span>
-                  </span>
-                </div>
-              )}
+                    {record.status === 'recorded-at-purchase' && (
+                      <p>整包抽成已在購課月份記入；這堂課不另列支。</p>
+                    )}
+                    {record.credit && (
+                      <p>
+                        預購批次：{record.credit.purchasedOn} 購買 ·{' '}
+                        {record.credit.startsDeductingAt
+                          ? workspaceWallTime(record.credit.startsDeductingAt, timeZone).replace(
+                              'T',
+                              ' '
+                            )
+                          : record.credit.purchasedOn}{' '}
+                        起扣 · 本堂扣 1 堂 · 目前此批剩餘 {record.credit.remainingLessons} 堂
+                      </p>
+                    )}
+                    {record.calculation && (
+                      <p>
+                        購課時 {rate(record, true)}，這堂課 {rate(record)}；依購課 {price(record)}{' '}
+                        計算。
+                      </p>
+                    )}
+                  </div>
+                </details>
+                {record.purchaseRoute ? (
+                  <Link
+                    className="venue-course-purchase"
+                    to={`${record.purchaseRoute}#purchase-history`}
+                    aria-label={`查看${record.studentName}的購課來源：${purchaseSummary}`}
+                  >
+                    <span>
+                      <small>學生購課來源</small>
+                      <span>{purchaseSummary}</span>
+                    </span>
+                    <ChevronRight size={19} aria-hidden="true" />
+                  </Link>
+                ) : (
+                  <div className="venue-course-purchase" aria-disabled="true">
+                    <span>
+                      <small>學生購課來源</small>
+                      <span>{purchaseSummary}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
               {!editing ? (
                 <div className="venue-course-detail-actions">
                   <button
@@ -383,126 +385,130 @@ export function VenueCourseRecords({
                     )
                   }}
                 >
-                  <label>
-                    計算方式
-                    <FormSelect
-                      label="計算方式"
-                      value={mode}
-                      onChange={(next) => {
-                        setMode(next as typeof mode)
-                        setPreview(null)
-                      }}
-                      options={[
-                        { value: 'auto', label: '自動計算' },
-                        { value: 'exempt', label: '不扣堂／不計費' },
-                        ...(record.rule?.kind === 'prepaid'
-                          ? [{ value: 'batch', label: '指定預購批次' }]
-                          : [
-                              { value: 'amount', label: '調整該堂金額' },
-                              { value: 'rate', label: '調整該堂費率' }
-                            ])
-                      ]}
-                    />
-                  </label>
-                  {mode === 'batch' && (
+                  <div className="venue-course-edit-fields">
                     <label>
-                      預購批次
+                      計算方式
                       <FormSelect
-                        label="預購批次"
-                        required
-                        value={creditId}
+                        label="計算方式"
+                        value={mode}
                         onChange={(next) => {
-                          setCreditId(next)
+                          setMode(next as typeof mode)
                           setPreview(null)
                         }}
                         options={[
-                          { value: '', label: '選擇批次' },
-                          ...credits
-                            .filter(
-                              (c) =>
-                                c.venueId === venue.id &&
-                                (c.remainingLessons > 0 || c.id === record.creditId)
-                            )
-                            .map((c) => ({
-                              value: c.id,
-                              label: `${c.purchasedOn} · 起扣 ${c.startsDeductingAt ? workspaceWallTime(c.startsDeductingAt, timeZone).replace('T', ' ') : c.purchasedOn} · 剩餘 ${c.remainingLessons} 堂`
-                            }))
+                          { value: 'auto', label: '自動計算' },
+                          { value: 'exempt', label: '不扣堂／不計費' },
+                          ...(record.rule?.kind === 'prepaid'
+                            ? [{ value: 'batch', label: '指定預購批次' }]
+                            : [
+                                { value: 'amount', label: '調整該堂金額' },
+                                { value: 'rate', label: '調整該堂費率' }
+                              ])
                         ]}
                       />
                     </label>
-                  )}
-                  {(mode === 'amount' || mode === 'rate') && (
-                    <label>
-                      {mode === 'rate' ? '費率（%）' : '金額（最小貨幣單位）'}
-                      <input
-                        required
-                        type="number"
-                        onKeyDown={numericInputKeyDown}
-                        min={mode === 'rate' ? 0 : -999999999999}
-                        max={mode === 'rate' ? 100 : 999999999999}
-                        step={mode === 'rate' ? 0.01 : 1}
-                        value={value}
-                        onChange={(event) => {
-                          setValue(event.target.value)
-                          setPreview(null)
-                        }}
-                      />
-                    </label>
-                  )}
-                  {preview && (
-                    <section className="finance-preview" aria-label="變更預覽">
-                      <p>
-                        這堂課：{label(preview.before)} → {label(preview.after)}
-                      </p>
-                      {preview.credits
-                        .filter((credit) => credit.before !== credit.after)
-                        .map((credit) => (
-                          <p key={credit.id}>
-                            {credit.purchasedOn} 批次剩餘：{credit.lessonCount - credit.before} →{' '}
-                            {credit.lessonCount - credit.after} 堂
-                          </p>
-                        ))}
-                      {preview.totalsBefore.map((total) => {
-                        const next = preview.totalsAfter.find(
-                          (item) => item.currency === total.currency
-                        )
-                        return (
-                          <p key={total.currency}>
-                            {preview.month} 支出（{total.currency}）：
-                            {financeMoney(total.expenseMinor, total.currency)} →{' '}
-                            {financeMoney(next?.expenseMinor ?? 0, total.currency)}
-                          </p>
-                        )
-                      })}
-                    </section>
-                  )}
-                  {mutation.isError && (
-                    <div role="alert" className="notice error">
-                      {mutation.error.message}
-                      {mutation.error instanceof ApiError &&
-                        mutation.error.status === 409 &&
-                        (mutation.error.details as unknown as { current?: RecordRow }).current && (
-                          <p>
-                            目前伺服器紀錄：
-                            {label(
-                              (mutation.error.details as unknown as { current: RecordRow }).current
-                            )}
-                          </p>
-                        )}
-                      {mutation.error instanceof ApiError && mutation.error.status === 409 && (
-                        <button
-                          type="button"
-                          onClick={() => {
+                    {mode === 'batch' && (
+                      <label>
+                        預購批次
+                        <FormSelect
+                          label="預購批次"
+                          required
+                          value={creditId}
+                          onChange={(next) => {
+                            setCreditId(next)
                             setPreview(null)
-                            mutation.reset()
-                            void query.refetch()
                           }}
-                        >
-                          載入最新紀錄，保留輸入
-                        </button>
-                      )}
-                    </div>
-                  )}
+                          options={[
+                            { value: '', label: '選擇批次' },
+                            ...credits
+                              .filter(
+                                (c) =>
+                                  c.venueId === venue.id &&
+                                  (c.remainingLessons > 0 || c.id === record.creditId)
+                              )
+                              .map((c) => ({
+                                value: c.id,
+                                label: `${c.purchasedOn} · 起扣 ${c.startsDeductingAt ? workspaceWallTime(c.startsDeductingAt, timeZone).replace('T', ' ') : c.purchasedOn} · 剩餘 ${c.remainingLessons} 堂`
+                              }))
+                          ]}
+                        />
+                      </label>
+                    )}
+                    {(mode === 'amount' || mode === 'rate') && (
+                      <label>
+                        {mode === 'rate' ? '費率（%）' : '金額（最小貨幣單位）'}
+                        <input
+                          required
+                          type="number"
+                          onKeyDown={numericInputKeyDown}
+                          min={mode === 'rate' ? 0 : -999999999999}
+                          max={mode === 'rate' ? 100 : 999999999999}
+                          step={mode === 'rate' ? 0.01 : 1}
+                          value={value}
+                          onChange={(event) => {
+                            setValue(event.target.value)
+                            setPreview(null)
+                          }}
+                        />
+                      </label>
+                    )}
+                    {preview && (
+                      <section className="finance-preview" aria-label="變更預覽">
+                        <p>
+                          這堂課：{label(preview.before)} → {label(preview.after)}
+                        </p>
+                        {preview.credits
+                          .filter((credit) => credit.before !== credit.after)
+                          .map((credit) => (
+                            <p key={credit.id}>
+                              {credit.purchasedOn} 批次剩餘：{credit.lessonCount - credit.before} →{' '}
+                              {credit.lessonCount - credit.after} 堂
+                            </p>
+                          ))}
+                        {preview.totalsBefore.map((total) => {
+                          const next = preview.totalsAfter.find(
+                            (item) => item.currency === total.currency
+                          )
+                          return (
+                            <p key={total.currency}>
+                              {preview.month} 支出（{total.currency}）：
+                              {financeMoney(total.expenseMinor, total.currency)} →{' '}
+                              {financeMoney(next?.expenseMinor ?? 0, total.currency)}
+                            </p>
+                          )
+                        })}
+                      </section>
+                    )}
+                    {mutation.isError && (
+                      <div role="alert" className="notice error">
+                        {mutation.error.message}
+                        {mutation.error instanceof ApiError &&
+                          mutation.error.status === 409 &&
+                          (mutation.error.details as unknown as { current?: RecordRow })
+                            .current && (
+                            <p>
+                              目前伺服器紀錄：
+                              {label(
+                                (mutation.error.details as unknown as { current: RecordRow })
+                                  .current
+                              )}
+                            </p>
+                          )}
+                        {mutation.error instanceof ApiError && mutation.error.status === 409 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreview(null)
+                              mutation.reset()
+                              void query.refetch()
+                            }}
+                          >
+                            載入最新紀錄，保留輸入
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="finance-actions">
                     <button
                       type="button"

@@ -584,22 +584,24 @@ function DeviceCacheDialog({ session, onClose }: { session: Session; onClose: ()
           </button>
         </header>
         <div className="ui-settings-dialog-content">
-          <p>
-            這台裝置保存訓練草稿、待送變更與介面偏好，協助中斷後繼續工作。清除後無法從裝置復原這些內容；雲端正式紀錄不受影響。
-          </p>
-          <label className="settings-cache-confirm">
-            輸入 CLEAR 以清除
-            <input
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
-              autoComplete="off"
-            />
-          </label>
-          {error && (
-            <p className="settings-dialog-error" role="alert">
-              {error}
+          <div className="ui-settings-dialog-fields">
+            <p>
+              這台裝置保存訓練草稿、待送變更與介面偏好，協助中斷後繼續工作。清除後無法從裝置復原這些內容；雲端正式紀錄不受影響。
             </p>
-          )}
+            <label className="settings-cache-confirm">
+              輸入 CLEAR 以清除
+              <input
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                autoComplete="off"
+              />
+            </label>
+            {error && (
+              <p className="settings-dialog-error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
           <div className="settings-dialog-actions">
             <button
               type="button"
@@ -862,61 +864,63 @@ function PasswordDialog({
           </button>
         </header>
         <form className="password-change-form ui-settings-dialog-content" onSubmit={onSubmit}>
-          {emailIdentity && (
-            <div className="password-current-field">
-              <label>
-                目前密碼
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(event) => onCurrentPasswordChange(event.target.value)}
-                  required
-                  autoFocus
-                  autoComplete="current-password"
-                />
-              </label>
-              <button
-                type="button"
-                className="text-button"
-                onClick={onForgotPassword}
-                disabled={saving}
-              >
-                忘記密碼？
-              </button>
-              {notice && (
-                <p className="password-recovery-notice" role="status">
-                  <CircleCheck aria-hidden="true" />
-                  <span>密碼重設信已寄出，請查看電子郵件。</span>
-                </p>
-              )}
-            </div>
-          )}
-          <label>
-            新密碼
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => onPasswordChange(event.target.value)}
-              minLength={12}
-              required
-              autoFocus={!emailIdentity}
-            />
-          </label>
-          <label>
-            再次輸入新密碼
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => onConfirmPasswordChange(event.target.value)}
-              minLength={12}
-              required
-            />
-          </label>
-          {error && (
-            <p className="settings-dialog-error" role="alert">
-              {error}
-            </p>
-          )}
+          <div className="ui-settings-dialog-fields">
+            {emailIdentity && (
+              <div className="password-current-field">
+                <label>
+                  目前密碼
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(event) => onCurrentPasswordChange(event.target.value)}
+                    required
+                    autoFocus
+                    autoComplete="current-password"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={onForgotPassword}
+                  disabled={saving}
+                >
+                  忘記密碼？
+                </button>
+                {notice && (
+                  <p className="password-recovery-notice" role="status">
+                    <CircleCheck aria-hidden="true" />
+                    <span>密碼重設信已寄出，請查看電子郵件。</span>
+                  </p>
+                )}
+              </div>
+            )}
+            <label>
+              新密碼
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => onPasswordChange(event.target.value)}
+                minLength={12}
+                required
+                autoFocus={!emailIdentity}
+              />
+            </label>
+            <label>
+              再次輸入新密碼
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => onConfirmPasswordChange(event.target.value)}
+                minLength={12}
+                required
+              />
+            </label>
+            {error && (
+              <p className="settings-dialog-error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
           <div className="password-form-actions">
             <button
               className="secondary-button ui-action-cancel"

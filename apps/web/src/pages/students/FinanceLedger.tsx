@@ -458,99 +458,106 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   save()
                 }}
               >
-                <div className="finance-ledger-datetime">
-                  <SeriesDatePicker
-                    label="日期"
-                    labelSuffix={modifiedFields?.date ? <ModifiedFieldMark /> : null}
-                    value={when.slice(0, 10)}
-                    onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
-                  />
-                  <div className="scheduling-time-field">
-                    <span>
-                      時間
-                      {modifiedFields?.time ? <ModifiedFieldMark /> : null}
-                    </span>
-                    <TimeSelect
-                      label="時間"
-                      value={when.slice(11)}
-                      onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                <div className="finance-ledger-fields">
+                  <div className="finance-ledger-datetime">
+                    <SeriesDatePicker
+                      label="日期"
+                      labelSuffix={modifiedFields?.date ? <ModifiedFieldMark /> : null}
+                      value={when.slice(0, 10)}
+                      onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
                     />
-                  </div>
-                </div>
-                <label>
-                  <span className="finance-ledger-field-title">
-                    名稱{modifiedFields?.label && <ModifiedFieldMark />}
-                  </span>
-                  <input
-                    required
-                    maxLength={160}
-                    value={label}
-                    onChange={(event) => setLabel(event.target.value)}
-                  />
-                </label>
-                <div className={editor === 'new' ? 'finance-ledger-amount-row' : undefined}>
-                  {editor === 'new' && (
-                    <div className="finance-ledger-direction" role="group" aria-label="方向">
-                      <span>方向</span>
-                      <div className="scheduling-segmented">
-                        <button
-                          type="button"
-                          aria-pressed={direction === 'income'}
-                          onClick={() => setDirection('income')}
-                        >
-                          收入
-                        </button>
-                        <button
-                          type="button"
-                          aria-pressed={direction === 'expense'}
-                          onClick={() => setDirection('expense')}
-                        >
-                          支出
-                        </button>
-                      </div>
+                    <div className="scheduling-time-field">
+                      <span>
+                        時間
+                        {modifiedFields?.time ? <ModifiedFieldMark /> : null}
+                      </span>
+                      <TimeSelect
+                        label="時間"
+                        value={when.slice(11)}
+                        onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                      />
                     </div>
-                  )}
+                  </div>
                   <label>
                     <span className="finance-ledger-field-title">
-                      金額{editor === 'new' && `（${currency}）`}
-                      {modifiedFields?.amount && <ModifiedFieldMark />}
+                      名稱{modifiedFields?.label && <ModifiedFieldMark />}
                     </span>
                     <input
-                      type="number"
-                      onKeyDown={numericInputKeyDown}
-                      data-allow-negative={editor !== 'new' && editor.kind === 'commission'}
-                      min={editor !== 'new' && editor.kind === 'commission' ? undefined : 0}
-                      step={1 / moneyFactor(currency)}
                       required
-                      value={amount}
-                      onChange={(event) => setAmount(event.target.value)}
+                      maxLength={160}
+                      value={label}
+                      onChange={(event) => setLabel(event.target.value)}
                     />
                   </label>
-                </div>
-                {editor === 'new' && (
-                  <label>
-                    說明（選填）
-                    <textarea
-                      maxLength={4000}
-                      value={note}
-                      onChange={(event) => setNote(event.target.value)}
-                    />
-                  </label>
-                )}
-                {editor !== 'new' && editor.status !== 'manual' && (
-                  <section className="finance-ledger-source" aria-labelledby="finance-source-title">
-                    <h3 id="finance-source-title">來源說明</h3>
-                    <pre className="finance-ledger-source-display">{sourceExplanation(editor)}</pre>
-                    {editor.targetRoute && (
-                      <Link
-                        className="finance-ledger-source-link ui-action-general"
-                        to={financeSourceRoute(editor, params)}
-                      >
-                        前往來源紀錄 <ArrowUpRight aria-hidden="true" />
-                      </Link>
+                  <div className={editor === 'new' ? 'finance-ledger-amount-row' : undefined}>
+                    {editor === 'new' && (
+                      <div className="finance-ledger-direction" role="group" aria-label="方向">
+                        <span>方向</span>
+                        <div className="scheduling-segmented">
+                          <button
+                            type="button"
+                            aria-pressed={direction === 'income'}
+                            onClick={() => setDirection('income')}
+                          >
+                            收入
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={direction === 'expense'}
+                            onClick={() => setDirection('expense')}
+                          >
+                            支出
+                          </button>
+                        </div>
+                      </div>
                     )}
-                  </section>
-                )}
+                    <label>
+                      <span className="finance-ledger-field-title">
+                        金額{editor === 'new' && `（${currency}）`}
+                        {modifiedFields?.amount && <ModifiedFieldMark />}
+                      </span>
+                      <input
+                        type="number"
+                        onKeyDown={numericInputKeyDown}
+                        data-allow-negative={editor !== 'new' && editor.kind === 'commission'}
+                        min={editor !== 'new' && editor.kind === 'commission' ? undefined : 0}
+                        step={1 / moneyFactor(currency)}
+                        required
+                        value={amount}
+                        onChange={(event) => setAmount(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  {editor === 'new' && (
+                    <label>
+                      說明（選填）
+                      <textarea
+                        maxLength={4000}
+                        value={note}
+                        onChange={(event) => setNote(event.target.value)}
+                      />
+                    </label>
+                  )}
+                  {editor !== 'new' && editor.status !== 'manual' && (
+                    <section
+                      className="finance-ledger-source"
+                      aria-labelledby="finance-source-title"
+                    >
+                      <h3 id="finance-source-title">來源說明</h3>
+                      <pre className="finance-ledger-source-display">
+                        {sourceExplanation(editor)}
+                      </pre>
+                      {editor.targetRoute && (
+                        <Link
+                          className="finance-ledger-source-link ui-action-general"
+                          to={financeSourceRoute(editor, params)}
+                        >
+                          前往來源紀錄 <ArrowUpRight aria-hidden="true" />
+                        </Link>
+                      )}
+                    </section>
+                  )}
+                </div>
                 <div className="finance-actions finance-ledger-footer">
                   {editor !== 'new' && !data.rows.some((r) => r.id === editor.id) && (
                     <button

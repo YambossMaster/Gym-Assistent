@@ -215,7 +215,17 @@ export function CalendarPage({
               <ChevronRight />
             </button>
           </div>
-          <h2 className="calendar-period-title">{formatCalendarPeriod(anchor, range, view)}</h2>
+          <h2
+            className="calendar-period-title"
+            aria-label={formatCalendarPeriod(anchor, range, view)}
+          >
+            <span className="calendar-period-desktop">
+              {formatCalendarPeriod(anchor, range, view)}
+            </span>
+            <span className="calendar-period-mobile">
+              {formatMobileCalendarPeriod(anchor, range, view)}
+            </span>
+          </h2>
           <div className="calendar-view-switch" role="group" aria-label="行事曆檢視">
             <ViewButton view="agenda" current={view} onSelect={setView} icon={<List />}>
               課表
@@ -287,6 +297,10 @@ export function CalendarPage({
                 calendar={query.data}
                 preferences={preferences}
                 viewportRef={calendarViewportRef}
+                onOpenDay={(date) => {
+                  setAnchor(date)
+                  setView('day')
+                }}
                 defaultStudentId={students[0]?.id ?? ''}
                 onDraft={(next) => {
                   setDraftError('')
@@ -350,6 +364,7 @@ export function CalendarPage({
               <Month
                 calendar={query.data}
                 anchor={anchor}
+                weekStart={preferences.calendarWeekStart}
                 viewportRef={calendarViewportRef}
                 onOpenDay={(date) => {
                   setAnchor(date)
@@ -1014,6 +1029,7 @@ function Timeline({
   preferences,
   onDraft,
   onMove,
+  onOpenDay,
   defaultStudentId,
   viewportRef
 }: {
@@ -1021,6 +1037,7 @@ function Timeline({
   preferences: CalendarPreferences
   onDraft: (draft: Draft) => void
   onMove: (draft: Extract<Draft, { kind: 'session' | 'block' }>, done: () => void) => void
+  onOpenDay: (date: string) => void
   defaultStudentId: string
   viewportRef: Ref<HTMLDivElement>
 }) {
@@ -1028,7 +1045,13 @@ function Timeline({
   const hours = timelineHours(calendar, preferences)
   const firstMinute = hours.start * 60
   const lastMinute = hours.end * 60
-  const timelineHeight = Math.max(720, (hours.end - hours.start) * 45)
+  const [viewportHeight, setViewportHeight] = useState(0)
+  const mobile = window.matchMedia('(max-width: 720px)').matches
+  const mobileHourHeight = Math.max(52, (viewportHeight - 48) / 10)
+  const timelineHeight =
+    mobile && viewportHeight
+      ? Math.max(viewportHeight - 48, (hours.end - hours.start) * mobileHourHeight)
+      : Math.max(720, (hours.end - hours.start) * 45)
   type ItemDraft = Extract<Draft, { kind: 'session' | 'block' }>
   type Preview = { date: string; start: string; end: string; kind: 'create' | 'move' }
   type Gesture = {
@@ -1053,6 +1076,19 @@ function Timeline({
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [moving, setMoving] = useState(false)
+  useEffect(() => {
+    const scroll = scrollRef.current
+    if (!scroll) return
+    const measure = () => setViewportHeight(scroll.clientHeight)
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(scroll)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
   const clearGesture = () => {
     if (holdTimer.current) clearTimeout(holdTimer.current)
     holdTimer.current = null
@@ -1269,22 +1305,28 @@ function Timeline({
             key={`${date}-head`}
             className={`calendar-day-header${date === localDate(new Date(), calendar.timeZone) ? ' today' : ''}`}
           >
-            <span>
-              {new Intl.DateTimeFormat('zh-TW', { weekday: 'short', timeZone: 'UTC' }).format(
-                new Date(`${date}T12:00:00Z`)
-              )}
-            </span>
-            <strong>{Number(date.slice(-2))}</strong>
-            <small>
-              {
-                calendar.sessions.filter(
-                  ({ session }) =>
-                    session.status !== 'cancelled' &&
-                    localDay(session.startsAt, calendar.timeZone) === date
-                ).length
-              }{' '}
-              堂
-            </small>
+            <button
+              type="button"
+              onClick={() => onOpenDay(date)}
+              aria-label={`查看 ${formatDate(date, calendar.timeZone)} 的日檢視`}
+            >
+              <span>
+                {new Intl.DateTimeFormat('zh-TW', { weekday: 'short', timeZone: 'UTC' }).format(
+                  new Date(`${date}T12:00:00Z`)
+                )}
+              </span>
+              <strong>{Number(date.slice(-2))}</strong>
+              <small>
+                {
+                  calendar.sessions.filter(
+                    ({ session }) =>
+                      session.status !== 'cancelled' &&
+                      localDay(session.startsAt, calendar.timeZone) === date
+                  ).length
+                }{' '}
+                堂
+              </small>
+            </button>
           </div>
         ))}
         <div className="calendar-time-axis" aria-hidden="true">
@@ -1335,6 +1377,7 @@ function Timeline({
                     className="calendar-block positioned"
                     style={timeStyle(local.start, local.end, hours)}
                     key={block.id}
+                    aria-label={`封鎖時段 ${local.start}–${local.end} ${block.note || '私人時段'}`}
                     onPointerDown={(event) => begin(event, date, local)}
                     onClick={(event) => {
                       if (event.detail === 0) onDraft(local)
@@ -1360,6 +1403,7 @@ function Timeline({
                     className={`calendar-session positioned ${calendarSessionVisualState(entry.session)}${entry.conflicts.length ? ' has-conflict' : ''}`}
                     style={timeStyle(local.start, local.end, hours)}
                     key={entry.session.id}
+                    aria-label={`${local.start}–${local.end} ${entry.session.studentName} ${entry.session.location || '未設定地點'}`}
                     onPointerDown={(event) => {
                       event.stopPropagation()
                       begin(event, date, local, entry.session.status === 'scheduled')
@@ -1465,11 +1509,13 @@ function Agenda({
 function Month({
   calendar,
   anchor,
+  weekStart,
   onOpenDay,
   viewportRef
 }: {
   calendar: CalendarProjection
   anchor: string
+  weekStart: 0 | 1
   onOpenDay: (date: string) => void
   viewportRef: Ref<HTMLDivElement>
 }) {
@@ -1477,7 +1523,10 @@ function Month({
   return (
     <div ref={viewportRef} className="calendar-month">
       <div className="calendar-weekdays">
-        {['一', '二', '三', '四', '五', '六', '日'].map((label) => (
+        {(weekStart === 1
+          ? ['一', '二', '三', '四', '五', '六', '日']
+          : ['日', '一', '二', '三', '四', '五', '六']
+        ).map((label) => (
           <span key={label}>週{label}</span>
         ))}
       </div>
@@ -1491,16 +1540,21 @@ function Month({
           return (
             <button
               key={date}
-              className={date.slice(0, 7) === anchor.slice(0, 7) ? '' : 'outside'}
+              className={`${date.slice(0, 7) === anchor.slice(0, 7) ? '' : 'outside'}${date === localDate(new Date(), calendar.timeZone) ? ' today' : ''}`}
               onClick={() => onOpenDay(date)}
+              aria-label={`${formatDate(date, calendar.timeZone)}，${entries.length} 堂課，查看日檢視`}
             >
               <time>{Number(date.slice(-2))}</time>
               {entries.slice(0, 2).map(({ session }) => (
                 <span
                   key={session.id}
                   className={`calendar-month-session ${calendarSessionVisualState(session)}`}
+                  title={`${formatTime(session.startsAt, calendar.timeZone)} ${session.studentName}`}
                 >
-                  {formatTime(session.startsAt, calendar.timeZone)} {session.studentName}
+                  <span className="month-event-desktop">
+                    {formatTime(session.startsAt, calendar.timeZone)} {session.studentName}
+                  </span>
+                  <span className="month-event-mobile">{session.studentName}</span>
                 </span>
               ))}
               {entries.length > 2 ? (
@@ -1767,6 +1821,23 @@ function formatCalendarPeriod(
   const start = range.start.split('-').map(Number)
   const end = addDays(range.end, -1).split('-').map(Number)
   return `${start[0]} 年 ${start[1]} 月・${start[1]}/${start[2]}—${end[1]}/${end[2]}`
+}
+function formatMobileCalendarPeriod(
+  anchor: string,
+  range: { start: string; end: string },
+  view: CalendarView
+) {
+  const [year, month, day] = anchor.split('-').map(Number)
+  if (view === 'month') return `${year} 年 ${month} 月`
+  if (view === 'day') {
+    const weekday = new Intl.DateTimeFormat('zh-TW', { weekday: 'short', timeZone: 'UTC' }).format(
+      new Date(`${anchor}T12:00:00Z`)
+    )
+    return `${month} 月 ${day} 日 ${weekday}`
+  }
+  const start = range.start.split('-').map(Number)
+  const end = addDays(range.end, -1).split('-').map(Number)
+  return `${start[0]} · ${start[1]}/${start[2]}–${end[1]}/${end[2]}`
 }
 function statusLabel(item: CalendarSession) {
   if (item.status === 'cancelled') return '已取消'

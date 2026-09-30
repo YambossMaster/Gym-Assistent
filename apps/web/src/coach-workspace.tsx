@@ -1338,99 +1338,101 @@ function SeriesEditor({
       onDelete={onDelete}
     >
       <form className="scheduling-form student-series-editor" onSubmit={submit} autoComplete="off">
-        <div className="field-row">
-          <SeriesDatePicker value={date} onChange={setDate} />
-          <label>
-            開始時間
-            <FormSelect
-              label="開始時間"
-              value={start}
-              onChange={setStart}
-              options={[
-                ...(start < '06:00' || start > '23:00' ? [{ value: start, label: start }] : []),
-                ...Array.from({ length: 69 }, (_, index) => {
-                  const minutes = 360 + index * 15
-                  const time = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
-                  return { value: time, label: time }
-                })
-              ]}
-            />
-          </label>
-        </div>
-        <div className="field-row">
-          <label>
-            課程長度
-            <FormSelect
-              label="課程長度"
-              value={String(duration)}
-              onChange={(value) => setDuration(Number(value))}
-              options={[
-                ...([30, 60, 90, 120, 150, 180].includes(duration)
-                  ? []
-                  : [{ value: String(duration), label: `${duration} 分鐘（目前）` }]),
-                ...[30, 60, 90, 120, 150, 180].map((minutes) => ({
-                  value: String(minutes),
-                  label: `${minutes} 分鐘`
-                }))
-              ]}
-            />
-          </label>
-          <VenueField
-            session={session}
-            studentId={studentId}
-            date={date}
-            venueId={venueId}
-            customerSource={customerSource}
-            location={location}
-            onChange={(v) => {
-              setVenueId(v.venueId)
-              setCustomerSource(v.customerSource)
-              setLocation(v.location)
-            }}
-          />
-        </div>
-        <div className="student-series-settings">
-          <label>
-            頻率
-            <FormSelect
-              label="頻率"
-              value={String(interval)}
-              onChange={(value) => setInterval(Number(value) as 0 | 1 | 2)}
-              options={[
-                { value: '1', label: '每週' },
-                { value: '2', label: '隔週' },
-                { value: '0', label: '每一個月' }
-              ]}
-            />
-          </label>
-          <label>
-            自動安排範圍
-            <FormSelect
-              label="自動安排範圍"
-              value={horizon}
-              onChange={(value) => setHorizon(value as ScheduleSeries['autoScheduleHorizon'])}
-              options={[
-                { value: 'NONE', label: '只建立首堂' },
-                { value: '1_WEEK', label: '未來 1 週' },
-                { value: '2_WEEKS', label: '未來 2 週' }
-              ]}
-            />
-          </label>
-          <label className="student-series-toggle">
-            使用狀態
-            <span>
-              <strong>{active ? '使用中' : '已停用'}</strong>
-              <input
-                type="checkbox"
-                role="switch"
-                aria-label="固定課表狀態"
-                checked={active}
-                onChange={(event) => setActive(event.target.checked)}
+        <div className="student-series-fields">
+          <div className="field-row">
+            <SeriesDatePicker value={date} onChange={setDate} />
+            <label>
+              開始時間
+              <FormSelect
+                label="開始時間"
+                value={start}
+                onChange={setStart}
+                options={[
+                  ...(start < '06:00' || start > '23:00' ? [{ value: start, label: start }] : []),
+                  ...Array.from({ length: 69 }, (_, index) => {
+                    const minutes = 360 + index * 15
+                    const time = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+                    return { value: time, label: time }
+                  })
+                ]}
               />
-            </span>
-          </label>
+            </label>
+          </div>
+          <div className="field-row">
+            <label>
+              課程長度
+              <FormSelect
+                label="課程長度"
+                value={String(duration)}
+                onChange={(value) => setDuration(Number(value))}
+                options={[
+                  ...([30, 60, 90, 120, 150, 180].includes(duration)
+                    ? []
+                    : [{ value: String(duration), label: `${duration} 分鐘（目前）` }]),
+                  ...[30, 60, 90, 120, 150, 180].map((minutes) => ({
+                    value: String(minutes),
+                    label: `${minutes} 分鐘`
+                  }))
+                ]}
+              />
+            </label>
+            <VenueField
+              session={session}
+              studentId={studentId}
+              date={date}
+              venueId={venueId}
+              customerSource={customerSource}
+              location={location}
+              onChange={(v) => {
+                setVenueId(v.venueId)
+                setCustomerSource(v.customerSource)
+                setLocation(v.location)
+              }}
+            />
+          </div>
+          <div className="student-series-settings">
+            <label>
+              頻率
+              <FormSelect
+                label="頻率"
+                value={String(interval)}
+                onChange={(value) => setInterval(Number(value) as 0 | 1 | 2)}
+                options={[
+                  { value: '1', label: '每週' },
+                  { value: '2', label: '隔週' },
+                  { value: '0', label: '每一個月' }
+                ]}
+              />
+            </label>
+            <label>
+              自動安排範圍
+              <FormSelect
+                label="自動安排範圍"
+                value={horizon}
+                onChange={(value) => setHorizon(value as ScheduleSeries['autoScheduleHorizon'])}
+                options={[
+                  { value: 'NONE', label: '只建立首堂' },
+                  { value: '1_WEEK', label: '未來 1 週' },
+                  { value: '2_WEEKS', label: '未來 2 週' }
+                ]}
+              />
+            </label>
+            <label className="student-series-toggle">
+              使用狀態
+              <span>
+                <strong>{active ? '使用中' : '已停用'}</strong>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  aria-label="固定課表狀態"
+                  checked={active}
+                  onChange={(event) => setActive(event.target.checked)}
+                />
+              </span>
+            </label>
+          </div>
+          {error ? <p className="notice error">{error}</p> : null}
         </div>
-        {error ? <p className="notice error">{error}</p> : null}
         <div className="scheduling-form-actions">
           {onDelete && (
             <button
@@ -1549,32 +1551,34 @@ function PurchaseEditor({
           })
         }}
       >
-        {conflict ? (
-          <p className="form-notice" role="alert">
-            這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
-            {formatMoney(conflict.amountMinor, conflict.currency)}
-            ；你的輸入仍保留，確認後可重新儲存。
-          </p>
-        ) : error instanceof Error ? (
-          <p className="form-notice" role="alert">
-            {error.message}
-          </p>
-        ) : null}
-        <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
-        <div className="field-control">
-          <span>購買時間</span>
-          <TimeSelect label="購買時間" value={time} onChange={setTime} />
+        <div className="purchase-edit-fields">
+          {conflict ? (
+            <p className="form-notice" role="alert">
+              這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
+              {formatMoney(conflict.amountMinor, conflict.currency)}
+              ；你的輸入仍保留，確認後可重新儲存。
+            </p>
+          ) : error instanceof Error ? (
+            <p className="form-notice" role="alert">
+              {error.message}
+            </p>
+          ) : null}
+          <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
+          <div className="field-control">
+            <span>購買時間</span>
+            <TimeSelect label="購買時間" value={time} onChange={setTime} />
+          </div>
+          <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
+          <PurchaseMoneyFields
+            count={purchase.lessonCount}
+            amount={purchase.amountMinor}
+            currency={purchase.currency}
+          />
+          <label>
+            教練備註
+            <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
+          </label>
         </div>
-        <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
-        <PurchaseMoneyFields
-          count={purchase.lessonCount}
-          amount={purchase.amountMinor}
-          currency={purchase.currency}
-        />
-        <label>
-          教練備註
-          <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
-        </label>
         <div className="purchase-editor-actions">
           <button
             className="secondary-button ui-action-cancel"

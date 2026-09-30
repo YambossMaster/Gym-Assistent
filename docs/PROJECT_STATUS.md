@@ -5,29 +5,59 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                      |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                         |
-| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                                                          |
-| Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**                                           |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                      |
-| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs                                       |
-| Worktree           | Training Record mobile Note editing and shared legacy-record saves are under local review; physical PWA keyboard review stays open |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                                        |
-| Production         | Not configured; no real customer data                                                                                              |
-| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted                                   |
+| Field              | Current value                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
+| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                        |
+| Package state      | **Accumulated mobile delivery under CI; Stage 1 and installed-PWA review remain open**           |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
+| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs     |
+| Worktree           | Accumulated mobile corrections retained for Main delivery; installed-PWA review remains open     |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date      |
+| Production         | Not configured; no real customer data                                                            |
+| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
 
 ## Next handoff
 
-The Product Owner approved retaining the current mobile UI changes in a local commit. Continue the
-route-by-route review below; this checkpoint does not claim physical-PWA acceptance or authorize a
-Main push.
+The Product Owner decided to retain the accumulated mobile UI changes and authorized a Main delivery
+after CI checks. Continue the route-by-route installed-PWA review below after this delivery; a green
+CI checkpoint does not establish physical-device acceptance or complete M7.5.
+
+Review the mobile Today strip and header on an installed PWA. Today courses, active students, and
+monthly finances now occupy one three-column strip; the notification bell sits directly beside
+Settings in the dark app bar. An unread count lights the bell lime and appears in a badge; the
+existing read, dismiss, and target-navigation actions remain in the same notification panel.
+The mobile active-student value is 16px and shares the finance label's content-row height.
+Both link chevrons align vertically with those content values.
+Authenticated Chrome 390×844 preview showed three equal-height columns with aligned title rows and
+value bottoms, a 106px header, two 44px header buttons with an 8px gap, an opening empty notification
+panel, 21–22px greeting margins, and no document-level
+horizontal overflow. Web checks (58 files, 248 tests) and production build passed. Unread visual
+state and physical installed-PWA touch/safe-area behavior still need Product Owner review.
+
+Review mobile setting/edit dialog scrollbars on an installed PWA. Calendar scheduling, Course Session
+editing, fixed Series, purchase editing, Venue creation/detail/course records, Finance ledger editing, Settings
+password/device-cache, and Capability Link dialogs now assign scrolling to fields above their fixed
+action rows. The reported Calendar case was checked in a 390×844 authenticated browser preview:
+the field scroller ended where the action row began, while the outer content did not scroll. Venue
+creation/detail/course records and Finance ledger layouts were also inspected in that preview. Check touch scroll,
+opened choice panels, and action clearance on a physical installed PWA before visual acceptance.
+
+Review the new mobile Calendar experiment on an installed PWA: 課表 keeps its existing list, while
+日／週 share one vertically scrolling timeline with no horizontal scrolling, and 月 fits all week
+rows into the available height. The Calendar controls use two compact rows, with the desktop legend
+hidden on mobile; a week date or month cell opens 日. Authenticated Chrome preview at 390×844 and
+direct 320 CSS-pixel checks found no horizontal overflow in day/week/month, and month had no
+internal overflow. The follow-up gives today's 課表 date a lime circle, sizes the mobile day/week
+timeline to show about ten hours at 390×844, and stacks time/name/location in a one-hour 日 event.
+Existing scheduling actions remain in place. Confirm touch panning, dense-event readability, and
+safe-area/bottom-nav clearance on a physical installed PWA before visual acceptance.
 
 Try the new Training Record set-input flow on desktop and an installed phone PWA. Focusing a populated
 measurement or RPE selects its value; Enter advances through that set's measurements and RPE, then
 to the next set in the same exercise. Enter on the last RPE blurs the field. Desktop Chrome and a
 390×844 desktop-browser preview confirmed focus progression without changing stored values; actual
-iOS/Android return-key behavior remains for Product Owner device review. Keep this experiment local.
+iOS/Android return-key behavior remains for Product Owner device review.
 
 Review the revised Training Record mobile tabs on an installed PWA. Both tabs keep the same
 student/actions/save row and tab row. The selected tab now has a light rounded-top surface, dark
@@ -59,7 +89,7 @@ sets alongside a newer recording snapshot, so a note-only save is no longer reje
 conflict; an authenticated Chrome preview accepted a previously stuck draft and displayed 已儲存.
 Desktop keeps its original two-column textarea,
 where formatting markers remain visible when editing a note created on mobile. Continue the wider
-keyboard audit during mobile route review. Keep this local; do not push Main yet.
+keyboard audit during mobile route review.
 
 Review the Student and Exercise Library pinned mobile switch/search bars and the compact Exercise
 cards on a physical installed PWA. Exercise filters now expand within the pinned controls and reserve
@@ -68,27 +98,27 @@ available anywhere in the list, then collapse on continued downward scrolling or
 Search hides Filter, shifts the close button to the far right, and gives the input the freed space.
 The Filter shelf now fades and moves upward over 220ms when closing, with reduced-motion support.
 Confirm touch scrolling, expanded search/filter controls, 320px width, and the transparent
-edit/delete icon targets. This is a local Product Owner review change; do not push Main yet.
+edit/delete icon targets.
 
 Review the four mobile subpage back actions and the compact Training Record toolbar on an
 installed PWA. Student detail, Training Record, Monthly Finances, and Venue management now use a
 safe-area-aware Back action in the dark app bar instead of the Logo and in-page Back. Training
 Record keeps the student avatar/name, session actions, and visible save status in one mobile row;
 long offline or sync messages can wrap below the actions. Confirm touch targets and narrow-phone
-layout before accepting this local experiment. Do not push Main yet.
+layout before visual acceptance.
 
 Review the mobile Venue management page at 390×844 and on an installed PWA. The page keeps the
 Back action in its dark header, places the Venue Add action beside Settings, removes the large in-page
 title, and puts its status switch and expanding name search on one row. The card heading now reads
 「場地管理與支出」 on mobile; desktop retains its original layout and wording. Confirm the mobile
-spacing and touch behavior before accepting this local experiment. Do not push Main yet.
+spacing and touch behavior before visual acceptance.
 
 Review the mobile Settings header and pinned category switcher at 390×844 and on an installed PWA.
 Settings now uses the same safe-area-aware dark app bar as Student, Calendar, and Exercise Library;
 its in-page title is hidden on mobile. Tapping the Settings icon again returns to the route from
 which Settings was opened, including a deep route; direct Settings entry falls back to Today. The
 category switcher stays directly below the app bar while Settings content scrolls. Desktop sidebar,
-page title, and category layout remain unchanged. Keep this experiment local until visual acceptance.
+page title, and category layout remain unchanged. Installed-PWA visual acceptance remains open.
 
 Review the mobile Exercise create/edit dialog on a physical installed PWA. Its Add action now uses
 the same Plus icon as the nearby tag action; the fields own the scroll region, which ends above the
@@ -110,7 +140,7 @@ toolbars: opening Search expands an input while the segments narrow and hide cou
 clears the text filter. Exercise Library's three segments use the same sliding white selection as
 Student. The Calendar's in-page title is hidden on mobile and its wheel-driven header collapse is
 disabled there because the app bar now owns the title. Desktop remains unchanged. Keep these
-experiments local until the Product Owner chooses the direction.
+retained design on an installed PWA before visual acceptance.
 
 Review the first Today PWA visual experiment at 390×844 and on a physical installed PWA: the mobile
 schedule card has a quiet shadow, the bottom navigation uses one solid surface and lime icon/text
@@ -502,6 +532,119 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-30 — LOG-344 — Accumulated mobile Main delivery preflight
+
+- **Scope:** Product Owner chose to retain the current mobile changes and authorized a CI-gated
+  Main delivery, including five local Training Record commits and the uncommitted Today, Calendar,
+  Settings, Venue, Finance, and dialog-scroll refinements.
+- **Outcome:** Consolidated the local review work for delivery without declaring installed-PWA
+  visual or keyboard acceptance. The route-by-route M7.5 Stage 1 review remains open.
+- **Verification:** Root `npm run check` passed formatting, API typecheck and 26 files/125 tests,
+  and Web typecheck and 58 files/248 tests using the approved Windows elevated path after a sandbox
+  `spawn EPERM`. Root `npm run build` passed with the existing large-chunk advisory. Linked
+  development `npm run db:push:dry` is up to date with no migrations; `app_private` lint has no
+  errors after one transient authentication failure. Advisors show only the existing leaked-password
+  and Capability Link permissive-policy warnings. Local `git diff --check` passed. Remote exact-SHA
+  Actions evidence is pending this push.
+- **Known issue:** Installed iOS/Android PWA touch, soft-keyboard, and safe-area review remains open;
+  this delivery checkpoint does not complete M7.5.
+- **Next:** Commit and push this accumulated checkpoint, confirm remote Main and both exact-SHA
+  Actions jobs, then continue the Product Owner's installed-PWA route review.
+
+### 2026-09-30 — LOG-343 — Align mobile Today link arrows with their values
+
+- **Scope:** Product Owner found the active-student and finance chevrons visually above their
+  content text.
+- **Outcome:** Both mobile chevrons now center on the shared value row; link targets and desktop
+  styling remain unchanged.
+- **Verification:** Authenticated Chrome mobile preview measured both arrow centers at 300.8 CSS px
+  and both value centers at 301.1 CSS px. The page remains free of horizontal overflow. Web
+  formatting, production build, and `git diff --check` passed. Physical installed-PWA review
+  remains open; no remote CI is claimed.
+- **Next:** Product Owner continues mobile Today and route review on an installed PWA.
+
+### 2026-09-30 — LOG-342 — Tune mobile Today active-student value size
+
+- **Scope:** Product Owner found the initially aligned active-student count too small and requested
+  a 2px increase.
+- **Outcome:** The mobile count is 16px, with the same 17.5px content-row height and bottom edge as
+  the adjacent finance label. Desktop styling and Today behavior remain unchanged.
+- **Verification:** Authenticated Chrome mobile preview measured both content rows at 17.5px with
+  the same bottom coordinate and no horizontal overflow. Web formatting, production build, and
+  `git diff --check` passed. Physical installed-PWA review remains open; no remote CI is claimed.
+- **Next:** Product Owner continues mobile Today and route review on an installed PWA.
+
+### 2026-09-30 — LOG-341 — Compact mobile Today signals and move notifications into the app bar
+
+- **Scope:** Product Owner requested one horizontal row for the three Today signals and a bell beside
+  Settings, then identified a stretched header, misaligned icon, and a remaining two-column layout
+  in the first preview.
+- **Outcome:** The Today signal strip now has three equal mobile columns. The existing notification
+  center moves into the mobile header, with a neutral bell when clear and a lime bell/count badge
+  when unread. Its panel retains read, dismiss, and target-navigation behavior. Header button sizing
+  and alignment follow the Student-page app bar. A follow-up aligns all three title rows and value
+  bottoms, normalizes the two numeric sizes, and trims greeting whitespace; desktop remains a
+  four-cell strip.
+- **Verification:** Web format/typecheck, 58 Web test files (248 tests), production build, and
+  `git diff --check` passed. Authenticated Chrome 390×844 preview confirmed a single three-column
+  row with aligned titles/value bottoms, 21–22px greeting margins, 44px header buttons with an 8px
+  gap, an opening empty notification panel, and
+  `documentElement.scrollWidth === clientWidth` (371 CSS px inside the preview iframe).
+  Physical installed-PWA and unread-state visual acceptance remain open; no remote CI is claimed.
+- **Next:** Product Owner reviews mobile Today on an installed PWA, then continues the M7.5 mobile
+  route and dialog review without pushing this local correction to Main.
+
+### 2026-09-30 — LOG-340 — End mobile dialog scrollbars above fixed actions
+
+- **Scope:** Product Owner's Calendar screenshots showed a scrollbar extending beside the fixed
+  取消／儲存 row, making the remaining form depth hard to judge. Audit related setting and edit dialogs.
+- **Outcome:** Calendar and Course Session forms now scroll their field body; fixed Series, purchase
+  editing, Venue creation/detail/course records, Finance ledger editing, Settings password/device-cache, and
+  Capability Link dialogs use field-owned scroll regions above static action rows. The existing
+  Exercise definition editor already had this structure. Desktop rules and existing form operations
+  remain in place. Preserved concurrent mobile Calendar and Today changes in the worktree.
+- **Verification:** Web typecheck, focused SchedulingDialog/CapabilityLinkManager/VenueManager tests (23), Web
+  production build, changed-file formatting, and `git diff --check` passed. Authenticated Chrome
+  390×844 preview measured Calendar field scroll ending at the footer top, with outer content
+  non-scrollable; Venue creation/detail/course records and Finance ledger dialog geometry was checked as well.
+  Physical installed-PWA touch behavior and remote CI remain unverified.
+- **Next:** Product Owner checks the listed dialog variants on an installed PWA, then continues the
+  route-by-route mobile review. Keep these local changes off Main until authorized.
+
+### 2026-09-30 — LOG-339 — Clarify Calendar today and one-hour events
+
+- **Scope:** Product Owner requested a clearer today marker in 課表, about ten visible hours in
+  日／週, and a readable vertical event layout in 日.
+- **Outcome:** Today's 課表 date now uses the same lime circle as the grid views. The mobile
+  timeline measures its available viewport, expands hours to show about ten at 390×844, and keeps
+  a minimum 52px per hour on shorter phones. A one-hour 日 event stacks time, student, and location;
+  the desktop timeline and stored Calendar preferences remain unchanged.
+- **Verification:** Authenticated Chrome 390×844 preview measured 52px/hour and about 9.7 visible
+  hours, with a 52px day event in column layout and no horizontal overflow. The today circle was
+  visible in 課表. Two focused Calendar test files / 15 tests and Web production build passed.
+  Physical installed-PWA touch behavior remains for Product Owner review. No Main push or remote
+  CI claim.
+- **Next:** Review the revised three views on an installed PWA, particularly touch panning and
+  short-event readability. Keep this Stage 1 correction local.
+
+### 2026-09-30 — LOG-338 — Give mobile Calendar full-width day, week, and month layouts
+
+- **Scope:** Product Owner requested a Google Calendar-inspired mobile Calendar, retaining 課表 while
+  replacing the desktop-sized 日／週／月 grids and excess scrollbars with a compact PWA composition.
+- **Outcome:** Mobile controls use a two-row date/pager and four-view switch; the status legend and
+  frame borders no longer consume Calendar space. 日 fills the width, while 週 shows all seven days;
+  both use one vertical timeline scroll. Tapping a week date opens 日. 月 uses equal-height week rows and
+  compact lesson names, with today's date marked. Month weekday order follows the saved Workspace
+  preference. Desktop layout and existing schedule operations remain intact.
+- **Verification:** Web typecheck, 2 focused Calendar test files / 15 tests, production build,
+  changed-file Prettier, and `git diff --check` passed. Authenticated Chrome 390×844 preview showed
+  all seven week columns. At 320 CSS pixels, the timeline and month `scrollWidth` equaled
+  `clientWidth`; the month also had matching `scrollHeight`/`clientHeight`, and the Calendar ended
+  above bottom navigation. The initial sandbox Vite `spawn EPERM` was resolved by an elevated test
+  and build rerun. No installed-phone/PWA, remote CI, or Main delivery claim.
+- **Next:** Product Owner reviews 日／週／月 on an installed PWA, especially touch gestures and
+  dense-event legibility. Keep this experiment local until accepted.
 
 ### 2026-09-30 — LOG-337 — Give Training tabs and class context one light surface
 
