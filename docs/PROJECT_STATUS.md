@@ -5,17 +5,17 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
-| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                        |
-| Package state      | **Accumulated mobile delivery under CI; Stage 1 and installed-PWA review remain open**           |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
-| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs     |
-| Worktree           | Accumulated mobile corrections retained for Main delivery; installed-PWA review remains open     |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date      |
-| Production         | Not configured; no real customer data                                                            |
-| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
+| Field              | Current value                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
+| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                           |
+| Package state      | **Accumulated mobile checkpoint passed exact-SHA CI; Stage 1 and installed-PWA review remain open** |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
+| Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs         |
+| Worktree           | Accumulated mobile corrections are on Main; installed-PWA review remains open                       |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date         |
+| Production         | Not configured; no real customer data                                                               |
+| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted    |
 
 ## Next handoff
 
@@ -545,12 +545,13 @@ local pass or successful push is not a remote CI completion claim.
   `spawn EPERM`. Root `npm run build` passed with the existing large-chunk advisory. Linked
   development `npm run db:push:dry` is up to date with no migrations; `app_private` lint has no
   errors after one transient authentication failure. Advisors show only the existing leaked-password
-  and Capability Link permissive-policy warnings. Local `git diff --check` passed. Remote exact-SHA
-  Actions evidence is pending this push.
+  and Capability Link permissive-policy warnings. Local `git diff --check` passed. Code checkpoint
+  `864d59411a75efd902f9bfa6c7d35cf8af01be71` reached `origin/main`; GitHub Actions run
+  `36699684675` completed successfully for that exact SHA, with both `verify` and
+  `migration-dry-run` green.
 - **Known issue:** Installed iOS/Android PWA touch, soft-keyboard, and safe-area review remains open;
   this delivery checkpoint does not complete M7.5.
-- **Next:** Commit and push this accumulated checkpoint, confirm remote Main and both exact-SHA
-  Actions jobs, then continue the Product Owner's installed-PWA route review.
+- **Next:** Continue the Product Owner's installed-PWA route review. Stage 1 and M7.5 remain open.
 
 ### 2026-09-30 — LOG-343 — Align mobile Today link arrows with their values
 
