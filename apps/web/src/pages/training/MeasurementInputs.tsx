@@ -43,6 +43,7 @@ export function MeasurementInputs({
                 <input
                   aria-label={metricLabels[d]}
                   inputMode={d === 'reps' || d === 'rounds' ? 'numeric' : 'decimal'}
+                  enterKeyHint="next"
                   type="number"
                   onKeyDown={numericInputKeyDown}
                   min="0"

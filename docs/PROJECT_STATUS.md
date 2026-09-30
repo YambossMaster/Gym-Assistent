@@ -1,27 +1,50 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-29. This file records live engineering state; scope and completion rules
+> Last verified: 2026-09-30. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                       |
-| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                        |
-| Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**         |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                    |
-| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs     |
-| Worktree           | Product Owner chose to retain the local mobile UI checkpoint; physical PWA review stays open     |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date      |
-| Production         | Not configured; no real customer data                                                            |
-| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted |
+| Field              | Current value                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                        |
+| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                                                                         |
+| Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**                                                          |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                     |
+| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs                                                      |
+| Worktree           | Training Record mobile tabs, class summary, Note editor, and set-input navigation are under local review; physical PWA keyboard review stays open |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                                                       |
+| Production         | Not configured; no real customer data                                                                                                             |
+| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted                                                  |
 
 ## Next handoff
 
 The Product Owner approved retaining the current mobile UI changes in a local commit. Continue the
 route-by-route review below; this checkpoint does not claim physical-PWA acceptance or authorize a
 Main push.
+
+Try the new Training Record set-input flow on desktop and an installed phone PWA. Focusing a populated
+measurement or RPE selects its value; Enter advances through that set's measurements and RPE, then
+to the next set in the same exercise. Enter on the last RPE blurs the field. Desktop Chrome and a
+390×844 desktop-browser preview confirmed focus progression without changing stored values; actual
+iOS/Android return-key behavior remains for Product Owner device review. Keep this experiment local.
+
+Review the revised Training Record mobile tabs on an installed PWA. Both tabs keep the same
+student/actions/save row and tab row. The selected tab is a black rounded-top tab with white text.
+The dark class summary appears on both tabs. A second tap on the selected tab toggles that summary,
+switching tabs preserves its state, an upward swipe collapses it, and focusing the Note editor also
+collapses it. The Training cards start without a duplicate title and keep clearance above bottom
+navigation. Tapping empty Note canvas focuses the final paragraph at its end. The keyboard dock now
+includes heading/body, paragraph bold, stronger bullet, numbering, indent/outdent, and class facts.
+Import choices start empty, clicking a fact directly inserts it, and checkbox selection persists
+locally for later batch insertion. Note content still uses the 5,000-character private-note autosave
+contract as readable text markers; optional public Training Result notes render paragraph bold and
+the downloadable image uses clean text. Authenticated Chrome 390×844 preview confirmed tab state,
+shared summary, blank-canvas focus, summary collapse, and the compact tool dock. Web checks and
+production build passed. Real iOS/Android keyboard movement, caret visibility, multiline editing,
+formatting, and autosave need installed-PWA review. Desktop keeps its original two-column textarea,
+where formatting markers remain visible when editing a note created on mobile. Continue the wider
+keyboard audit during mobile route review. Keep this local; do not push Main yet.
 
 Review the Student and Exercise Library pinned mobile switch/search bars and the compact Exercise
 cards on a physical installed PWA. Exercise filters now expand within the pinned controls and reserve
@@ -464,6 +487,147 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-30 — LOG-334 — Refine Training tabs and make the Note canvas keyboard ready
+
+- **Scope:** Product Owner requested black bookmark-shaped selected tabs, a shared collapsible class
+  summary, blank-canvas writing focus, a keyboard-following tool dock, stronger bullets, outdent,
+  persistent selective class import, and Bold.
+- **Outcome:** Both mobile tabs render one dark class summary. Repeating the selected tab toggles it;
+  switching tabs does not. Upward touch movement and Note focus collapse it. Empty Note canvas taps
+  focus the final paragraph at its end. The mobile dock has a paragraph Bold toggle, outdent, a
+  stronger bullet mark, and vertically arranged controls. Import checkboxes start empty, persist as
+  local UI preferences, and are reserved for batch insertion; clicking a fact inserts it directly.
+  Public Training Result notes render bold paragraphs. Desktop layout is unchanged.
+- **Verification:** Elevated Web `npm run check` passed format, typecheck, 57 test files/241 tests;
+  Web production build passed. Authenticated Chrome 390×844 preview confirmed the tab appearance,
+  shared summary, repeat-tap collapse/expand, preserved collapse across a tab switch, blank-canvas
+  focus, automatic summary collapse, and the revised dock. No Note fixture content was typed.
+- **Known issue:** The desktop preview cannot verify a physical soft keyboard, its exact height,
+  installed-PWA caret behavior, or real-device autosave. Bold is paragraph-level and stores readable
+  `**` markers, which the desktop textarea displays literally.
+- **Next:** Review soft-keyboard docking and text entry on an installed PWA, then continue the
+  Product Owner's M7.5 mobile route review. Keep this local pending acceptance.
+
+### 2026-09-30 — LOG-333 — Align Training tabs and add a functional mobile Note toolbar
+
+- **Scope:** Product Owner required identical top rows across both tabs, a clearer selected-tab
+  signal, no duplicate Training title, no Note Done or app-bar save copy, and usable heading/body,
+  bullet, numbering, indentation, and selective class-info insertion tools.
+- **Outcome:** Mobile tabs share the same student, class actions, save status, and switcher rows.
+  Their active state has a pale-lime fill and stronger underline. The dark Training summary begins
+  with date/time. A paragraph-based mobile Note editor presents heading/body visually and stores
+  readable text markers in the existing private-note field; lists, Tab/indent, and import choices
+  update the same autosave draft. The optional public Training Result note renders the supported
+  markers when sharing was explicitly enabled; the downloadable result image uses clean text.
+  The bottom tool dock continues following VisualViewport and safe-area insets. Desktop retains
+  its original two-column layout and textarea.
+- **Verification:** Elevated full `npm run check` passed (26 API files/124 tests; 57 Web files/239
+  tests), including focused format and toolbar interactions. After the image-text conversion,
+  focused Note tests (2 files/5 tests), Web typecheck, and the final Web production build passed.
+  Authenticated Chrome 390×844 preview showed identical top rows, stronger tab selection, the
+  shortened Training summary, Note focus and labeled dock, plus style and import menus. These are
+  desktop-browser preview observations; no Note fixture data was changed during visual checks.
+- **Known issue:** Actual phone keyboard geometry, multiline caret navigation, and autosave during
+  device entry remain unverified. Desktop editing shows the readable formatting markers. No Main
+  push or remote CI claim.
+- **Next:** Review the mobile Note toolbar and keyboard flow on an installed PWA, then continue the
+  Training Record and broader M7.5 Stage 1 mobile review.
+
+### 2026-09-30 — LOG-332 — Advance Training set inputs with Enter within one exercise
+
+- **Scope:** Product Owner requested faster Training Record numeric entry on desktop and phone:
+  select a populated field on focus, then advance through each set's measurement fields and RPE
+  with Enter without crossing into another exercise.
+- **Outcome:** Training set inputs now use one exercise-scoped focus sequence for all eight recording
+  types. Enter after the last RPE leaves the input; mobile return-key hints show Next or Done. The
+  existing numeric constraints, result controls, draft, and autosave path remain in use.
+- **Verification:** Full `npm run check` passed (26 API files/124 tests; 55 Web files/235 tests),
+  including two focused Web test files (4 tests). Web production build and `git diff --check` passed.
+  Authenticated Chrome desktop and 390×844 desktop-browser preview confirmed weight → reps → RPE →
+  next-set weight. Desktop Chrome also confirmed focus clears after the last RPE without entering
+  the next exercise. No record values were changed in this browser check.
+- **Known issue:** Actual iOS/Android soft-keyboard Return behavior and input selection require an
+  installed-PWA check. No Main push or remote CI claim.
+- **Next:** Product Owner tries set entry with a real phone keyboard, then continues the Training
+  Record and wider M7.5 Stage 1 mobile review.
+
+### 2026-09-29 — LOG-331 — Give mobile Training a deliberate title and Note a real writing canvas
+
+- **Scope:** Product Owner rejected the data-dump Training heading, the repeated desktop context in
+  Note mode, the low usable writing area, redundant tools, bottom Done placement, and a completion
+  button flush with the bottom navigation.
+- **Outcome:** Mobile Training uses a dark class-summary title area with date, time, student, venue,
+  and state above the exercise cards. Mobile Note hides all repeated class/exercise metadata and
+  character-count furniture, starts writing immediately below the tabs, keeps save feedback and Done
+  in the app bar, and hides primary navigation. Only bullet insertion remains, appearing above the
+  soft keyboard during focus through the existing VisualViewport inset. The Training completion
+  footer has 12px clearance above primary navigation. Desktop presentation and the private Note
+  draft/autosave behavior remain in their original modules.
+- **Verification:** Elevated `npm run check` passed (26 API files/124 tests; 54 Web files/233 tests).
+  `npm run build --workspace @gym-assistant/web` passed. Authenticated Chrome 390×844 preview showed
+  the Training title and footer gap, Note canvas and top Done, hidden bottom navigation, and the
+  single bullet tool on focus. These are desktop-browser mobile-preview observations.
+- **Known issue:** Installed-PWA keyboard movement, visible caret, and autosave after Note edits are
+  unverified on iOS/Android; the broader input-surface keyboard audit remains open. No Main push or
+  remote CI claim.
+- **Next:** Review this Training Record flow with a real phone keyboard, then continue the Product
+  Owner's mobile route review and focused-control keyboard audit.
+
+### 2026-09-29 — LOG-330 — Replace mobile Training collapse with focused tabs
+
+- **Scope:** Product Owner rejected the compressed context row and boxed Note, supplied native Notes
+  and journal references, and identified soft-keyboard positioning as a missing interaction concern.
+- **Outcome:** Mobile Training now has separate Training Record and private Note tabs. Session facts
+  live with the training heading; the Note tab gets an unboxed writing surface and bottom insertion
+  dock. VisualViewport inset moves that dock above the keyboard, Note focus hides bottom navigation,
+  and numeric set focus hides bottom navigation/completion controls. The existing private Note limit,
+  draft, autosave, and desktop two-column layout are preserved. Earlier mobile context-disclosure and
+  compact metadata-row experiments are superseded locally.
+- **Verification:** Elevated `npm run check` passed (26 API files/124 tests and 54 Web files/233
+  tests); Web production build passed. Authenticated Chrome 390×844 preview showed both tabs, the
+  full Note page, Note focus with bottom navigation hidden, and set-input focus with bottom controls
+  hidden. A temporary 1440px viewport showed the preserved desktop columns and was reset.
+  `git diff --check` passed.
+- **Known issue:** Browser preview cannot verify actual iOS/Android soft-keyboard position or other
+  routes' keyboard behavior; physical-PWA review is open. No Main push or remote CI claim.
+- **Next:** Validate this route on an installed PWA, then continue the Product Owner's mobile route
+  review with a keyboard and focused-control audit.
+
+### 2026-09-29 — LOG-329 — Integrate mobile class facts and improve private Note entry
+
+- **Scope:** Product Owner showed that the prior collapse hid important class facts, the completion
+  button touched the bottom boundary, and the remaining Note area needed a better writing surface.
+- **Outcome:** The sticky mobile session toolbar now shows date/time, location, status, and exercise
+  names/count below student and class actions. The mobile disclosure contains only the private Note.
+  Its larger paper-like plain-text editor offers subheading, list, task, and timestamp insertions;
+  all edits use the existing 5000-character draft/autosave path. The fixed completion action has 12px
+  additional separation above bottom navigation. Desktop content and controls stay two-column.
+- **Verification:** Elevated `npm run check` passed (26 API files/124 tests and 54 Web files/233
+  tests); Web production build passed. Authenticated Chrome 390×844 preview showed the class facts,
+  collapsed and expanded Note, and the completion spacing. Expanded workspace `scrollWidth` and
+  `clientWidth` were both 371px; desktop context and editor remained separate columns, with the
+  mobile controls hidden. `git diff --check` passed.
+- **Known issue:** Physical PWA touch, soft-keyboard, quick-insert, and Note autosave acceptance remain
+  open; no remote CI or physical-device claim.
+- **Next:** Continue Product Owner mobile review on an installed PWA before Main delivery.
+
+### 2026-09-29 — LOG-328 — Make Training Record context collapsible on mobile
+
+- **Scope:** Product Owner reported that the stacked class context and Note consumed the mobile
+  Training Record first screen, and requested more space for live set entry.
+- **Outcome:** At mobile widths, the context starts as a compact disclosure above Training Log and
+  expands to the existing class details and private Note. Desktop keeps its two-column context and
+  editor. Existing numeric measurement/RPE input modes and sticky student/save toolbar remain.
+- **Verification:** Elevated `npm run check` passed (26 API files/124 tests and 54 Web files/233
+  tests); Web production build passed. Authenticated Chrome 390×844 preview showed Training Log on
+  the initial screen, the context disclosure opened and closed, and workspace `scrollWidth` equalled
+  `clientWidth` (371px) in both states. The desktop session view retained separate left and right
+  columns. `git diff --check` passed.
+- **Known issue:** Installed-PWA touch, on-device keyboard, and Note edit/autosave acceptance remain
+  open; no remote CI or physical-device claim.
+- **Next:** Continue Product Owner mobile route review and check the expanded context on an installed
+  PWA before Main delivery.
 
 ### 2026-09-29 — LOG-327 — Retain the mobile UI review checkpoint locally
 

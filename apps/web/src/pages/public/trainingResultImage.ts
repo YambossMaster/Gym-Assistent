@@ -1,5 +1,6 @@
 import type { PublicTrainingResult } from '../../api'
 import { formatMeasurements } from '../training/recording'
+import { plainNote } from '../training/note-format'
 
 const INK = '#151711'
 const PAPER = '#fbfaf5'
@@ -32,7 +33,7 @@ export async function createTrainingResultImage(
       ? []
       : (() => {
           context.font = `400 32px ${FONT}`
-          return wrapLines(context, result.trainingNote || '—', 810)
+          return wrapLines(context, result.trainingNote ? plainNote(result.trainingNote) : '—', 810)
         })()
 
   const cardTop = 190

@@ -1,4 +1,5 @@
 import { formatMeasurements } from '../training/recording'
+import { parseNote } from '../training/note-format'
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, Download, Dumbbell, RefreshCw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -156,7 +157,27 @@ function TrainingResultPage() {
         {result.trainingNote !== undefined ? (
           <section className="public-note">
             <span>教練筆記</span>
-            <p>{result.trainingNote || '—'}</p>
+            {result.trainingNote ? (
+              <div className="public-note-content">
+                {parseNote(result.trainingNote).map((block, index) => (
+                  <p
+                    className={`is-${block.kind}`}
+                    style={{ paddingLeft: `${Math.min(2, block.indent) * 18}px` }}
+                    key={index}
+                  >
+                    {block.kind === 'bullet' ? '• ' : null}
+                    {block.kind === 'number' ? (block.marker ?? `${index + 1}. `) : null}
+                    {block.bold ? (
+                      <strong>{block.text || '\u00a0'}</strong>
+                    ) : (
+                      block.text || '\u00a0'
+                    )}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p>—</p>
+            )}
           </section>
         ) : null}
       </article>

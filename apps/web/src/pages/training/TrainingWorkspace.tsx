@@ -1,4 +1,5 @@
 import { MeasurementInputs } from './MeasurementInputs'
+import { advanceTrainingSetInput, selectTrainingSetValue } from './set-input-navigation'
 import { numericInputKeyDown } from '../../shared/numeric-input'
 import {
   emptyMeasurements,
@@ -10,6 +11,7 @@ import {
 } from './recording'
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
+import { MobileNoteEditor } from './MobileNoteEditor'
 import {
   boundedDragScroll,
   clampDragTop,
@@ -49,6 +51,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode
@@ -265,6 +268,11 @@ function TrainingEditor({
   const [draft, setDraft] = useState(() => toDraft(initial)),
     [revision, setRevision] = useState(0),
     [saveState, setSaveState] = useState<SaveState>('idle'),
+    [mobileTab, setMobileTab] = useState<'training' | 'note'>('training'),
+    [classInfoExpanded, setClassInfoExpanded] = useState(true),
+    [noteFocused, setNoteFocused] = useState(false),
+    [setInputFocused, setSetInputFocused] = useState(false),
+    [noteKeyboardInset, setNoteKeyboardInset] = useState(0),
     [picker, setPicker] = useState(false),
     [offline, setOffline] = useState(!navigator.onLine),
     [storageError, setStorageError] = useState(false),
@@ -284,6 +292,26 @@ function TrainingEditor({
     conflictRef = useRef(false)
   const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id)
   const latest = useRef(draft)
+  const noteRef = useRef<HTMLTextAreaElement | null>(null)
+  const touchStartY = useRef<number | null>(null)
+  useEffect(() => {
+    if (!noteFocused) return
+    const viewport = window.visualViewport
+    const updateInset = () => {
+      const visibleBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight)
+      const inset = Math.max(0, Math.round(window.innerHeight - visibleBottom))
+      setNoteKeyboardInset(inset > 120 ? inset : 0)
+    }
+    updateInset()
+    viewport?.addEventListener('resize', updateInset)
+    viewport?.addEventListener('scroll', updateInset)
+    window.addEventListener('resize', updateInset)
+    return () => {
+      viewport?.removeEventListener('resize', updateInset)
+      viewport?.removeEventListener('scroll', updateInset)
+      window.removeEventListener('resize', updateInset)
+    }
+  }, [noteFocused])
   const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)
   const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragPointer = useRef<number | null>(null)
@@ -1039,8 +1067,43 @@ function TrainingEditor({
     setTrendId(null)
     navigate(`/sessions/${historySessionId}?exercise=${encodeURIComponent(trend.definitionId)}`)
   }
+  const selectMobileTab = (tab: 'training' | 'note', toggleSelected = true) => {
+    if (tab === mobileTab) {
+      if (toggleSelected) setClassInfoExpanded((expanded) => !expanded)
+      return
+    }
+    if (tab === 'training') {
+      const active = document.activeElement
+      if (active instanceof HTMLElement && active.closest('#session-note-panel')) active.blur()
+    }
+    setMobileTab(tab)
+  }
   return (
-    <section className="session-workspace">
+    <section
+      className={`session-workspace is-${mobileTab}-tab ${classInfoExpanded ? 'is-context-expanded' : 'is-context-collapsed'}${noteFocused ? ' is-note-focused' : ''}${setInputFocused ? ' is-set-input-focused' : ''}`}
+      style={{ '--session-keyboard-inset': `${noteKeyboardInset}px` } as CSSProperties}
+      onTouchStartCapture={(event) => {
+        touchStartY.current = event.touches[0]?.clientY ?? null
+      }}
+      onTouchEndCapture={(event) => {
+        if (
+          touchStartY.current !== null &&
+          touchStartY.current - (event.changedTouches[0]?.clientY ?? touchStartY.current) > 48
+        )
+          setClassInfoExpanded(false)
+        touchStartY.current = null
+      }}
+      onFocusCapture={(event) => {
+        if (event.target instanceof HTMLInputElement && event.target.type === 'number')
+          setSetInputFocused(true)
+      }}
+      onBlurCapture={(event) => {
+        if (event.target instanceof HTMLInputElement && event.target.type === 'number')
+          setSetInputFocused(
+            event.relatedTarget instanceof HTMLInputElement && event.relatedTarget.type === 'number'
+          )
+      }}
+    >
       <header className="session-topbar">
         <button className="session-back-button" onClick={onBack}>
           <ChevronLeft />
@@ -1070,22 +1133,60 @@ function TrainingEditor({
             {statusText}
           </span>
         </div>
+        <div
+          className="session-mobile-tabs"
+          role="tablist"
+          aria-label="課堂工作區"
+          onKeyDown={(event) => {
+            const next =
+              event.key === 'ArrowLeft' || event.key === 'Home'
+                ? 'training'
+                : event.key === 'ArrowRight' || event.key === 'End'
+                  ? 'note'
+                  : null
+            if (!next) return
+            event.preventDefault()
+            selectMobileTab(next, false)
+            event.currentTarget.querySelectorAll('button')[next === 'training' ? 0 : 1]?.focus()
+          }}
+        >
+          <button
+            type="button"
+            role="tab"
+            tabIndex={mobileTab === 'training' ? 0 : -1}
+            aria-selected={mobileTab === 'training'}
+            aria-controls="session-training-panel"
+            onClick={() => selectMobileTab('training')}
+          >
+            訓練紀錄
+          </button>
+          <button
+            type="button"
+            role="tab"
+            tabIndex={mobileTab === 'note' ? 0 : -1}
+            aria-selected={mobileTab === 'note'}
+            aria-controls="session-note-panel"
+            onClick={() => selectMobileTab('note')}
+          >
+            課堂筆記
+          </button>
+        </div>
       </header>
       {sessionNotice ? (
         <p className="session-feedback" role="status">
           {sessionNotice}
         </p>
       ) : null}
-      <div className="session-body">
-        <aside className="session-context">
-          <div className="session-context-summary">
+      {classInfoExpanded && (
+        <div className="training-mobile-hero" aria-label="課堂基本資訊">
+          <div className="training-mobile-hero-session">
             <CalendarClock aria-hidden="true" />
             <div>
               <span>{formatSessionDate(initial.session.startsAt, timeZone)}</span>
-              <h1>
+              <strong>
                 {formatSessionTime(initial.session.startsAt, initial.session.endsAt, timeZone)}
                 <small>{initial.session.studentName}</small>
-              </h1>
+              </strong>
               <p>
                 <MapPin aria-hidden="true" />
                 {initial.session.location}
@@ -1099,36 +1200,93 @@ function TrainingEditor({
               </p>
             </div>
           </div>
-          <div className="context-stat">
-            <span>訓練動作</span>
-            <p>
-              {draft.exercises.length
-                ? draft.exercises.map((exercise) => exercise.definitionName).join(', ')
-                : '尚未安排動作'}
-              <small>共 {draft.exercises.length} 項</small>
-            </p>
+        </div>
+      )}
+      <div className="session-body">
+        <aside className="session-context" id="session-note-panel" role="tabpanel">
+          <div className="session-context-details">
+            <div className="session-context-summary">
+              <CalendarClock aria-hidden="true" />
+              <div>
+                <span>{formatSessionDate(initial.session.startsAt, timeZone)}</span>
+                <h1>
+                  {formatSessionTime(initial.session.startsAt, initial.session.endsAt, timeZone)}
+                  <small>{initial.session.studentName}</small>
+                </h1>
+                <p>
+                  <MapPin aria-hidden="true" />
+                  {initial.session.location}
+                  <span aria-hidden="true">·</span>
+                  <span className={`state-indicator ${initial.session.status}`} />
+                  {initial.session.status === 'completed'
+                    ? '已完成'
+                    : initial.session.status === 'cancelled'
+                      ? '已取消'
+                      : '進行中'}
+                </p>
+              </div>
+            </div>
+            <div className="context-stat">
+              <span>訓練動作</span>
+              <p>
+                {draft.exercises.length
+                  ? draft.exercises.map((exercise) => exercise.definitionName).join(', ')
+                  : '尚未安排動作'}
+                <small>共 {draft.exercises.length} 項</small>
+              </p>
+            </div>
+            <div className="context-divider" />
+            <label className="session-note-label" htmlFor="session-private-note">
+              NOTE
+            </label>
+            <MobileNoteEditor
+              value={draft.privateNote}
+              onChange={(privateNote) =>
+                change({ ...draft, privateNote, operationId: crypto.randomUUID() })
+              }
+              onFocusChange={(focused) => {
+                setNoteFocused(focused)
+                if (focused) setClassInfoExpanded(false)
+              }}
+              onLimit={() => setNotice('筆記已達 5000 字，請先刪減內容。')}
+              importItems={[
+                {
+                  label: '日期與時間',
+                  text: `日期與時間：${formatSessionDate(initial.session.startsAt, timeZone)} ${formatSessionTime(initial.session.startsAt, initial.session.endsAt, timeZone)}`
+                },
+                { label: '學生', text: `學生：${initial.session.studentName}` },
+                { label: '地點', text: `地點：${initial.session.location || '未設定'}` },
+                {
+                  label: '課堂狀態',
+                  text: `課堂狀態：${initial.session.status === 'completed' ? '已完成' : initial.session.status === 'cancelled' ? '已取消' : '進行中'}`
+                },
+                {
+                  label: '訓練動作',
+                  text: `訓練動作：${draft.exercises.length ? draft.exercises.map((exercise) => exercise.definitionName).join('、') : '尚未安排動作'}`
+                }
+              ]}
+            />
+            <textarea
+              ref={noteRef}
+              id="session-private-note"
+              className="note-area"
+              maxLength={5000}
+              onFocus={() => setNoteFocused(true)}
+              onBlur={() => setNoteFocused(false)}
+              value={draft.privateNote}
+              onChange={(event) =>
+                change({
+                  ...draft,
+                  privateNote: event.target.value,
+                  operationId: crypto.randomUUID()
+                })
+              }
+              placeholder="記錄今天的觀察、訓練反應或下次安排…"
+            />
+            <small className="session-note-count">{draft.privateNote.length} / 5000</small>
           </div>
-          <div className="context-divider" />
-          <label className="session-note-label" htmlFor="session-private-note">
-            NOTE
-          </label>
-          <textarea
-            id="session-private-note"
-            className="note-area"
-            maxLength={5000}
-            value={draft.privateNote}
-            onChange={(event) =>
-              change({
-                ...draft,
-                privateNote: event.target.value,
-                operationId: crypto.randomUUID()
-              })
-            }
-            placeholder="輸入本堂 Note…"
-          />
-          <small className="session-note-count">{draft.privateNote.length} / 5000</small>
         </aside>
-        <main className="training-editor">
+        <main className="training-editor" id="session-training-panel" role="tabpanel">
           <header className="training-heading">
             <div>
               <span>TRAINING LOG</span>
@@ -1534,7 +1692,16 @@ function ExerciseCard({
           <XCircle />
         </button>
       </header>
-      <div className="training-sets-scroll">
+      <div
+        className="training-sets-scroll"
+        onFocusCapture={(event) => selectTrainingSetValue(event.target)}
+        onKeyDownCapture={(event) => {
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+          if (!(event.target instanceof HTMLInputElement)) return
+          event.preventDefault()
+          advanceTrainingSetInput(event.target)
+        }}
+      >
         <div className="training-set-head" aria-hidden="true">
           <span>組</span>
           <span
@@ -1561,6 +1728,7 @@ function ExerciseCard({
           <SetCard
             key={set.id}
             index={index}
+            isLastSet={index === exercise.sets.length - 1}
             set={set}
             recording={recording}
             values={measurementValues(set, recording, preference)}
@@ -1592,6 +1760,7 @@ function SetCard({
   recording,
   values,
   index,
+  isLastSet,
   onChange,
   onRemove
 }: {
@@ -1599,6 +1768,7 @@ function SetCard({
   recording: RecordingConfig
   values: Measurements
   index: number
+  isLastSet: boolean
   onChange: (set: TrainingSet) => void
   onRemove: () => void
 }) {
@@ -1614,6 +1784,7 @@ function SetCard({
       <label aria-label="RPE（自覺用力程度，1–10）">
         <input
           inputMode="decimal"
+          enterKeyHint={isLastSet ? 'done' : 'next'}
           type="number"
           onKeyDown={numericInputKeyDown}
           min="1"
