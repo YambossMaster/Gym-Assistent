@@ -201,7 +201,9 @@ export function MobileNoteEditor({
     const current = blocks[index]!
     const offset = caretOffset(nodes[index]!)
     if (!current.text && (current.kind === 'bullet' || current.kind === 'number')) {
-      blocks[index] = { ...current, kind: 'body', marker: undefined }
+      blocks[index] = current.indent
+        ? { ...current, indent: current.indent - 1 }
+        : { ...current, kind: 'body', marker: undefined }
       commit(blocks, index, 0)
       return
     }
@@ -217,8 +219,51 @@ export function MobileNoteEditor({
   const handleInput = () => {
     const editor = editorRef.current
     if (!editor) return
-    saveBlocks(readBlocks(editor))
+    const blocks = readBlocks(editor)
+    const node = blockAt(editor, window.getSelection()?.anchorNode ?? null)
+    const index = node ? noteNodes(editor).indexOf(node) : -1
+    const current = blocks[index]
+    if (current?.kind === 'body' && node && caretOffset(node) === current.text.length) {
+      const shortcut = current.text.match(/^(?:([-*+]) |(\d+)\. |(#) )$/)
+      if (shortcut) {
+        blocks[index] = {
+          ...current,
+          kind: shortcut[1] ? 'bullet' : shortcut[2] ? 'number' : 'heading',
+          marker: shortcut[2] ? `${shortcut[2]}. ` : undefined,
+          text: ''
+        }
+        commit(blocks, index, 0)
+        return
+      }
+    }
+    saveBlocks(blocks)
     updateActive()
+  }
+
+  const backspaceAtStart = () => {
+    const editor = editorRef.current
+    const selection = window.getSelection()
+    if (!editor || !selection?.isCollapsed) return false
+    const node = blockAt(editor, selection.anchorNode)
+    if (!node || caretOffset(node) !== 0) return false
+    const nodes = noteNodes(editor)
+    const index = nodes.indexOf(node)
+    const blocks = readBlocks(editor)
+    const current = blocks[index]!
+    if (current.indent > 0) {
+      blocks[index] = { ...current, indent: current.indent - 1 }
+      commit(blocks, index, 0)
+    } else if (current.kind !== 'body') {
+      blocks[index] = { ...current, kind: 'body', marker: undefined }
+      commit(blocks, index, 0)
+    } else if (index > 0) {
+      const previous = blocks[index - 1]!
+      const offset = previous.text.length
+      blocks[index - 1] = { ...previous, text: previous.text + current.text }
+      blocks.splice(index, 1)
+      commit(blocks, index - 1, offset)
+    } else return false
+    return true
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -228,6 +273,10 @@ export function MobileNoteEditor({
     const node = blockAt(editor, selection?.anchorNode ?? null)
     const index = node ? noteNodes(editor).indexOf(node) : activeIndex
     const blocks = readBlocks(editor)
+    if (event.key === 'Backspace' && backspaceAtStart()) {
+      event.preventDefault()
+      return
+    }
     if (event.key === 'Tab') {
       event.preventDefault()
       const current = blocks[index]!
@@ -245,20 +294,7 @@ export function MobileNoteEditor({
     }
     if (!selection?.isCollapsed || !node) return
     const offset = caretOffset(node)
-    if (event.key === 'Backspace' && offset === 0) {
-      if (index === 0 && blocks[0]?.kind === 'body' && !blocks[0]?.indent) return
-      event.preventDefault()
-      if (index === 0) {
-        blocks[0] = { ...blocks[0]!, kind: 'body', indent: 0, marker: undefined }
-        commit(blocks, 0, 0)
-      } else {
-        const previous = blocks[index - 1]!
-        const caret = previous.text.length
-        blocks[index - 1] = { ...previous, text: previous.text + blocks[index]!.text }
-        blocks.splice(index, 1)
-        commit(blocks, index - 1, caret)
-      }
-    } else if (
+    if (
       event.key === 'Delete' &&
       offset === blocks[index]!.text.length &&
       index < blocks.length - 1
@@ -345,6 +381,14 @@ export function MobileNoteEditor({
           onInput={handleInput}
           onBeforeInput={(event: FormEvent<HTMLDivElement>) => {
             const input = event.nativeEvent as InputEvent
+            if (
+              !input.isComposing &&
+              input.inputType === 'deleteContentBackward' &&
+              backspaceAtStart()
+            ) {
+              event.preventDefault()
+              return
+            }
             if (
               !input.isComposing &&
               (input.inputType === 'insertParagraph' || input.inputType === 'insertLineBreak')

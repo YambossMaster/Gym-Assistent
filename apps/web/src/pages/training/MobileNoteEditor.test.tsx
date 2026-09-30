@@ -118,4 +118,177 @@ describe('mobile note editor', () => {
     await act(async () => root.unmount())
     host.remove()
   })
+
+  it('continues lists, cancels their marker with Backspace, and indents list items', async () => {
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    HTMLElement.prototype.scrollIntoView = vi.fn()
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    let saved = ''
+    function Example() {
+      const [value, setValue] = useState('- 第一項\n1. 編號項')
+      return (
+        <MobileNoteEditor
+          value={value}
+          onChange={(next) => {
+            saved = next
+            setValue(next)
+          }}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+        />
+      )
+    }
+    const editor = () => host.querySelector<HTMLElement>('.mobile-note-content')!
+    const blocks = () => host.querySelectorAll<HTMLElement>('.mobile-note-block')
+    const focusBlock = (index: number, offset: number) => {
+      const range = document.createRange()
+      const block = blocks()[index]!
+      if (block.firstChild) range.setStart(block.firstChild, offset)
+      else range.selectNodeContents(block)
+      range.collapse(true)
+      const selection = window.getSelection()!
+      selection.removeAllRanges()
+      selection.addRange(range)
+      editor().focus()
+    }
+    const key = async (name: string, shiftKey = false) => {
+      await act(async () =>
+        editor().dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: name,
+            shiftKey,
+            bubbles: true,
+            cancelable: true
+          })
+        )
+      )
+    }
+
+    await act(async () => root.render(<Example />))
+    focusBlock(0, 3)
+    await key('Enter')
+    expect(saved).toBe('- 第一項\n- \n1. 編號項')
+    expect(blocks()[1]!.dataset.kind).toBe('bullet')
+    await key('Backspace')
+    expect(saved).toBe('- 第一項\n\n1. 編號項')
+    expect(blocks()[1]!.dataset.kind).toBe('body')
+
+    focusBlock(2, 0)
+    await key('Tab')
+    expect(blocks()[2]!.dataset.indent).toBe('1')
+    expect(saved).toContain('\t1. 編號項')
+    await key('Tab', true)
+    expect(blocks()[2]!.dataset.indent).toBe('0')
+    focusBlock(2, 0)
+    await key('Backspace')
+    expect(saved).toBe('- 第一項\n\n編號項')
+    expect(blocks()[2]!.dataset.kind).toBe('body')
+    await key('Backspace')
+    expect(saved).toBe('- 第一項\n編號項')
+
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
+  it('turns typed Markdown prefixes into visible lists and unwinds an empty nested item', async () => {
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    HTMLElement.prototype.scrollIntoView = vi.fn()
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    let saved = ''
+    function Example() {
+      const [value, setValue] = useState('')
+      return (
+        <MobileNoteEditor
+          value={value}
+          onChange={(next) => {
+            saved = next
+            setValue(next)
+          }}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+        />
+      )
+    }
+    const block = () => host.querySelector<HTMLElement>('.mobile-note-block')!
+    const editor = () => host.querySelector<HTMLElement>('.mobile-note-content')!
+    const selectEnd = () => {
+      const range = document.createRange()
+      range.selectNodeContents(block())
+      range.collapse(false)
+      const selection = window.getSelection()!
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }
+    await act(async () => root.render(<Example />))
+    block().textContent = '- '
+    selectEnd()
+    await act(async () => editor().dispatchEvent(new Event('input', { bubbles: true })))
+    expect(saved).toBe('- ')
+    expect(block().dataset.kind).toBe('bullet')
+    await act(async () =>
+      editor().dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    )
+    expect(block().dataset.indent).toBe('1')
+    await act(async () =>
+      editor().dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    )
+    expect(block().dataset.indent).toBe('0')
+    expect(block().dataset.kind).toBe('bullet')
+    await act(async () =>
+      editor().dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    )
+    expect(block().dataset.kind).toBe('body')
+    expect(saved).toBe('')
+
+    block().textContent = '1. '
+    selectEnd()
+    await act(async () => editor().dispatchEvent(new Event('input', { bubbles: true })))
+    expect(saved).toBe('1. ')
+    expect(block().dataset.kind).toBe('number')
+    await act(async () =>
+      editor().dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true })
+      )
+    )
+    expect(block().dataset.kind).toBe('body')
+    expect(saved).toBe('')
+
+    block().textContent = '# '
+    selectEnd()
+    await act(async () => editor().dispatchEvent(new Event('input', { bubbles: true })))
+    expect(block().dataset.kind).toBe('heading')
+    expect(saved).toBe('# ')
+    await act(async () => root.unmount())
+    host.remove()
+  })
 })

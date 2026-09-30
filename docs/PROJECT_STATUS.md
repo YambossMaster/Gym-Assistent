@@ -5,17 +5,17 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                                        |
-| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                                                                         |
-| Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**                                                          |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                     |
-| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs                                                      |
-| Worktree           | Training Record mobile Note editor and shared legacy-record save correction are under local review; physical PWA keyboard review stays open |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                                                       |
-| Production         | Not configured; no real customer data                                                                                                             |
-| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted                                                  |
+| Field              | Current value                                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                                         |
+| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                                                          |
+| Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**                                           |
+| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                      |
+| Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs                                       |
+| Worktree           | Training Record mobile Note editing and shared legacy-record saves are under local review; physical PWA keyboard review stays open |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                                        |
+| Production         | Not configured; no real customer data                                                                                              |
+| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted                                   |
 
 ## Next handoff
 
@@ -32,6 +32,14 @@ iOS/Android return-key behavior remains for Product Owner device review. Keep th
 Review the revised Training Record mobile tabs on an installed PWA. Both tabs keep the same
 student/actions/save row and tab row. The selected tab is a black rounded-top tab with white text.
 The second tab now reads 教練筆記, and its selected edge meets the dark class summary without a seam.
+Both selected tabs now reach the side edges. Bullet and number marks align with their first line;
+list indentation remains visible. Enter continues a nonempty list, while Enter on an empty nested
+item steps outward and Enter on an empty top-level item exits the list. Backspace at the beginning
+first outdents or removes the list marker before joining the previous paragraph. Tab and Shift+Tab
+also work on list items, with matching touch toolbar actions. Typing `- `, `1. `, or `# ` at the
+beginning of a blank paragraph converts it to a bullet, number, or heading. These keyboard rules
+and the edge layout passed desktop-browser preview and Web tests; actual installed-PWA keyboard
+behavior still needs device review.
 The dark class summary appears on both tabs. A second tap on the selected tab toggles that summary,
 switching tabs preserves its state, an upward swipe collapses it, and focusing the Note editor also
 collapses it. The Training cards start without a duplicate title and keep clearance above bottom
@@ -493,6 +501,26 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-30 — LOG-336 — Make mobile Note lists behave like familiar editors
+
+- **Scope:** Product Owner requested tabs that reach both side edges, aligned bullet/number marks,
+  and more intuitive list editing, especially Backspace cancellation and Tab indentation.
+- **Outcome:** Mobile selected tabs extend through the topbar's side padding. List indent now affects
+  marker and text together; marker line heights match the first text line. The editor keeps Enter
+  continuation, steps an empty nested item outward, and exits an empty top-level list. Backspace at
+  a line start first removes one indent level or its list marker, then joins the previous paragraph
+  on a subsequent press. Tab/Shift+Tab and touch toolbar indent/outdent share the same visible
+  indentation. Typed `- `, `1. `, and `# ` prefixes become visible blocks. Existing Markdown-like
+  storage stays compatible; Markdown syntax alone does not define keyboard behavior.
+- **Verification:** Web 58 test files/248 tests and production build passed; changed files passed
+  Prettier. Focused editor tests cover list continuation, marker cancellation, indentation,
+  empty-list exit, and typed prefix conversion. Authenticated Chrome 390×844 preview showed selected
+  tabs reaching both edges and bullet/number marks aligned beside their first line.
+- **Known issue:** A desktop preview does not verify actual iOS/Android keyboard events, touch caret
+  behavior, or installed-PWA visual positioning. Keep the change local for Product Owner review.
+- **Next:** Exercise list typing, Backspace, indent/outdent controls, and keyboard docking on an
+  installed PWA, then continue the M7.5 mobile route review.
 
 ### 2026-09-30 — LOG-335 — Repair Training Note editing and shared legacy-record saves
 
