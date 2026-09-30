@@ -5,17 +5,17 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                              |
-| ------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                 |
-| Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                                    |
-| Package state      | **Stage 2 local/live/database and checkpoint CI passed; browser and Product Owner acceptance remain open** |
-| Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                      |
-| Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs                |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoints `09e4a79`/`4abf5d7` passed CI                          |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                |
-| Production         | Not configured; no real customer data                                                                      |
-| Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes                |
+| Field              | Current value                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                             |
+| Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                                |
+| Package state      | **Stage 2 check/build and isolated live E2E passed; browser and Product Owner acceptance remain open** |
+| Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                  |
+| Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs            |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoints `09e4a79`/`4abf5d7` passed CI                      |
+| Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed            |
+| Production         | Not configured; no real customer data                                                                  |
+| Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes            |
 
 ## Next handoff
 
@@ -24,12 +24,13 @@ M3.5 and M0–M7 remain Done. **M7.5 Stage 2 is the active package.** The Produc
 route-by-route Coach hierarchy in [the Stage 2 matrix](M7.5-STAGE-2-ACCEPTANCE.md) as the review
 baseline on 2026-10-01. The Product Owner explicitly deferred installed Android/iOS PWA evidence
 until a phone-accessible deployment; this remains an open M8-B staging gate before production Alpha,
-not a Stage 2 pass. Next, execute the remaining browser
-interaction, isolated Venue/Finance and mobile-preview paths. Record each symptom and result, fix
-it or obtain explicit
-Product Owner acceptance/deferral. Draft PR #1 and its checkpoint CI have passed; after all
-required paths are accepted, repeat the full local, live, migration and browser gate, then deliver
-the final cohesive commit and confirm its own exact-SHA remote CI.
+not a Stage 2 pass. Next, execute the remaining browser interaction and Product Owner fixture paths.
+Record each symptom and result, fix it or obtain explicit Product Owner acceptance/deferral. The
+2026-10-01 root check/build and isolated live E2E reruns passed, but the current linked migration
+dry-run failed database password authentication; lint and advisors still completed. Resolve that
+credential gate or confirm an exact-SHA remote migration dry-run for the final commit. Draft PR #1
+and its earlier checkpoint CI have passed. After all required paths are accepted, deliver the
+cohesive commit and confirm its own exact-SHA remote CI before Main delivery.
 No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
 
 ## Stage 2 evidence in progress
@@ -106,6 +107,27 @@ No staging or production environment exists; that setup belongs to M8-A after th
   Agenda, and switching to Week showed the seven-day grid and Session cards. A full-page screenshot
   was inspected and the iframe document width matched its 390px client width. This remains a
   desktop-browser preview, not installed-device evidence.
+- A fresh elevated root check passed API 26 files/125 tests and Web 59 files/249 tests; root build
+  passed with the existing large-chunk advisory. The first sandbox check encountered the known
+  Vitest `spawn EPERM` before tests ran. M4/M5/M6/M7, Venue and Finance isolated live E2E reruns
+  passed with exact fixture cleanup, and M4/M5 deterministic previews retained zero rejections.
+  Linked `app_private` lint found no errors; advisors retained only the three tracked warnings.
+  The current `db:push:dry` attempt failed PostgreSQL password authentication for the CLI login
+  role, so it is not counted as a fresh local migration pass.
+- In authenticated Chrome at 390×844, a Calendar Session preview, edit form and date chooser were
+  reachable without document or dialog overflow; Escape closed the chooser and cancelling the edit
+  returned to the Session preview without a mutation. The Session Training route displayed `已儲存`;
+  focusing its empty Note editor exposed the formatting toolbar. The Settings password dialog
+  advanced through close, current password, recovery, new password, confirmation, cancel and save
+  in Tab order; Escape closed it and returned focus to `修改密碼`. A uniquely named custom Exercise
+  was created and changed from `系統動作` to `局部動作` in the browser, then deleted; reload returned
+  the Library to 109 cards with the fixture absent. These are desktop Chrome viewport checks, not
+  mobile soft-keyboard or installed-device evidence.
+- Student roster-to-detail keyboard navigation revealed that Enter on a Student card left focus on
+  the document body and Tab skipped the new route's Back/Settings actions. The shared Coach shell
+  now focuses its persistent main landmark after a pathname change. Browser recheck at 320, 390
+  and 1440 CSS pixels found that landmark focused after navigation and no document-width overflow;
+  at 390px the next Tab reached `返回`. The remaining detail keyboard path is still open.
 - The consolidated local gate passed with single-worker Vitest scripts: root formatting/typecheck,
   API 26 files/125 tests, Web 59 files/249 tests, and both production builds (existing large-chunk
   advisory only). An initial default API run had two 5-second timeouts and the two-worker Web run
@@ -472,6 +494,29 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-356 — Recheck Stage 2 local/live and mobile browser paths
+
+- **Scope:** Rerun the consolidated local gate, development live E2E and database checks; exercise
+  additional 390×844 Calendar, Training, Settings, Exercise and Student keyboard paths.
+- **Outcome:** API/Web checks and builds passed. Isolated M4/M5/M6/M7/Venue/Finance live E2E and
+  M4/M5 deterministic previews passed with scoped cleanup. Chrome verified mobile Session
+  preview/edit cancellation, Training save status and Note toolbar, password-dialog keyboard order,
+  and isolated Exercise create/edit/delete with a clean reload. A Student route-focus defect was
+  corrected in the shared Coach shell so keyboard navigation starts at the new main landmark.
+- **Verification:** API 125/125 and Web 249/249 tests passed; both builds passed with the existing
+  chunk advisory. Linked `app_private` lint had no errors; advisors retained only three tracked
+  warnings. The local linked migration dry-run failed CLI login-role password authentication and
+  is not counted as passed. Initial sandbox Vitest hit the known `spawn EPERM`; the elevated rerun
+  passed. Browser recheck found main-landmark focus and no document-width overflow at 320, 390
+  and 1440 CSS pixels; at 390px the next Tab reached `返回`. After the correction, the full root
+  check passed API 125/125 and Web 249/249 tests, and both builds passed with the existing chunk
+  advisory. The code change still needs exact-SHA CI; prior PR checks cover their own SHAs only.
+- **Known issue:** Remaining browser/device paths and Product Owner fixture acceptance are open.
+  The final delivery SHA needs a successful migration dry-run and both GitHub Actions jobs.
+- **Next:** Finish or obtain Product Owner deferral for the remaining Stage 2 matrix paths, resolve
+  migration verification through valid credentials or exact-SHA remote CI, then deliver Main only
+  after the full gate is accepted.
 
 ### 2026-10-01 — LOG-355 — Exercise Student archive and recovery in the browser
 

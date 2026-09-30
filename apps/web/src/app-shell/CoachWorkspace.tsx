@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { ArrowLeft, CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { getWorkspaceSettings } from '../api'
@@ -32,6 +32,7 @@ const navigation = [
 export function CoachWorkspace({ session }: { session: Session }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const mainRef = useRef<HTMLElement>(null)
   const isStudentDetail =
     /^\/students\/[^/]+$/.test(location.pathname) &&
     !['/students/finances', '/students/venues'].includes(location.pathname)
@@ -59,6 +60,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
   const queryClient = useQueryClient()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
+    mainRef.current?.focus({ preventScroll: true })
   }, [location.pathname])
   const coachSettingsQuery = useQuery({
     queryKey: queryKeys.settings(session.user.id),
@@ -99,7 +101,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
           </div>
         </div>
       </aside>
-      <main className="main-content">
+      <main className="main-content" ref={mainRef} tabIndex={-1}>
         <header className="mobile-header">
           {isMobileSubpage ? (
             <div className="mobile-subpage-header">
