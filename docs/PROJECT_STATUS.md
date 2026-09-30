@@ -30,8 +30,9 @@ to the next set in the same exercise. Enter on the last RPE blurs the field. Des
 iOS/Android return-key behavior remains for Product Owner device review. Keep this experiment local.
 
 Review the revised Training Record mobile tabs on an installed PWA. Both tabs keep the same
-student/actions/save row and tab row. The selected tab is a black rounded-top tab with white text.
-The second tab now reads 教練筆記, and its selected edge meets the dark class summary without a seam.
+student/actions/save row and tab row. The selected tab now has a light rounded-top surface, dark
+outline, and dark text. The second tab reads 教練筆記. The tab row and expandable class summary share
+one light background; no dark separator is added when class information is collapsed.
 Both selected tabs now reach the side edges. Bullet and number marks align with their first line;
 list indentation remains visible. Enter continues a nonempty list, while Enter on an empty nested
 item steps outward and Enter on an empty top-level item exits the list. Backspace at the beginning
@@ -501,6 +502,21 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-30 — LOG-337 — Give Training tabs and class context one light surface
+
+- **Scope:** Product Owner reported that the selected black tab ends abruptly against the Training
+  and Note canvases when class information is collapsed. The first dark connector trial was rejected;
+  Product Owner requested a white background across the tab and class information region.
+- **Outcome:** Removed the dark connector. The mobile student/actions row, tab switcher, and class
+  summary now share a light paper surface. The active tab keeps a rounded-top shape with a dark
+  outline and text; inactive text stays muted. Class date, location, and icons use readable dark
+  tones. The Training and Note canvases retain their established layout and editing behavior.
+- **Verification:** Authenticated Chrome 390×844 preview showed both collapsed tabs and the expanded
+  Training summary on the new light surface. Final Web production build, formatting, and diff checks
+  passed. No phone/PWA claim.
+- **Next:** Review the collapsed and expanded transition on an installed PWA, then continue the
+  M7.5 mobile route review. Keep this local pending Product Owner acceptance.
 
 ### 2026-09-30 — LOG-336 — Make mobile Note lists behave like familiar editors
 
