@@ -222,4 +222,15 @@ export class AutosaveCoordinator<T, Prepared = T> {
   abandonOutstanding() {
     this.outstanding = null
   }
+  acceptExternally(revision: number) {
+    if (this.timer) clearTimeout(this.timer)
+    if (this.retryTimer) clearTimeout(this.retryTimer)
+    this.timer = null
+    this.retryTimer = null
+    this.outstanding = null
+    this.retryAttempt = 0
+    this.acknowledged = Math.max(this.acknowledged, revision)
+    if (this.latest && this.latest.revision <= revision) this.latest = null
+    this.onState?.(this.pending ? 'pending' : 'saved')
+  }
 }

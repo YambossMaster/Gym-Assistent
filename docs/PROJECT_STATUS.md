@@ -12,7 +12,7 @@
 | Package state      | **Mobile and Calendar Main checkpoint passed exact-SHA CI; Stage 1 review remains open**                                                          |
 | Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                                                                     |
 | Branch baseline    | Mobile and Calendar checkpoint `47370fe` reached Main; CI run `36539030534` passed both jobs                                                      |
-| Worktree           | Training Record mobile tabs, class summary, Note editor, and set-input navigation are under local review; physical PWA keyboard review stays open |
+| Worktree           | Training Record mobile Note editor and shared legacy-record save correction are under local review; physical PWA keyboard review stays open |
 | Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                                                       |
 | Production         | Not configured; no real customer data                                                                                                             |
 | Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted                                                  |
@@ -31,18 +31,24 @@ iOS/Android return-key behavior remains for Product Owner device review. Keep th
 
 Review the revised Training Record mobile tabs on an installed PWA. Both tabs keep the same
 student/actions/save row and tab row. The selected tab is a black rounded-top tab with white text.
+The second tab now reads 教練筆記, and its selected edge meets the dark class summary without a seam.
 The dark class summary appears on both tabs. A second tap on the selected tab toggles that summary,
 switching tabs preserves its state, an upward swipe collapses it, and focusing the Note editor also
 collapses it. The Training cards start without a duplicate title and keep clearance above bottom
 navigation. Tapping empty Note canvas focuses the final paragraph at its end. The keyboard dock now
 includes heading/body, paragraph bold, stronger bullet, numbering, indent/outdent, and class facts.
 Import choices start empty, clicking a fact directly inserts it, and checkbox selection persists
-locally for later batch insertion. Note content still uses the 5,000-character private-note autosave
+locally for later batch insertion. The Note canvas now uses one editable surface so native text
+selection can cross paragraphs and long lines wrap; list markers and seven labeled toolbar controls
+align with their text. Note content still uses the 5,000-character private-note autosave
 contract as readable text markers; optional public Training Result notes render paragraph bold and
 the downloadable image uses clean text. Authenticated Chrome 390×844 preview confirmed tab state,
 shared summary, blank-canvas focus, summary collapse, and the compact tool dock. Web checks and
 production build passed. Real iOS/Android keyboard movement, caret visibility, multiline editing,
-formatting, and autosave need installed-PWA review. Desktop keeps its original two-column textarea,
+formatting, and autosave need installed-PWA review. The shared save API now accepts unchanged legacy
+sets alongside a newer recording snapshot, so a note-only save is no longer rejected as a definition
+conflict; an authenticated Chrome preview accepted a previously stuck draft and displayed 已儲存.
+Desktop keeps its original two-column textarea,
 where formatting markers remain visible when editing a note created on mobile. Continue the wider
 keyboard audit during mobile route review. Keep this local; do not push Main yet.
 
@@ -487,6 +493,30 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-09-30 — LOG-335 — Repair Training Note editing and shared legacy-record saves
+
+- **Scope:** Product Owner identified a seam below the active tab, misaligned list markers and
+  toolbar labels, paragraph-limited selection and clipped Note text, and a repeated failure of
+  採用目前內容. The save problem was explicitly reported on both desktop and mobile.
+- **Outcome:** The mobile Note uses one editable canvas with native cross-paragraph selection and
+  wrapping. The selected tab joins the summary, markers align with their first line, the number
+  is smaller, the tool dock uses seven aligned icon/caption pairs, and the tab reads 教練筆記. The
+  shared API now permits existing legacy sets without `measurements` under a recording snapshot;
+  new sets still require measurements. Conflict recovery refreshes current versions, retries only
+  version conflicts, and clears stale autosave requests after a successful explicit adoption.
+  Conflict copy distinguishes version, definition, and unit problems.
+- **Verification:** API typecheck, build, and 26 test files/125 tests passed, including a repository
+  regression for a note save with a legacy set. Web typecheck, production build, and 58 test
+  files/246 tests passed; changed files passed Prettier and `git diff --check`. Authenticated Chrome
+  390×844 preview showed the revised Note layout and a previously stuck draft changing from
+  儲存衝突 to 已儲存 after 採用目前內容, retaining all nine sets.
+- **Known issue:** A desktop browser preview cannot prove installed-phone keyboard height or caret
+  behavior. No Main push or remote CI claim; desktop and phone should both be exercised during
+  Product Owner acceptance.
+- **Next:** Review Note typing, cross-paragraph selection, toolbar docking, and autosave on an
+  installed PWA; confirm a desktop edit of the same legacy lesson, then continue the M7.5 route
+  review. Keep this change local pending acceptance.
 
 ### 2026-09-30 — LOG-334 — Refine Training tabs and make the Note canvas keyboard ready
 

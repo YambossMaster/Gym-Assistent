@@ -137,6 +137,19 @@ describe('Training autosave coordinator', () => {
     expect(send).toHaveBeenCalledTimes(2)
     expect(autosave.pending).toBe(false)
   })
+  it('does not replay an obsolete conflicting request after an explicit server acceptance', async () => {
+    vi.useFakeTimers()
+    const send = vi.fn().mockRejectedValueOnce(new Error('conflict'))
+    const autosave = new AutosaveCoordinator<string>(send, 20)
+    autosave.change('older', 1)
+    await expect(autosave.flush()).rejects.toThrow('conflict')
+    autosave.acceptExternally(1)
+    expect(autosave.pending).toBe(false)
+    await vi.advanceTimersByTimeAsync(50)
+    await autosave.flush()
+    expect(send).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
   it('replays the exact prepared request before sending a newer edit', async () => {
     let serverVersion = 10
     const send = vi.fn().mockRejectedValueOnce(new Error('lost')).mockResolvedValue(undefined)

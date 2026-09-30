@@ -453,13 +453,17 @@ export class PostgresTrainingRepository implements TrainingRepository {
             const recording = recordingConfigSchema.parse(config)
             if (
               exercise.formatVersion !== 2 ||
-              exercise.sets.some(
-                (set) =>
-                  !set.measurements || !measurementsMatchType(recording.type, set.measurements),
+              exercise.sets.some((set) =>
+                set.measurements
+                  ? !measurementsMatchType(recording.type, set.measurements)
+                  : !setParents.has(set.id) || Boolean(existingMeasurements.get(set.id)),
               )
             )
               throw new TrainingVersionConflictError('definition_conflict')
             for (const set of exercise.sets) {
+              // Existing legacy sets may predate the recording snapshot. Keep their original
+              // values when saving unrelated changes; new sets still need measurements.
+              if (!set.measurements) continue
               const previousMeasurements = existingMeasurements.get(set.id)
               if (!previousMeasurements)
                 preference ??= await this.getPreferenceWith(client, workspaceId)

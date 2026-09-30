@@ -14918,6 +14918,7 @@ button:disabled {
     column-gap: 6px;
     padding-bottom: 0;
     row-gap: 0;
+    border-bottom: 0;
   }
 
   .session-workspace .session-title {
@@ -15106,10 +15107,20 @@ button:disabled {
     overscroll-behavior: contain;
   }
 
+  .mobile-note-content {
+    min-height: 100%;
+    outline: 0;
+    cursor: text;
+  }
+
   .mobile-note-block {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
+    position: relative;
+    min-height: 32px;
+    color: #1f281c;
+    font-size: 17px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .mobile-note-block + .mobile-note-block {
@@ -15124,43 +15135,41 @@ button:disabled {
     padding-left: 44px;
   }
 
-  .mobile-note-block > span {
-    min-width: 20px;
-    padding-top: 3px;
+  .mobile-note-block:is(.is-bullet, .is-number) {
+    padding-left: 34px;
+  }
+
+  .mobile-note-block:is(.is-bullet, .is-number)::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 26px;
+    content: attr(data-marker);
     color: #4e6131;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.65;
+  }
+
+  .mobile-note-block.is-bullet::before {
     font-size: 23px;
-    font-weight: 900;
-    line-height: 1.55;
+    line-height: 1.3;
   }
 
-  .mobile-note-block textarea {
-    width: 100%;
-    min-height: 32px;
-    padding: 0;
-    flex: 1;
-    resize: none;
-    overflow: hidden;
-    border: 0;
-    border-radius: 0;
-    outline: 0;
-    background: transparent;
-    color: #1f281c;
-    font-size: 17px;
-    line-height: 1.75;
-  }
-
-  .mobile-note-block.is-heading textarea {
+  .mobile-note-block.is-heading {
     font-size: 23px;
     font-weight: 800;
     line-height: 1.5;
   }
 
-  .mobile-note-block.is-bold textarea {
+  .mobile-note-block.is-bold {
     font-weight: 850;
   }
 
-  .mobile-note-block textarea::placeholder {
+  .mobile-note-block:empty::after {
+    content: attr(data-placeholder);
     color: #a3a99c;
+    pointer-events: none;
   }
 
   .session-workspace.is-note-tab .session-note-tools {
@@ -15206,6 +15215,20 @@ button:disabled {
     flex: none;
   }
 
+  .session-note-tools .note-tool-icon {
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    flex: none;
+    line-height: 1;
+  }
+
+  .session-note-tools .note-tool-caption {
+    min-height: 14px;
+    line-height: 14px;
+  }
+
   .session-note-tools .note-tool-bullet {
     font-size: 27px;
     font-weight: 900;
@@ -15222,14 +15245,9 @@ button:disabled {
     background: var(--ink);
   }
 
-  .session-note-tools button[aria-label='字級選擇'] {
-    flex-direction: row;
-    font-size: 14px;
-  }
-
-  .session-note-tools button[aria-label='字級選擇'] svg {
-    width: 13px;
-    height: 13px;
+  .session-note-tools .note-tool-size {
+    font-size: 16px;
+    font-weight: 750;
   }
 
   .session-note-tools button[aria-expanded='true'] {
@@ -15336,10 +15354,6 @@ button:disabled {
   }
   .session-workspace.is-note-tab .session-note-tools button {
     padding-inline: 2px;
-  }
-  .session-note-tools button[aria-label='增加縮排'] span,
-  .session-note-tools button[aria-label='減少縮排'] span {
-    display: none;
   }
 }
 

@@ -213,4 +213,112 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
       record: { version: 1, privateNote: '更新內容' },
     })
   })
+
+  it('saves a note alongside existing legacy sets after a recording snapshot was added', async () => {
+    const sessionId = '00000000-0000-4000-8000-000000000001'
+    const exerciseId = '00000000-0000-4000-8000-000000000002'
+    const setId = '00000000-0000-4000-8000-000000000003'
+    const definitionId = '00000000-0000-4000-8000-000000000004'
+    const recordId = '00000000-0000-4000-8000-000000000005'
+    const query = vi.fn(async (sql: string) => {
+      if (
+        sql === 'begin' ||
+        sql === 'commit' ||
+        sql === 'rollback' ||
+        sql.includes("set_config('app.current_workspace_id'") ||
+        sql.startsWith('insert into app_private.training_mutation_receipt') ||
+        sql.startsWith('delete from app_private.training_mutation_receipt') ||
+        sql.startsWith('update app_private.training_record') ||
+        sql.startsWith('delete from app_private.training_exercise') ||
+        sql.startsWith('insert into app_private.training_exercise') ||
+        sql.startsWith('insert into app_private.training_set')
+      )
+        return { rows: [], rowCount: 1 }
+      if (sql.includes('from app_private.training_mutation_receipt'))
+        return { rows: [], rowCount: 0 }
+      if (sql.startsWith('select * from app_private.course_session'))
+        return { rows: [{ id: sessionId, version: 1, status: 'scheduled' }], rowCount: 1 }
+      if (sql.startsWith('select * from app_private.training_record'))
+        return { rows: [{ id: recordId, version: 1, private_note: '' }], rowCount: 1 }
+      if (sql.startsWith('select * from app_private.training_exercise'))
+        return {
+          rows: [
+            {
+              id: exerciseId,
+              definition_id: definitionId,
+              position: 0,
+              definition_name: 'Squat',
+              equipment: 'Barbell',
+              body_parts: ['Legs'],
+              movement_type: '局部動作',
+              performance_metric: 'weight',
+              recording_config: { type: 'weight_reps', metrics: ['weight'] },
+            },
+          ],
+          rowCount: 1,
+        }
+      if (sql.startsWith('select ts.* from app_private.training_set'))
+        return {
+          rows: [
+            {
+              id: setId,
+              exercise_id: exerciseId,
+              position: 0,
+              planned_weight: 80,
+              planned_reps: 5,
+              actual_reps: 5,
+              rpe: 7,
+              result: 'completed',
+              unit: 'kg',
+              measurements: null,
+            },
+          ],
+          rowCount: 1,
+        }
+      throw new Error(`Unexpected query: ${sql}`)
+    })
+    const repository = new PostgresTrainingRepository({
+      connect: vi.fn(async () => ({ query, release: vi.fn() })),
+    } as unknown as Pool)
+    vi.spyOn(repository as any, 'readSessionTraining').mockResolvedValue({
+      session: { id: sessionId, version: 1 },
+      record: { version: 2, privateNote: '新筆記' },
+    })
+
+    await expect(
+      repository.saveSessionTraining(
+        'workspace-1',
+        sessionId,
+        {
+          privateNote: '新筆記',
+          exercises: [
+            {
+              id: exerciseId,
+              definitionId,
+              formatVersion: 2,
+              sets: [
+                {
+                  id: setId,
+                  plannedWeight: 80,
+                  plannedReps: 5,
+                  actualReps: 5,
+                  rpe: 7,
+                  result: 'completed',
+                  unit: 'kg',
+                },
+              ],
+            },
+          ],
+          recordVersion: 1,
+          sessionVersion: 1,
+          operationId: '00000000-0000-4000-8000-000000000006',
+        },
+        false,
+      ),
+    ).resolves.toMatchObject({ record: { privateNote: '新筆記' } })
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('insert into app_private.training_set'),
+      expect.arrayContaining([setId, null]),
+    )
+  })
 })

@@ -10,6 +10,36 @@ describe('mobile note editor', () => {
     localStorage.removeItem('gym-assistant.note-import-selection')
   })
 
+  it('offers one continuous editable surface for cross-paragraph selection', async () => {
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value={'第一段\n第二段'}
+          onChange={() => {}}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+        />
+      )
+    )
+    expect(host.querySelectorAll('[contenteditable="true"]')).toHaveLength(1)
+    expect(host.querySelectorAll('.mobile-note-block')).toHaveLength(2)
+    expect(host.querySelector('textarea')).toBeNull()
+    const blocks = host.querySelectorAll('.mobile-note-block')
+    const range = document.createRange()
+    range.setStart(blocks[0]!.firstChild!, 1)
+    range.setEnd(blocks[1]!.firstChild!, 2)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+    expect(selection.toString()).toContain('第二')
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
   it('applies visible block formatting and inserts only selected class facts', async () => {
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       callback(0)
@@ -42,7 +72,7 @@ describe('mobile note editor', () => {
       [...host.querySelectorAll('button')].find((item) => item.textContent?.includes(name))!
 
     await act(async () => root.render(<Example />))
-    await act(async () => host.querySelector('textarea')!.focus())
+    await act(async () => host.querySelector<HTMLElement>('.mobile-note-content')!.focus())
     await act(async () => button('Aa').click())
     await act(async () => button('標題 Heading').click())
     expect(saved).toBe('# 觀察')
@@ -80,8 +110,10 @@ describe('mobile note editor', () => {
     )
     expect(saved).toBe('# 觀察\n1. **學生：測試學生**\n地點：測試場地')
     await act(async () => host.querySelector<HTMLElement>('.mobile-note-canvas')!.click())
-    expect(document.activeElement).toBe(host.querySelectorAll('textarea')[2])
-    expect(host.querySelectorAll('textarea')[2]!.selectionStart).toBe('地點：測試場地'.length)
+    expect(document.activeElement).toBe(host.querySelector('.mobile-note-content'))
+    expect(window.getSelection()?.anchorNode?.parentElement).toBe(
+      host.querySelectorAll('.mobile-note-block')[2]
+    )
 
     await act(async () => root.unmount())
     host.remove()

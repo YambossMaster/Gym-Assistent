@@ -12,6 +12,7 @@ import {
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
 import { MobileNoteEditor } from './MobileNoteEditor'
+import { adoptTrainingDraft } from './conflict-recovery'
 import {
   boundedDragScroll,
   clampDragTop,
@@ -60,6 +61,7 @@ import type { UseQueryResult } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ApiError,
+  getExerciseLibrary,
   type ExerciseDefinition,
   type SessionTraining,
   type TrainingDraftPayload,
@@ -268,6 +270,8 @@ function TrainingEditor({
   const [draft, setDraft] = useState(() => toDraft(initial)),
     [revision, setRevision] = useState(0),
     [saveState, setSaveState] = useState<SaveState>('idle'),
+    [conflictReason, setConflictReason] = useState<string>('version_conflict'),
+    [adoptingConflict, setAdoptingConflict] = useState(false),
     [mobileTab, setMobileTab] = useState<'training' | 'note'>('training'),
     [classInfoExpanded, setClassInfoExpanded] = useState(true),
     [noteFocused, setNoteFocused] = useState(false),
@@ -398,6 +402,7 @@ function TrainingEditor({
           } catch (error) {
             if (error instanceof ApiError && error.status === 409) {
               conflictRef.current = true
+              setConflictReason(error.details.reason ?? 'unknown')
               setSaveState('conflict')
             }
             throw error
@@ -468,6 +473,7 @@ function TrainingEditor({
         revisionRef.current = Math.max(1, candidate.revision)
         setDraft(candidate.payload)
         setRevision(revisionRef.current)
+        setConflictReason('version_conflict')
         setSaveState('conflict')
       })
       .catch(() => setStorageError(true))
@@ -1015,6 +1021,8 @@ function TrainingEditor({
       await store.deleteSession(session.user.id, initial.session.id)
       setNotice('')
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409)
+        setConflictReason(error.details.reason ?? 'unknown')
       setSaveState(error instanceof ApiError && error.status === 409 ? 'conflict' : 'error')
     } finally {
       setCompleting(false)
@@ -1168,7 +1176,7 @@ function TrainingEditor({
             aria-controls="session-note-panel"
             onClick={() => selectMobileTab('note')}
           >
-            課堂筆記
+            教練筆記
           </button>
         </div>
       </header>
@@ -1299,25 +1307,89 @@ function TrainingEditor({
           )}
           {saveState === 'conflict' && (
             <section className="conflict-banner">
-              <strong>這堂課在其他裝置已有較新的紀錄。</strong>
-              <p>目前輸入已安全保留。只有選擇採用目前內容時，才會更新伺服器紀錄。</p>
+              <strong>
+                {conflictReason === 'version_conflict'
+                  ? '這堂課已有較新的紀錄。'
+                  : conflictReason === 'definition_conflict'
+                    ? '訓練動作設定已變更。'
+                    : conflictReason === 'unit_conflict'
+                      ? '訓練單位設定已變更。'
+                      : '這堂課目前無法同步。'}
+              </strong>
+              <p>
+                {conflictReason === 'version_conflict'
+                  ? '目前輸入已保留在此裝置。選擇採用目前內容後，才會更新伺服器紀錄。'
+                  : '目前輸入已保留在此裝置。請先檢查訓練動作與單位，或載入最新紀錄。'}
+              </p>
               <button
+                disabled={
+                  adoptingConflict ||
+                  conflictReason === 'definition_conflict' ||
+                  conflictReason === 'unit_conflict'
+                }
                 onClick={async () => {
-                  const latestServer = await onRefresh()
-                  if (!latestServer) {
-                    setNotice('暫時無法取得最新紀錄，系統會繼續保留目前輸入。')
-                    return
+                  setAdoptingConflict(true)
+                  const adoptingRevision = revisionRef.current
+                  coordinator.acceptExternally(adoptingRevision)
+                  try {
+                    const accepted = await adoptTrainingDraft({
+                      draft: latest.current,
+                      refresh: onRefresh,
+                      getDefinitions: async () =>
+                        (await getExerciseLibrary(session.access_token)).definitions,
+                      save: (payload) =>
+                        mutations.save.mutateAsync({ sessionId: initial.session.id, payload }),
+                      isConflict: (error) =>
+                        error instanceof ApiError &&
+                        error.status === 409 &&
+                        error.details.reason === 'version_conflict'
+                    })
+                    versions.current = {
+                      record: accepted.record.version,
+                      session: accepted.session.version
+                    }
+                    try {
+                      await store.deleteSession(session.user.id, initial.session.id)
+                      const operationKey = scopedKey(
+                        { environment: import.meta.env.MODE, coachId: session.user.id },
+                        'operation',
+                        'training',
+                        initial.session.id
+                      )
+                      await localStore.delete('operations', operationKey)
+                      setStorageError(false)
+                    } catch {
+                      setStorageError(true)
+                    }
+                    conflictRef.current = false
+                    setConflictReason('version_conflict')
+                    setSaveState('saved')
+                    setNotice('目前內容已儲存。')
+                    if (revisionRef.current > adoptingRevision)
+                      coordinator.change(latest.current, revisionRef.current)
+                  } catch (error) {
+                    conflictRef.current = true
+                    setConflictReason(
+                      error instanceof ApiError ? (error.details.reason ?? 'unknown') : 'unknown'
+                    )
+                    setSaveState('conflict')
+                    setNotice(
+                      error instanceof ApiError && error.status === 409
+                        ? error.details.reason === 'definition_conflict' ||
+                          error.details.reason === 'unit_conflict'
+                          ? '草稿中的動作或單位與目前設定不一致。輸入仍已保留，請檢查動作後再儲存。'
+                          : '另一個視窗仍在更新這堂課，請停止另一端編輯後再採用目前內容。'
+                        : error instanceof Error &&
+                            error.message === 'training_definition_unavailable'
+                          ? '草稿中的動作已不在目前動作庫，輸入仍已保留。'
+                          : '目前內容尚未儲存，已保留在此裝置。請稍後重試。'
+                    )
+                  } finally {
+                    setAdoptingConflict(false)
                   }
-                  versions.current = {
-                    record: latestServer.record.version,
-                    session: latestServer.session.version
-                  }
-                  conflictRef.current = false
-                  coordinator.abandonOutstanding()
-                  change({ ...draft, operationId: crypto.randomUUID() })
                 }}
               >
-                採用目前內容
+                {adoptingConflict ? '儲存中…' : '採用目前內容'}
               </button>
               <button
                 onClick={() => {

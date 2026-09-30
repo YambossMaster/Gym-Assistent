@@ -386,6 +386,7 @@ interface AccountLifecycleResponse {
 
 interface ErrorResponse {
   error?: string
+  reason?: string
   message?: string
   retryAfter?: number
   currentPurchase?: LessonPurchase

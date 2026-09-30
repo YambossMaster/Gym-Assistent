@@ -1,11 +1,12 @@
+import { IndentDecrease, IndentIncrease, ListOrdered, NotebookTabs } from 'lucide-react'
 import {
-  ChevronDown,
-  IndentDecrease,
-  IndentIncrease,
-  ListOrdered,
-  NotebookTabs
-} from 'lucide-react'
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type FormEvent,
+  type KeyboardEvent
+} from 'react'
 import { parseNote, serializeNote, type NoteBlock } from './note-format'
 
 export type NoteImportItem = { label: string; text: string }
@@ -15,11 +16,68 @@ function storedImportSelection(): string[] {
   try {
     const selection = JSON.parse(localStorage.getItem(importSelectionKey) ?? '[]')
     return Array.isArray(selection)
-      ? selection.filter((value): value is string => typeof value === 'string')
+      ? selection.filter((item): item is string => typeof item === 'string')
       : []
   } catch {
     return []
   }
+}
+
+function noteNodes(editor: HTMLElement): HTMLDivElement[] {
+  return Array.from(editor.children).filter(
+    (child): child is HTMLDivElement =>
+      child instanceof HTMLDivElement && 'noteBlock' in child.dataset
+  )
+}
+
+function readBlocks(editor: HTMLElement): NoteBlock[] {
+  const nodes = noteNodes(editor)
+  if (!nodes.length) return [{ kind: 'body', indent: 0, text: '' }]
+  return nodes.map((node) => ({
+    kind: (node.dataset.kind as NoteBlock['kind']) ?? 'body',
+    indent: Number(node.dataset.indent ?? 0),
+    bold: node.dataset.bold === 'true',
+    text: node.textContent ?? '',
+    ...(node.dataset.sourceMarker ? { marker: node.dataset.sourceMarker } : {})
+  }))
+}
+
+function blockAt(editor: HTMLElement, node: Node | null): HTMLDivElement | null {
+  const element = node instanceof Element ? node : node?.parentElement
+  const block = element?.closest<HTMLDivElement>('[data-note-block]')
+  return block && editor.contains(block) ? block : null
+}
+
+function caretOffset(block: HTMLElement): number {
+  const selection = window.getSelection()
+  if (!selection?.rangeCount) return block.textContent?.length ?? 0
+  const range = selection.getRangeAt(0)
+  if (!block.contains(range.startContainer)) return block.textContent?.length ?? 0
+  const before = range.cloneRange()
+  before.selectNodeContents(block)
+  before.setEnd(range.startContainer, range.startOffset)
+  return before.toString().length
+}
+
+function focusAt(editor: HTMLElement, index: number, offset: number) {
+  const block = noteNodes(editor)[index]
+  if (!block) return
+  editor.focus()
+  const range = document.createRange()
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
+  let text = walker.nextNode()
+  let remaining = offset
+  while (text && remaining > (text.textContent?.length ?? 0)) {
+    remaining -= text.textContent?.length ?? 0
+    text = walker.nextNode()
+  }
+  if (text) range.setStart(text, Math.min(remaining, text.textContent?.length ?? 0))
+  else range.selectNodeContents(block)
+  range.collapse(true)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+  block.scrollIntoView({ block: 'nearest' })
 }
 
 export function MobileNoteEditor({
@@ -35,58 +93,210 @@ export function MobileNoteEditor({
   onLimit: () => void
   importItems: NoteImportItem[]
 }) {
-  const blocks = parseNote(value)
-  const fields = useRef<(HTMLTextAreaElement | null)[]>([])
+  const editorRef = useRef<HTMLDivElement | null>(null)
+  const renderedValue = useRef<string | null>(null)
+  const acceptedValue = useRef(value)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [activeBold, setActiveBold] = useState(false)
   const [menu, setMenu] = useState<'style' | 'import' | null>(null)
   const [selectedItems, setSelectedItems] = useState<string[]>(storedImportSelection)
-  const active = Math.min(activeIndex, blocks.length - 1)
 
-  useLayoutEffect(() => {
-    fields.current.forEach((field) => {
-      if (!field) return
-      field.style.height = 'auto'
-      field.style.height = `${Math.max(32, field.scrollHeight)}px`
-    })
-  }, [value])
-
-  const commit = (next: NoteBlock[], focusIndex = active, caret?: number) => {
-    const text = serializeNote(next)
-    if (text.length > 5000) {
-      onLimit()
-      return
+  const renderBlocks = (blocks: NoteBlock[], focusIndex?: number, offset = 0) => {
+    const editor = editorRef.current
+    if (!editor) return
+    let number = 0
+    editor.replaceChildren(
+      ...blocks.map((block, index) => {
+        number = block.kind === 'number' ? number + 1 : 0
+        const node = document.createElement('div')
+        node.className = `mobile-note-block is-${block.kind}${block.bold ? ' is-bold' : ''}`
+        node.dataset.noteBlock = ''
+        node.dataset.kind = block.kind
+        node.dataset.indent = String(block.indent)
+        node.dataset.bold = block.bold ? 'true' : 'false'
+        if (block.marker) node.dataset.sourceMarker = block.marker
+        if (block.kind === 'bullet') node.dataset.marker = '•'
+        if (block.kind === 'number') node.dataset.marker = block.marker?.trim() ?? `${number}.`
+        if (index === 0 && !block.text) node.dataset.placeholder = '開始記錄…'
+        node.textContent = block.text
+        return node
+      })
+    )
+    if (focusIndex !== undefined) {
+      setActiveIndex(focusIndex)
+      setActiveBold(Boolean(blocks[focusIndex]?.bold))
+      requestAnimationFrame(() => focusAt(editor, focusIndex, offset))
     }
-    onChange(text)
-    setActiveIndex(focusIndex)
-    requestAnimationFrame(() => {
-      const field = fields.current[focusIndex]
-      field?.focus()
-      if (caret !== undefined) field?.setSelectionRange(caret, caret)
-      field?.scrollIntoView({ block: 'nearest' })
-    })
   }
 
-  const changeKind = (kind: NoteBlock['kind']) => {
-    const next = [...blocks]
-    next[active] = { ...next[active]!, kind, marker: undefined }
-    const caret = fields.current[active]?.selectionStart
-    commit(next, active, caret)
+  useLayoutEffect(() => {
+    if (renderedValue.current === value) return
+    renderedValue.current = value
+    acceptedValue.current = value
+    renderBlocks(parseNote(value))
+  }, [value])
+
+  const saveBlocks = (blocks: NoteBlock[]) => {
+    const next = serializeNote(blocks)
+    if (next.length > 5000) {
+      onLimit()
+      renderBlocks(parseNote(acceptedValue.current), activeIndex)
+      return false
+    }
+    renderedValue.current = next
+    acceptedValue.current = next
+    onChange(next)
+    return true
+  }
+
+  const commit = (blocks: NoteBlock[], index: number, offset: number) => {
+    if (saveBlocks(blocks)) renderBlocks(blocks, index, offset)
+  }
+
+  const updateActive = () => {
+    const editor = editorRef.current
+    if (!editor) return
+    const block = blockAt(editor, window.getSelection()?.anchorNode ?? null)
+    if (!block) return
+    setActiveIndex(noteNodes(editor).indexOf(block))
+    setActiveBold(block.dataset.bold === 'true')
+  }
+
+  const editActive = (change: (block: NoteBlock) => NoteBlock) => {
+    const editor = editorRef.current
+    if (!editor) return
+    const blocks = readBlocks(editor)
+    const index = Math.min(activeIndex, blocks.length - 1)
+    const offset = caretOffset(noteNodes(editor)[index]!)
+    blocks[index] = change(blocks[index]!)
+    commit(blocks, index, offset)
     setMenu(null)
   }
 
-  const changeIndent = (step: number) => {
-    const next = [...blocks]
-    next[active] = {
-      ...next[active]!,
-      indent: Math.max(0, Math.min(2, next[active]!.indent + step))
+  const insertLines = (lines: string[]) => {
+    if (!lines.length || !editorRef.current) return
+    const blocks = readBlocks(editorRef.current)
+    const additions: NoteBlock[] = lines.map((text) => ({ kind: 'body', indent: 0, text }))
+    let index = Math.min(activeIndex, blocks.length - 1)
+    if (blocks.length === 1 && blocks[0]?.kind === 'body' && !blocks[0].text) {
+      blocks.splice(0, 1, ...additions)
+      index = additions.length - 1
+    } else {
+      blocks.splice(index + 1, 0, ...additions)
+      index += additions.length
     }
-    commit(next, active, fields.current[active]?.selectionStart)
+    commit(blocks, index, additions.at(-1)?.text.length ?? 0)
+    setMenu(null)
   }
 
-  const toggleBold = () => {
-    const next = [...blocks]
-    next[active] = { ...next[active]!, bold: !next[active]!.bold }
-    commit(next, active, fields.current[active]?.selectionStart)
+  const splitBlock = () => {
+    const editor = editorRef.current
+    const selection = window.getSelection()
+    if (!editor || !selection?.rangeCount) return
+    if (!selection.isCollapsed) selection.getRangeAt(0).deleteContents()
+    const nodes = noteNodes(editor)
+    const selected = blockAt(editor, selection.anchorNode)
+    const index = selected ? nodes.indexOf(selected) : Math.min(activeIndex, nodes.length - 1)
+    const blocks = readBlocks(editor)
+    const current = blocks[index]!
+    const offset = caretOffset(nodes[index]!)
+    if (!current.text && (current.kind === 'bullet' || current.kind === 'number')) {
+      blocks[index] = { ...current, kind: 'body', marker: undefined }
+      commit(blocks, index, 0)
+      return
+    }
+    blocks[index] = { ...current, text: current.text.slice(0, offset) }
+    blocks.splice(index + 1, 0, {
+      kind: current.kind === 'heading' ? 'body' : current.kind,
+      indent: current.kind === 'heading' ? 0 : current.indent,
+      text: current.text.slice(offset)
+    })
+    commit(blocks, index + 1, 0)
+  }
+
+  const handleInput = () => {
+    const editor = editorRef.current
+    if (!editor) return
+    saveBlocks(readBlocks(editor))
+    updateActive()
+  }
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.nativeEvent.isComposing || !editorRef.current) return
+    const editor = editorRef.current
+    const selection = window.getSelection()
+    const node = blockAt(editor, selection?.anchorNode ?? null)
+    const index = node ? noteNodes(editor).indexOf(node) : activeIndex
+    const blocks = readBlocks(editor)
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      const current = blocks[index]!
+      blocks[index] = {
+        ...current,
+        indent: Math.max(0, Math.min(2, current.indent + (event.shiftKey ? -1 : 1)))
+      }
+      commit(blocks, index, node ? caretOffset(node) : 0)
+      return
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      splitBlock()
+      return
+    }
+    if (!selection?.isCollapsed || !node) return
+    const offset = caretOffset(node)
+    if (event.key === 'Backspace' && offset === 0) {
+      if (index === 0 && blocks[0]?.kind === 'body' && !blocks[0]?.indent) return
+      event.preventDefault()
+      if (index === 0) {
+        blocks[0] = { ...blocks[0]!, kind: 'body', indent: 0, marker: undefined }
+        commit(blocks, 0, 0)
+      } else {
+        const previous = blocks[index - 1]!
+        const caret = previous.text.length
+        blocks[index - 1] = { ...previous, text: previous.text + blocks[index]!.text }
+        blocks.splice(index, 1)
+        commit(blocks, index - 1, caret)
+      }
+    } else if (
+      event.key === 'Delete' &&
+      offset === blocks[index]!.text.length &&
+      index < blocks.length - 1
+    ) {
+      event.preventDefault()
+      const caret = blocks[index]!.text.length
+      blocks[index] = { ...blocks[index]!, text: blocks[index]!.text + blocks[index + 1]!.text }
+      blocks.splice(index + 1, 1)
+      commit(blocks, index, caret)
+    }
+  }
+
+  const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const editor = editorRef.current
+    const selection = window.getSelection()
+    if (!editor || !selection?.rangeCount) return
+    if (!selection.isCollapsed) selection.getRangeAt(0).deleteContents()
+    const node = blockAt(editor, selection.anchorNode)
+    const index = node ? noteNodes(editor).indexOf(node) : activeIndex
+    const blocks = readBlocks(editor)
+    const offset = node ? caretOffset(node) : blocks[index]!.text.length
+    const pieces = event.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n').split('\n')
+    const current = blocks[index]!
+    const before = current.text.slice(0, offset)
+    const after = current.text.slice(offset)
+    if (pieces.length === 1) {
+      blocks[index] = { ...current, text: before + pieces[0] + after }
+      commit(blocks, index, before.length + pieces[0]!.length)
+    } else {
+      blocks[index] = { ...current, text: before + pieces[0] }
+      const additions: NoteBlock[] = pieces
+        .slice(1)
+        .map((text) => ({ kind: 'body', indent: 0, text }))
+      additions[additions.length - 1]!.text += after
+      blocks.splice(index + 1, 0, ...additions)
+      commit(blocks, index + additions.length, pieces.at(-1)!.length)
+    }
   }
 
   const setImportSelection = (selection: string[]) => {
@@ -94,199 +304,58 @@ export function MobileNoteEditor({
     try {
       localStorage.setItem(importSelectionKey, JSON.stringify(selection))
     } catch {
-      // A blocked storage preference must never interrupt note editing.
+      // A blocked preference store must not interrupt writing.
     }
   }
-
-  const insertLines = (lines: string[]) => {
-    if (!lines.length) return
-    const next = [...blocks]
-    const additions: NoteBlock[] = lines.map((text) => ({ kind: 'body', indent: 0, text }))
-    if (next.length === 1 && next[0]?.kind === 'body' && !next[0].text) {
-      next.splice(0, 1, ...additions)
-      commit(next, additions.length - 1, additions.at(-1)?.text.length)
-    } else {
-      next.splice(active + 1, 0, ...additions)
-      commit(next, active + additions.length, additions.at(-1)?.text.length)
-    }
-    setMenu(null)
-  }
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>, index: number) => {
-    if (event.nativeEvent.isComposing) return
-    const field = event.currentTarget
-    if (event.key === 'Tab') {
-      event.preventDefault()
-      const next = [...blocks]
-      next[index] = {
-        ...next[index]!,
-        indent: Math.max(0, Math.min(2, next[index]!.indent + (event.shiftKey ? -1 : 1)))
-      }
-      commit(next, index, field.selectionStart)
-      return
-    }
-    if (event.key === 'ArrowUp' && field.selectionStart === 0 && index > 0) {
-      event.preventDefault()
-      const previous = fields.current[index - 1]
-      previous?.focus()
-      previous?.setSelectionRange(previous.value.length, previous.value.length)
-      return
-    }
-    if (
-      event.key === 'ArrowDown' &&
-      field.selectionStart === field.value.length &&
-      index < blocks.length - 1
-    ) {
-      event.preventDefault()
-      fields.current[index + 1]?.focus()
-      fields.current[index + 1]?.setSelectionRange(0, 0)
-      return
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      const current = blocks[index]!
-      if (!current.text && (current.kind === 'bullet' || current.kind === 'number')) {
-        const next = [...blocks]
-        next[index] = { ...current, kind: 'body', marker: undefined }
-        commit(next, index, 0)
-        return
-      }
-      const before = current.text.slice(0, field.selectionStart)
-      const after = current.text.slice(field.selectionEnd)
-      const next = [...blocks]
-      next[index] = { ...current, text: before }
-      next.splice(index + 1, 0, {
-        kind: current.kind === 'heading' ? 'body' : current.kind,
-        indent: current.kind === 'heading' ? 0 : current.indent,
-        text: after,
-        marker: undefined
-      })
-      commit(next, index + 1, 0)
-      return
-    }
-    if (event.key === 'Backspace' && field.selectionStart === 0 && field.selectionEnd === 0) {
-      if (index === 0) {
-        if (blocks[0]?.kind !== 'body' || blocks[0]?.indent) {
-          event.preventDefault()
-          const next = [...blocks]
-          next[0] = { ...next[0]!, kind: 'body', indent: 0, marker: undefined }
-          commit(next, 0, 0)
-        }
-        return
-      }
-      event.preventDefault()
-      const next = [...blocks]
-      const previous = next[index - 1]!
-      const caret = previous.text.length
-      next[index - 1] = { ...previous, text: previous.text + next[index]!.text }
-      next.splice(index, 1)
-      commit(next, index - 1, caret)
-      return
-    }
-    if (
-      event.key === 'Delete' &&
-      field.selectionStart === field.value.length &&
-      field.selectionEnd === field.selectionStart &&
-      index < blocks.length - 1
-    ) {
-      event.preventDefault()
-      const next = [...blocks]
-      const caret = next[index]!.text.length
-      next[index] = { ...next[index]!, text: next[index]!.text + next[index + 1]!.text }
-      next.splice(index + 1, 1)
-      commit(next, index, caret)
-    }
-  }
-
-  const importSelected = () =>
-    insertLines(
-      importItems.filter((item) => selectedItems.includes(item.label)).map((item) => item.text)
-    )
 
   return (
     <>
       <div
         className="mobile-note-canvas"
-        aria-label="課堂筆記編輯器"
+        aria-label="教練筆記編輯器"
         onClick={(event) => {
-          if (event.target !== event.currentTarget) return
-          const last = fields.current[blocks.length - 1]
-          last?.focus()
-          last?.setSelectionRange(last.value.length, last.value.length)
+          if (event.target !== event.currentTarget || !editorRef.current) return
+          const nodes = noteNodes(editorRef.current)
+          focusAt(editorRef.current, nodes.length - 1, nodes.at(-1)?.textContent?.length ?? 0)
         }}
       >
-        {blocks.map((block, index) => (
-          <div
-            className={`mobile-note-block is-${block.kind}${block.bold ? ' is-bold' : ''}`}
-            data-indent={block.indent}
-            key={index}
-            onClick={(event) => {
-              if (event.target !== event.currentTarget) return
-              const field = fields.current[index]
-              field?.focus()
-              field?.setSelectionRange(field.value.length, field.value.length)
-            }}
-          >
-            {block.kind === 'bullet' && <span aria-hidden="true">•</span>}
-            {block.kind === 'number' && (
-              <span aria-hidden="true">
-                {block.marker?.trim() ??
-                  `${blocks.slice(0, index + 1).filter((item) => item.kind === 'number').length}.`}
-              </span>
-            )}
-            <textarea
-              ref={(element) => {
-                fields.current[index] = element
-              }}
-              rows={1}
-              value={block.text}
-              aria-label={`筆記第 ${index + 1} 段`}
-              placeholder={index === 0 && !value ? '開始記錄…' : undefined}
-              onFocus={() => {
-                setActiveIndex(index)
-                onFocusChange(true)
-              }}
-              onBlur={(event) => {
-                if (!event.relatedTarget?.closest('.mobile-note-canvas, .session-note-tools')) {
-                  onFocusChange(false)
-                  setMenu(null)
-                }
-              }}
-              onChange={(event) => {
-                const next = [...blocks]
-                next[index] = { ...block, text: event.target.value.replace(/[\r\n]/g, '') }
-                const text = serializeNote(next)
-                if (text.length > 5000) onLimit()
-                else onChange(text)
-              }}
-              onKeyDown={(event) => handleKeyDown(event, index)}
-              onPaste={(event) => {
-                const pasted = event.clipboardData.getData('text/plain')
-                if (!pasted.includes('\n')) return
-                event.preventDefault()
-                const field = event.currentTarget
-                const current = blocks[index]!
-                const pieces = pasted.replace(/\r\n/g, '\n').split('\n')
-                const next = [...blocks]
-                next[index] = {
-                  ...current,
-                  text: current.text.slice(0, field.selectionStart) + pieces[0]
-                }
-                next.splice(
-                  index + 1,
-                  0,
-                  ...pieces.slice(1).map((text) => ({ kind: 'body' as const, indent: 0, text }))
-                )
-                next[index + pieces.length - 1] = {
-                  ...next[index + pieces.length - 1]!,
-                  text:
-                    next[index + pieces.length - 1]!.text + current.text.slice(field.selectionEnd)
-                }
-                commit(next, index + pieces.length - 1, pieces.at(-1)?.length)
-              }}
-            />
-          </div>
-        ))}
+        <div
+          ref={editorRef}
+          className="mobile-note-content"
+          contentEditable
+          suppressContentEditableWarning
+          role="textbox"
+          aria-label="教練筆記內文"
+          aria-multiline="true"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              const nodes = noteNodes(event.currentTarget)
+              focusAt(event.currentTarget, nodes.length - 1, nodes.at(-1)?.textContent?.length ?? 0)
+            } else updateActive()
+          }}
+          onKeyUp={updateActive}
+          onMouseUp={updateActive}
+          onFocus={() => onFocusChange(true)}
+          onBlur={(event) => {
+            if (!event.relatedTarget?.closest('.mobile-note-canvas, .session-note-tools')) {
+              onFocusChange(false)
+              setMenu(null)
+            }
+          }}
+          onInput={handleInput}
+          onBeforeInput={(event: FormEvent<HTMLDivElement>) => {
+            const input = event.nativeEvent as InputEvent
+            if (
+              !input.isComposing &&
+              (input.inputType === 'insertParagraph' || input.inputType === 'insertLineBreak')
+            ) {
+              event.preventDefault()
+              splitBlock()
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+        />
       </div>
       <div className="session-note-tools" aria-label="筆記工具列">
         <button
@@ -296,53 +365,82 @@ export function MobileNoteEditor({
           onPointerDown={(event) => event.preventDefault()}
           onClick={() => setMenu(menu === 'style' ? null : 'style')}
         >
-          Aa <ChevronDown aria-hidden="true" />
+          <span className="note-tool-icon note-tool-size" aria-hidden="true">
+            Aa
+          </span>
+          <span className="note-tool-caption">字級</span>
         </button>
         <button
           type="button"
           aria-label="段落加粗"
-          aria-pressed={Boolean(blocks[active]?.bold)}
+          aria-pressed={activeBold}
           onPointerDown={(event) => event.preventDefault()}
-          onClick={toggleBold}
+          onClick={() => editActive((block) => ({ ...block, bold: !block.bold }))}
         >
-          <strong className="note-tool-bold" aria-hidden="true">
+          <strong className="note-tool-icon note-tool-bold" aria-hidden="true">
             B
           </strong>
+          <span className="note-tool-caption">加粗</span>
         </button>
         <button
           type="button"
           aria-label="項目清單"
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() => changeKind(blocks[active]?.kind === 'bullet' ? 'body' : 'bullet')}
+          onClick={() =>
+            editActive((block) => ({
+              ...block,
+              kind: block.kind === 'bullet' ? 'body' : 'bullet',
+              marker: undefined
+            }))
+          }
         >
-          <span className="note-tool-bullet" aria-hidden="true">
+          <span className="note-tool-icon note-tool-bullet" aria-hidden="true">
             •
-          </span>{' '}
-          <span>項目</span>
+          </span>
+          <span className="note-tool-caption">項目</span>
         </button>
         <button
           type="button"
           aria-label="編號清單"
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() => changeKind(blocks[active]?.kind === 'number' ? 'body' : 'number')}
+          onClick={() =>
+            editActive((block) => ({
+              ...block,
+              kind: block.kind === 'number' ? 'body' : 'number',
+              marker: undefined
+            }))
+          }
         >
-          <ListOrdered aria-hidden="true" /> <span>編號</span>
+          <span className="note-tool-icon">
+            <ListOrdered aria-hidden="true" />
+          </span>
+          <span className="note-tool-caption">編號</span>
         </button>
         <button
           type="button"
           aria-label="增加縮排"
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() => changeIndent(1)}
+          onClick={() =>
+            editActive((block) => ({ ...block, indent: Math.min(2, block.indent + 1) }))
+          }
         >
-          <IndentIncrease aria-hidden="true" /> <span>縮排</span>
+          <span className="note-tool-icon">
+            <IndentIncrease aria-hidden="true" />
+          </span>
+          <span className="note-tool-caption">縮排</span>
         </button>
         <button
           type="button"
           aria-label="減少縮排"
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() => changeIndent(-1)}
+          onClick={() =>
+            editActive((block) => ({ ...block, indent: Math.max(0, block.indent - 1) }))
+          }
         >
-          <IndentDecrease aria-hidden="true" /> <span>退排</span>
+          <span className="note-tool-icon">
+            <IndentDecrease aria-hidden="true" />
+          </span>
+          <span className="note-tool-caption">退排</span>
         </button>
         <button
           type="button"
@@ -351,14 +449,27 @@ export function MobileNoteEditor({
           onPointerDown={(event) => event.preventDefault()}
           onClick={() => setMenu(menu === 'import' ? null : 'import')}
         >
-          <NotebookTabs aria-hidden="true" /> <span>課堂</span>
+          <span className="note-tool-icon">
+            <NotebookTabs aria-hidden="true" />
+          </span>
+          <span className="note-tool-caption">課堂</span>
         </button>
         {menu === 'style' && (
           <div className="session-note-popover is-style" role="group" aria-label="段落樣式">
-            <button type="button" onClick={() => changeKind('heading')}>
+            <button
+              type="button"
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() =>
+                editActive((block) => ({ ...block, kind: 'heading', marker: undefined }))
+              }
+            >
               標題 Heading
             </button>
-            <button type="button" onClick={() => changeKind('body')}>
+            <button
+              type="button"
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() => editActive((block) => ({ ...block, kind: 'body', marker: undefined }))}
+            >
               內文 Body
             </button>
           </div>
@@ -380,7 +491,11 @@ export function MobileNoteEditor({
                     )
                   }
                 />
-                <button type="button" onClick={() => insertLines([item.text])}>
+                <button
+                  type="button"
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={() => insertLines([item.text])}
+                >
                   <span>{item.label}</span>
                   <small>{item.text}</small>
                 </button>
@@ -389,11 +504,23 @@ export function MobileNoteEditor({
             <div className="note-import-actions">
               <button
                 type="button"
+                onPointerDown={(event) => event.preventDefault()}
                 onClick={() => insertLines(importItems.map((item) => item.text))}
               >
                 導入全部
               </button>
-              <button type="button" disabled={!selectedItems.length} onClick={importSelected}>
+              <button
+                type="button"
+                disabled={!selectedItems.length}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() =>
+                  insertLines(
+                    importItems
+                      .filter((item) => selectedItems.includes(item.label))
+                      .map((item) => item.text)
+                  )
+                }
+              >
                 導入選取
               </button>
             </div>
