@@ -52,19 +52,19 @@ Roadmap.
 
 ## Delivery flow
 
-Follow the Roadmap's `Contract -> Terra -> Sol -> CI` gates in order for every governed work package.
+Follow the Roadmap's `Contract -> Sol -> CI` gates in order for every active or future governed work
+package. Preserve historical Terra evidence from delivered packages without creating new Terra
+handoffs.
 Before implementation, confirm that the active Contract is frozen and that its prior gates are
 complete.
 
 - **Contract:** freeze product behaviour, data and authorization contracts, route states, wording
   intent, responsive acceptance, and required evidence so implementation needs no new product
   decision.
-- **Terra:** implement only the frozen engineering contract. Use semantic, unstyled UI slots and
-  supplied wording; return missing product, visual, interaction, or copy decisions to Contract while
-  continuing independent contracted work.
-- **Sol:** converge the working feature with the Demo, including final presentation, responsive and
-  accessible interaction, and Coach- or Student-facing wording. Return missing server authority to
-  Contract rather than reproducing it in the browser.
+- **Sol:** implement the frozen engineering and product contract end to end: schema, Modules, API,
+  typed Web states, tests, Demo-aligned presentation, responsive and accessible interaction, and
+  Coach- or Student-facing wording. Return missing product or server-authority decisions to
+  Contract while continuing independent contracted work; keep official rules behind the API.
 - **CI:** run the exact local, live, migration, browser, and remote checks required by the Roadmap and
   Contract. A push is not completion evidence; confirm the GitHub Actions jobs for the delivered
   commit.
@@ -147,7 +147,7 @@ After completing each Roadmap step, inspect the approved Next handoff and contin
 next step when it is not a milestone boundary, its required Contract and prior gates are complete,
 and it needs no new authorization, external permission, or Product Owner decision. Complete one
 step and its applicable evidence before beginning the next; this automatic handoff never skips,
-combines, or reorders the Contract -> Terra -> Sol -> CI gates. Stop at a milestone completion or
+combines, or reorders the Contract -> Sol -> CI gates. Stop at a milestone completion or
 when an unexpected problem, missing authority, external dependency, or required decision makes
 continuation unsafe; record the exact handoff and blocking condition in Status.
 

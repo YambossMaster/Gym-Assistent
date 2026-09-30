@@ -6,15 +6,20 @@
 
 ## 正式應用
 
-第一條可執行的正式垂直切片位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)，目前提供：
+正式產品位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)。M0–M7 已完成；目前進行
+M7.5 Stage 2 的部署前整合驗收，M8 的正式部署與免費封閉 Beta 尚未開始。產品目前包含：
 
 - 可替換 Managed Auth 供應商的 OIDC/JWKS 驗證；
 - 一位教練對應一個私有 Workspace；
 - 不接受前端指定 Workspace 的學生建立與查詢；
 - PostgreSQL schema migration；
 - 本機開發身分 adapter 與租戶隔離測試。
-- Supabase Auth 登入殼、學生清單與新增學生；
-- 可安裝的 Web App manifest 與不快取 API 的 PWA shell。
+- Supabase Auth、學生與課程權益、行事曆排課、訓練紀錄、公開能力連結；
+- 場地與收支管理、可安裝的 Web App manifest，以及不快取 API 的 PWA shell。
+
+目前的本機 Web/PWA 預覽不代表已通過實機驗收，也不是已部署的正式服務。發布順序與
+免費 Beta 的一年／永久使用優惠碼規劃見 [`docs/ROADMAP.md`](docs/ROADMAP.md)；實際驗證與
+下一個工作項目見 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)。
 
 安裝與檢查：
 

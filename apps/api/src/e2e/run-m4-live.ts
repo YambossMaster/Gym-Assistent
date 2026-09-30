@@ -234,8 +234,8 @@ try {
     series: { id: string; version: number; autoScheduleHorizon: string }
     anchor: { id: string; version: number }
   }
-  await requireStatus(
-    'reject Series-owned Student reassignment',
+  const reassignedOccurrenceResponse = await requireStatus(
+    'reassign one Series occurrence without changing its Series',
     await request(`/v1/sessions/${seriesResult.anchor.id}`, coachA, {
       method: 'PATCH',
       body: JSON.stringify({
@@ -246,8 +246,31 @@ try {
         version: seriesResult.anchor.version,
       }),
     }),
-    400,
+    200,
   )
+  const reassignedOccurrence = (await reassignedOccurrenceResponse.json()) as {
+    session: { studentId: string; seriesId: string | null; version: number }
+  }
+  if (
+    reassignedOccurrence.session.studentId !== secondStudent.id ||
+    reassignedOccurrence.session.seriesId !== seriesResult.series.id ||
+    reassignedOccurrence.session.version !== seriesResult.anchor.version + 1
+  )
+    throw new Error('Series occurrence reassignment did not preserve its Series and version')
+  const seriesAfterReassignmentResponse = await requireStatus(
+    'original Student retains the Series',
+    await request(`/v1/students/${student.id}/schedule-series`, coachA),
+    200,
+  )
+  const seriesAfterReassignment = (await seriesAfterReassignmentResponse.json()) as {
+    series: Array<{ id: string; studentId: string }>
+  }
+  if (
+    !seriesAfterReassignment.series.some(
+      (series) => series.id === seriesResult.series.id && series.studentId === student.id,
+    )
+  )
+    throw new Error('One occurrence reassignment changed the owning Series Student')
   if (seriesResult.series.autoScheduleHorizon !== '2_WEEKS')
     throw new Error('Series did not retain horizon')
   const movedStart = new Date(start.getTime() + 15 * 60 * 1000)
@@ -359,7 +382,7 @@ try {
     404,
   )
   console.log(
-    `M4 live E2E passed for isolated Student ${student.id}: Session Student reassignment/Series guard, two-device conflict/current state, recurring Block future/all scope with preserved offsets, projections, horizon/effective boundary, and two-Coach isolation.`,
+    `M4 live E2E passed for isolated Student ${student.id}: standalone and Series-occurrence Student reassignment, preserved Series ownership, two-device conflict/current state, recurring Block future/all scope with preserved offsets, projections, horizon/effective boundary, and two-Coach isolation.`,
   )
 } finally {
   if (blockCleanup) {

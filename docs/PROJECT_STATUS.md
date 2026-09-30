@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-09-30. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-01. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
@@ -8,228 +8,135 @@
 | Field              | Current value                                                                                       |
 | ------------------ | --------------------------------------------------------------------------------------------------- |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
-| Current package    | **M7.5 Product Owner-led mobile route and dialog review**                                           |
-| Package state      | **Accumulated mobile checkpoint passed exact-SHA CI; Stage 1 and installed-PWA review remain open** |
-| Completed baseline | M0–M7 Done; M7.5 is Product Owner-led and remains in progress                                       |
+| Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                             |
+| Package state      | **Stage 2 local/build/live/database gate passed; browser and Product Owner acceptance remain open** |
+| Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                               |
 | Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs         |
-| Worktree           | Accumulated mobile corrections are on Main; installed-PWA review remains open                       |
+| Worktree           | `codex/m75-stage2-review`; Stage 2 corrections prepared for checkpoint CI                           |
 | Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date         |
 | Production         | Not configured; no real customer data                                                               |
-| Approved M8 scope  | Beta help, problem-reporting, and product-feedback paths added; implementation remains unstarted    |
+| Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes         |
 
 ## Next handoff
 
-The Product Owner decided to retain the accumulated mobile UI changes and authorized a Main delivery
-after CI checks. Continue the route-by-route installed-PWA review below after this delivery; a green
-CI checkpoint does not establish physical-device acceptance or complete M7.5.
+The Product Owner explicitly closed M7.5 Stage 1 on 2026-09-30 and authorized follow-up testing.
+M3.5 and M0–M7 remain Done. **M7.5 Stage 2 is the active package.** The Product Owner approved the
+route-by-route Coach hierarchy in [the Stage 2 matrix](M7.5-STAGE-2-ACCEPTANCE.md) as the review
+baseline on 2026-10-01. The Product Owner explicitly deferred installed Android/iOS PWA evidence
+until a phone-accessible deployment; this remains an open M8-B staging gate before production Alpha,
+not a Stage 2 pass. Next, execute the remaining browser
+interaction, isolated Venue/Finance and mobile-preview paths. Record each symptom and result, fix
+it or obtain explicit
+Product Owner acceptance/deferral. After all required paths are accepted, repeat the full local,
+live, migration and browser gate, commit/push the cohesive package, and confirm exact-SHA remote CI.
+No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
 
-Review the mobile Today strip and header on an installed PWA. Today courses, active students, and
-monthly finances now occupy one three-column strip; the notification bell sits directly beside
-Settings in the dark app bar. An unread count lights the bell lime and appears in a badge; the
-existing read, dismiss, and target-navigation actions remain in the same notification panel.
-The mobile active-student value is 16px and shares the finance label's content-row height.
-Both link chevrons align vertically with those content values.
-Authenticated Chrome 390×844 preview showed three equal-height columns with aligned title rows and
-value bottoms, a 106px header, two 44px header buttons with an 8px gap, an opening empty notification
-panel, 21–22px greeting margins, and no document-level
-horizontal overflow. Web checks (58 files, 248 tests) and production build passed. Unread visual
-state and physical installed-PWA touch/safe-area behavior still need Product Owner review.
+## Stage 2 evidence in progress
 
-Review mobile setting/edit dialog scrollbars on an installed PWA. Calendar scheduling, Course Session
-editing, fixed Series, purchase editing, Venue creation/detail/course records, Finance ledger editing, Settings
-password/device-cache, and Capability Link dialogs now assign scrolling to fields above their fixed
-action rows. The reported Calendar case was checked in a 390×844 authenticated browser preview:
-the field scroller ended where the action row began, while the outer content did not scroll. Venue
-creation/detail/course records and Finance ledger layouts were also inspected in that preview. Check touch scroll,
-opened choice panels, and action clearance on a physical installed PWA before visual acceptance.
+- [Stage 2 acceptance matrix](M7.5-STAGE-2-ACCEPTANCE.md) records each named scenario, observed
+  Stage 2 result and remaining boundary. The existing local Web has a 390×844 mobile preview, not
+  a deployed Android/iOS app. This pass used authenticated Chrome at 320 and 390 CSS pixels; no
+  physical-device or installed-PWA result is claimed.
+- An isolated development Auth account passed live password update, local sign-out, rejection of
+  its old password, and sign-in with its new password. The account was deleted afterward. This is
+  Auth API evidence only; browser form, recovery email, OAuth and mobile keyboard remain unverified.
+- Authenticated desktop Calendar opened a scheduled Session preview and editor, expanded the date
+  chooser, closed it with Escape, cancelled the editor and closed the preview. Focus returned to the
+  original Session event; no scheduling mutation was submitted.
+- Root check passed API 26 files/125 tests and Web 59 files/249 tests after the Auth E2E addition;
+  root production build passed with the existing large-chunk advisory. Sandboxed attempts hit the
+  known Windows `spawn EPERM`, so successful commands used the approved elevated route.
+- A Coach shell recovery correction now invalidates failed route queries and replays queued work
+  after the development API becomes healthy again. Focused regression passed. Authenticated Chrome
+  showed the warning during a verified API exit, kept Today and Student data visible, then loaded a
+  Finance route and cleared the warning after API restart without reloading the page. The readiness
+  helper returned failure when no API was listening. An isolated failed-launcher simulation made the
+  API start command exit, observed the 30-second readiness timeout, the no-Web-on-failure message,
+  and nonzero launcher exit. The temporary command was removed; normal API/Web readiness returned.
+- M4, M5, M6, M7 and M7.5 Venue isolated development live E2E passed and completed cleanup. M4's
+  old Series Student-reassignment assertion contradicted the later approved per-occurrence
+  reassignment; its script now checks the accepted Student change and retained Series owner.
+- Linked development migration dry-run reports zero pending migrations. `app_private` schema lint
+  reports no errors. Advisors report no error-level findings; warnings are the tracked leaked-
+  password-protection setting and two capability-link permissive-policy performance notices.
+- A stale Formal Web Vite process served an empty FinanceLedger module despite a nonempty source
+  file and left authenticated Today blank. Restarting only Formal Web restored Today and the
+  mobile preview. A development-only health poll in the shared Coach shell detected a verified API
+  exit: Student retained loaded data and showed a warning, Calendar retained the warning, and API
+  restart cleared it automatically. A both-ports-down Windows cold start then launched API, waited
+  for health, opened Formal Web, and showed authenticated Today; API/Web/proxy health returned 200.
+  The failed-start branch was subsequently verified with an isolated failing command. The brief API
+  refusal on the first Venue E2E did not recur after readiness was restored.
+- Desktop Chrome's 320px viewport simulation showed a page-edge scrollbar that consumed 15px of
+  client width. That scrollbar is a desktop-browser artifact, not an expected phone/PWA UI element;
+  only app-owned internal scrollbars belong to mobile visual acceptance. The old global 320px
+  minimum on `html/body` caused horizontal overflow in this simulation. Removing that minimum
+  restored `scrollWidth === clientWidth` on the observed 320px Today, Calendar, Students, Finance,
+  Venues, Exercises and Settings routes; 390px Settings remained equal-width. This is a browser
+  layout regression check, not device-scrollbar acceptance.
+- Authenticated Chrome at 390px opened and closed the Finance ledger/date picker, Settings password
+  dialog, and prepaid Venue detail/course records without mutating review fixtures. Finance and
+  Venue dialogs had `scrollWidth === clientWidth`; closing the Finance dialog returned focus to its
+  ledger row. Authenticated reloads reached Ready on Today, Calendar, Students, Student detail,
+  Session Training, Exercises, Finance, Venues, and Settings; the desktop document width matched
+  client width on the three list/finance routes measured after reload.
+- Public `/t/:token` and `/r/:token` routes with deliberately invalid tokens rendered their own
+  not-found guidance outside the Coach shell; the 390px reschedule terminal state had equal document
+  scroll/client widths. Expired, revoked, used, and valid-token browser paths remain pending.
+- In the development review Workspace, a uniquely named manual September expense was created in
+  Chrome for $7 and edited to $9. September's expense total moved $1,888 → $1,895 → $1,897 and
+  its ledger count 10 → 11. Exact-ID/Workspace/label/amount/version cleanup removed only that
+  isolated row; database recheck found zero matches, and browser reload returned to 10 rows,
+  $1,888 expense and $18,400 income. A $51 system-source row was temporarily overridden to $52,
+  then reset to its source; it was hidden and restored through the UI. The expense total followed
+  $1,888 → $1,889 → $1,888 → $1,837 → $1,888, and database recheck found the row visible with
+  no remaining manual overrides.
+- On 2026-10-01, authenticated Chrome at 390×844 switched Calendar views and inspected Settings
+  choice-list scroll/Escape, Exercise editor, Training Note toolbar, prepaid Venue batches and course
+  records without a document-width overflow. Student purchase history showed a four-row cutoff and
+  fifth-row reveal using two uniquely marked development purchases; exact scoped cleanup and browser
+  reload restored the original three rows and six remaining lessons. The remaining touch, keyboard,
+  mutation, terminal-state, and Product Owner fixture paths are still open in the Stage 2 matrix.
+- The actual `mobile-preview.html` 390×844 iframe was operated in Chrome: Today rendered its header,
+  summary, empty-day card, quotation and bottom navigation; the Calendar bottom-nav link opened
+  Agenda, and switching to Week showed the seven-day grid and Session cards. A full-page screenshot
+  was inspected and the iframe document width matched its 390px client width. This remains a
+  desktop-browser preview, not installed-device evidence.
+- The consolidated local gate passed with single-worker Vitest scripts: root formatting/typecheck,
+  API 26 files/125 tests, Web 59 files/249 tests, and both production builds (existing large-chunk
+  advisory only). An initial default API run had two 5-second timeouts and the two-worker Web run
+  had two Windows worker-start failures; the complete single-worker root rerun passed. Linked
+  development migration dry-run had zero pending migrations, `app_private` lint no errors, and
+  advisors no error-level finding with the same three tracked warnings. M4/M5/M6/M7, M7.5 Venue,
+  and Finance isolated live E2E passed and completed exact fixture cleanup, including two-Coach
+  HTTP and database RLS isolation in Finance.
 
-Review the new mobile Calendar experiment on an installed PWA: 課表 keeps its existing list, while
-日／週 share one vertically scrolling timeline with no horizontal scrolling, and 月 fits all week
-rows into the available height. The Calendar controls use two compact rows, with the desktop legend
-hidden on mobile; a week date or month cell opens 日. Authenticated Chrome preview at 390×844 and
-direct 320 CSS-pixel checks found no horizontal overflow in day/week/month, and month had no
-internal overflow. The follow-up gives today's 課表 date a lime circle, sizes the mobile day/week
-timeline to show about ten hours at 390×844, and stacks time/name/location in a one-hour 日 event.
-Existing scheduling actions remain in place. Confirm touch panning, dense-event readability, and
-safe-area/bottom-nav clearance on a physical installed PWA before visual acceptance.
+## M7.5 Stage 2 acceptance inventory carried from Stage 1
 
-Try the new Training Record set-input flow on desktop and an installed phone PWA. Focusing a populated
-measurement or RPE selects its value; Enter advances through that set's measurements and RPE, then
-to the next set in the same exercise. Enter on the last RPE blurs the field. Desktop Chrome and a
-390×844 desktop-browser preview confirmed focus progression without changing stored values; actual
-iOS/Android return-key behavior remains for Product Owner device review.
+- **Installed PWA and responsive routes:** verify Today notifications/header, Student and Exercise
+  pinned controls/cards, Settings and subpage app bars, Venue management, and all reported fixed
+  dialog headers/actions/choice-list scroll on Android and iOS. Check 320/390 CSS-pixel reachability,
+  safe areas, touch targets, scrolling, bottom navigation, and no horizontal overflow. Desktop and
+  browser-preview passes do not substitute for installed-device evidence.
+- **Calendar and Training:** verify mobile day/week/month panning, dense-event readability,
+  scheduling/fixed-Series edits, Calendar preferences, and Training set-entry Return navigation,
+  Note editor formatting/caret/keyboard movement, autosave, offline/reconnect, and save status on
+  installed devices. Recheck the previously repaired legacy-record save path.
+- **Auth, Student, and public links:** complete real-device Auth/OAuth entry and the
+  password-update/sign-out/new-password-login path; verify Student purchase-history cutoff with
+  five records, capability-link retention/reissue and public terminal states, and the
+  revised route hierarchy and copy where Product Owner acceptance remained open.
+- **Venue and Finance:** use the preserved isolated 2026 development review data to verify Venue
+  creation and changes, Venue-bound purchases, Calendar/Series choices, salary pay-day income,
+  prepaid completion/reopen and low-balance notice, Venue course records, monthly ledger
+  edit/restore, and source-preserving totals. Keep fixtures until acceptance is recorded.
+- **Consolidated release evidence:** close the Stage 2 backlog below; run clean Windows startup/API
+  readiness and failure recovery, authenticated reload across Coach routes, two-Coach isolation,
+  public-route privacy, full root checks/build, migration dry-run/advisors, desktop and exact-390×844
+  critical journeys, and final exact-SHA GitHub Actions. Record each result, not a blanket pass.
 
-Review the revised Training Record mobile tabs on an installed PWA. Both tabs keep the same
-student/actions/save row and tab row. The selected tab now has a light rounded-top surface, dark
-outline, and dark text. The second tab reads 教練筆記. The tab row and expandable class summary share
-one light background; no dark separator is added when class information is collapsed.
-Both selected tabs now reach the side edges. Bullet and number marks align with their first line;
-list indentation remains visible. Enter continues a nonempty list, while Enter on an empty nested
-item steps outward and Enter on an empty top-level item exits the list. Backspace at the beginning
-first outdents or removes the list marker before joining the previous paragraph. Tab and Shift+Tab
-also work on list items, with matching touch toolbar actions. Typing `- `, `1. `, or `# ` at the
-beginning of a blank paragraph converts it to a bullet, number, or heading. These keyboard rules
-and the edge layout passed desktop-browser preview and Web tests; actual installed-PWA keyboard
-behavior still needs device review.
-The dark class summary appears on both tabs. A second tap on the selected tab toggles that summary,
-switching tabs preserves its state, an upward swipe collapses it, and focusing the Note editor also
-collapses it. The Training cards start without a duplicate title and keep clearance above bottom
-navigation. Tapping empty Note canvas focuses the final paragraph at its end. The keyboard dock now
-includes heading/body, paragraph bold, stronger bullet, numbering, indent/outdent, and class facts.
-Import choices start empty, clicking a fact directly inserts it, and checkbox selection persists
-locally for later batch insertion. The Note canvas now uses one editable surface so native text
-selection can cross paragraphs and long lines wrap; list markers and seven labeled toolbar controls
-align with their text. Note content still uses the 5,000-character private-note autosave
-contract as readable text markers; optional public Training Result notes render paragraph bold and
-the downloadable image uses clean text. Authenticated Chrome 390×844 preview confirmed tab state,
-shared summary, blank-canvas focus, summary collapse, and the compact tool dock. Web checks and
-production build passed. Real iOS/Android keyboard movement, caret visibility, multiline editing,
-formatting, and autosave need installed-PWA review. The shared save API now accepts unchanged legacy
-sets alongside a newer recording snapshot, so a note-only save is no longer rejected as a definition
-conflict; an authenticated Chrome preview accepted a previously stuck draft and displayed 已儲存.
-Desktop keeps its original two-column textarea,
-where formatting markers remain visible when editing a note created on mobile. Continue the wider
-keyboard audit during mobile route review.
-
-Review the Student and Exercise Library pinned mobile switch/search bars and the compact Exercise
-cards on a physical installed PWA. Exercise filters now expand within the pinned controls and reserve
-their own height, leaving the first card fully visible below them on initial entry. They remain
-available anywhere in the list, then collapse on continued downward scrolling or a second tap. Opening
-Search hides Filter, shifts the close button to the far right, and gives the input the freed space.
-The Filter shelf now fades and moves upward over 220ms when closing, with reduced-motion support.
-Confirm touch scrolling, expanded search/filter controls, 320px width, and the transparent
-edit/delete icon targets.
-
-Review the four mobile subpage back actions and the compact Training Record toolbar on an
-installed PWA. Student detail, Training Record, Monthly Finances, and Venue management now use a
-safe-area-aware Back action in the dark app bar instead of the Logo and in-page Back. Training
-Record keeps the student avatar/name, session actions, and visible save status in one mobile row;
-long offline or sync messages can wrap below the actions. Confirm touch targets and narrow-phone
-layout before visual acceptance.
-
-Review the mobile Venue management page at 390×844 and on an installed PWA. The page keeps the
-Back action in its dark header, places the Venue Add action beside Settings, removes the large in-page
-title, and puts its status switch and expanding name search on one row. The card heading now reads
-「場地管理與支出」 on mobile; desktop retains its original layout and wording. Confirm the mobile
-spacing and touch behavior before visual acceptance.
-
-Review the mobile Settings header and pinned category switcher at 390×844 and on an installed PWA.
-Settings now uses the same safe-area-aware dark app bar as Student, Calendar, and Exercise Library;
-its in-page title is hidden on mobile. Tapping the Settings icon again returns to the route from
-which Settings was opened, including a deep route; direct Settings entry falls back to Today. The
-category switcher stays directly below the app bar while Settings content scrolls. Desktop sidebar,
-page title, and category layout remain unchanged. Installed-PWA visual acceptance remains open.
-
-Review the mobile Exercise create/edit dialog on a physical installed PWA. Its Add action now uses
-the same Plus icon as the nearby tag action; the fields own the scroll region, which ends above the
-fixed footer. The mobile in-app scrollbar rule now covers all descendants of the Web root, while
-portaled choice panels retain their olive scrollbar. The browser window's own scrollbar is outside
-this UI scope. Check touch scrolling and opened choice menus on the device before visual acceptance.
-
-Review the mobile dialog action rows in Exercise editing, Student creation, and other route dialogs.
-Their sticky footer now uses the dialog's own surface color and has no separate top border, so the
-actions no longer sit in a contrasting rectangular strip. Keep the mobile and desktop page palette
-as a separate Product Owner visual decision; the current paper, card, and dialog shades remain in
-place. Verify the footer treatment on a physical installed PWA before accepting the experiment.
-
-Review the matching Student, Calendar, and Exercise Library mobile headers at 390×844 and on a
-physical installed PWA. Each now places its route title and Add action beside Settings in the dark,
-safe-area-aware app bar; Student and Exercise Library show total counts. Calendar opens its existing
-scheduling dialog from the new Add control. Student and Exercise Library use one-row segment/Search
-toolbars: opening Search expands an input while the segments narrow and hide counts; closing it
-clears the text filter. Exercise Library's three segments use the same sliding white selection as
-Student. The Calendar's in-page title is hidden on mobile and its wheel-driven header collapse is
-disabled there because the app bar now owns the title. Desktop remains unchanged. Keep these
-retained design on an installed PWA before visual acceptance.
-
-Review the first Today PWA visual experiment at 390×844 and on a physical installed PWA: the mobile
-schedule card has a quiet shadow, the bottom navigation uses one solid surface and lime icon/text
-selection, and the shell applies viewport safe-area padding. Local follow-ups add 16px of visible
-space below navigation items, a 44px Settings target, a mobile Today schedule skeleton, and a short
-fade between bottom-navigation routes while the shell stays fixed. Keep desktop presentation unchanged.
-These experimental changes were unintentionally included in the concurrent `47370fe` checkpoint
-before Product Owner confirmation; do not treat their inclusion as visual acceptance. Decide whether
-to keep or revise this direction during the mobile route-by-route sweep.
-
-Continue the Product Owner's mobile route-by-route sweep. In each newly reported Settings or edit
-dialog, verify that the title/close action and bottom action row remain visible while only the fields
-scroll; keep Delete left and Cancel/Save right on one row where space permits, with concise mobile
-labels and matching action-button sizes. Check that internal and choice-menu scrollbars stay slim at
-the outer edge without taking field width, and that wheel/touch scrolling works over their content. The
-authenticated desktop preview has covered fixed-Series editing, purchase creation, Exercise Library
-creation, Course History wheel scrolling, and trajectory history scrolling; a 320 CSS-pixel viewport
-confirmed that three footer buttons shrink together without wrapping or horizontal overflow. Other
-dialog variants and physical-phone/PWA behavior remain for the route-by-route sweep.
-The two capability-link dialogs now have mobile-specific paired metadata, inline copy actions with
-URL-scoped checkmark feedback and no visible status row, and action rows above the bottom navigation. Continue Product Owner review from
-these states without changing the shared dialog rules.
-Then review the locally implemented Calendar preferences in Settings → 工作偏好 at desktop and 390×844.
-The mobile
-Auth entrance is accepted for now. Its initial view presents FORM's private-Coach
-identity, value promise, and separate 建立帳號／登入 actions without form fields. Either action
-opens its corresponding form in the same component, with a single mobile return to the entrance;
-the existing desktop split layout remains. The current all-black entrance keeps the 264px FORM logo
-in its approved position, places the one-line value statement lower with a 36px gap above the first
-CTA at 390×844, and anchors the two centered CTA labels near the safe-area bottom. Google OAuth launched
-from the desktop-sized mobile preview now leaves its iframe for the top-level Google sign-in page;
-the ordinary top-level sign-in path remains unchanged. The mobile sign-in and signup forms center
-their 繼續 labels while keeping the arrows on the right. A physical-phone/PWA viewport check and
-completed Google account sign-in have not been claimed. The Product Owner previously mentioned a
-Google mark beside 使用 Google 繼續 and input placeholders as possible later form polish; return to
-them only when the Product Owner resumes Auth review. Keep subsequent corrections mobile-only
-unless the reported issue is global. This Stage 1 checkpoint is on Main with exact-SHA CI; it does
-not complete Stage 1 or M7.5 or begin Stage 2.
-
-Review the revised Settings page with the Product Owner at desktop and 390×844. Four categories
-separate Coach/Workspace, work preferences, account/security, and device data. Coach name saves on
-field exit; zone, unit, and currency choices save when selected. There is no page-level Save button or
-persistent success text. Account/security uses the shared row pattern, with password editing in its
-own dialog. Device-cache management opens a separate dialog; Demo import remains a collapsed
-development-only tool. Continue Product Owner review of the category grouping, copy, and device-data
-scope after this authorized delivery checkpoint. Calendar display hours, week start, and default
-Course Session duration now have an M7.5 Stage 1 Contract and local implementation. The linked
-development migration is applied; during browser checks, the existing review account was restored
-to 06:00–22:00, Monday, and 60 minutes. Product Owner acceptance remains open; this checkpoint is
-on Main with exact-SHA CI.
-Language, privacy controls, and plans remain later product decisions.
-
-Account/security follow-up remains in Product Owner review: password dialog now sends the same recovery email
-used from sign-in, and sign-out asks for confirmation. Recovery intent survives Auth token refresh
-and page reload; expired links show an error instead of opening Today. A fresh email link reached
-the new-password form in the development browser, reload stayed out of Today, and the test ended
-with recovery cancellation and local sign-out without changing the account password. Keep the active
-review open; the full password-update/sign-out/new-password-login sequence has not been rerun in
-this pass. The password-dialog recovery action now uses smaller secondary type and shows its
-confirmation directly below the action with the revised concise copy.
-
-Review the Student roster balance cards and Student purchase history with the Product Owner. The
-roster numerator remains total remaining lessons, the denominator is the latest dated purchase
-count, and the track caps at 100%; the reported `1/16` case showed `1/8` at verification time.
-Purchase history now orders newest first, shows at most four rows on the page, and offers a complete
-dialog only when more than four exist. A five-purchase isolated Web test covers the four-row cutoff
-and complete-history selection. The preserved development Student examined in the browser has three
-purchases, so the five-row dialog still needs later live browser acceptance. No purchase data was
-changed for these checks. Continue the pending Stage 1 review below without treating this delivery
-checkpoint as M7.5 completion.
-
-Review the corrected Venue creation, expense-change, and prepaid dialogs with the Product Owner,
-alongside the corrected `/t/:token` and `/r/:token` presentation and date picker.
-Review the M7.5 Capability Link correction: new links are retained in this browser tab across
-dialog close and page reload, then cleared on revocation, reissue, expiry, or Coach sign-out/change.
-Previously issued links whose one-time URL was already discarded cannot be recovered from the
-server's digest-only record; avoid reissuing the preserved review link unless the Product Owner
-chooses to replace it. This Stage 1 change intentionally narrows M6's one-time browser-secret rule
-to per-tab `sessionStorage`; it requires acceptance as part of the current Product Owner review.
-The Stage 1 checkpoint reached Main and passed exact-SHA remote CI; it does not close M7.5. Continue review of
-Venue management, Venue course records, Student course history, trajectory navigation, and Finance overview/month
-selector against the preserved 2026 development data (LOG-221–243; scenario index in local
-`output/M7.5-2026-venue-finance-review-data.md`). Take subsequent corrections only when the
-Product Owner resumes review; do not infer Stage 1 or M7.5 completion from this checkpoint.
-The remaining Stage 1 browser acceptance for Venue creation, Venue-bound purchases,
-Calendar/fixed-Series choices, salary pay-day income, and prepaid completion/reopen with
-its low-balance notice remains open. Preserve these review fixtures until the Product Owner
-finishes inspecting them. Keep the unrelated `output/` intact; do not enter Stage 2/M8 without
-separate Product Owner direction.
+The detailed Stage 1 observations and earlier local/CI evidence remain in the Engineering log.
+Stage 1 closure is a Product Owner phase decision; the unresolved acceptance above is Stage 2 work.
 
 ## M7.5 Stage 2 backlog
 
@@ -249,6 +156,23 @@ separate Product Owner direction.
   workflow is frozen; do not treat Today’s 30-day reschedule window as push delivery or a universal
   notification service. Preserve private-note and capability-token boundaries.
 
+## M8 planning input
+
+The Product Owner approved planning the feedback workflow in `ROADMAP.md` on 2026-09-30. Settings
+will offer problem reports, improvement suggestions, and help requests through one short form;
+accepted submissions become private durable records. A two-day email digest is sent only for newly
+received feedback and links to an authenticated organized review. The Product Owner may reply when
+useful; a durable Coach-scoped reply is surfaced through Today's notification entry point. Records
+are retained indefinitely for now, organized by week, and reversibly archived. M8 Contract still
+needs the mail sender/destination and schedule, review authorization/surface, reply interaction,
+week boundary, and privacy/deletion policy. The approved M8-A–D sequence adds isolated staging,
+pre-release security/PWA/operations gates, controlled production Alpha, and invited free Beta.
+Beta promotion codes grant one year of free use from redemption, followed by an explicit plan choice
+without automatic billing or data deletion; separate limited permanent free codes are reserved for
+the Product Owner to give friends. Each grant is server-owned and remains distinct from future paid
+discounts. Code terms, expiry reminders, post-expiry access, and permanent-grant scope remain M8
+Contract decisions. No M8 implementation or environment setup has begun; M7.5 Stage 2 is active.
+
 ## Milestone status
 
 | Milestone                              | State       | Evidence or remaining boundary                                                                                                  |
@@ -262,9 +186,10 @@ separate Product Owner direction.
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M7.5 Pre-deployment product hardening  | In progress | Stage 1 interim checkpoint `f5996f1`; CI run `35065072206` Verify and migration-dry-run succeeded                               |
-| M8 Deployment and Beta readiness       | Not started | No staging/production environment                                                                                               |
-| M9 Post-V1 options                     | Deferred    | Evaluate after Beta                                                                                                             |
+| M7.5 Pre-deployment product hardening  | In progress | Stage 1 closed by Product Owner; Stage 2 acceptance and consolidated CI remain                                                  |
+| M8 Taiwan Web/PWA free Beta release    | Not started | A–D sequence approved; no staging/production environment                                                                        |
+| M9 Taiwan paid launch                  | Deferred    | Requires M8 Beta outcomes and separate Product Owner approval                                                                   |
+| M10 International/native decision      | Conditional | Requires evidence of demand or PWA limits                                                                                       |
 
 ## Preserved implementation inventory
 
@@ -355,6 +280,7 @@ separate Product Owner direction.
 | GitHub-hosted Node 20 action compatibility warnings               | CI stays green; upgrade checkout/setup-node actions before GitHub removes compatibility         |
 | Previously exposed development credentials require final rotation | No production use; rotate all deployment secrets during M8 before Beta                          |
 | Demo seed/local data can be mistaken for production truth         | Use Demo only for behaviour/presentation; all official data comes from route projections        |
+| Web Vitest default worker startup was intermittently slow         | Capped Web script at two workers; standard root check now passes locally; monitor remote CI     |
 
 ## Verification baseline
 
@@ -520,11 +446,12 @@ npm run check
 npm run build
 npm run db:push:dry
 npm run e2e:m4 --workspace @gym-assistant/api
-npm run preview:m4-demo --workspace @gym-assistant/api
+npm run migration:preview:m4 --workspace @gym-assistant/api -- src/migration/fixtures/m4-demo.json
 npm run preview:m5 --workspace @gym-assistant/api
 npm run e2e:m5 --workspace @gym-assistant/api
 npm run e2e:m6 --workspace @gym-assistant/api
 npm run e2e:m7 --workspace @gym-assistant/api
+npm run e2e:m7.5-venue --workspace @gym-assistant/api
 git diff --check
 ```
 
@@ -532,6 +459,212 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-353 — Run Stage 2 browser and consolidated local gate
+
+- **Scope:** Continue Stage 2 desktop-browser responsive acceptance, verify five-record purchase
+  cutoff and cleanup, stabilize Windows test concurrency, and rerun the combined local/live/database
+  gate.
+- **Outcome:** Calendar views, Settings choice-list scroll, Exercise editor, Training Note toolbar,
+  prepaid Venue batches/course records, and the actual 390×844 mobile preview were inspected without
+  document overflow. The Student four-row purchase cutoff and fifth-row reveal passed with two
+  uniquely marked development records; exact scoped deletion and reload restored the original
+  balance. API and Web test scripts now use one worker to avoid the observed Windows startup/timeouts.
+- **Verification:** Root check passed API 26 files/125 tests and Web 59 files/249 tests; root build
+  passed with only the existing chunk advisory. Linked migration dry-run was up to date; private
+  schema lint found no errors; advisors had no errors and the same three tracked warnings. M4, M5,
+  M6, M7, M7.5 Venue, and Finance isolated live E2E all passed with scoped cleanup. Finance also
+  verified two-Coach HTTP and database RLS isolation. `mobile-preview.html` was operated and a
+  full-page screenshot inspected; it remains simulation evidence.
+- **Known issue:** Stage 2 browser mutations, public-link terminal views, nonempty notifications,
+  Auth browser form/OAuth/recovery, complete route hierarchy task paths, and Product Owner fixture
+  acceptance are still open. Physical installed-PWA journeys remain deferred to M8-B by Product
+  Owner decision. No exact-SHA CI or Main delivery is claimed.
+- **Next:** Finish or obtain Product Owner acceptance/deferral for the remaining Stage 2 matrix
+  paths, then commit/push the cohesive package and confirm exact-SHA remote CI before requesting
+  the M8 handoff.
+
+### 2026-10-01 — LOG-352 — Defer installed-device evidence and prove isolated password Auth
+
+- **Scope:** Product Owner deferred physical Android/iOS installed-PWA validation until a
+  phone-accessible deployment and authorized an isolated test account for password verification.
+- **Outcome:** Keep the real-device journeys as an explicit M8-B staging gate before production
+  Alpha. Added a repeatable development-only Auth E2E that creates a unique plus-addressed account,
+  changes its password, signs out locally, rejects the former password, accepts the new one, and
+  deletes only that account after checking its identity.
+- **Verification:** Focused Web Auth tests (9/9), root formatting/typecheck/API 26 files/125 tests,
+  Web 59 files/249 tests and production build passed, with only the existing large-chunk advisory.
+  The live Auth path passed against development Supabase; cleanup was confirmed by a post-delete 404. Authenticated Calendar preview/editor/date chooser/cancel/focus return passed without a
+  mutation. No existing Coach password or production account was touched.
+- **Known issue:** Browser form, recovery email, OAuth and installed-device paths are not proven by
+  this API exercise. Stage 2's other browser and consolidated gates remain open.
+- **Next:** Continue the remaining Stage 2 browser/isolated-development paths, repeat the full gate,
+  then commit/push and confirm exact-SHA CI only after acceptance is complete.
+
+### 2026-10-01 — LOG-351 — Freeze the Stage 2 route hierarchy review baseline
+
+- **Scope:** Product Owner approved the route-by-route hierarchy table in the Stage 2 acceptance
+  matrix as the baseline for Coach-route review.
+- **Outcome:** The listed primary Coach job and priority questions now guide Stage 2 desktop and
+  390px task-path acceptance. This is an acceptance baseline; the actual route changes and device
+  evidence still require individual observation and correction.
+- **Verification:** Product Owner decision recorded in this chat. No code, device, CI, commit, or
+  Main delivery result is claimed for this documentation update.
+- **Known issue:** Installed Android/iOS PWA and password-update/sign-out/new-password-login
+  acceptance need a clearer test plan before a defer-or-accept decision. Other Stage 2 paths remain.
+- **Next:** Continue independent Stage 2 browser/isolated-development checks; clarify the device and
+  credential test boundary with the Product Owner, then complete the consolidated gate.
+
+### 2026-10-01 — LOG-350 — Verify isolated Finance entry and restore review totals
+
+- **Scope:** Exercise one Stage 2 Finance browser mutation path in the development review Workspace,
+  with a unique manual expense and exact cleanup.
+- **Outcome:** Browser add/edit changed the test row from $7 to $9 and the monthly expense total
+  from $1,888 to $1,895 to $1,897. The date crossed local midnight during the test; the month
+  selector correctly exposed September's row while October was empty. A scoped database cleanup
+  removed only the row matching its ID, Workspace, label, direction, amount and version.
+- **Verification:** The delete returned that one ID; a follow-up query found zero matching rows.
+  Authenticated Finance reload showed the original 10 entries, $1,888 expenses and $18,400 income.
+  A source-backed $51 row was overridden to $52, reset to source, hidden and restored in Chrome;
+  totals and counts changed at each step as expected. Its database state ended `hidden=false` with
+  null manual amount/date/label. Other review fixtures were not changed. API and Web readiness
+  remained healthy after the launcher failure simulation.
+- **Known issue:** Remaining Venue/Finance journeys, Product Owner hierarchy, and real-device
+  acceptance are open. The source row's version increased during this reversible test, but its
+  displayed and authoritative business values were restored.
+- **Next:** Continue the Stage 2 matrix and obtain the Product Owner hierarchy decision before the
+  consolidated gate and Main delivery.
+
+### 2026-09-30 — LOG-349 — Recover Coach routes after a local API exit
+
+- **Scope:** Continue the M7.5 Stage 2 Windows/browser matrix with an authenticated development
+  Coach, preserving existing fixture records and uncommitted governance work.
+- **Outcome:** The development health poll now treats an API outage/recovery transition as a cue to
+  invalidate active Coach route queries and replay retained operations. The service hint gives a
+  direct action without implying a browser reload is required. Added a focused component regression
+  for a failed Coach query and queued-work replay after health recovery.
+- **Verification:** Focused Web test passed 1/1. Elevated root check passed API 26 files/125 tests
+  and Web 59 files/249 tests; root build passed with only the existing >500-kB advisory. With only
+  the Formal API stopped, Chrome kept Today/Student data and showed the shared warning; a Finance
+  route opened during the outage, then loaded its monthly totals/ledger and cleared the warning
+  after API restart without a page reload. At 390px, Finance date picker, Settings password dialog,
+  prepaid Venue detail and course records opened/closed; the Finance and Venue dialogs and document
+  had equal scroll/client widths. No review fixture was changed. The readiness helper returned 1
+  with API absent. Invalid training-share and reschedule tokens rendered public not-found guidance
+  outside Coach Auth; the 390px reschedule page had no document overflow. Authenticated reloads
+  reached Ready on all nine Coach routes, including Student detail and Session Training.
+  A temporary process-local `npm` stub forced launcher API startup failure; it timed out after 30
+  seconds, withheld Web opening, displayed the API-window guidance, and returned exit code 1. The
+  stub was removed and normal API/Web readiness returned 0. `git diff --check` passed before this
+  documentation update.
+- **Known issue:** Browser
+  mutation/recovery paths, installed-device/PWA acceptance, password-change journey, and Product
+  Owner route-hierarchy freeze remain open. Stage 2 is not ready for its consolidated CI gate.
+- **Next:** Finish independently verifiable Stage 2 browser paths;
+  obtain the Product Owner's route-hierarchy decision and device/credential acceptance before final
+  gate, cohesive Main delivery, and M8 handoff.
+
+### 2026-09-30 — LOG-348 — Start the Stage 2 acceptance matrix and live regression
+
+- **Scope:** Follow the Product Owner's Stage 2 handoff using the existing Web mobile preview and
+  isolated development environment. Preserve the uncommitted Roadmap/Status/gate-guidance work.
+- **Outcome:** Added the scenario-by-scenario Stage 2 matrix with observed, partial and pending
+  evidence and a route hierarchy review table. Recovered a blank local Web page by verifying its
+  stale Vite process was serving an empty module, restarting only Formal Web on 5173, and observing
+  authenticated Today and mobile preview load. Added a development-only shared health poll for
+  API-exit detection and cross-route recovery. Updated the M4 live E2E assertion to match the later
+  delivered rule: one Series occurrence may change Student while its Series retains its owner.
+  Removed the global `html/body` 320px minimum after it caused a 15px overflow when the vertical
+  scrollbar reduced a 320px viewport's usable width to 305px.
+- **Verification:** Elevated root check passed API 26 files/125 tests and Web 58 files/248 tests;
+  root build passed with its existing >500-kB advisory. API, Web and proxy health each returned 200.
+  Authenticated Chrome opened Today, Calendar, Students, Student detail, one Session's Training and
+  Note tabs, Finance, Venues, Exercises and Settings; 320/390px main-route width measurements and
+  390px Student/Session detail measurements showed no document overflow. M4, M5, M6, M7 and M7.5
+  Venue live E2E passed against isolated development data; the Venue script reported exact fixture
+  cleanup. M4 and M5 deterministic migration previews passed. Linked migration dry-run had no
+  pending migrations, private-schema lint had no errors, and advisors had no error-level findings.
+- **Service recovery:** Stopped only the identified Formal API after live E2E. A loaded 390px Student
+  route retained six Students and displayed the shared warning with Retry; navigating to Calendar
+  kept it visible. After API restart, `/health` returned 200 and the warning disappeared without a
+  page reload. Then stopped the identified Formal API/Web processes; with both ports unavailable,
+  `start-gym-assistant.cmd` started API, waited for health, started Web, and opened an authenticated
+  Today tab. API, Web and proxy health returned 200. Restored the Chrome viewport and closed only
+  the temporary QA tab.
+- **Responsive correction:** At 320px before the CSS change, a ready Exercise Library measured
+  `scrollWidth=320`, `clientWidth=305` in desktop Chrome because its page-edge scrollbar consumed
+  15px; after the change it measured `305=305`. The page-edge scrollbar is a browser simulation
+  artifact, not a phone/PWA visual target. Post-change Chrome
+  checks found equal document widths on Today, Calendar, Students, Finance, Venues, Exercises and
+  Settings at 320px, and Settings at 390px. Calendar's four views and one 370px Session preview
+  dialog switched/opened/closed at 390px without document overflow. Student search returned one
+  matching fixture, then a search-specific empty state and restored list. Exercise search returned
+  one Pallof result; its filter shelf collapsed and reopened.
+- **Known issue:** Mobile preview does not prove real touch, soft-keyboard or installed-PWA safe area.
+  Most browser mutation/recovery paths, Windows failed-start handling, route-hierarchy
+  Product Owner acceptance, and exact-SHA CI remain open. The first Venue E2E saw a transient API
+  refusal after root build; a readiness check and full rerun passed. No staging or production
+  environment exists.
+- **Next:** Freeze each Coach route's hierarchy with Product Owner review and complete the remaining
+  Stage 2 matrix, then repeat the final gate and deliver exact-SHA remote CI before M8-A Contract.
+
+### 2026-09-30 — LOG-347 — Consolidate Sol delivery and stabilize Web test workers
+
+- **Scope:** Product Owner replaced the active four-gate handoff with Contract → Sol → CI under
+  GPT-6 Sol. Investigated seven Web Vitest worker startup timeouts observed in the first Stage 2
+  baseline check.
+- **Outcome:** Updated Roadmap, Architecture, and AGENTS.md so Sol owns contracted engineering and
+  product convergence in one gate while delivered milestones retain their historical gate labels.
+  The installed Vitest computes seven default workers from eight available CPUs. The seven-worker
+  Web rerun passed all tests, so the startup failure was intermittent rather than tied to those test
+  files. Capped the normal Web test script at two workers to reduce resource contention.
+- **Verification:** Elevated `npm run check` with the updated default script passed: API 26 files/125
+  tests and Web 58 files/248 tests. A separate elevated Web run with seven workers also passed
+  58 files/248 tests. The earlier root production build passed before the script-only change.
+  Documentation formatting and `git diff --check` passed; no device, live, migration, deployment,
+  or remote-CI result is claimed.
+- **Known issue:** The exact competing Windows process at the first timeout was not identified.
+  Monitor default test stability and remote CI; M7.5 Stage 2 acceptance remains open.
+- **Next:** Freeze and execute the M7.5 Stage 2 device/browser/live acceptance inventory, then
+  complete the consolidated Contract → Sol → CI delivery gate.
+
+### 2026-09-30 — LOG-346 — Close Stage 1 and approve staged Beta roadmap
+
+- **Scope:** Product Owner confirmed M3.5 and M7.5 Stage 1 are complete, authorized follow-up
+  testing, and approved a staged M8 Taiwan Web/PWA release with an invited free Beta.
+- **Outcome:** Preserved M0–M7 delivery history; moved unresolved Stage 1 acceptance into the M7.5
+  Stage 2 inventory; split M8 into isolated staging, pre-release readiness, controlled Alpha, and
+  real-Coach Beta gates; placed paid launch in M9 and international/native decisions in M10. Beta
+  codes give one year free from redemption with explicit plan choice at expiry; separate limited
+  permanent free codes may be given to the Product Owner's friends. Updated the Architecture gate
+  scope and README summary while retaining the previously approved feedback workflow.
+- **Verification:** Prettier and `git diff --check` passed. A first
+  sandboxed root check hit the known Windows `spawn EPERM`; elevated API check passed 26 files/125
+  tests. Elevated Web default-concurrency check passed 51 files/187 tests but seven workers timed
+  out on startup, so the root check did not pass. An elevated Web rerun with `--maxWorkers=2` passed
+  all 58 files/248 tests. Root production build passed with the existing over-500-kB chunk warning.
+  No new device, live, deployment, schema, migration, or remote-CI result is claimed.
+- **Known issue:** The default root check still needs a deterministic Web worker configuration or
+  verified runner capacity. The carried M7.5 Stage 2 acceptance and release matrix remain to be
+  run. M8 code terms and infrastructure choices require frozen Contracts before implementation.
+- **Next:** Freeze the M7.5 Stage 2 consolidated acceptance inventory and run its focused
+  device/browser/live scenarios before the full delivery gate.
+
+### 2026-09-30 — LOG-345 — Plan the M8 feedback intake and review workflow
+
+- **Scope:** Product Owner requested the discussed feedback flow in the Roadmap and selected a
+  two-day new-feedback email digest with an organized-review link, optional individual replies via
+  Today's notifications, and indefinite retention with weekly grouping and archive.
+- **Outcome:** Added these decisions and Contract open points to M8, with implementation and
+  acceptance expectations at the Terra, Sol, and CI gates. Verified that Today's current notice
+  list is Coach-facing, capped at 30, and supports read/dismiss, so replies require durable private
+  records independent of the notice entry point.
+- **Verification:** Documentation and current notification code inspected; `git diff --check`
+  passed. No Web/API/schema changes or runtime checks were made.
+- **Known issue:** Mail provider, authenticated review surface, reply interaction, and retention
+  privacy/deletion details remain M8 Contract decisions.
+- **Next:** Continue the Product Owner's M7.5 installed-PWA route review. Begin the M8 Contract only
+  after the Roadmap's M7.5 boundary and Product Owner handoff are satisfied.
 
 ### 2026-09-30 — LOG-344 — Accumulated mobile Main delivery preflight
 

@@ -1,6 +1,7 @@
 # Gym Assistant engineering roadmap
 
-> Baseline: v2 — approved 2026-09-12. M0–M3 remain complete; corrective work belongs to M3.5.
+> Baseline: v3 — approved 2026-09-30. M0–M7 remain complete; M7.5 Stage 1 is closed and
+> Stage 2 is the active pre-deployment handoff.
 
 This document is the sole source of truth for product scope, delivery order, Module interfaces, and
 completion criteria. Live progress and evidence belong in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
@@ -42,13 +43,17 @@ Priorities, in order:
 - Private Coach notes never enter a public projection. A Training Result link may include one
   session note only through an explicit per-link opt-in.
 - Web/PWA ships first for Taiwan. Default time zone is `Asia/Taipei`; stored instants are UTC.
-- Microservices, Kubernetes, Kafka, CQRS, Event Sourcing, multi-region deployment, native packaging,
-  and online payments are outside V1.
+- Microservices, Kubernetes, Kafka, CQRS, Event Sourcing, and multi-region deployment are outside
+  the Taiwan Web/PWA launch baseline. Native packaging and full international rollout require M10
+  decisions. Online payment is not required for the free closed Beta; charging Coaches requires the
+  separate M9 contract and release gate.
 
-## 3. Delivery model: four gates
+## 3. Delivery model: three gates
 
-Every M3.5–M8 work package passes four gates in order. A later gate may return the package to an
-earlier gate; no gate may be skipped.
+For active and future governed work packages from 2026-09-30 onward, follow Contract → Sol → CI in
+order. Sol is the single owner of contracted engineering and product convergence. A later gate may
+return the package to Contract when a decision is missing; no gate may be skipped. M3.5–M7 and
+earlier M7.5 work retain their historical four-gate records without governing new work.
 
 ### Gate 1 — Contract
 
@@ -64,47 +69,33 @@ Before implementation, freeze:
 - desktop and 390px acceptance path;
 - automated, database, migration, and E2E evidence required for completion.
 
-**Exit criterion:** a Terra agent can implement data flow without making a product, visual, or copy
-decision.
+**Exit criterion:** Sol can implement the complete server and product slice without inventing a
+product, visual, authorization, or copy decision.
 
-### Gate 2 — Terra engineering
+### Gate 2 — Sol implementation and product convergence
 
-**Owner:** Terra.
+**Owner:** Sol, with Product Owner acceptance of product-facing outcomes.
 
-Terra implements only the frozen contract:
+Sol implements the complete frozen contract:
 
 - schema, migration, Module implementation, adapters, HTTP operations, Edge Functions, and tests;
 - query keys, typed route loaders, mutations, cache invalidation, and authorization-safe prefetch;
-- semantic, unstyled route skeletons that expose every contracted state and data slot;
-- deterministic test fixtures and acceptance hooks.
-
-**Hard limit:** Terra does not choose layout, spacing, color, typography, motion, responsive
-composition, interaction styling, or end-user wording. Terra inserts only copy explicitly supplied
-by the Contract gate. If a required decision is missing, Terra stops that affected surface and
-reports the missing contract instead of inventing one.
-
-**Exit criterion:** all data reaches the correct route state through typed interfaces; domain,
-adapter, HTTP, authorization, and focused Web tests pass.
-
-### Gate 3 — Sol product convergence
-
-**Owners:** Product Owner + Sol.
-
-Sol compares the working feature with the Demo and completes:
-
-- visual hierarchy, layout, responsive composition, Tailwind/CSS implementation, and shared UI
-  primitives;
+- deterministic test fixtures and acceptance hooks;
+- complete route states, visual hierarchy, layout, responsive composition, Tailwind/CSS, and shared
+  UI primitives;
+- Demo comparison and deliberate formal-product deviations;
 - keyboard, pointer, touch, focus, modal, scroll, and transition details;
 - exact Coach-facing or Student-facing copy;
 - accessible names, announcements, reduced-motion behaviour, and destructive-action emphasis;
-- desktop and exact 390×844 manual acceptance.
+- desktop and exact 390×844 manual acceptance, plus installed-device checks when contracted.
 
-Sol may request a Contract correction when the intended experience exposes a missing projection or
-operation. Sol does not move official business rules into the browser to work around a backend gap.
+Sol returns missing product or server-authority decisions to Contract while continuing independent
+contracted work. Business rules and official data remain behind backend Modules.
 
-**Exit criterion:** the complete route is product-ready, not merely wired.
+**Exit criterion:** server authority, tests, complete route states, interaction, accessibility,
+responsive experience, and Product Owner acceptance satisfy the frozen Contract.
 
-### Gate 4 — CI delivery
+### Gate 3 — CI delivery
 
 **Owner:** integrating engineering agent.
 
@@ -117,18 +108,11 @@ operation. Sol does not move official business rules into the browser to work ar
 
 **Exit criterion:** local evidence, remote evidence, documentation, and next handoff all agree.
 
-### How the gates map to the three development stages
+### Historical stage labels
 
-- **Stage A — Gap Filling:** M3.5 repairs the audited M0–M3 product-surface gaps while preserving
-  the completed foundation. Its individual packages still pass Contract, Terra, Sol, and CI.
-- **Stage B — Future Features:** M4–M8 begin only from a frozen Contract. Terra builds the required
-  backend, Edge Function, migration, tests, query binding, and semantic unstyled frontend skeleton.
-- **Stage C — Visual and experience convergence:** Product Owner and Sol take each Stage B skeleton
-  through final Tailwind/CSS, interaction detail, responsive behaviour, accessibility, and exact
-  end-user wording. This happens per feature before its CI gate, not as one risky redesign at the end
-  of the project.
-
-Stage labels describe responsibility and intent; the four gates are the mandatory delivery order.
+M3.5 Stage A and the delivered M4–M7 milestones retain their original scope and evidence. M7.5
+Stage 1/Stage 2 describe its review and correction phases, not additional delivery gates. The
+current Contract → Sol → CI sequence applies to the remainder of M7.5 and to M8 onward.
 
 ## 4. Frontend route contract
 
@@ -159,6 +143,9 @@ form state.
 
 ## 5. Milestone plan
 
+M0–M7 are delivered history. Their original Terra/Sol gate headings record how those packages were
+delivered; active work follows the three-gate model in Section 3.
+
 ### M0 — Repository and product contract — Done
 
 Preserved the complete Demo in `demo/`, established formal workspaces and vocabulary, froze
@@ -185,7 +172,7 @@ acceptance, and remote CI.
 M0–M3 remain closed. Product-surface corrections discovered after delivery belong to M3.5; their
 completed implementation and evidence are not discarded or rerun without cause.
 
-### M3.5 — Stage A: frontend gap filling — In progress
+### M3.5 — Stage A: frontend gap filling — Done
 
 **Purpose:** make all currently supported M0–M3 capabilities feel like one intentional product and
 establish the frontend contracts that M4+ must follow.
@@ -296,7 +283,7 @@ acceptance belongs to M4.
 **M3.5 completion criterion:** all supported M0–M3 surfaces pass the four gates; deferred M4–M7
 features are absent or honestly unavailable, never represented by fake controls or fake data.
 
-### M4 — Scheduling
+### M4 — Scheduling — Done
 
 **Dependency:** M3.5 complete.
 
@@ -340,7 +327,7 @@ starter or invent dates for historical entitlement rows.
 - Prove all Demo scheduling invariants, two-device conflicts, tenant isolation, idempotent
   reconciliation, migration dry-run, desktop, 390×844, and remote CI.
 
-### M5 — Training and Exercise Library
+### M5 — Training and Exercise Library — Done
 
 **Dependency:** M4 Course Session read contract; schema changes remain serialized with M4.
 
@@ -371,7 +358,7 @@ starter or invent dates for historical entitlement rows.
 - Prove completed-set gating, unit conversion, identity matching, autosave/flush, offline recovery,
   multi-device conflict, private-note safety, desktop, 390×844, and remote CI.
 
-### M6 — Public Capability Links
+### M6 — Public Capability Links — Done
 
 **Dependencies:** M4 for rescheduling; M5 for Training Result.
 
@@ -399,7 +386,7 @@ starter or invent dates for historical entitlement rows.
 - Prove valid/expired/revoked/used/tampered cases, parallel redemption, payload allowlists,
   private-note exclusion, Coach refresh after public mutation, mobile acceptance, and remote CI.
 
-### M7 — Local resilience and Demo migration
+### M7 — Local resilience and Demo migration — Done
 
 **Dependency:** target schemas for M3–M6 are stable.
 
@@ -437,7 +424,7 @@ Product Owner identifies the current work as M7.5, take the active issue and exa
 
 #### Two-stage operating model
 
-**Stage 1 — Product Owner review and iterative correction (current):** the Product Owner continuously
+**Stage 1 — Product Owner review and iterative correction (closed 2026-09-30):** the Product Owner
 identifies concrete problems. Reproduce each problem, correct the items requested for immediate work,
 and run only the focused local and browser evidence needed to keep the next review trustworthy. Keep
 Stage 1 work local; commits are optional checkpoints, while push and remote CI wait for Stage 2 unless
@@ -446,18 +433,20 @@ the Product Owner explicitly requests an earlier delivery.
 When Stage 1 exposes a valid issue that is safer or more efficient to solve as one later batch, append
 it to the `M7.5 Stage 2 backlog` in `PROJECT_STATUS.md` with its observed symptom, owning surface,
 required outcome, and acceptance evidence. Recording a deferred item is the Stage 1 completion
-criterion for that item; do not implement it early merely to clear the list. Stage 1 ends only when
-the Product Owner explicitly says the review phase is complete.
+criterion for that item; do not implement it early merely to clear the list. The Product Owner closed
+Stage 1 on 2026-09-30. Remaining device, workflow, and browser acceptance belongs to Stage 2;
+closure does not turn an unrun test into passing evidence.
 
-**Stage 2 — Consolidated correction and delivery:** after the Product Owner ends Stage 1, freeze the
+**Stage 2 — Consolidated correction and delivery (current):** freeze the
 complete deferred backlog, resolve every listed item as one coordinated hardening package, run the
 full M7.5 regression and release-readiness matrix, then commit, push, and confirm exact-SHA remote CI.
 Stage 2 may return a newly discovered product decision to the Product Owner, but it does not enter M8
 deployment scope.
 
 Both stages preserve completed milestone scope, server authority, tenant isolation, privacy,
-concurrency, and recovery. Stage 1 applies the relevant Contract, Terra, and Sol work to each immediate
-correction; the consolidated CI gate belongs to Stage 2. Record current work, local evidence, the
+concurrency, and recovery. Historical Stage 1 corrections followed their then-current handoff;
+Stage 2 uses Contract → Sol → CI, with the consolidated CI gate after correction and acceptance.
+Record current work, local evidence, the
 Stage 2 backlog, and one executable next handoff in `PROJECT_STATUS.md`.
 
 #### Product Owner-approved Stage 1 addition — Monthly finances and venues
@@ -495,8 +484,8 @@ and chronological sorting by each row's displayed date/time. Active rows alone f
 the adjusted monthly totals, and the income headline identifies manual adjustments.
 See [`M7.5-FINANCE-LEDGER-MANAGEMENT-CONTRACT.md`](M7.5-FINANCE-LEDGER-MANAGEMENT-CONTRACT.md).
 For these two frozen 2026-09-26 Contracts, the Product Owner directed direct Sol delivery
-without a separate Terra handoff. Sol owns the contracted server, migration, and Web slice
-together; Stage 1 remains local and its acceptance evidence belongs in `PROJECT_STATUS.md`.
+without a separate Terra handoff. Sol owned the contracted server, migration, and Web slice
+together; Stage 1 evidence belongs in `PROJECT_STATUS.md`.
 The product and evidence contract being revised is
 [`M7.5-MONTHLY-FINANCE-CONTRACT.md`](M7.5-MONTHLY-FINANCE-CONTRACT.md). This addition does not
 reopen M3/M4 delivery or change the Stage 1/Stage 2 and M8 boundaries above.
@@ -519,7 +508,7 @@ This Stage 1 correction stays local for review under the operating model above.
 - Classify deployment-provider, production-secret, domain, observability, recovery-policy, and Beta
   operations decisions as M8 inputs rather than making them implicitly during product hardening.
 
-#### Terra gate
+#### Sol gate
 
 - Correct confirmed functional, projection, mutation, Auth-session, cache, persistence, error-state,
   and local-testability defects in their owning modules with focused regression coverage.
@@ -529,8 +518,6 @@ This Stage 1 correction stays local for review under the operating model above.
   test procedure, not completion evidence for the entrypoint.
 - Keep retry and recovery truthful: distinguish an unavailable local/API service from authorization,
   server, validation, conflict, offline, and empty-data states.
-
-#### Sol gate
 
 - Converge each reviewed route with the approved visual hierarchy, interaction behaviour, responsive
   composition, accessibility, and calm user-facing language under direct Product Owner review.
@@ -552,49 +539,187 @@ This Stage 1 correction stays local for review under the operating model above.
   Product Owner, no known release-blocking product defect remains, and the Product Owner authorizes
   the M8 Contract handoff.
 
-### M8 — Deployment and Beta readiness
+### M8 — Taiwan Web/PWA release and free closed Beta
 
-**Dependency:** the approved Beta scope from M1–M7 is complete.
+**Dependency:** M7.5 Stage 2 is delivered, has no known release-blocking defect, and the Product
+Owner authorizes the M8 Contract handoff. M8-A through M8-D are sequential governed packages; each
+passes Contract → Sol → CI before the next starts. Production deployment, internal Alpha,
+and real-Coach Beta are separate release decisions. A green build or deployment is not Beta acceptance.
 
-#### Contract gate
+**Product Owner decision — 2026-09-30:** begin with a small, invited, free Beta in Taiwan. The
+Product Owner will issue several promotion-code groups. A designated **Beta code** grants an
+eligible Coach **one year of free use from successful redemption**; at expiry the Coach must choose
+a new account plan. There is no automatic charge or silent renewal, and an expired grant must not
+delete Coach data. Ending the Beta does not shorten the redeemed year. If paid plans are not ready
+at expiry, the Contract must define a safe interim account state. A separate, limited
+**permanent free code** may be given by the Product Owner to friends; its redeemed free-use
+entitlement has no scheduled expiry and later paid plans must not
+silently remove or bill it. Both grants are application-owned access records, not merely
+payment-provider 100% discounts. The M8 Contract must freeze each code class's feature scope,
+eligibility, issuance/redemption limits, start and end instants, expiry reminders, post-expiry
+read/write and data-export behavior, transfer/account-deletion handling, abuse and exceptional
+revocation rules, and exact Coach-facing promises before distribution. M8 requires no online
+payment; M9 owns charging and ordinary paid-plan discounts.
 
-- Select hosting, domains, environments, observability, support, privacy, export, retention, incident,
-  rollback, restore, and Beta exit policies.
-- Freeze a Beta-ready path for Coaches to obtain help, report a problem, and submit product feedback.
-  Define the entry points, contact or submission channel, triage owner, response expectations, and
-  privacy-safe handling of any diagnostic or account information. Keep these three user intents clear;
-  do not require a built-in ticketing system or automated support workflow unless the Contract calls
-  for one.
+#### M8-A — Release contract and isolated staging
 
-#### Terra gate
+**Contract gate:** select hosting/domain and deployment topology, separate local/staging/production
+Auth/database/secrets, migration release order, backup and restore targets, rollback, observability,
+incident owner, support, privacy, data export/deletion, and measurable Alpha/Beta entry and exit
+criteria. Freeze the one-year Beta and limited permanent-grant promises and a path to obtain help,
+report a problem, and submit product feedback. Define the submission channel, triage owner,
+response expectations, and privacy-safe diagnostic handling; a general-purpose ticketing system is
+not required. Set explicit performance, capacity, recovery, and security acceptance thresholds in
+this Contract rather than claiming readiness from an arbitrary test count.
 
-- Separate local/staging/production Supabase projects and secrets.
-- Implement same-origin `/api`, TLS, deployment/rollback automation, migration release steps,
-  structured logs, request IDs, metrics, alerts, backups, and security gates.
+**Sol gate:** provision isolated staging and a repeatable Web/API/Auth/database migration pipeline
+with separate credentials, same-origin `/api`, TLS, controlled configuration, logs, request IDs,
+metrics, alerts, and backup/restore hooks. No real-customer data enters staging.
 
-#### Sol gate
+Verify staging Auth, primary Coach and public-link journeys, error/recovery copy,
+installation affordance, and desktop/mobile layout against the frozen release contract.
 
-- Complete production onboarding, error surfaces, privacy/data controls, and one real-Coach Beta
-  journey.
-- Make help, problem reporting, and product feedback discoverable in the deployed Coach experience;
-  verify the chosen contact or submission paths and their failure states on desktop and mobile.
+**CI gate:** prove clean-environment rebuild, staging migration and smoke, environment/secret
+separation, repeatable deployment, and exact-SHA remote CI. Record the release candidate and its
+rollback path. This gate does not expose the product to real Coaches.
 
-#### CI gate
+#### Product Owner-approved M8 feedback planning input — 2026-09-30
 
-- Prove clean-environment rebuild, staging/production smoke, rollback, restore drill, dependency and
-  secret scan, zero unresolved Security Advisor errors/warnings, full secret rotation, and remote CI.
-- Confirm that the deployed Beta help, problem-reporting, and product-feedback paths reach the
-  designated recipient and expose a usable recovery path when submission or contact fails.
+The following decisions enter M8-A Contract and M8-B implementation; they do not close M7.5
+Stage 2 or count as working feedback delivery.
 
-### M9 — Post-V1 options — Deferred
+- Add an **協助與回饋** entry in Settings with three clear intents: report a problem, suggest an
+  improvement, or ask for help. Use a short, type-aware form with a title and explanation. Keep
+  optional reproduction detail from becoming a submission barrier. Preserve the originating route
+  when the Coach opens Settings to report an issue.
+- Submit through the authenticated application API into private, durable, Coach/Workspace-associated
+  records. Derive identity and Workspace from verified Auth, not browser-supplied identifiers. Record
+  only necessary diagnostic context, exclude capability tokens and URL query secrets, and explain
+  collection to the Coach. Show a receipt only after durable acceptance; preserve the draft and offer
+  retry on failure without creating duplicate submissions.
+- Send the Product Owner one **email digest every two days only when new feedback exists**. The email
+  must contain an authenticated link to a prepared, organized review of those records. Do not put
+  sensitive feedback bodies or permanent access tokens in the email. Record digest coverage and
+  delivery attempts so failures can be retried and records are not silently skipped or resent as
+  new. The Contract must select the sender, destination, schedule/time zone, and safe review surface.
+- Keep an optional reply path. The Product Owner may decide to answer a specific Coach question or
+  report; no individual reply is promised for every submission. Persist each reply against the
+  feedback record and deliver a Coach-scoped notice through the existing Today notification entry
+  point. The reply remains readable from an authenticated durable detail view after the notice is
+  read, dismissed, or displaced by the Today list limit. Define reply authorship, delivery/read
+  state, and whether the Coach can answer back in the Contract.
+- Retain feedback indefinitely for now. Group it into weekly review batches and support reversible
+  archive/unarchive of a batch or record. Archive changes review visibility, not retention or the
+  Coach's access to a reply. Define week boundaries, inclusion of late submissions, deletion/privacy
+  controls, and backup/export behavior before Beta.
+- Keep triage status, duplicate grouping, and urgency assessment internal. A weekly organized review
+  may be prepared by an agent, but the Product Owner owns prioritization and replies. The Contract
+  must define the exact review surface and operating procedure; an in-app Kanban board is not a
+  prerequisite.
 
-Evaluate only after Beta:
+#### M8-B — Pre-release product, PWA, security, and operations gate
 
-- LINE, Email, or Push notification worker/outbox;
-- Capacitor, App Store, and Google Play packaging;
-- subscriptions and online payment;
-- studio membership, multiple Coaches, and roles;
-- health or medical data after a separate privacy/compliance review.
+**Contract gate:** freeze the staging test matrix and thresholds: realistic Coach journeys, dataset
+sizes and concurrent users; two-Coach isolation and public-link abuse; Auth/session and permission
+boundaries; recovery time/data-loss targets; device/browser coverage; expected load and latency;
+and severity-based release blockers. Map security checks to a named, versioned verification baseline.
+Freeze the Beta code issuance/redemption/grant model and the feedback decisions left open above.
+
+**Sol gate:** implement the frozen private feedback submission, two-day digest with delivery
+tracking/retry, weekly review/archive, authenticated reply and durable Coach notice. Implement
+Beta-code issuance and atomic, idempotent, rate-limited redemption against verified Coach/Workspace
+identity; store code secrets safely and make one-year and permanent free entitlements
+server-authoritative. Preserve permanent grants when paid plans later appear; make Beta expiry and
+plan-choice states explicit without automatic billing or data deletion. Add focused authorization,
+concurrency, persistence, failure, and recovery tests. Complete PWA manifest, service-worker
+update/cache, offline draft/retry, and deployment configuration needed by the frozen device
+contract.
+
+Run task-based desktop and installed Android/iOS PWA journeys for sign-in, Calendar,
+Training Record, Student/Venue/Finance, public links, offline/reconnect, app update, and recovery.
+Make help, feedback, code redemption, receipt/retry, reply discovery, one-year expiry/plan choice,
+and permanent free status understandable. Preserve safe areas, touch targets, keyboard/caret
+visibility, and no overflow.
+
+**CI gate:** on isolated staging, run full regression, migration dry-run/advisors, dependency and
+secret scans, tenant/authorization and code-abuse cases, realistic scenario and load tests, backup
+restore and rollback drills, and feedback digest/reply E2E. Resolve release-blocking findings and
+record measured results against the Contract thresholds. Do not stress production or reuse real
+Coach data as test fixtures.
+
+#### M8-C — Production deployment and controlled Alpha
+
+**Contract gate:** freeze production release approval, internal Alpha participants, data policy,
+smoke paths, alert/incident ownership, rollback triggers, and the Alpha exit criteria. An internet
+reachable Web deployment is not an app-store listing or an invitation to the public.
+
+**Sol gate:** provision production separately, rotate previously exposed development credentials,
+apply reviewed migrations, deploy the exact release artifact, and enable production logging,
+monitoring, backups, alerts, and support delivery. Keep internal Alpha accounts and fixtures scoped
+and removable without affecting future Coaches.
+
+Exercise onboarding, critical Coach flows, installed PWA and public links on the
+deployed domain with internal Alpha accounts; inspect real-device update, offline, accessibility,
+failure, and feedback experiences.
+
+**CI gate:** confirm exact-SHA remote jobs, production migration and health smoke, external Auth and
+email delivery, alert routing, rollback and restore capability, security-advisor findings, and Alpha
+incident/defect disposition. Production availability alone does not close this gate.
+
+#### M8-D — Invited, free, real-Coach Beta
+
+**Contract gate:** freeze cohort size and recruitment, invitation versus account-creation order,
+Beta-code distribution, consent/terms and privacy wording, support response, usage measures, data
+handling, and exit/pause criteria. State the one-year Beta promise and the separate limited
+permanent-free promise; show each Coach their grant and expiry, if any. Paid access remains outside
+this package.
+
+**Sol gate:** activate only the approved invitation/code and entitlement paths for the cohort;
+provide code redemption state, support triage, privacy-safe usage/health signals, and a way to stop
+new admissions without damaging existing Coach records or redeemed grants.
+
+Observe invited Coaches completing real onboarding, scheduling, recording, and
+recovery tasks; collect feedback and distinguish product friction from incidents. Check that the
+one-year remaining time, plan-choice path, permanent free status, and reply path are clear on
+desktop and installed PWA.
+
+**CI gate:** verify real-account isolation, both code classes, one-year expiry and no-charge
+transition, duplicate/expired/invalid redemption cases, support and feedback delivery,
+production health, backup status, incident response, and measured
+Beta outcomes. The Product Owner decides whether to extend Beta, correct the product, or authorize
+the M9 paid-launch Contract. A Beta invite is not M8 completion by itself.
+
+### M9 — Taiwan commercialization and paid launch
+
+**Dependency:** M8-D Beta outcomes and Product Owner approval of a paid launch. Pricing and
+positioning research may begin during M8; no Coach is charged before M9's full release gate.
+
+**Contract gate:** freeze who pays, plan features/limits, price and currency, trial or paid discount
+terms, upgrade/downgrade/cancellation/refund handling, failed-payment access, tax/invoice and legal
+review, privacy/terms, customer support, one-year Beta expiry/plan selection, and continued M8
+permanent free grants. Ordinary paid-plan discount codes are distinct from both free-grant classes.
+Define a measurable paid-launch and support exit criterion.
+
+**Sol gate:** implement provider-verified payment events and server-owned subscription/access
+state with idempotent retries, reconciliation, and auditability; never derive access solely from a
+browser success page. Keep redeemed M8 permanent grants effective without billing them; handle
+expired one-year grants without data loss or automatic charges.
+
+Make plan choice, price, payment, free-grant status, failures, cancellation, and help
+clear on Web/PWA. Complete Taiwan launch onboarding and public-facing product/support materials.
+
+**CI gate:** prove sandbox and limited live payment lifecycles, code/entitlement preservation,
+refund/failure/cancel behavior, tenant isolation, recovery, security, deployment, and support
+readiness before enabling general paid access.
+
+### M10 — Internationalization and native-app decision — Conditional
+
+Preserve translation-ready copy boundaries and correct time-zone/currency handling during M8–M9,
+but choose target locales, tax/privacy obligations, and Flutter or other native implementation only
+from Beta/paid-launch evidence of demand or demonstrated PWA limits. A native app or app-store
+listing is a separate Contract → Sol → CI package, not an automatic consequence of Web
+deployment. LINE/Email/Push expansion, studio/multi-Coach roles, and health/medical data also need
+their own approved contracts and privacy review.
 
 ## 6. Sequencing and concurrency
 
@@ -611,6 +736,9 @@ Always serialize:
 
 M4–M6 may overlap only where frozen interfaces do not share a migration or Course Session contract.
 A UI skeleton is not authority to invent an adjacent milestone's model.
+M7.5 Stage 2 must close before M8-A. M8-A → M8-B → M8-C → M8-D are serial release gates; M9
+requires Beta evidence and Product Owner approval, and M10 remains conditional. Production access,
+code distribution, and any paid charging require their own completed gate and release decision.
 
 ## 7. Roadmap change control
 

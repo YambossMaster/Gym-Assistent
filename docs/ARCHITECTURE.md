@@ -7,10 +7,10 @@ The archived [`demo/`](../demo/) is the product reference for information archit
 interaction behaviour, responsive composition, visual hierarchy, and product language. It is not
 the production persistence model.
 
-The formal system preserves the completed M0–M3 assets: Supabase Auth, PostgreSQL schema and
-migrations, Fastify API, account-lifecycle Edge Function, tenant authorization, Student/Lesson
-Modules, App Shell routing, and TanStack Query cache. M3.5 closes product-surface gaps around those
-assets; it does not replace them.
+The formal system preserves the completed M0–M7 assets: Supabase Auth, PostgreSQL schema and
+migrations, Fastify API, account-lifecycle Edge Function, tenant authorization, Student/Lesson,
+Scheduling, Training, and Capability Link Modules, App Shell routing, and TanStack Query cache.
+M7.5 corrects product-surface gaps around those assets; it does not replace them.
 
 ```text
 Coach Web/PWA                          Public capability pages
@@ -65,18 +65,17 @@ PostgreSQL owns durable records, foreign keys, uniqueness, transactions, and con
 browser never supplies `workspaceId`, calls private application tables directly, or receives
 database, service-role, Auth-admin, cron, or Vault credentials.
 
-## 4. Delivery boundary: Contract -> Terra -> Sol -> CI
+## 4. Delivery boundary: Contract -> Sol -> CI
 
-Every M3.5–M8 work package follows the four gates defined in the Roadmap:
+Active and future governed work packages follow the three gates defined in the Roadmap. Delivered
+M3.5–M7 evidence retains its historical gate labels.
 
 1. **Contract:** Product Owner and Sol freeze the user job, route, data, operations, state
    boundaries, copy intent, and acceptance evidence.
-2. **Terra:** implements schema, Modules, adapters, HTTP/Edge operations, queries, cache behaviour,
-   tests, and semantic unstyled route skeletons. Terra makes no visual, interaction-styling, or
-   end-user-copy decisions.
-3. **Sol:** completes Demo-aligned layout, responsive behaviour, interactions, accessibility, and
-   final product wording without moving business authority into the browser.
-4. **CI:** integrates a cohesive package, verifies local/live/remote gates, updates Status, commits,
+2. **Sol:** implements schema, Modules, adapters, HTTP/Edge operations, queries, cache behaviour,
+   tests, and the complete Demo-aligned Web experience, including responsive behaviour,
+   accessibility, and final product wording. Official business authority stays in backend Modules.
+3. **CI:** integrates a cohesive package, verifies local/live/remote gates, updates Status, commits,
    pushes, and confirms GitHub Actions.
 
 The contract is the seam between product decisions and engineering implementation. Missing
@@ -275,4 +274,4 @@ Tests concentrate where authority crosses a seam:
 - migration preview/dry-run, Supabase advisors, root check/build, and remote CI.
 
 Passing backend tests alone does not complete a product feature. Passing visual review alone does
-not validate official data. Completion requires the four gates to agree.
+not validate official data. Completion requires Contract, Sol, and CI evidence to agree.
