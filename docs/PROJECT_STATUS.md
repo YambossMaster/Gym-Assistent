@@ -5,17 +5,17 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                          |
-| Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                             |
-| Package state      | **Stage 2 local/build/live/database gate passed; browser and Product Owner acceptance remain open** |
-| Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                               |
-| Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs         |
-| Worktree           | `codex/m75-stage2-review`; Stage 2 corrections prepared for checkpoint CI                           |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date         |
-| Production         | Not configured; no real customer data                                                               |
-| Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes         |
+| Field              | Current value                                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                                 |
+| Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                                    |
+| Package state      | **Stage 2 local/live/database and checkpoint CI passed; browser and Product Owner acceptance remain open** |
+| Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                      |
+| Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs                |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `09e4a79`, CI run `36788981352` passed                  |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                |
+| Production         | Not configured; no real customer data                                                                      |
+| Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes                |
 
 ## Next handoff
 
@@ -27,8 +27,9 @@ until a phone-accessible deployment; this remains an open M8-B staging gate befo
 not a Stage 2 pass. Next, execute the remaining browser
 interaction, isolated Venue/Finance and mobile-preview paths. Record each symptom and result, fix
 it or obtain explicit
-Product Owner acceptance/deferral. After all required paths are accepted, repeat the full local,
-live, migration and browser gate, commit/push the cohesive package, and confirm exact-SHA remote CI.
+Product Owner acceptance/deferral. Draft PR #1 and its checkpoint CI have passed; after all
+required paths are accepted, repeat the full local, live, migration and browser gate, then deliver
+the final cohesive commit and confirm its own exact-SHA remote CI.
 No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
 
 ## Stage 2 evidence in progress
@@ -83,6 +84,9 @@ No staging or production environment exists; that setup belongs to M8-A after th
 - Public `/t/:token` and `/r/:token` routes with deliberately invalid tokens rendered their own
   not-found guidance outside the Coach shell; the 390px reschedule terminal state had equal document
   scroll/client widths. Expired, revoked, used, and valid-token browser paths remain pending.
+- An unauthenticated browser opened `/login`, showed Email/password and Google entry, and navigated
+  from the recovery link to its Email reset form. No credentials or reset request were submitted;
+  Auth completion and delivery remain pending.
 - In the development review Workspace, a uniquely named manual September expense was created in
   Chrome for $7 and edited to $9. September's expense total moved $1,888 → $1,895 → $1,897 and
   its ledger count 10 → 11. Exact-ID/Workspace/label/amount/version cleanup removed only that
@@ -110,6 +114,11 @@ No staging or production environment exists; that setup belongs to M8-A after th
   advisors no error-level finding with the same three tracked warnings. M4/M5/M6/M7, M7.5 Venue,
   and Finance isolated live E2E passed and completed exact fixture cleanup, including two-Coach
   HTTP and database RLS isolation in Finance.
+- Draft PR #1 runs the Stage 2 checkpoint at `09e4a79c59195ff64669e5aad1ba8b1b02473a12`.
+  GitHub Actions run `36788981352` completed successfully: `verify` passed formatting, types,
+  tests and both builds; `migration-dry-run` passed the linked development migration plan. This
+  is exact-SHA checkpoint evidence; the open browser and Product Owner gates still prevent Stage 2
+  completion or Main delivery.
 
 ## M7.5 Stage 2 acceptance inventory carried from Stage 1
 
@@ -459,6 +468,20 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-354 — Run Stage 2 checkpoint CI on draft PR
+
+- **Scope:** Push the authorized Stage 2 review branch, create a draft PR, and verify the checkpoint
+  commit on GitHub Actions without advancing the milestone gate.
+- **Outcome:** Pushed `codex/m75-stage2-review` from Main baseline `9154a21`, created draft PR #1,
+  and kept it unmerged. The PR contains checkpoint `09e4a79c59195ff64669e5aad1ba8b1b02473a12`.
+- **Verification:** GitHub Actions CI run `36788981352` completed successfully for that exact SHA.
+  Both `verify` and `migration-dry-run` jobs succeeded, including the build and linked development
+  migration plan. Local worktree was clean after the checkpoint push.
+- **Known issue:** Remaining Stage 2 browser interactions, public terminal states and Product Owner
+  fixture/hierarchy acceptance are open. This CI run is a checkpoint, not final Stage 2 acceptance.
+- **Next:** Complete or obtain explicit Product Owner acceptance/deferral for each remaining matrix
+  path, repeat applicable final gates, and confirm CI for the final delivery SHA before Main.
 
 ### 2026-10-01 — LOG-353 — Run Stage 2 browser and consolidated local gate
 
