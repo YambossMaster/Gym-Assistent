@@ -12,7 +12,7 @@
 | Package state      | **Stage 2 local/live/database and checkpoint CI passed; browser and Product Owner acceptance remain open** |
 | Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                      |
 | Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs                |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `09e4a79`, CI run `36788981352` passed                  |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoints `09e4a79`/`4abf5d7` passed CI                          |
 | Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run is up to date                |
 | Production         | Not configured; no real customer data                                                                      |
 | Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes                |
@@ -119,6 +119,10 @@ No staging or production environment exists; that setup belongs to M8-A after th
   tests and both builds; `migration-dry-run` passed the linked development migration plan. This
   is exact-SHA checkpoint evidence; the open browser and Product Owner gates still prevent Stage 2
   completion or Main delivery.
+- A uniquely named isolated Student passed browser creation, archive, archived-roster selection,
+  and recovery. Exact-ID/Workspace/name/goal/version cleanup confirmed no linked purchases or
+  Sessions, deleted only that fixture, and a browser reload showed the original six active and
+  zero archived Students. The full keyboard path remains open.
 
 ## M7.5 Stage 2 acceptance inventory carried from Stage 1
 
@@ -468,6 +472,20 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-355 — Exercise Student archive and recovery in the browser
+
+- **Scope:** Complete the Stage 2 Student archive/recovery path using one isolated development
+  fixture while preserving the six existing review Students.
+- **Outcome:** The new Student changed ACTIVE → ARCHIVED and appeared alone in the archived roster;
+  recovery returned it to ACTIVE. Exact scoped cleanup removed the fixture.
+- **Verification:** The fixture had zero purchases and Sessions. Database lookup found zero
+  remaining matches after deletion; authenticated browser reload showed six active and zero
+  archived Students. Draft PR #1 head `4abf5d7` passed CI run `36789491978` in both jobs before
+  this documentation update.
+- **Known issue:** Student keyboard acceptance and the other open Stage 2 matrix paths remain.
+- **Next:** Continue the remaining browser and Product Owner acceptance paths; repeat final local
+  and exact-SHA CI gates before Main.
 
 ### 2026-10-01 — LOG-354 — Run Stage 2 checkpoint CI on draft PR
 
