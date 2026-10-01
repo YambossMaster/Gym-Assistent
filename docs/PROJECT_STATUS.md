@@ -12,7 +12,7 @@
 | Package state      | **Stage 2 check/build and isolated live E2E passed; browser and Product Owner acceptance remain open** |
 | Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                  |
 | Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs            |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `f502a73` passed both CI jobs                       |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `0123a43` passed both CI jobs                       |
 | Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed            |
 | Production         | Not configured; no real customer data                                                                  |
 | Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes            |
@@ -29,7 +29,7 @@ Record each symptom and result, fix it or obtain explicit Product Owner acceptan
 2026-10-01 root check/build and isolated live E2E reruns passed, but the current linked migration
 dry-run failed database password authentication; lint and advisors still completed. Resolve that
 credential gate or explicitly accept the exact-SHA remote migration result in its place. Draft PR
-#1 commit `f502a73` passed both GitHub Actions jobs in run `36792686715`; this is checkpoint CI,
+#1 commit `0123a43` passed both GitHub Actions jobs in run `36794346302`; this is checkpoint CI,
 not Product Owner acceptance. After all required paths are accepted, deliver the cohesive commit
 and confirm its own exact-SHA remote CI before Main delivery.
 No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
@@ -142,8 +142,8 @@ No staging or production environment exists; that setup belongs to M8-A after th
 - At 390×844, an isolated Student and zero-amount one-lesson Purchase supported a one-off Calendar
   Session browser journey: create at 09:00–10:00, edit to 10:00–11:00, delete, then delete the exact
   Purchase. The Student was archived. Read-only scoped checks found zero Purchase, Session, Series
-  and Venue links. Browser automatic approval review rejected permanent Student deletion pending
-  explicit confirmation, so that isolated fixture remains archived. Settings week start changed
+  and Venue links. The Product Owner subsequently approved permanent deletion of that exact Student;
+  browser deletion and scoped database recheck confirmed zero rows. Settings week start changed
   Monday → Sunday → Monday with the original value visibly restored.
 - The consolidated local gate passed with single-worker Vitest scripts: root formatting/typecheck,
   API 26 files/125 tests, Web 59 files/249 tests, and both production builds (existing large-chunk
@@ -162,6 +162,15 @@ No staging or production environment exists; that setup belongs to M8-A after th
   and recovery. Exact-ID/Workspace/name/goal/version cleanup confirmed no linked purchases or
   Sessions, deleted only that fixture, and a browser reload showed the original six active and
   zero archived Students. The full keyboard path remains open.
+- At 390×844, a second isolated Session passed Training Return order (weight → reps → RPE → next
+  set weight), final RPE blur, two-set autosave, bold Note and hard-reload persistence. A scoped
+  read-only query confirmed one Training record, one Exercise and two sets before cleanup. The
+  Product Owner approved deletion of the exact test Session; browser deletion and database recheck
+  found zero Session, Training record and mutation receipt rows. Student search narrowed to one
+  match; Enter opened detail with the main landmark focused and Tab reached Back then Settings.
+  Existing Series preview/editor and fixed weekly Series Escape/focus return were observed without
+  mutating preserved fixtures. Physical keyboard, actual Series edit/conflict and other matrix paths
+  remain open.
 
 ## M7.5 Stage 2 acceptance inventory carried from Stage 1
 
@@ -511,6 +520,25 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-360 — Verify Training input and clean isolated browser fixtures
+
+- **Scope:** Continue 390×844 Student, Series and Training browser paths; complete the specifically
+  approved permanent cleanup of isolated test data.
+- **Outcome:** Student search/Enter/Back/Settings focus path and read-only Series editor/cancel
+  path passed. Isolated Training input advanced weight → reps → RPE → next set, blurred after the
+  final RPE, and saved two sets plus bold Note through reload. The approved isolated Student and
+  Session were deleted through the browser.
+- **Verification:** Before Session cleanup, Workspace-scoped database inspection found one Training
+  record, one Exercise and two sets with persisted Note. After cleanup, read-only queries found
+  zero matching Student, Session, Training record and Training mutation receipt rows. Draft PR #1
+  checkpoint `0123a43` passed both GitHub Actions jobs in run `36794346302`.
+- **Known issue:** Physical mobile keyboard, browser offline/legacy Training, actual Series edit and
+  conflict, public valid/terminal links, preserved Venue fixture review, nonempty Today signals,
+  and remaining Product Owner acceptance remain open. The local linked CLI dry-run still fails
+  login-role authentication; the exact-SHA CI migration job passes with its own credentials.
+- **Next:** Complete independently testable Stage 2 matrix paths and obtain Product Owner decisions
+  for remaining fixture and evidence boundaries. Run final exact-SHA checks before Main delivery.
 
 ### 2026-10-01 — LOG-359 — Verify isolated Session and Workspace preference paths
 
