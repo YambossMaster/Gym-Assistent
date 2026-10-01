@@ -145,6 +145,55 @@ it('explains why a completed session cannot be changed', async () => {
   }
 })
 
+it('clears a corrected time error when the Session editor submits again', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const onSave = vi.fn()
+  try {
+    await act(async () =>
+      root.render(
+        <SessionEditor
+          item={{
+            venueId: 'venue-1',
+            studentId: 'student-1',
+            studentName: '學生甲',
+            startsAt: '2026-09-15T01:00:00.000Z',
+            endsAt: '2026-09-15T01:00:00.000Z',
+            location: 'FORM A',
+            status: 'scheduled'
+          }}
+          students={[{ id: 'student-1', name: '學生甲', active: true }]}
+          timeZone="Asia/Taipei"
+          pending={false}
+          onClose={vi.fn()}
+          onSave={onSave}
+          onRequestDelete={vi.fn()}
+        />
+      )
+    )
+    const submit = () =>
+      host.querySelector<HTMLButtonElement>('.session-editor-form-footer .ui-action-save')!
+    await act(async () => submit().click())
+    expect(host.querySelector('.notice.error')?.textContent).toBe('結束時間必須晚於開始時間。')
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('button[aria-label="結束"]')!.click()
+    )
+    const endOption = [
+      ...document.querySelectorAll<HTMLElement>(
+        '[role="listbox"][aria-label="結束"] [role="option"]'
+      )
+    ].find((option) => option.textContent?.trim() === '10:00')!
+    await act(async () => endOption.click())
+    await act(async () => submit().click())
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(host.querySelector('.notice.error')).toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
 it('shows the same processing affordance for completion and reopening', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const host = document.createElement('div')

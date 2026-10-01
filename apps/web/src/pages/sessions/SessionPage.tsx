@@ -236,6 +236,7 @@ export function SessionEditor({
   const [error, setError] = useState('')
   const submit = (event: FormEvent) => {
     event.preventDefault()
+    setError('')
     if (item.status === 'scheduled' && !venueId) {
       setError('請選擇或新增場地。')
       return

@@ -12,7 +12,7 @@
 | Package state      | **Stage 2 check/build and isolated live E2E passed; browser and Product Owner acceptance remain open** |
 | Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                  |
 | Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs            |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `dd7cdbf` passed both CI jobs                       |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `b323778` passed both CI jobs                       |
 | Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed            |
 | Production         | Not configured; no real customer data                                                                  |
 | Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes            |
@@ -29,13 +29,27 @@ Record each symptom and result, fix it or obtain explicit Product Owner acceptan
 2026-10-01 root check/build and isolated live E2E reruns passed, but the current linked migration
 dry-run failed database password authentication; lint and advisors still completed. Resolve that
 credential gate or explicitly accept the exact-SHA remote migration result in its place. Draft PR
-#1 commit `dd7cdbf` passed both GitHub Actions jobs in run `36796888099`; this is checkpoint CI,
-not Product Owner acceptance. After all required paths are accepted, deliver the cohesive commit
-and confirm its own exact-SHA remote CI before Main delivery.
+#1 commit `b323778` passed both GitHub Actions jobs in run `36800451352`; this is checkpoint CI,
+not Product Owner acceptance. The later two-tab conflict, expired link, legacy Training and isolated
+prepaid completion/reopen browser paths passed; Auth browser completion and Google provider callback
+still need an externally operable credential/provider journey. The final corrected Session-editor
+commit needs its own exact-SHA remote CI. Obtain Product Owner disposition for the remaining
+Auth and installed-device boundary before Main delivery.
 No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
 
 ## Stage 2 evidence in progress
 
+- A two-tab stale Session edit retained the Coach's 13:00–14:00 input and displayed conflict while
+  the server kept the Calendar's 11:00–12:00 version. A corrected local validation error had left
+  stale guidance visible; the Session editor now clears it on resubmit, and a focused regression
+  passes. An already-expired public reschedule token showed the terminal page without usable slots.
+  An isolated legacy-config Training Exercise saved a Note without changing its null config or
+  40 kg/8/RPE 7 set. An isolated prepaid Venue deducted 1 → 0 on completion, returned 0 → 1 on
+  reopen, showed the matching batch in course records and a low-balance Today notice. Each fixture
+  and its exact linked rows were checked and removed; scoped follow-up counts were zero. Elevated
+  root check passed API 26 files/125 tests and Web 59 files/250 tests; root build passed with the
+  existing large-chunk advisory. The unauthenticated Google button produced no observed provider
+  page in the in-app browser, so OAuth callback and credential-change form remain unverified.
 - A deliberate API-process exit displayed the service warning and retry on all nine authenticated
   Coach routes at 390×844. The open Training page recovered automatically with saved data after
   `/health` returned 200. An isolated zero-lesson Student exercised nonempty Today notification
@@ -547,6 +561,26 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-363 — Finish isolated conflict, legacy Training and prepaid browser paths
+
+- **Scope:** Exercise the remaining independently runnable Stage 2 browser paths and correct the
+  Session editor validation message found during stale-version review.
+- **Outcome:** The two-tab edit reported conflict, retained input and did not overwrite the newer
+  server version. An expired public link showed its terminal state. Legacy Training Note save kept
+  its old recording config and set values. Prepaid Session completion deducted the isolated one-
+  lesson batch; reopening restored its balance, and Today showed the low-balance Venue notice.
+  The Session editor now clears a prior local validation error when corrected input is submitted.
+- **Verification:** Each isolated fixture was deleted after exact Workspace/ID/dependency checks;
+  scoped rechecks found zero matching rows. Focused Session tests passed 5/5. Elevated root check
+  passed API 26 files/125 tests and Web 59 files/250 tests; root build passed with the existing
+  large-chunk advisory. The matrix records the browser results and limits.
+- **Known issue:** The in-app browser Google button yielded no observed provider page or error;
+  OAuth callback, password-change form and recovery delivery remain unverified. Installed-device
+  validation remains deferred to M8-B by the Product Owner. Local linked CLI dry-run still fails
+  login-role authentication, while checkpoint `b323778` passed exact-SHA migration CI.
+- **Next:** Push the corrected Stage 2 commit and verify both exact-SHA CI jobs, then obtain the
+  Product Owner's remaining Auth/evidence and local CLI substitution disposition before Main.
 
 ### 2026-10-01 — LOG-361 — Verify cross-route recovery and public/notification paths
 
