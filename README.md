@@ -7,7 +7,7 @@
 ## 正式應用
 
 正式產品位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)。M0–M7 已完成；
-M7.5 Stage 2 已交付；M8-A 已採 Local + Production 的精簡發布契約，本機發布工程已完成，遠端 CI 待確認。正式部署與免費 Beta 尚未開始。產品目前包含：
+M7.5 Stage 2 已交付；M8-A 已採 Local + Production 的精簡發布契約，本機發布工程與遠端 CI 已完成。正式部署與免費 Beta 尚未開始。產品目前包含：
 
 - 可替換 Managed Auth 供應商的 OIDC/JWKS 驗證；
 - 一位教練對應一個私有 Workspace；

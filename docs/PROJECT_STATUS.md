@@ -8,11 +8,11 @@
 | Field              | Current value                                                                                 |
 | ------------------ | --------------------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                                 |
-| Current package    | **M8-A lean release preparation — Local + Production**                                        |
-| Package state      | **Contract frozen; Sol implemented and locally verified; CI delivery pending**                |
+| Current package    | **M8-B Beta admission and feedback — Contract next**                                          |
+| Package state      | **M8-A Contract, Sol and CI complete; M8-B Contract next**                                    |
 | Completed baseline | M0–M7.5, including M3.5, Done                                                                 |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                         |
-| Worktree           | `codex/m8-a-lean-release`; isolated M8-A worktree; exact-SHA CI pending                       |
+| Worktree           | `codex/m8-a-lean-release`; M8-A code SHA `12f573b` passed CI run `36862665167`                |
 | Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run up to date      |
 | Production         | Not configured; no real customer data                                                         |
 | Approved M8 scope  | M8-A–D staged release; three-month shareable Beta codes and at most ten permanent free grants |
@@ -48,9 +48,11 @@ The Product Owner froze the simplified
 [M8-A Contract](M8-A-CONTRACT.md): one Fly Web/API origin, separate production Supabase Free,
 about USD 30/month planning cost, manual provider dashboards and release checks, with no staging.
 The public support address and final domain are deferred to M8-C before real-Coach admission.
-M8-A Sol now has a same-origin runtime, database readiness and project-boundary guard, all verified
-locally. **Next:** Push the Product Owner-approved dedicated branch and confirm `verify` and
-`migration-dry-run` against the delivered SHA before beginning M8-B Contract.
+M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
+`migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
+**Next:** Draft the lean M8-B Contract for code-gated free admission, server-owned grants and a
+simple external feedback link. Resolve the remaining Coach-facing code and expiry choices with the
+Product Owner before Sol implementation.
 
 ## Stage 2 evidence
 
@@ -308,7 +310,7 @@ frozen and its local Sol work is complete; CI delivery is next.
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7.5 Pre-deployment product hardening  | Done        | Stage 2 delivered to Main at `1f653d5`; run `36804355951` passed both jobs; device checks are M8-C entry evidence               |
-| M8 Taiwan Web/PWA free Beta release    | In progress | Lean M8-A Sol locally verified; CI delivery pending; Local + Production selected; no production environment                     |
+| M8 Taiwan Web/PWA free Beta release    | In progress | M8-A CI complete at `12f573b` / run `36862665167`; M8-B Contract next; no production environment                                |
 | M9 Taiwan paid launch                  | Deferred    | Requires M8 Beta outcomes and separate Product Owner approval                                                                   |
 | M10 International/native decision      | Conditional | Requires evidence of demand or PWA limits                                                                                       |
 
@@ -580,6 +582,21 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-376 — Deliver M8-A dedicated branch and exact-SHA CI
+
+- **Scope:** Isolate the authorized M8-A changes from concurrent M7.5 UI edits, push the dedicated
+  branch and confirm both GitHub Actions jobs for the exact code commit.
+- **Outcome:** Created and pushed `codex/m8-a-lean-release` at `12f573b`, containing only the 25
+  M8-A code, deployment, contract and research files. The original checkout retains its separate
+  Session, Finance and Training presentation changes. No PR, merge or deployment occurred.
+- **Verification:** In the isolated worktree, API 28 files/133 tests passed; the first Web run hit a
+  Windows Vitest fork startup timeout after 58 files/234 tests, then the full Web suite passed with
+  two workers (59 files/250 tests). Root build and staged diff hygiene passed. GitHub Actions run
+  `36862665167` for SHA `12f573b` completed both `verify` and `migration-dry-run` successfully.
+- **Known issue:** Docker/Fly deployment and real-Coach/device acceptance remain for later M8 gates.
+  The public domain and support address are deferred to M8-C.
+- **Next:** Draft and freeze the lean M8-B Contract before implementing Beta admission or feedback.
 
 ### 2026-10-01 — LOG-375 — Implement lean M8-A local release runtime
 
