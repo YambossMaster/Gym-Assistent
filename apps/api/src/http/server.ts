@@ -1,6 +1,6 @@
 import { FinanceModule } from '../finances/finance-module.js'
 import { FinanceError } from '../finances/finance.js'
-import Fastify, { type FastifyInstance } from 'fastify'
+import Fastify, { LogController, type FastifyInstance } from 'fastify'
 import { z, ZodError } from 'zod'
 import { type IdentityVerifier, IdentityVerificationError } from '../identity/identity.js'
 import {
@@ -48,6 +48,7 @@ export interface ServerDependencies {
   publicAccess?: PublicAccessModule
   finances?: FinanceModule
   demoImport?: DemoImportModule
+  readiness?: () => Promise<void>
   logger?: boolean | Record<string, unknown>
 }
 
@@ -179,12 +180,31 @@ export function buildServer({
   publicAccess,
   demoImport,
   finances,
+  readiness,
   logger = false,
 }: ServerDependencies): FastifyInstance {
   const server = Fastify({
     logger,
+    logController: new LogController({ disableRequestLogging: true }),
     ajv: { customOptions: { removeAdditional: false } },
   })
+
+  server.addHook('onResponse', async (request, reply) => {
+    server.log.info(
+      {
+        requestId: request.id,
+        method: request.method,
+        route: request.routeOptions.url ?? 'unmatched',
+        statusCode: reply.statusCode,
+        durationMs: reply.elapsedTime,
+      },
+      'request completed',
+    )
+  })
+
+  server.setNotFoundHandler(async (_request, reply) =>
+    reply.status(404).send({ error: 'not_found' }),
+  )
 
   if (finances) {
     for (const [path, kind] of [
@@ -362,6 +382,15 @@ export function buildServer({
   })
 
   server.get('/health', async () => ({ status: 'ok' }))
+  server.get('/ready', async (_request, reply) => {
+    try {
+      if (!readiness) throw new Error('Readiness is not configured')
+      await readiness()
+      return { status: 'ready' }
+    } catch {
+      return reply.status(503).send({ error: 'not_ready' })
+    }
+  })
 
   server.addHook('onSend', async (request, reply, payload) => {
     if (

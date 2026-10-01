@@ -13,7 +13,7 @@ afterEach(async () => {
   await Promise.all(openServers.splice(0).map((server) => server.close()))
 })
 
-function createServer() {
+function createServer(readiness?: () => Promise<void>) {
   const repository = new MemoryStudentRepository()
   const server = buildServer({
     identityVerifier: new DevelopmentIdentityVerifier(),
@@ -26,10 +26,31 @@ function createServer() {
       now: () => new Date('2026-09-10T00:00:00.000Z'),
     }),
     registrationEmails: { isRegistered: async () => false },
+    ...(readiness ? { readiness } : {}),
   })
   openServers.push(server)
   return server
 }
+
+describe('readiness', () => {
+  it('keeps liveness separate from a failed database check', async () => {
+    const server = createServer(async () => {
+      throw new Error('database connection detail must stay private')
+    })
+    expect((await server.inject('/health')).statusCode).toBe(200)
+    const response = await server.inject('/ready')
+    expect(response.statusCode).toBe(503)
+    expect(response.json()).toEqual({ error: 'not_ready' })
+    expect(response.payload).not.toContain('database connection detail')
+  })
+
+  it('reports ready only after the check succeeds', async () => {
+    const server = createServer(async () => undefined)
+    const response = await server.inject('/ready')
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ status: 'ready' })
+  })
+})
 
 describe('student HTTP interface', () => {
   it('accepts an age range and allows clearing it without accepting arbitrary ages', async () => {

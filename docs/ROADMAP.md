@@ -1,7 +1,7 @@
 # Gym Assistant engineering roadmap
 
-> Baseline: v3 — approved 2026-09-30. M0–M7 remain complete; M7.5 Stage 1 is closed and
-> Stage 2 is the active pre-deployment handoff.
+> Baseline: v3 — approved 2026-09-30. M0–M7 remain complete; M7.5 Stage 2 precedes M8.
+> Current progress and the active handoff are recorded in [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
 This document is the sole source of truth for product scope, delivery order, Module interfaces, and
 completion criteria. Live progress and evidence belong in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
@@ -541,153 +541,128 @@ This Stage 1 correction stays local for review under the operating model above.
 
 ### M8 — Taiwan Web/PWA release and free closed Beta
 
-**Dependency:** M7.5 Stage 2 is delivered, has no known release-blocking defect, and the Product
-Owner authorizes the M8 Contract handoff. M8-A through M8-D are sequential governed packages; each
-passes Contract → Sol → CI before the next starts. Production deployment, internal Alpha,
-and real-Coach Beta are separate release decisions. A green build or deployment is not Beta acceptance.
+**Dependency:** M7.5 Stage 2 is delivered and the Product Owner authorizes M8. M8-A through M8-D
+remain sequential Contract → Sol → CI packages. M8-A prepares the release path, M8-B finishes the
+Beta product, M8-C deploys production for internal Alpha, and M8-D admits real Coaches. An internet
+deployment alone does not authorize real-Coach admission.
 
-**Product Owner decision — 2026-09-30:** begin with a small, invited, free Beta in Taiwan. The
-Product Owner will issue several promotion-code groups. A designated **Beta code** grants an
-eligible Coach **one year of free use from successful redemption**; at expiry the Coach must choose
-a new account plan. There is no automatic charge or silent renewal, and an expired grant must not
-delete Coach data. Ending the Beta does not shorten the redeemed year. If paid plans are not ready
-at expiry, the Contract must define a safe interim account state. A separate, limited
-**permanent free code** may be given by the Product Owner to friends; its redeemed free-use
-entitlement has no scheduled expiry and later paid plans must not
-silently remove or bill it. Both grants are application-owned access records, not merely
-payment-provider 100% discounts. The M8 Contract must freeze each code class's feature scope,
-eligibility, issuance/redemption limits, start and end instants, expiry reminders, post-expiry
-read/write and data-export behavior, transfer/account-deletion handling, abuse and exceptional
-revocation rules, and exact Coach-facing promises before distribution. M8 requires no online
-payment; M9 owns charging and ordinary paid-plan discounts.
+**Product Owner decisions — 2026-09-30 to 2026-10-01, simplified 2026-10-01:** start a small,
+code-gated, free Taiwan Beta. A valid shareable Beta code permits registration and grants three
+months of free use from redemption; no automatic charge or deletion occurs at expiry. At most ten
+permanent free grants may be issued and remain free while the service operates. Both classes are
+server-owned entitlements. M9 owns payments. The Beta uses **Local + Production** only: the
+existing development project remains local development's database/Auth service, and a separate
+Supabase Free project holds production data. There is no persistent staging environment or
+project-pause rotation. One Fly.io app is the proposed same-origin Web/Fastify host. The initial
+planning target is about USD 30/month, informed by [the Product Owner's cost estimate](M8-OPERATING-COST-ESTIMATE.md);
+it is not a guaranteed bill or an automatic spending authorization. Check actual provider pricing,
+usage alerts and any available caps before enabling billing. Do not claim a hard cap where a
+provider does not offer one.
 
-#### M8-A — Release contract and isolated staging
+The Product Owner accepts a Free Beta with **no scheduled database backup** and possible permanent
+Coach/Student data loss. The registration or first-use flow must plainly state that there is no
+guaranteed data restoration. Terms and privacy text must identify the actual operator, contact,
+providers, data practices and a manual route for applicable rights requests before real Coaches
+join. A template may start the drafting; a paid lawyer review is not an M8 gate. Disclosure does
+not waive statutory rights or replace reasonable security measures. Supabase Free may pause for
+low database activity; an external `/api/health` probe detects API availability but does not
+prove database activity or prevent Supabase pausing. Watch provider warnings and resume manually
+if needed. No daily login/write bot is required.
 
-**Contract gate:** select hosting/domain and deployment topology, separate local/staging/production
-Auth/database/secrets, migration release order, backup and restore targets, rollback, observability,
-incident owner, support, privacy, data export/deletion, and measurable Alpha/Beta entry and exit
-criteria. Freeze the one-year Beta and limited permanent-grant promises and a path to obtain help,
-report a problem, and submit product feedback. Define the submission channel, triage owner,
-response expectations, and privacy-safe diagnostic handling; a general-purpose ticketing system is
-not required. Set explicit performance, capacity, recovery, and security acceptance thresholds in
-this Contract rather than claiming readiness from an arbitrary test count.
+The Product Owner performs manual operational review in Fly.io and Supabase dashboards. There is
+no custom `/ops` page, `/api/v1/ops/summary`, telemetry warehouse or alert-acknowledgment SLA.
+Before Beta, verify billing/usage notifications, view the Supabase database size and Fly usage,
+and keep a simple monthly expense review. Free's 500 MB **database-size** read-only threshold is
+a reason to consider Pro before writes fail; no upgrade or purchase occurs automatically. Keep
+tenant isolation, secret separation, public-link allowlists and tested migrations as baseline
+engineering protections.
 
-**Sol gate:** provision isolated staging and a repeatable Web/API/Auth/database migration pipeline
-with separate credentials, same-origin `/api`, TLS, controlled configuration, logs, request IDs,
-metrics, alerts, and backup/restore hooks. No real-customer data enters staging.
+Settings offers a simple external **意見回饋** link using a dedicated support email (`mailto:`) or
+an approved external form after the Product Owner chooses the address/provider. M8 does not
+implement feedback tables, digests, internal review UI, replies, or Today reply notifications.
+Do not claim an in-app receipt for an external submission. The channel should be discoverable on
+desktop and mobile and ask Coaches not to send passwords, capability links or unnecessary Student
+details. No individual reply time is promised.
 
-Verify staging Auth, primary Coach and public-link journeys, error/recovery copy,
-installation affordance, and desktop/mobile layout against the frozen release contract.
+The Product Owner may use agents and isolated synthetic accounts for internal Alpha. Manually
+exercise the core path on an available installed phone during Alpha, and record any untested
+platform honestly. No routine
+Coach-facing export, backup or individual-record deletion feature is added for Beta; preserve
+delivered account deletion and a manual process for applicable data-rights requests. The
+development-only Demo import UI must be absent from production builds.
 
-**CI gate:** prove clean-environment rebuild, staging migration and smoke, environment/secret
-separation, repeatable deployment, and exact-SHA remote CI. Record the release candidate and its
-rollback path. This gate does not expose the product to real Coaches.
+#### M8-A — Lean release contract and local deployment preparation
 
-#### Product Owner-approved M8 feedback planning input — 2026-09-30
+**Contract gate:** freeze the Local + Production topology, Fly/Supabase Free selection, same-origin
+`/api` routing, build/release commands, migration order, secret boundaries, the honest no-backup
+message and a short manual release checklist. Record the approximate monthly cost and where the
+Product Owner will inspect billing/usage notifications. The public support address, final domain
+and actual provider account details may remain pending until M8-C production setup; they are
+required before inviting real Coaches. No staging or paid provisioning is required to freeze this
+engineering package.
 
-The following decisions enter M8-A Contract and M8-B implementation; they do not close M7.5
-Stage 2 or count as working feedback delivery.
+**Sol gate:** implement the production-capable Web/API serving path, `/api/ready` backed by a
+database check, safe configuration, SPA/public-link routes, JSON API 404, static cache headers,
+no-store private/public responses, and a repeatable local production-mode smoke. Keep the
+development runtime and assets. Prepare a short Fly deployment configuration and migration
+command path without activating a paid service or copying development data into production.
 
-- Add an **協助與回饋** entry in Settings with three clear intents: report a problem, suggest an
-  improvement, or ask for help. Use a short, type-aware form with a title and explanation. Keep
-  optional reproduction detail from becoming a submission barrier. Preserve the originating route
-  when the Coach opens Settings to report an issue.
-- Submit through the authenticated application API into private, durable, Coach/Workspace-associated
-  records. Derive identity and Workspace from verified Auth, not browser-supplied identifiers. Record
-  only necessary diagnostic context, exclude capability tokens and URL query secrets, and explain
-  collection to the Coach. Show a receipt only after durable acceptance; preserve the draft and offer
-  retry on failure without creating duplicate submissions.
-- Send the Product Owner one **email digest every two days only when new feedback exists**. The email
-  must contain an authenticated link to a prepared, organized review of those records. Do not put
-  sensitive feedback bodies or permanent access tokens in the email. Record digest coverage and
-  delivery attempts so failures can be retried and records are not silently skipped or resent as
-  new. The Contract must select the sender, destination, schedule/time zone, and safe review surface.
-- Keep an optional reply path. The Product Owner may decide to answer a specific Coach question or
-  report; no individual reply is promised for every submission. Persist each reply against the
-  feedback record and deliver a Coach-scoped notice through the existing Today notification entry
-  point. The reply remains readable from an authenticated durable detail view after the notice is
-  read, dismissed, or displaced by the Today list limit. Define reply authorship, delivery/read
-  state, and whether the Coach can answer back in the Contract.
-- Retain feedback indefinitely for now. Group it into weekly review batches and support reversible
-  archive/unarchive of a batch or record. Archive changes review visibility, not retention or the
-  Coach's access to a reply. Define week boundaries, inclusion of late submissions, deletion/privacy
-  controls, and backup/export behavior before Beta.
-- Keep triage status, duplicate grouping, and urgency assessment internal. A weekly organized review
-  may be prepared by an agent, but the Product Owner owns prioritization and replies. The Contract
-  must define the exact review surface and operating procedure; an in-app Kanban board is not a
-  prerequisite.
+**CI gate:** pass root check/build, focused routing/readiness tests, migration dry-run where
+credentials are available, and exact-SHA GitHub Actions jobs for the delivered commit. Record the
+local smoke and unresolved production setup values. This gate does not create production or
+admit Coaches.
 
-#### M8-B — Pre-release product, PWA, security, and operations gate
+#### M8-B — Beta product and pre-release checks
 
-**Contract gate:** freeze the staging test matrix and thresholds: realistic Coach journeys, dataset
-sizes and concurrent users; two-Coach isolation and public-link abuse; Auth/session and permission
-boundaries; recovery time/data-loss targets; device/browser coverage; expected load and latency;
-and severity-based release blockers. Map security checks to a named, versioned verification baseline.
-Freeze the Beta code issuance/redemption/grant model and the feedback decisions left open above.
+**Contract gate:** freeze Beta-code issuance, redemption, limits, expiry and post-expiry access;
+choose the external feedback channel and exact copy; define the minimum onboarding disclosure,
+desktop/390px checks and security cases. Preserve physical installed-device acceptance for M8-C.
 
-**Sol gate:** implement the frozen private feedback submission, two-day digest with delivery
-tracking/retry, weekly review/archive, authenticated reply and durable Coach notice. Implement
-Beta-code issuance and atomic, idempotent, rate-limited redemption against verified Coach/Workspace
-identity; store code secrets safely and make one-year and permanent free entitlements
-server-authoritative. Preserve permanent grants when paid plans later appear; make Beta expiry and
-plan-choice states explicit without automatic billing or data deletion. Add focused authorization,
-concurrency, persistence, failure, and recovery tests. Complete PWA manifest, service-worker
-update/cache, offline draft/retry, and deployment configuration needed by the frozen device
-contract.
+**Sol gate:** implement server-owned, atomic Beta-code redemption and three-month/permanent grants;
+show grant and expiry states without automatic billing or deletion. Add the external feedback link
+and necessary PWA/update corrections. Test critical Coach flows and two-Coach isolation locally
+with synthetic data. Keep development migration tools unavailable in a production build.
 
-Run task-based desktop and installed Android/iOS PWA journeys for sign-in, Calendar,
-Training Record, Student/Venue/Finance, public links, offline/reconnect, app update, and recovery.
-Make help, feedback, code redemption, receipt/retry, reply discovery, one-year expiry/plan choice,
-and permanent free status understandable. Preserve safe areas, touch targets, keyboard/caret
-visibility, and no overflow.
+**CI gate:** run root check/build, migration and security checks, focused code/entitlement cases,
+and a manual local production-mode path for sign-in, Session and Training save, plus one public
+link. Confirm exact-SHA remote CI. Do not run a large staging load fixture or rollback drill.
 
-**CI gate:** on isolated staging, run full regression, migration dry-run/advisors, dependency and
-secret scans, tenant/authorization and code-abuse cases, realistic scenario and load tests, backup
-restore and rollback drills, and feedback digest/reply E2E. Resolve release-blocking findings and
-record measured results against the Contract thresholds. Do not stress production or reuse real
-Coach data as test fixtures.
+#### M8-C — Production deployment and internal Alpha
 
-#### M8-C — Production deployment and controlled Alpha
+**Contract gate:** choose the domain, public support/privacy contact, Auth mail sender, provider
+accounts and realistic monthly cost; approve any purchase/deployment. Finish and publish accurate
+Terms/Privacy text and the no-backup onboarding notice before real Coaches are invited. Select
+the initial synthetic Alpha accounts and a short pass/fail checklist.
 
-**Contract gate:** freeze production release approval, internal Alpha participants, data policy,
-smoke paths, alert/incident ownership, rollback triggers, and the Alpha exit criteria. An internet
-reachable Web deployment is not an app-store listing or an invitation to the public.
+**Sol gate:** provision the separate production Supabase Free project and Fly app, configure
+separate secrets, apply reviewed migrations, deploy the exact release build and configure available
+billing/usage notifications. Use Fly and Supabase dashboards for manual health/capacity review.
+Agents and the Product Owner exercise synthetic Alpha accounts. Fix forward when an app defect is
+found; stop unsafe writes or admissions if a migration or data failure makes continued use unsafe.
+No automated rollback or database-loss rehearsal is required.
 
-**Sol gate:** provision production separately, rotate previously exposed development credentials,
-apply reviewed migrations, deploy the exact release artifact, and enable production logging,
-monitoring, backups, alerts, and support delivery. Keep internal Alpha accounts and fixtures scoped
-and removable without affecting future Coaches.
+**CI gate:** confirm exact-SHA jobs and production migration evidence; manually smoke Auth,
+Session/Training persistence, a public capability link and sign-out. On an available installed
+phone, check the core save path, touch, keyboard and safe-area behavior; record any untested
+platform as a limitation without claiming it passed. Confirm support contact, disclosure, provider
+alerts, database-size view, and no known release-blocking defect.
 
-Exercise onboarding, critical Coach flows, installed PWA and public links on the
-deployed domain with internal Alpha accounts; inspect real-device update, offline, accessibility,
-failure, and feedback experiences.
+#### M8-D — Code-gated, free, real-Coach Beta
 
-**CI gate:** confirm exact-SHA remote jobs, production migration and health smoke, external Auth and
-email delivery, alert routing, rollback and restore capability, security-advisor findings, and Alpha
-incident/defect disposition. Production availability alone does not close this gate.
+**Contract gate:** approve the first small cohort, code distribution, published terms/privacy,
+external feedback channel and criteria to pause new admissions. State the three-month and limited
+permanent-free promises clearly. Paid access remains M9.
 
-#### M8-D — Invited, free, real-Coach Beta
+**Sol gate:** admit only approved code holders, keep existing Coach data behind verified identity,
+make expiry/grant state visible, and collect product feedback through the selected external channel.
+The Product Owner reviews Fly usage and Supabase size/billing notices manually at a practical
+cadence and adjusts admissions if service quality or capacity deteriorates.
 
-**Contract gate:** freeze cohort size and recruitment, invitation versus account-creation order,
-Beta-code distribution, consent/terms and privacy wording, support response, usage measures, data
-handling, and exit/pause criteria. State the one-year Beta promise and the separate limited
-permanent-free promise; show each Coach their grant and expiry, if any. Paid access remains outside
-this package.
-
-**Sol gate:** activate only the approved invitation/code and entitlement paths for the cohort;
-provide code redemption state, support triage, privacy-safe usage/health signals, and a way to stop
-new admissions without damaging existing Coach records or redeemed grants.
-
-Observe invited Coaches completing real onboarding, scheduling, recording, and
-recovery tasks; collect feedback and distinguish product friction from incidents. Check that the
-one-year remaining time, plan-choice path, permanent free status, and reply path are clear on
-desktop and installed PWA.
-
-**CI gate:** verify real-account isolation, both code classes, one-year expiry and no-charge
-transition, duplicate/expired/invalid redemption cases, support and feedback delivery,
-production health, backup status, incident response, and measured
-Beta outcomes. The Product Owner decides whether to extend Beta, correct the product, or authorize
-the M9 paid-launch Contract. A Beta invite is not M8 completion by itself.
+**CI gate:** spot-check a real Coach's onboarding, Session and Training save, public-link scope,
+grant state, and support route without using real records as fixtures. Check the production health,
+cost and database-size dashboards and resolve release-blocking defects. The Product Owner decides
+whether to extend Beta, correct the product or authorize M9. A Beta invite is not M8 completion by
+itself.
 
 ### M9 — Taiwan commercialization and paid launch
 
@@ -696,14 +671,14 @@ positioning research may begin during M8; no Coach is charged before M9's full r
 
 **Contract gate:** freeze who pays, plan features/limits, price and currency, trial or paid discount
 terms, upgrade/downgrade/cancellation/refund handling, failed-payment access, tax/invoice and legal
-review, privacy/terms, customer support, one-year Beta expiry/plan selection, and continued M8
+review, privacy/terms, customer support, three-month Beta expiry/plan selection, and continued M8
 permanent free grants. Ordinary paid-plan discount codes are distinct from both free-grant classes.
 Define a measurable paid-launch and support exit criterion.
 
 **Sol gate:** implement provider-verified payment events and server-owned subscription/access
 state with idempotent retries, reconciliation, and auditability; never derive access solely from a
 browser success page. Keep redeemed M8 permanent grants effective without billing them; handle
-expired one-year grants without data loss or automatic charges.
+expired three-month grants without data loss or automatic charges.
 
 Make plan choice, price, payment, free-grant status, failures, cancellation, and help
 clear on Web/PWA. Complete Taiwan launch onboarding and public-facing product/support materials.

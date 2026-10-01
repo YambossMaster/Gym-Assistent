@@ -6,8 +6,8 @@
 
 ## 正式應用
 
-正式產品位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)。M0–M7 已完成；目前進行
-M7.5 Stage 2 的部署前整合驗收，M8 的正式部署與免費封閉 Beta 尚未開始。產品目前包含：
+正式產品位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)。M0–M7 已完成；
+M7.5 Stage 2 已交付；M8-A 已採 Local + Production 的精簡發布契約，本機發布工程已完成，遠端 CI 待確認。正式部署與免費 Beta 尚未開始。產品目前包含：
 
 - 可替換 Managed Auth 供應商的 OIDC/JWKS 驗證；
 - 一位教練對應一個私有 Workspace；
@@ -18,7 +18,7 @@ M7.5 Stage 2 的部署前整合驗收，M8 的正式部署與免費封閉 Beta �
 - 場地與收支管理、可安裝的 Web App manifest，以及不快取 API 的 PWA shell。
 
 目前的本機 Web/PWA 預覽不代表已通過實機驗收，也不是已部署的正式服務。發布順序與
-免費 Beta 的一年／永久使用優惠碼規劃見 [`docs/ROADMAP.md`](docs/ROADMAP.md)；實際驗證與
+免費 Beta 的三個月／永久使用優惠碼規劃見 [`docs/ROADMAP.md`](docs/ROADMAP.md)；實際驗證與
 下一個工作項目見 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)。
 
 安裝與檢查：

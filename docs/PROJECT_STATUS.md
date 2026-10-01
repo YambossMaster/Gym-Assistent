@@ -5,29 +5,52 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                  |
-| Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                     |
-| Package state      | **Stage 2 delivered on Main; M7.5 awaits M8-A handoff authorization**                       |
-| Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                       |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                       |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1; unrelated M8 document edits remain unstaged         |
-| Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed |
-| Production         | Not configured; no real customer data                                                       |
-| Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes |
+| Field              | Current value                                                                                 |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                                 |
+| Current package    | **M8-A lean release preparation — Local + Production**                                        |
+| Package state      | **Contract frozen; Sol implemented and locally verified; CI delivery pending**                |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                                 |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                         |
+| Worktree           | `codex/m8-a-lean-release`; isolated M8-A worktree; exact-SHA CI pending                       |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run up to date      |
+| Production         | Not configured; no real customer data                                                         |
+| Approved M8 scope  | M8-A–D staged release; three-month shareable Beta codes and at most ten permanent free grants |
+
+The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
+the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
+manual verification; no staging, custom operator dashboard, feedback backend, rollback drill or
+mandatory paid legal review. The goal is real Coaches signing in and saving training records soon.
+The Product Owner also approved agent-operated synthetic Alpha, manual core-path checks on an
+available installed phone during Alpha, external feedback without a per-submission reply promise,
+and no routine
+Coach-facing export/backup/record-deletion feature. Existing account deletion and legal rights
+requests need a private process. Terms and privacy drafts await actual operator, contact,
+provider and retention facts before publication.
+The Product Owner uses about USD 30/month as a planning target, not a hard recurring ceiling.
+They consider a USD 35.87/month Pro-based configuration affordable for a later live-service
+decision, while controlled Beta remains Supabase Free-first. Actual use should justify a Pro
+upgrade; approaching Free capacity can require an earlier decision to protect existing writes.
+AWS is only a later scaling option if adoption and workload grow. In a clarification on
+2026-10-01, they explicitly accepted **no scheduled database
+backup** and possible permanent data loss and identified approaching 500 MB as a possible Pro
+purchase trigger. A later MVP decision removed routine agent login/write checks. Provider
+warning emails and optional external readiness checks are reviewed manually; a health request
+does not prevent Supabase database inactivity pausing. Clear Coach disclosure and a reachable
+rights/support contact remain Beta entry conditions.
 
 ## Next handoff
 
-M3.5 and M0–M7 remain Done. **M7.5 Stage 2 was delivered to Main.** The Product Owner approved
-the route hierarchy review baseline, authorized Main after CI, and personally completed browser
-recovery/new-password/Google journeys. Exact Main SHA `1f653d5` passed GitHub Actions `verify` and
-`migration-dry-run` in run `36804355951`. Linked local Supabase CLI login still fails with its
-machine credential; CI verified the migration plan with its configured secrets. The Product Owner
-explicitly deferred installed Android/iOS PWA journeys to M8-B isolated staging before production
-Alpha; this is a known release gate, not Stage 2 device evidence. No staging or production
-environment exists. **Next:** Stop at the M7.5/M8 milestone boundary and obtain explicit Product
-Owner authorization to freeze the M8-A Contract. Do not begin M8 implementation beforehand.
+M3.5 and M0–M7 remain Done. **M7.5 Stage 2 was delivered to Main.** Exact Main SHA `1f653d5`
+passed GitHub Actions `verify` and `migration-dry-run` in run `36804355951`. The linked development
+Supabase CLI dry-run now reports an up-to-date migration plan. No production environment exists.
+The Product Owner froze the simplified
+[M8-A Contract](M8-A-CONTRACT.md): one Fly Web/API origin, separate production Supabase Free,
+about USD 30/month planning cost, manual provider dashboards and release checks, with no staging.
+The public support address and final domain are deferred to M8-C before real-Coach admission.
+M8-A Sol now has a same-origin runtime, database readiness and project-boundary guard, all verified
+locally. **Next:** Push the Product Owner-approved dedicated branch and confirm `verify` and
+`migration-dry-run` against the delivered SHA before beginning M8-B Contract.
 
 ## Stage 2 evidence
 
@@ -254,20 +277,22 @@ Stage 1 closure is a Product Owner phase decision; the unresolved acceptance abo
 
 ## M8 planning input
 
-The Product Owner approved planning the feedback workflow in `ROADMAP.md` on 2026-09-30. Settings
-will offer problem reports, improvement suggestions, and help requests through one short form;
-accepted submissions become private durable records. A two-day email digest is sent only for newly
-received feedback and links to an authenticated organized review. The Product Owner may reply when
-useful; a durable Coach-scoped reply is surfaced through Today's notification entry point. Records
-are retained indefinitely for now, organized by week, and reversibly archived. M8 Contract still
-needs the mail sender/destination and schedule, review authorization/surface, reply interaction,
-week boundary, and privacy/deletion policy. The approved M8-A–D sequence adds isolated staging,
-pre-release security/PWA/operations gates, controlled production Alpha, and invited free Beta.
-Beta promotion codes grant one year of free use from redemption, followed by an explicit plan choice
-without automatic billing or data deletion; separate limited permanent free codes are reserved for
-the Product Owner to give friends. Each grant is server-owned and remains distinct from future paid
-discounts. Code terms, expiry reminders, post-expiry access, and permanent-grant scope remain M8
-Contract decisions. No M8 implementation or environment setup has begun; M7.5 Stage 2 is active.
+Product Owner 提供的 Web/PWA 營運成本情境與未來原生 App 商店帳號費用，另存於
+[上線後營運成本估算備忘](M8-OPERATING-COST-ESTIMATE.md)。這是未查價的規劃參考，
+不代表已選定正式部署方案；M8-A 仍以約 $30／月作為 Beta 規劃目標，
+M10 的原生 App 決策門檻也未改變。
+
+The Product Owner's 2026-09-30 private feedback/digest plan was superseded by the 2026-10-01
+single-developer MVP decision. Settings will link to a chosen support email or external form;
+there is no M8 feedback schema, digest, internal review UI or reply flow. The Product Owner has not
+yet chosen the public address. M8-A–D now use Local + Production, a short manually checked Alpha,
+and code-gated free Beta. Possession of a valid Beta code permits registration and grants three months from redemption,
+followed by explicit plan choice without automatic billing or expiry-triggered data deletion. At
+most ten permanent free grants are reserved for friends. Each grant is server-owned and distinct
+from future paid discounts. Code admission limits, expiry reminders, post-expiry access, and
+permanent-grant scope remain M8-B Contract decisions. A manual installed-phone core path belongs
+to Alpha, with untested platforms recorded plainly. M7.5 Stage 2 was delivered; M8-A Contract is
+frozen and its local Sol work is complete; CI delivery is next.
 
 ## Milestone status
 
@@ -282,8 +307,8 @@ Contract decisions. No M8 implementation or environment setup has begun; M7.5 St
 | M5 Training and Exercise Library       | Done        | Commit `5afa212`; CI run `34956661567` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
-| M7.5 Pre-deployment product hardening  | In progress | Stage 1 closed by Product Owner; Stage 2 acceptance and consolidated CI remain                                                  |
-| M8 Taiwan Web/PWA free Beta release    | Not started | A–D sequence approved; no staging/production environment                                                                        |
+| M7.5 Pre-deployment product hardening  | Done        | Stage 2 delivered to Main at `1f653d5`; run `36804355951` passed both jobs; device checks are M8-C entry evidence               |
+| M8 Taiwan Web/PWA free Beta release    | In progress | Lean M8-A Sol locally verified; CI delivery pending; Local + Production selected; no production environment                     |
 | M9 Taiwan paid launch                  | Deferred    | Requires M8 Beta outcomes and separate Product Owner approval                                                                   |
 | M10 International/native decision      | Conditional | Requires evidence of demand or PWA limits                                                                                       |
 
@@ -556,6 +581,169 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
+### 2026-10-01 — LOG-375 — Implement lean M8-A local release runtime
+
+- **Scope:** Execute the frozen M8-A Sol contract for one same-origin Web/API process, database
+  readiness, production project separation and a short Fly release handoff.
+- **Outcome:** Added a compiled Web asset and SPA gateway for Fastify `/api` routes, JSON API 404,
+  cache controls and public-link noindex headers. Added database-backed `/ready`, route-template
+  request logging without URL query or credential values, and a production startup guard comparing
+  API, database and built Web Supabase project refs. Added a Dockerfile, Fly example and concise
+  deployment instructions. No staging, operator dashboard, feedback service, provider account or
+  production data was created.
+- **Verification:** Elevated root `npm run check` passed API 28 files/133 tests and Web 59 files/250
+  tests; elevated `npm run build` passed with the existing Vite large-chunk advisory. Local
+  production-mode smoke returned SPA HTML for `/`, `/today`, `/t/:token` and `/r/:token`, JSON 200
+  for `/api/health` and database-backed `/api/ready`, and JSON 404 for unknown API routes. A
+  synthetic query marker was absent from request logs. Focused tests cover readiness 503/200,
+  same-origin write forwarding, asset/path behavior and project mismatch. Elevated linked
+  development `npm run db:push:dry` reported `upToDate: true`, no migrations applied.
+- **Known issue:** Docker and Fly CLIs are unavailable locally, so the image and Fly configuration
+  have not been built or deployed. No production, real-Coach, installed-device or exact-SHA remote
+  CI evidence exists for M8-A. The separate M7.5 UI correction remains in the original checkout.
+- **Next:** Review the isolated M8-A files, push the approved dedicated branch, and confirm both CI
+  jobs for its exact SHA.
+
+### 2026-10-01 — LOG-373 — Rebase M8 on a single-developer MVP release
+
+- **Scope:** Apply the Product Owner's explicit priority of rapid real-Coach market validation,
+  Local + Production, manual verification and about USD 30/month planning cost.
+- **Outcome:** Replaced the M8 Roadmap and froze a lean M8-A Contract. Removed persistent staging,
+  Free-project pause rotation, custom `/ops` and telemetry backend, feedback schema/digest/reply
+  work, daily activity bot, automated rollback/database-loss drills, large staging acceptance
+  matrix and mandatory paid counsel review from active M8 gates. Kept server-owned Beta grants,
+  tenant isolation, safe migrations, provider billing review, reachable support, and accurate
+  no-backup disclosure. Architecture and unpublished policy draft now reflect Local + Production
+  and external feedback. Existing historical logs remain as evidence of superseded plans.
+- **Verification:** Compared the revised scope with the current API/Web release gap and official
+  Supabase pausing, cost-control and database-size guidance; checked Taiwan's official PDPA notice
+  and rights text. Targeted Prettier check and `git diff --check` passed. No provider account,
+  production deployment, public policy or real-Coach admission occurred.
+- **Known issue:** The public support address, final domain, actual provider account/billing
+  settings and policy placeholders remain M8-C decisions before real-Coach admission. Local
+  Supabase CLI login remains a tooling risk for migration evidence.
+- **Next:** Implement the frozen M8-A same-origin runtime, readiness, environment guard and local
+  production-mode smoke, then complete its CI gate.
+
+### 2026-10-01 — LOG-372 — Record the clarified Beta and later operating-cost path
+
+- **Scope:** Record the Product Owner's clarification that USD 30/month is an approximate Beta
+  planning target, USD 35.87/month is affordable as a later live-service estimate, and Beta should
+  begin on Supabase Free.
+- **Outcome:** Updated the Roadmap, M8-A draft, and cost reference. Supabase Pro is a later decision
+  after real use is established, with an earlier capacity review if Free nears read-only. AWS remains
+  an optional scaling evaluation after meaningful growth. No provider, purchase, or deployment was
+  selected or changed.
+- **Verification:** Documentation consistency and `git diff --check`; no current provider price or
+  live billing was verified.
+- **Next:** Resolve the remaining M8-A decision register and measure the chosen configuration
+  before freezing its Contract.
+
+### 2026-10-01 — LOG-371 — Probe M8-A same-origin deployment shape locally
+
+- **Scope:** Follow the Product Owner's request to start M8-A engineering with a no-spend prototype
+  while the release Contract is still open.
+- **Outcome:** Added an isolated local gateway and probe under `prototypes/m8-a/`. It exercises the
+  current production Web build with same-origin `/api` forwarding, SPA deep links, asset and
+  service-worker cache rules, JSON API 404s, and a write request. No product runtime, Supabase
+  project, provider account or hosting configuration changed.
+- **Verification:** Four direct Node tests passed; root `npm run build` passed after the Windows
+  sandbox's `spawn EPERM` required an approved elevated rerun. The built-asset probe with compiled
+  Fastify routes and in-memory adapters returned the expected paths and cache headers; an
+  unauthenticated Student read returned 401, a synthetic authenticated read 200, and a synthetic
+  write 201. Idle RSS was 98.1 MiB. It excludes PostgreSQL, Supabase Auth and load, so it cannot
+  establish a machine size. The build retained its existing large-chunk advisory.
+- **Known issue:** M8-A Contract remains unfrozen. Legal operator/contact, staging hostname,
+  provider/budget choice, mail and incident owners/support details remain open; no staging or
+  production acceptance is claimed.
+- **Next:** Resolve the M8-A decision register, freeze the Contract, then implement the selected
+  deployment and operational slice in Sol.
+
+### 2026-10-01 — LOG-370 — Record no-backup Free Beta and Pro capacity trigger
+
+- **Scope:** Apply the Product Owner's later clarification that they accept a Free Beta without
+  database backups, will use periodic agent activity tests for pause risk, and may buy Pro as
+  production database size approaches the 500 MB read-only boundary.
+- **Outcome:** Removed the prior daily offsite backup and restore gates from M8 Roadmap and M8-A
+  Contract. The Contract now requires honest data-loss disclosure, an incident procedure,
+  daily isolated authenticated activity tests during low use, pause-warning monitoring, and
+  capacity decision points before writes become read-only. Updated the unpublished Terms/Privacy
+  draft and legal research; no recovery guarantee is claimed. Pro remains a separate purchase
+  decision. No service was purchased, deployed or upgraded.
+- **Verification:** Rechecked official Supabase pausing, backup and 500 MB database-size guidance;
+  compared Taiwan's official security-measure rules with the unpublished legal research. Targeted
+  Prettier check and `git diff --check` passed. No live service, actual pause prevention, or
+  legal approval is claimed.
+- **Known issue:** Product Owner risk acceptance does not settle the operator's obligations to
+  Coaches and Students. Beta requires clear disclosure, actual provider/operator details and
+  Taiwan legal review; M8-A Contract remains open pending its decision register.
+- **Next:** Resolve the remaining M8-A decision register, freeze Contract, then execute Sol.
+
+### 2026-10-01 — LOG-369 — Rework M8-A for Free-first Beta and offsite recovery
+
+- **Scope:** Apply the Product Owner's USD 30/month ceiling, daily-backup/approximately 24-hour
+  loss tolerance, and preference to defer Supabase Pro until Beta demonstrates real use.
+- **Outcome:** Replaced the Pro-first staging/production assumption with isolated Free projects,
+  a documented two-active-project rotation, encrypted daily offsite logical backups, and a
+  temporary Free cloud restore drill. Added Free pause and 500 MB read-only admission stops,
+  concrete backup-age/capacity alerts, and a separate later Pro purchase decision. The Roadmap
+  records the budget direction without changing the M8-A→D gate order. No service was purchased,
+  provisioned, or upgraded.
+- **Verification:** Checked current Supabase Free billing, pause, backup, CLI restore and database
+  size documentation, Cloudflare R2 pricing, and the repository's Vault/cron migration dependency.
+  Targeted Prettier check and `git diff --check` passed. No actual offsite backup, restore,
+  staging service, or Beta readiness is claimed.
+- **Known issue:** Contract freeze still needs the Product Owner's explicit Free-tier risk acceptance,
+  operator/contact, provider and support decisions; the four-hour recovery target needs a cloud
+  restore measurement in Sol/CI.
+- **Next:** Resolve the M8-A decision register, freeze the Contract, then execute its Sol gate.
+
+### 2026-10-01 — LOG-368 — Specify executable M8-A release Contract draft
+
+- **Scope:** Turn the authorized M8-A outline into a deployable staging, release, operations,
+  recovery and acceptance contract without provisioning external services.
+- **Outcome:** The Contract now records the current production-routing gap, a recommended
+  Render/Supabase Singapore topology and indicative cost, environment/secret matrix, serial
+  migration and rollback, proposed alert thresholds and recovery targets, fixture-based staging
+  acceptance, and the exact Product Owner decisions required before freeze. Current provider
+  capabilities and prices were checked against primary documentation; no vendor or spending
+  decision is represented as approved.
+- **Verification:** Compared current API/Web/CI configuration with the proposed serving path,
+  checked current Render/Supabase/Resend capabilities and prices in primary documentation, and
+  passed targeted Prettier plus `git diff --check`. No M8 code, staging deployment, restore
+  drill, or remote CI is claimed.
+- **Next:** Resolve the Contract decision register, then freeze M8-A and execute its Sol gate.
+
+### 2026-10-01 — LOG-367 — Enter M8 and begin M8-A Contract
+
+- **Scope:** Accept the Product Owner's M7.5-to-M8 handoff after Stage 2 Main delivery and begin
+  the approved M8-A Contract gate.
+- **Outcome:** M7.5 is recorded Done. [M8-A-CONTRACT.md](M8-A-CONTRACT.md) inventories preserved
+  release decisions, staging acceptance, CI evidence, and the operator/provider/recovery/privacy
+  choices still needed before the Contract can freeze. The Product Owner has not selected a domain,
+  hosting providers, monthly budget, or public operator/contact and need not decide them at this
+  initial drafting step. No environment was provisioned.
+- **Verification:** Reviewed the M8-A draft against Roadmap, Architecture, and the Stage 2 Main
+  handoff. Targeted Prettier check and `git diff --check` passed. No M8 implementation, staging
+  smoke, or remote CI is claimed.
+- **Next:** Compare viable hosting and operating options against current provider documentation,
+  resolve the decision table with the Product Owner, and freeze the M8-A Contract before Sol.
+
+### 2026-10-01 — LOG-366 — Revise M8 Beta promises and draft privacy documents
+
+- **Scope:** Record the Product Owner's three-month shareable Beta code, ten-grant permanent-free
+  ceiling, agent-operated Alpha, later physical-device gate, and feedback/privacy direction.
+- **Outcome:** Updated the M8 Roadmap and README; created Taiwan legal research and draft Beta terms
+  and privacy notice. The production Demo import UI is already guarded by development mode;
+  M8 will verify its absence while preserving the delivered migration assets. Existing account
+  deletion and operational backup/restore remain distinct from unrequested self-service features.
+- **Verification:** Targeted Prettier and repository Git whitespace checks passed. No M8 Contract,
+  production deployment, legal approval, or implementation is claimed.
+- **Known issue:** Legal operator/contact, hosting and mail providers, retention/backup periods,
+  Student notice responsibilities, code admissions caps, and expiry interim state remain for M8-A.
+- **Next:** Obtain explicit Product Owner authorization for the M8-A Contract; freeze these decisions
+  there before implementation or public policy publication.
+
 ### 2026-10-01 — LOG-365 — Deliver M7.5 Stage 2 to Main with exact-SHA CI
 
 - **Scope:** Deliver the accepted Stage 2 code and browser evidence after the Product Owner's
@@ -609,6 +797,18 @@ local pass or successful push is not a remote CI completion claim.
   login-role authentication, while `a07413f` passed exact-SHA migration CI.
 - **Next:** Obtain the Product Owner's remaining Auth/evidence and local CLI substitution
   disposition before Main; if accepted, complete the Stage 2 handoff and verify delivery CI.
+
+### 2026-10-01 — LOG-362 — Add M8 operational visibility and capacity response requirement
+
+- **Scope:** Record the Product Owner's M8 release requirement for adoption, workload, database
+  capacity, service health, and data-recovery visibility.
+- **Outcome:** The Roadmap now requires a private operational view, named alert/response owners,
+  growth-based capacity decisions, and verified restore evidence across M8-A–D. Exact thresholds
+  remain for the governed M8 Contracts; M7.5 scope and handoff are unchanged.
+- **Verification:** Targeted Prettier and repository Git whitespace checks passed. No staging,
+  production, alert, backup, or restore implementation is claimed.
+- **Next:** Complete the active M7.5 Stage 2 acceptance; freeze these operating details in M8-A
+  after its authorized handoff.
 
 ### 2026-10-01 — LOG-361 — Verify cross-route recovery and public/notification paths
 

@@ -256,7 +256,8 @@ function-specific credential.
   locally.
 - The API is stateless and uses a PostgreSQL connection pool.
 - Database migrations are serialized and run as an explicit release step.
-- Local, staging, and production use separate databases, Auth configuration, and secrets.
+- M8 MVP uses Local and Production only, with separate Supabase projects, Auth configuration,
+  database logins, and secrets. No persistent staging environment is part of the current release.
 - Persistent deployments use the supported direct/session-pool connection for their network shape.
 - Demo import is always previewed, checksummed, and explicitly confirmed before writes; it never
   mutates `form-coach-mvp-v1`.

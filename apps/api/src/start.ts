@@ -21,6 +21,11 @@ import { PostgresPublicAccessRepository } from './adapters/postgres-public-acces
 import { PublicAccessModule } from './public-access/public-access-module.js'
 import { DemoImportModule } from './demo-import/demo-import.js'
 import { PostgresDemoImportRepository } from './adapters/postgres-demo-import-repository.js'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { assertProductionBoundary } from './deployment-boundary.js'
+import { createSiteServer } from './http/site-server.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -66,6 +71,9 @@ const server = buildServer({
     config.CAPABILITY_RATE_LIMIT_SECRET ?? config.SUPABASE_SECRET_KEY ?? config.DATABASE_URL,
   ),
   demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)),
+  readiness: async () => {
+    await pool.query('select 1')
+  },
   logger: {
     redact: {
       paths: [
@@ -86,4 +94,33 @@ server.addHook('onClose', async () => {
   await pool.end()
 })
 
-await server.listen({ host: config.HOST, port: config.PORT })
+if (config.NODE_ENV === 'production') {
+  const webRoot = fileURLToPath(new URL('../../web/dist/', import.meta.url))
+  const publicConfig = JSON.parse(
+    await readFile(join(webRoot, 'deployment-config.json'), 'utf8'),
+  ) as {
+    supabaseUrl: string
+  }
+  assertProductionBoundary(config, publicConfig.supabaseUrl)
+  await server.listen({ host: '127.0.0.1', port: 0 })
+  const address = server.server.address()
+  if (!address || typeof address === 'string') throw new Error('Internal API did not start')
+  const site = createSiteServer(webRoot, `http://127.0.0.1:${address.port}`)
+  try {
+    await new Promise<void>((resolve, reject) => {
+      site.once('error', reject)
+      site.listen(config.PORT, config.HOST, resolve)
+    })
+  } catch (error) {
+    await server.close()
+    throw error
+  }
+  const close = async () => {
+    await new Promise<void>((resolve) => site.close(() => resolve()))
+    await server.close()
+  }
+  process.once('SIGINT', () => void close())
+  process.once('SIGTERM', () => void close())
+} else {
+  await server.listen({ host: config.HOST, port: config.PORT })
+}
