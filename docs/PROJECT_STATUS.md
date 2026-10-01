@@ -9,38 +9,27 @@
 | ------------------ | ------------------------------------------------------------------------------------------- |
 | Active phase       | **M7.5 — Pre-deployment product hardening and acceptance**                                  |
 | Current package    | **M7.5 Stage 2 consolidated correction and acceptance**                                     |
-| Package state      | **Stage 2 local/browser evidence and exact-SHA CI passed; Main delivery in progress**       |
+| Package state      | **Stage 2 delivered on Main; M7.5 awaits M8-A handoff authorization**                       |
 | Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                       |
-| Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, `a07413f` passed both CI jobs                       |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                       |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1; unrelated M8 document edits remain unstaged         |
 | Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed |
 | Production         | Not configured; no real customer data                                                       |
 | Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes |
 
 ## Next handoff
 
-The Product Owner explicitly closed M7.5 Stage 1 on 2026-09-30 and authorized follow-up testing.
-M3.5 and M0–M7 remain Done. **M7.5 Stage 2 is the active package.** The Product Owner approved the
-route-by-route Coach hierarchy in [the Stage 2 matrix](M7.5-STAGE-2-ACCEPTANCE.md) as the review
-baseline on 2026-10-01. The Product Owner explicitly deferred installed Android/iOS PWA evidence
-until a phone-accessible deployment; this remains an open M8-B staging gate before production Alpha,
-not a Stage 2 pass. Next, execute the remaining browser interaction and Product Owner fixture paths.
-Record each symptom and result, fix it or obtain explicit Product Owner acceptance/deferral. The
-2026-10-01 root check/build and isolated live E2E reruns passed, but the current linked migration
-dry-run failed database password authentication; lint and advisors still completed. Resolve that
-credential gate or explicitly accept the exact-SHA remote migration result in its place. Draft PR
-#1 commit `a07413f` passed both GitHub Actions jobs in run `36803124814`; this is checkpoint CI.
-The later two-tab conflict, expired link, legacy Training and isolated prepaid completion/reopen
-browser paths passed. The Product Owner then completed recovery email/reset, new-password sign-in
-and Google sign-in in Chrome; the original Coach and six Students remained visible. They had already
-deferred installed Android/iOS evidence to M8-B and authorized Main after CI. The linked local CLI
-login failure remains documented; the exact-SHA CI migration plan succeeded with its own secrets.
-Next, record the Auth handoff and CI evidence, deliver the final M7.5 documentation commit, confirm
-its own exact-SHA CI, then fast-forward Main. Stop at the M7.5/M8 boundary until the Product Owner
-authorizes the M8-A Contract handoff.
-No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
+M3.5 and M0–M7 remain Done. **M7.5 Stage 2 was delivered to Main.** The Product Owner approved
+the route hierarchy review baseline, authorized Main after CI, and personally completed browser
+recovery/new-password/Google journeys. Exact Main SHA `1f653d5` passed GitHub Actions `verify` and
+`migration-dry-run` in run `36804355951`. Linked local Supabase CLI login still fails with its
+machine credential; CI verified the migration plan with its configured secrets. The Product Owner
+explicitly deferred installed Android/iOS PWA journeys to M8-B isolated staging before production
+Alpha; this is a known release gate, not Stage 2 device evidence. No staging or production
+environment exists. **Next:** Stop at the M7.5/M8 milestone boundary and obtain explicit Product
+Owner authorization to freeze the M8-A Contract. Do not begin M8 implementation beforehand.
 
-## Stage 2 evidence in progress
+## Stage 2 evidence
 
 - A two-tab stale Session edit retained the Coach's 13:00–14:00 input and displayed conflict while
   the server kept the Calendar's 11:00–12:00 version. A corrected local validation error had left
@@ -566,6 +555,22 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-365 — Deliver M7.5 Stage 2 to Main with exact-SHA CI
+
+- **Scope:** Deliver the accepted Stage 2 code and browser evidence after the Product Owner's
+  credential and Google handoff.
+- **Outcome:** Draft PR #1 branch commit `1f653d5` was fast-forwarded without force to Main;
+  remote `refs/heads/main` resolved to the same full SHA. The original Coach account and six
+  Students remained available after Google sign-in. Agent-created fixtures were cleared.
+- **Verification:** Branch GitHub Actions run `36804185126` and Main push run `36804355951`
+  each passed `verify` and `migration-dry-run` for `1f653d5`. Root check/build passed before the
+  final documentation-only update: API 125 tests, Web 250 tests, and both production builds.
+  Development schema lint and advisors had no error-level findings.
+- **Known issue:** Linked local CLI dry-run authentication failed, while both exact-SHA remote
+  migration jobs succeeded. Physical installed-PWA acceptance remains deferred to M8-B.
+- **Next:** Stop at the M7.5/M8 boundary; obtain Product Owner authorization for the M8-A Contract
+  before starting M8.
 
 ### 2026-10-01 — LOG-364 — Complete Product Owner-operated browser Auth acceptance
 

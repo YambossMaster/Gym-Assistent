@@ -437,7 +437,7 @@ criterion for that item; do not implement it early merely to clear the list. The
 Stage 1 on 2026-09-30. Remaining device, workflow, and browser acceptance belongs to Stage 2;
 closure does not turn an unrun test into passing evidence.
 
-**Stage 2 — Consolidated correction and delivery (current):** freeze the
+**Stage 2 — Consolidated correction and delivery (delivered 2026-10-01):** freeze the
 complete deferred backlog, resolve every listed item as one coordinated hardening package, run the
 full M7.5 regression and release-readiness matrix, then commit, push, and confirm exact-SHA remote CI.
 Stage 2 may return a newly discovered product decision to the Product Owner, but it does not enter M8
