@@ -12,7 +12,7 @@
 | Package state      | **Stage 2 check/build and isolated live E2E passed; browser and Product Owner acceptance remain open** |
 | Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                  |
 | Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs            |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoints `09e4a79`/`4abf5d7` passed CI                      |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `f502a73` passed both CI jobs                       |
 | Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed            |
 | Production         | Not configured; no real customer data                                                                  |
 | Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes            |
@@ -28,9 +28,10 @@ not a Stage 2 pass. Next, execute the remaining browser interaction and Product 
 Record each symptom and result, fix it or obtain explicit Product Owner acceptance/deferral. The
 2026-10-01 root check/build and isolated live E2E reruns passed, but the current linked migration
 dry-run failed database password authentication; lint and advisors still completed. Resolve that
-credential gate or confirm an exact-SHA remote migration dry-run for the final commit. Draft PR #1
-and its earlier checkpoint CI have passed. After all required paths are accepted, deliver the
-cohesive commit and confirm its own exact-SHA remote CI before Main delivery.
+credential gate or explicitly accept the exact-SHA remote migration result in its place. Draft PR
+#1 commit `f502a73` passed both GitHub Actions jobs in run `36792686715`; this is checkpoint CI,
+not Product Owner acceptance. After all required paths are accepted, deliver the cohesive commit
+and confirm its own exact-SHA remote CI before Main delivery.
 No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
 
 ## Stage 2 evidence in progress
@@ -128,6 +129,22 @@ No staging or production environment exists; that setup belongs to M8-A after th
   now focuses its persistent main landmark after a pathname change. Browser recheck at 320, 390
   and 1440 CSS pixels found that landmark focused after navigation and no document-width overflow;
   at 390px the next Tab reached `返回`. The remaining detail keyboard path is still open.
+- Draft PR #1 commit `f502a73d3f5ce5e826d310060c63ea53fc01af42` is on the remote review
+  branch. GitHub Actions run `36792686715` completed successfully for that exact SHA: `verify`
+  and `migration-dry-run` both passed. This confirms the CI-held development credentials and
+  migration plan; it does not convert the failed local CLI login or remaining browser/Product Owner
+  acceptance paths into passes.
+- At 390×844, an isolated development Venue was created, previewed from no expense to $1 per
+  Session with zero affected completed/scheduled Sessions, renamed, and deleted. Reload returned to
+  five original active Venues. An isolated 2026-10-01 Calendar Block was created, edited and
+  deleted in Day view. A scoped private-schema query found zero matching Venue/Block rows and zero
+  active matches for the earlier Exercise fixture. Existing review fixtures were not changed.
+- At 390×844, an isolated Student and zero-amount one-lesson Purchase supported a one-off Calendar
+  Session browser journey: create at 09:00–10:00, edit to 10:00–11:00, delete, then delete the exact
+  Purchase. The Student was archived. Read-only scoped checks found zero Purchase, Session, Series
+  and Venue links. Browser automatic approval review rejected permanent Student deletion pending
+  explicit confirmation, so that isolated fixture remains archived. Settings week start changed
+  Monday → Sunday → Monday with the original value visibly restored.
 - The consolidated local gate passed with single-worker Vitest scripts: root formatting/typecheck,
   API 26 files/125 tests, Web 59 files/249 tests, and both production builds (existing large-chunk
   advisory only). An initial default API run had two 5-second timeouts and the two-worker Web run
@@ -494,6 +511,54 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-359 — Verify isolated Session and Workspace preference paths
+
+- **Scope:** Exercise 390×844 Calendar Session create/edit/delete and a reversible week-start
+  preference change using an isolated Student/Purchase fixture.
+- **Outcome:** The Session moved from 09:00–10:00 to 10:00–11:00 and was deleted through the browser;
+  Day view returned to no Session. The exact Purchase was deleted, the Student archived, and the
+  Monday week-start preference restored after a Sunday round trip.
+- **Verification:** The archived Student has the unique development note and zero Purchase, Session,
+  Series and Venue links in scoped read-only database queries. The browser showed no remaining
+  purchase or Session on its detail page.
+- **Known issue:** Browser automatic approval review rejected permanent deletion of Student
+  `0e53c59f-cb4c-4350-8c58-78e6d086f68f` without action-specific confirmation. The isolated
+  Student remains archived; no indirect deletion was attempted. Stage 2 Series/conflict and other
+  Product Owner acceptance paths remain open.
+- **Next:** With explicit approval, delete only that verified isolated Student and confirm its
+  absence. Continue the remaining Stage 2 matrix; confirm final exact-SHA CI before Main.
+
+### 2026-10-01 — LOG-358 — Verify isolated Venue and Calendar browser mutations
+
+- **Scope:** Exercise two remaining 390×844 create/edit/delete paths without modifying preserved
+  Coach review fixtures.
+- **Outcome:** A unique Venue was created, changed to $1 per Session after a zero-impact preview,
+  renamed and deleted; the five original Venues remained. A unique one-off Calendar Block was
+  created, edited and deleted in Day view.
+- **Verification:** Browser reload restored the five Venue rows; Day view no longer showed the
+  Block. A scoped private-schema query found zero matching Venue and Block rows and zero active
+  Exercise fixture matches. No Session or source-backed Finance row was changed.
+- **Known issue:** Calendar Session/Series browser conflict, Training mobile keyboard/offline,
+  public-link terminal-state browser paths, and Product Owner fixture review remain open. The
+  local Supabase CLI dry-run still requires a credential fix or explicit acceptance of exact-SHA
+  remote CI evidence.
+- **Next:** Complete the remaining matrix paths or obtain explicit Product Owner deferral, then
+  deliver the final accepted Stage 2 SHA and verify both CI jobs before Main.
+
+### 2026-10-01 — LOG-357 — Verify route-focus checkpoint on GitHub Actions
+
+- **Scope:** Push the Stage 2 route-focus correction and evidence update to the existing draft PR,
+  then inspect both jobs for its exact commit.
+- **Outcome:** Review branch `codex/m75-stage2-review` reached `f502a73`; PR #1 remains draft.
+- **Verification:** GitHub Actions run `36792686715` completed successfully for exact SHA
+  `f502a73d3f5ce5e826d310060c63ea53fc01af42`; both `verify` and `migration-dry-run` passed.
+  The local linked CLI dry-run still failed password authentication, and Stage 2 browser/Product
+  Owner acceptance remains open.
+- **Known issue:** The remaining matrix paths and local CLI credential gap prevent M7.5 completion
+  and Main delivery without further evidence or explicit Product Owner deferral.
+- **Next:** Finish or obtain Product Owner acceptance/deferral for the remaining browser and fixture
+  paths; confirm the final delivery SHA's own CI before Main.
 
 ### 2026-10-01 — LOG-356 — Recheck Stage 2 local/live and mobile browser paths
 
