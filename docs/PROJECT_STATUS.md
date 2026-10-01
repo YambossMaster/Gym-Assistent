@@ -12,7 +12,7 @@
 | Package state      | **Stage 2 check/build and isolated live E2E passed; browser and Product Owner acceptance remain open** |
 | Completed baseline | M0–M7, including M3.5, Done; M7.5 remains in progress                                                  |
 | Branch baseline    | Accumulated mobile checkpoint `864d594` reached Main; CI run `36699684675` passed both jobs            |
-| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `0123a43` passed both CI jobs                       |
+| Worktree           | `codex/m75-stage2-review`; draft PR #1, checkpoint `dd7cdbf` passed both CI jobs                       |
 | Linked database    | Development only; migrations through `20260928194356` applied; current dry-run login failed            |
 | Production         | Not configured; no real customer data                                                                  |
 | Approved M8 scope  | M8-A–D staged release and free Beta; one-year Beta codes and limited permanent friend codes            |
@@ -29,13 +29,40 @@ Record each symptom and result, fix it or obtain explicit Product Owner acceptan
 2026-10-01 root check/build and isolated live E2E reruns passed, but the current linked migration
 dry-run failed database password authentication; lint and advisors still completed. Resolve that
 credential gate or explicitly accept the exact-SHA remote migration result in its place. Draft PR
-#1 commit `0123a43` passed both GitHub Actions jobs in run `36794346302`; this is checkpoint CI,
+#1 commit `dd7cdbf` passed both GitHub Actions jobs in run `36796888099`; this is checkpoint CI,
 not Product Owner acceptance. After all required paths are accepted, deliver the cohesive commit
 and confirm its own exact-SHA remote CI before Main delivery.
 No staging or production environment exists; that setup belongs to M8-A after the M7.5 handoff.
 
 ## Stage 2 evidence in progress
 
+- A deliberate API-process exit displayed the service warning and retry on all nine authenticated
+  Coach routes at 390×844. The open Training page recovered automatically with saved data after
+  `/health` returned 200. An isolated zero-lesson Student exercised nonempty Today notification
+  opening, mark-read, dismiss and reload persistence; a subsequent one-lesson Purchase generated a
+  fresh notice whose link opened that Student. The Student, $0 Purchase and two receipts were
+  transactionally removed after exact-ID and noninterference checks. Two temporary public
+  Training-result links showed valid, reissued/revoked and replacement/revoked pages outside Coach
+  Auth without private Note disclosure; both exact revoked links were removed. Scoped queries found
+  zero matching fixture rows afterward.
+- At 390×844, a Calendar week showed six events with an internally scrollable time grid through
+  22:00 and no document overflow. Preserved prepaid and commission Venues were inspected without
+  mutation; the latter displayed a fifth-of-month salary day. A complete Student-detail Tab walk
+  reached profile, schedule, performance, history, purchases, archive and bottom navigation in
+  order. These desktop-browser checks do not verify physical touch or installed-PWA behavior.
+- An isolated Student with a $0/two-lesson Purchase exercised two fixed weekly Series. The
+  same-day 09:00 Session was already past when its rule changed, so it retained 09:00 as required
+  by the future-only boundary. A second Series starting 2026-10-08 generated a 09:00 Session;
+  editing the rule to 11:00 moved the future Session to 11:00–12:00 with the same ID. During a
+  verified API outage, its Training Note showed background retry; after API recovery it showed
+  `已儲存` and survived reload. Its approved public reschedule link showed candidate times without
+  the private Note; redeeming once moved that Session to 2026-10-05 09:00, and public reload showed
+  the used terminal state. A strict transaction checked the exact Student, Purchase, two Series,
+  two Sessions, Training record and used link, then removed the agent-created fixture. A separate
+  Workspace-scoped read-only query found zero matching Student, Purchase, Session and link rows.
+- The final local gate for this documentation checkpoint ran elevated from its first Vitest start:
+  root formatting and types passed, API 26 files/125 tests and Web 59 files/249 tests passed, and
+  API/Web production builds passed. Vite retained only its existing >500-kB chunk advisory.
 - [Stage 2 acceptance matrix](M7.5-STAGE-2-ACCEPTANCE.md) records each named scenario, observed
   Stage 2 result and remaining boundary. The existing local Web has a 390×844 mobile preview, not
   a deployed Android/iOS app. This pass used authenticated Chrome at 320 and 390 CSS pixels; no
@@ -520,6 +547,30 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-01 — LOG-361 — Verify cross-route recovery and public/notification paths
+
+- **Scope:** Continue Stage 2 browser acceptance at 390×844 and clean only agent-created fixtures.
+- **Outcome:** All nine Coach routes showed service recovery during a verified API outage and the
+  open Training route recovered after restart. Today nonempty notices passed read, dismiss,
+  navigation and reload persistence. Public Training-result links passed valid, reissue and revoked
+  states without exposing a private Coach Note. Calendar week scroll and Student-detail Tab order
+  were observed; preserved Venue balance and salary display remained unmodified. An isolated future
+  Series update moved its Session from 09:00 to 11:00 with the same ID, and an offline Training Note
+  resumed background sync, reached `已儲存`, and survived reload. A public one-time reschedule
+  moved the same isolated Session and then displayed the used terminal state.
+- **Verification:** Exact Workspace, IDs and dependency checks preceded cleanup of the notification
+  fixture (one Student, one $0 Purchase, two receipts and two revoked links) and the Series fixture
+  (one Student, one $0 Purchase, two Series, two Sessions, one Training record and one used link).
+  Separate read-only scoped rechecks found zero matching rows. The Stage 2 matrix records each
+  browser result and its limits. Elevated root check passed API 26 files/125 tests and Web 59
+  files/249 tests; root build passed with the existing large-chunk advisory.
+- **Known issue:** Physical-device journeys are deferred to M8-B. Browser scheduling conflict,
+  legacy Training, Auth/OAuth recovery, expired public states and preserved Venue
+  fixture acceptance still require browser evidence or Product Owner disposition. The local CLI
+  migration login remains unavailable; the exact-SHA CI migration job has passed.
+- **Next:** Finish independently executable browser paths, obtain Product Owner acceptance or
+  explicit deferral for remaining boundaries, then confirm final exact-SHA CI before Main.
 
 ### 2026-10-01 — LOG-360 — Verify Training input and clean isolated browser fixtures
 
