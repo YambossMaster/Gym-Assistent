@@ -118,12 +118,7 @@ export function TrainingWorkspace({
   sessionNotice?: string
   timeZone: string
 }) {
-  if (query.isLoading)
-    return (
-      <section className="training-workspace training-loading" aria-live="polite">
-        載入訓練紀錄中…
-      </section>
-    )
+  if (query.isLoading) return <TrainingLoading />
   if (query.isError || !query.data)
     return (
       <section className="training-workspace empty-state">
@@ -154,6 +149,18 @@ export function TrainingWorkspace({
       sessionNotice={sessionNotice}
       timeZone={timeZone}
     />
+  )
+}
+
+export function TrainingLoading() {
+  return (
+    <section className="training-loading-stage" role="status" aria-label="載入訓練紀錄中">
+      <div className="training-loading-symbol" aria-hidden="true">
+        <Dumbbell size={31} strokeWidth={1.8} />
+      </div>
+      <p>載入訓練紀錄中…</p>
+      <span className="training-loading-progress" aria-hidden="true" />
+    </section>
   )
 }
 

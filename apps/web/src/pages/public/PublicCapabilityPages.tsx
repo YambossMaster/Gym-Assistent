@@ -8,6 +8,7 @@ import {
   ApiError,
   getPublicReschedule,
   getPublicTrainingResult,
+  isRetryableReadError,
   redeemPublicReschedule,
   type PublicReschedule,
   type PublicTrainingResult,
@@ -21,7 +22,14 @@ export function PublicCapabilityApp({ purpose }: { purpose: 'training' | 'resche
   const [client] = useState(
     () =>
       new QueryClient({
-        defaultOptions: { queries: { gcTime: 0, retry: false, staleTime: 0 } }
+        defaultOptions: {
+          queries: {
+            gcTime: 0,
+            staleTime: 0,
+            retry: (count, error) => count < 2 && isRetryableReadError(error),
+            retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000)
+          }
+        }
       })
   )
   useEffect(() => () => client.clear(), [client])

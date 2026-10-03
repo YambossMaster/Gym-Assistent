@@ -140,8 +140,8 @@ export function FinancePage({ session }: { session: Session }) {
                 ) : (
                   <div className="finance-empty">
                     <h2>這個月尚無收支紀錄</h2>
-                    <Link to="/students">
-                      前往學生資料登錄購課 <ArrowUpRight size={16} />
+                    <Link className="finance-empty-action" to="/students">
+                      前往學生資料登錄購課 <ArrowUpRight size={18} aria-hidden="true" />
                     </Link>
                   </div>
                 )}

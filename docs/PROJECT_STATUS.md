@@ -8,11 +8,11 @@
 | Field              | Current value                                                                     |
 | ------------------ | --------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                     |
-| Current package    | **M8-B plan and billing presentation — browser acceptance**                       |
-| Package state      | **M8-A complete; M8-B code-SHA CI passed; visual check pending**                  |
+| Current package    | **M8-B main integration — remote push approval pending**                          |
+| Package state      | **M8-A and M8-B integrated locally; desktop/390px plan review passed**            |
 | Completed baseline | M0–M7.5, including M3.5, Done                                                     |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs             |
-| Worktree           | `codex/m8-b-beta-product` isolated; plan UI pushed; final Status SHA CI pending   |
+| Worktree           | Existing `D:` checkout on clean local `main`; M8-A/B and corrections committed    |
 | Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied   |
 | Production         | Not configured; no real customer data                                             |
 | Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants |
@@ -48,13 +48,24 @@ The Product Owner froze the simplified
 [M8-A Contract](M8-A-CONTRACT.md): one Fly Web/API origin, separate production Supabase Free,
 about USD 30/month planning cost, manual provider dashboards and release checks, with no staging.
 The public support address and final domain are deferred to M8-C before real-Coach admission.
-M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
-`migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Confirm both GitHub Actions jobs against the final Status SHA, then obtain desktop and
-390px browser acceptance of Settings `方案與帳單` in the local production-mode preview. Browser
-automation blocked the local page in this run, so do not claim visual acceptance or close M8-B
-on CI alone. M8-C must choose deployment/legal/support details before production or real-Coach
-admission. The actual support email remains M8-C setup.
+M8-A final SHA `cb6257d` and M8-B final branch SHA `8990d46` have been fast-forwarded into the
+existing local `main` checkout. The Product Owner's local data-loading and two presentation
+corrections are retained separately; duplicate uncommitted M8-A files were not reapplied. The
+current `5173` Vite serves the M8-B Settings route. The local API needed the existing development
+`BETA_ADMISSION_SECRET` in its ignored `.env`; after adding it and restarting only the API,
+`/ready` returned 200 and the unauthenticated Beta status endpoint returned 401. Authenticated
+desktop and 390×844 Chrome displayed `方案與帳單`, current promotional eligibility, free/paid
+comparison, and honest billing/payment states; the mobile document had no horizontal overflow.
+Root check passed API 29 files/141 tests and Web 59 files/251 tests; root build and linked
+development migration dry-run passed. The corrections and integration record were committed on
+local `main`; the temporary stash containing duplicate M8-A work was dropped after verifying both
+M8 branch tips are ancestors and the worktree is clean. No production resource was created and no
+real Coach was admitted. **Next:** Remote `main` push was rejected by automatic approval review
+because the Product Owner explicitly named the local Vite directory but did not separately name
+the shared remote default branch. Await the Product Owner's answer to the exact remote-push
+question; if authorized, push and confirm `verify` plus `migration-dry-run` for the exact Main SHA.
+Then begin the M8-C Contract handoff; actual support email, provider accounts, legal text, and
+deployment remain M8-C decisions.
 
 ## Stage 2 evidence
 
@@ -584,6 +595,32 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — LOG-382 — Integrate M8-A/B and local corrections in the existing checkout
+
+- **Scope:** The Product Owner requested removal of duplicate uncommitted M8-A work, retention and
+  Main integration of the separate local data-loading and two presentation corrections, and use of
+  the existing Vite checkout as the primary working directory.
+- **Outcome:** Saved the old mixed worktree in a recoverable Git stash, fast-forwarded local `main`
+  through M8-A `cb6257d` and M8-B `8990d46`, then reapplied only the requested corrections. The
+  local Web now adds an 8-second read deadline and retries transient public reads; the launcher
+  checks database readiness and restarts an unexpectedly exited API. Finance's empty-state link is
+  button-shaped, and both Session loading phases share the Training transition. The M8-A duplicate
+  files were not reapplied. The ignored local API `.env` received the pre-existing M8-B development
+  secret after verifying its Supabase URL, database URL, and Supabase secret matched this checkout.
+- **Verification:** Root check passed API 29 files/141 tests and Web 59 files/251 tests; root
+  production build passed with the existing large-chunk advisory. Linked development migration
+  dry-run reported up to date. `5173` served the new Settings source; `/ready` returned 200;
+  unauthenticated `/v1/beta/status` returned 401. Authenticated Chrome showed the current plan,
+  90-day end, free/paid comparison, billing and payment states at desktop and 390×844; at 390px,
+  `scrollWidth` was 375 and `innerWidth` was 390. No production or real-Coach admission occurred.
+- **Known issue:** The initial local API process still ran pre-M8-B code and then failed to restart
+  until the existing development Beta secret was copied into this checkout's ignored `.env`.
+  Paid plans and payments remain M9 scope. Automatic approval review rejected pushing the shared
+  remote `main` without separate explicit authorization; remote Main CI remains unobserved.
+- **Next:** The local integration is committed and its temporary duplicate-work stash is removed.
+  Await the Product Owner's remote-push answer; if approved, push and confirm both Actions jobs for
+  the exact Main SHA before starting M8-C Contract.
 
 ### 2026-10-03 — LOG-381 — Add a plan and billing home to Settings
 
