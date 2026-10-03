@@ -12,7 +12,7 @@ import { Confirmation, Page } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from '../calendar/calendar-time'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
-import { TrainingWorkspace } from '../training/TrainingWorkspace'
+import { TrainingLoading, TrainingWorkspace } from '../training/TrainingWorkspace'
 import { useSessionTraining } from '../training/queries'
 import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
 import { SeriesDatePicker } from '../students/SeriesDatePicker'
@@ -34,16 +34,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
   })
   const trainingQuery = useSessionTraining(session, sessionId)
   const mutations = useSchedulingMutations(session)
-  if (query.isLoading)
-    return (
-      <Page title="課堂" eyebrow="正在載入">
-        <section className="detail-skeleton">
-          <span />
-          <span />
-          <span />
-        </section>
-      </Page>
-    )
+  if (query.isLoading) return <TrainingLoading />
   if (query.isError || !query.data)
     return (
       <Page

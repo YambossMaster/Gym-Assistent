@@ -35,8 +35,8 @@ if errorlevel 1 (
   start "Gym Assistant API" cmd /k ""%~dp0scripts\run-local-api.cmd""
 )
 
-echo Waiting for the local API at http://127.0.0.1:3000/health...
-call powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\wait-local-service.ps1" -Service api -TimeoutSeconds 30
+echo Waiting for the local API and database at http://127.0.0.1:3000/ready...
+call powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\wait-local-service.ps1" -Service api -RequireDatabase -TimeoutSeconds 30
 if errorlevel 1 (
   echo.
   echo The API did not become ready. The Web app will not open without it.

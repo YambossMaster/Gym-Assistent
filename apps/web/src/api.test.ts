@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  ApiError,
   createStudent,
   createLessonPurchase,
   deleteAccountImmediately,
@@ -7,6 +8,7 @@ import {
   getPublicTrainingResult,
   getWorkspaceSettings,
   getToday,
+  isRetryableReadError,
   isRegistrationEmailTaken,
   listStudents,
   requestAccountDeletion,
@@ -15,6 +17,13 @@ import {
 } from './api'
 
 afterEach(() => vi.restoreAllMocks())
+
+it('retries transient reads without repeating terminal errors or deadlines', () => {
+  expect(isRetryableReadError(new ApiError(503, 'unavailable'))).toBe(true)
+  expect(isRetryableReadError(new TypeError('Failed to fetch'))).toBe(true)
+  expect(isRetryableReadError(new ApiError(404, 'missing'))).toBe(false)
+  expect(isRetryableReadError(new DOMException('timed out', 'TimeoutError'))).toBe(false)
+})
 
 describe('student API client', () => {
   it('loads Today through the authenticated route without browser-selected scope', async () => {
@@ -38,6 +47,7 @@ describe('student API client', () => {
 
     await expect(getToday('verified-token')).resolves.toEqual(today)
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/today', {
+      signal: expect.any(AbortSignal),
       headers: { authorization: 'Bearer verified-token' }
     })
   })

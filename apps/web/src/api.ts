@@ -1157,6 +1157,7 @@ export async function request<T>(
 ): Promise<T> {
   const response = await fetch(path, {
     ...init,
+    signal: readRequestSignal(init),
     headers: {
       ...init.headers,
       authorization: `Bearer ${accessToken}`
@@ -1180,7 +1181,7 @@ function json(method: string, body: unknown): RequestInit {
 }
 
 async function requestPublic<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(path, init)
+  const response = await fetch(path, { ...init, signal: readRequestSignal(init) })
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse
     const retryAfter = Number(response.headers.get('retry-after'))
@@ -1190,6 +1191,16 @@ async function requestPublic<T>(path: string, init: RequestInit): Promise<T> {
     })
   }
   return (await response.json()) as T
+}
+
+function readRequestSignal(init: RequestInit): AbortSignal | undefined {
+  if (init.method && init.method.toUpperCase() !== 'GET') return init.signal ?? undefined
+  const deadline = AbortSignal.timeout(8_000)
+  return init.signal ? AbortSignal.any([init.signal, deadline]) : deadline
+}
+
+export function isRetryableReadError(error: unknown): boolean {
+  return error instanceof ApiError ? error.status >= 500 : error instanceof TypeError
 }
 
 async function capabilityRequest<T>(

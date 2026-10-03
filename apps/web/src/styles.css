@@ -682,6 +682,79 @@
   display: grid;
   gap: 20px;
 }
+.training-loading-stage {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .training-loading-stage {
+    min-height: calc(100dvh - 80px - env(safe-area-inset-bottom));
+  }
+}
+.training-loading-symbol {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+  border-radius: 25px;
+  background: var(--ink);
+  color: var(--lime);
+  box-shadow: 0 12px 26px rgba(22, 28, 16, 0.13);
+}
+.training-loading-symbol::after {
+  position: absolute;
+  inset: -8px;
+  border: 2px solid rgba(112, 131, 47, 0.16);
+  border-top-color: var(--lime-deep);
+  border-radius: 31px;
+  content: '';
+  animation: training-loading-turn 1.6s linear infinite;
+}
+.training-loading-stage p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.training-loading-progress {
+  width: 88px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--line);
+}
+.training-loading-progress::after {
+  display: block;
+  width: 36px;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lime-deep);
+  content: '';
+  animation: training-loading-sweep 1.4s ease-in-out infinite alternate;
+}
+@keyframes training-loading-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes training-loading-sweep {
+  to {
+    transform: translateX(52px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .training-loading-symbol::after,
+  .training-loading-progress::after {
+    animation: none;
+  }
+}
 .training-heading,
 .exercise-library-card header,
 .training-exercise-card > header,
@@ -11418,11 +11491,39 @@ body.is-reordering-exercise * {
 .finance-empty {
   padding: 32px;
 }
-.finance-empty a {
+.finance-empty .finance-empty-action {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 16px;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  max-width: 100%;
+  margin-top: 20px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+.finance-empty .finance-empty-action:hover {
+  background: var(--ink-soft);
+  transform: translateY(-1px);
+}
+.finance-empty .finance-empty-action:focus-visible {
+  outline: 3px solid var(--lime-deep);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .finance-empty {
+    padding: 24px 20px;
+  }
 }
 .finance-context {
   color: var(--muted);
