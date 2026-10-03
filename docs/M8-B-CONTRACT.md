@@ -38,8 +38,8 @@ setup and truthful published legal/support information before M8-D invites real 
   It records actor, target and reason. Revoking a grant restores its prior promotional period
   when one exists; otherwise the Coach returns to ordinary free access. Neither operation
   deletes data or silently blocks current core features.
-- No payment method, charge, paid-plan feature set or automatic plan change beyond the visible
-  eligibility marker is introduced in M8-B. M9 owns pricing, feature differences and commerce.
+- No payment method, charge, paid-plan feature set or automatic paid subscription is introduced in
+  M8-B. M9 owns pricing, feature differences and commerce.
 
 ## Identity, API and persistence boundary
 
@@ -77,11 +77,16 @@ Settings data notice, without a standalone defect checkbox in the first-use path
 - Email/password and Google signup/sign-in lead directly to the free Workspace after Auth
   verification. Remove the code field from signup and the full-page activation gate. Keep account
   deletion and sign-out in Settings, in their existing account context.
-- Settings shows one simple current eligibility marker: `免費方案`, `90 天方案體驗資格` with the
-  Taiwan-time end date, or `永久免費使用資格`. After expiry it shows `免費方案` and may explain that the
-  promotional period ended. Do not claim paid features are already present. Offer an optional
-  `兌換優惠碼` action to ordinary free Coaches. On success, update the marker in place; keep typed
-  code and a recoverable error on failure. On a changed Auth subject, clear code and private cache.
+- Settings has a distinct `方案與帳單` category, separate from account security. Show the current
+  free or 90-day promotional state, Taiwan-time end date, permanent-free qualification, and
+  automatic return to free after expiry. The comparison shows what is actually available now:
+  free access to all current core features, with paid-plan contents and price clearly pending.
+  Only ordinary free Coaches who have never redeemed may apply an optional code; update the state
+  in place, retain typed input on recoverable failure, and clear private cache/input on Auth subject
+  change. Present empty billing history, no payment method and no active paid subscription as
+  explicit states. The management section explains that no paid change or cancellation is possible
+  yet; do not expose dead checkout, billing or cancel controls or invent a price or entitlement.
+  M9 will complete payment, plan change, cancellation and invoice operations under its contract.
 - Keep the existing Demo-aligned Settings layout. Raise the low-contrast `FORM COACH DESK`
   eyebrow to readable contrast wherever it appears on the former gate/entry surface. No giant
   warning or standalone risk checkbox belongs between sign-in and the Workspace.
@@ -103,7 +108,7 @@ lint/advisors and isolated live tests; then root check/build and exact-SHA remot
 `migration-dry-run`.
 
 At desktop and 390×844, inspect signup/sign-in without a code, immediate free Workspace,
-Settings eligibility and optional redemption, Session/Training save/reload, one public result,
+Settings plan overview, billing/management states and optional redemption, Session/Training save/reload, one public result,
 and sign-out. Google return should land in the same free Workspace. Physical installed-device
 touch, keyboard and safe-area acceptance belongs to M8-C. No production resource or real-Coach
 admission is authorized by this contract.

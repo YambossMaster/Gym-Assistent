@@ -5,17 +5,17 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                       |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                       |
-| Current package    | **M8-B open Beta correction — CI verification**                                     |
-| Package state      | **M8-A complete; M8-B corrected Sol and local acceptance passed; final CI pending** |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                       |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs               |
-| Worktree           | `codex/m8-b-beta-product` isolated; corrected code awaits final commit and CI       |
-| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied     |
-| Production         | Not configured; no real customer data                                               |
-| Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants   |
+| Field              | Current value                                                                     |
+| ------------------ | --------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                     |
+| Current package    | **M8-B plan and billing presentation — CI verification**                          |
+| Package state      | **M8-A complete; M8-B plan presentation implemented; final CI pending**           |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                     |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs             |
+| Worktree           | `codex/m8-b-beta-product` isolated; plan presentation awaits final commit and CI  |
+| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied   |
+| Production         | Not configured; no real customer data                                             |
+| Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants |
 
 The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
 the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
@@ -50,10 +50,10 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Commit and push the corrected open-Beta M8-B package on its authorized dedicated branch,
-then confirm both GitHub Actions jobs against the final Status SHA. On successful exact-SHA CI,
-M8-B closes at the milestone boundary; M8-C must choose deployment/legal/support details before
-production or real-Coach admission. The actual support email remains M8-C setup.
+**Next:** Commit and push the corrected M8-B plan presentation on its authorized dedicated branch,
+then confirm both GitHub Actions jobs against the final Status SHA. M8-C must choose
+deployment/legal/support details before production or real-Coach
+admission. The actual support email remains M8-C setup.
 
 ## Stage 2 evidence
 
@@ -583,6 +583,29 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — LOG-381 — Add a plan and billing home to Settings
+
+- **Scope:** The Product Owner found a single eligibility marker insufficient and requested the
+  normal plan-management entry and information architecture, including plan choice, billing,
+  payment, change and cancellation states. Actual prices, paid features and commerce rules remain
+  the M9 contract.
+- **Outcome:** Added a separate `方案與帳單` category with a current-plan summary, free/paid plan
+  comparison, optional code redemption and 90-day end date, explicit empty billing/payment states,
+  and a management explanation. Removed the offer from account security. The UI provides no fake
+  checkout, invoice or cancellation action while no paid subscription exists. Corrected successful
+  code feedback to a success colour.
+- **Verification:** Root check passed API 29 files/141 tests and Web 59 files/250 tests. Root
+  production build passed with the existing large-chunk advisory. Earlier commit `c69c027`
+  passed both GitHub Actions jobs in run `37097128481`; the new presentation SHA still needs its
+  own remote run. Browser automation rejected the local `127.0.0.1` page under URL policy, so the
+  new page has not received visual browser acceptance.
+- **Known issue:** Paid prices, feature differences, payment methods, invoices, change and cancel
+  operations await M9 rules and provider work. No production or real-Coach data is involved.
+- **Cleanup:** After the Product Owner reiterated authorization to remove agent-created test data,
+  reverified the exact isolated Auth identity, Workspace, grant, one-seat code, redemption and actor;
+  deleted that fixture and confirmed Auth/Workspace removal. The temporary helper was removed.
+- **Next:** Confirm exact-SHA CI for this branch. M8-C remains the next release package.
 
 ### 2026-10-03 — LOG-380 — Correct M8-B to open free access and optional offers
 

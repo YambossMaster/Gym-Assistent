@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
   CircleCheck,
+  CreditCard,
   Database,
   KeyRound,
   LogOut,
@@ -41,22 +42,185 @@ import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
-function betaGrantDescription(grant: BetaGrant | undefined): string {
-  if (!grant) return '正在讀取方案…'
-  if (grant.state === 'permanent') return '永久免費使用資格。'
-  if (grant.state === 'free') return '免費方案。'
-  if (grant.state === 'promotional') {
-    const date = new Date(grant.endsAt).toLocaleString('zh-TW', {
-      timeZone: 'Asia/Taipei',
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    return `90 天方案體驗資格 · 至 ${date}。`
-  }
-  return '免費方案。'
+function planDate(instant: string): string {
+  return new Date(instant).toLocaleString('zh-TW', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function PlanPanel({
+  grant,
+  loading,
+  error,
+  onRetry,
+  offerCode,
+  onOfferCodeChange,
+  onRedeem,
+  redeeming,
+  offerError,
+  offerSuccess
+}: {
+  grant: BetaGrant | undefined
+  loading: boolean
+  error: boolean
+  onRetry: () => void
+  offerCode: string
+  onOfferCodeChange: (value: string) => void
+  onRedeem: (event: FormEvent<HTMLFormElement>) => void
+  redeeming: boolean
+  offerError: string
+  offerSuccess: string
+}) {
+  const promotional = grant?.state === 'promotional'
+  const permanent = grant?.state === 'permanent'
+  const previouslyRedeemed = grant?.state === 'free' && Boolean(grant.startedAt)
+  const canRedeem = grant?.state === 'free' && !grant.startedAt
+
+  return (
+    <div className="settings-plan-page">
+      <section className="settings-plan-hero" aria-labelledby="current-plan-title">
+        <div>
+          <span className="settings-plan-kicker">目前方案</span>
+          <h3 id="current-plan-title">
+            {loading
+              ? '正在讀取…'
+              : error
+                ? '暫時無法取得方案'
+                : promotional
+                  ? '90 天方案體驗'
+                  : '免費方案'}
+          </h3>
+          <p>
+            {loading || error
+              ? '方案資料讀取後，會顯示目前資格與優惠期限。'
+              : promotional
+                ? `體驗至 ${planDate(grant.endsAt)}（台灣時間）；到期後自動回到免費方案。`
+                : permanent
+                  ? '你的帳號具有永久免費使用資格。'
+                  : previouslyRedeemed
+                    ? '優惠體驗已結束，已回到免費方案；現有資料與功能可以繼續使用。'
+                    : '登入即可使用目前的教練工作台功能。'}
+          </p>
+          <div className="settings-plan-quicklinks">
+            <a href="#available-plans-title">查看方案</a>
+            <a href="#billing-title">帳單與付款</a>
+          </div>
+        </div>
+        {error ? (
+          <button type="button" className="settings-plan-link" onClick={onRetry}>
+            重新讀取
+          </button>
+        ) : (
+          <span className="settings-plan-status">
+            {loading ? '讀取中' : promotional ? '體驗中' : '使用中'}
+          </span>
+        )}
+      </section>
+
+      <section className="settings-plan-section" aria-labelledby="available-plans-title">
+        <div className="settings-plan-section-heading">
+          <h3 id="available-plans-title">查看與選擇方案</h3>
+          <p>目前所有教練都能使用現有核心功能；付費方案的內容與價格尚未公布。</p>
+        </div>
+        <div className="settings-plan-grid">
+          <article className="settings-plan-card">
+            <span className="settings-plan-card-tag">目前可用</span>
+            <h4>免費方案</h4>
+            <p className="settings-plan-price">免費</p>
+            <p>學員、課程、排程與訓練紀錄等現有功能。</p>
+            <span className="settings-plan-card-state">
+              <CircleCheck aria-hidden="true" />
+              {promotional ? '體驗結束後自動使用' : '目前使用中'}
+            </span>
+          </article>
+          <article className="settings-plan-card">
+            <span className="settings-plan-card-tag">尚未開放訂閱</span>
+            <h4>付費方案</h4>
+            <p className="settings-plan-price">價格待公布</p>
+            <p>功能差異、價格及訂閱方式確認後，會在這裡提供完整資訊。</p>
+            <span className="settings-plan-card-state">目前無法選購或付款</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="settings-plan-section" aria-labelledby="offer-title">
+        <div className="settings-plan-section-heading">
+          <h3 id="offer-title">優惠體驗</h3>
+          <p>優惠碼用於記錄 90 天方案體驗資格，不影響免費方案的使用。</p>
+        </div>
+        {canRedeem ? (
+          <form className="settings-offer-form" onSubmit={onRedeem}>
+            <label htmlFor="settings-offer-code">輸入優惠碼</label>
+            <div className="settings-offer-controls">
+              <input
+                id="settings-offer-code"
+                value={offerCode}
+                onChange={(event) => onOfferCodeChange(event.target.value)}
+                autoComplete="off"
+                required
+              />
+              <button type="submit" disabled={redeeming || !offerCode.trim()}>
+                {redeeming ? '套用中…' : '套用優惠碼'}
+              </button>
+            </div>
+            {offerError && (
+              <p role="alert" className="form-error">
+                {offerError}
+              </p>
+            )}
+          </form>
+        ) : (
+          <p className="settings-plan-note">
+            {promotional
+              ? `已套用優惠碼，體驗至 ${planDate(grant.endsAt)}。不會自動扣款。`
+              : permanent
+                ? '你已具有永久免費資格，不需套用優惠碼。'
+                : previouslyRedeemed
+                  ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
+                  : '方案資料讀取後可在此套用優惠碼。'}
+          </p>
+        )}
+        {offerSuccess && (
+          <p role="status" className="settings-plan-success">
+            {offerSuccess}
+          </p>
+        )}
+      </section>
+
+      <section className="settings-plan-section" aria-labelledby="billing-title">
+        <div className="settings-plan-section-heading">
+          <h3 id="billing-title">帳單與付款</h3>
+          <p>這裡會集中管理日後的付款方式與帳單。</p>
+        </div>
+        <div className="settings-plan-facts">
+          <div>
+            <strong>帳單紀錄</strong>
+            <span>目前沒有帳單</span>
+          </div>
+          <div>
+            <strong>付款方式</strong>
+            <span>目前不需提供付款方式</span>
+          </div>
+          <div>
+            <strong>續訂與扣款</strong>
+            <span>目前沒有付費訂閱，也不會自動扣款</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-plan-section" aria-labelledby="manage-plan-title">
+        <div className="settings-plan-section-heading">
+          <h3 id="manage-plan-title">更換或取消方案</h3>
+          <p>付費訂閱尚未開放，因此目前沒有需要取消的訂閱。優惠體驗到期後會自動回到免費方案。</p>
+        </div>
+      </section>
+    </div>
+  )
 }
 
 function FeedbackPanel() {
@@ -96,6 +260,12 @@ const settingsCategories = [
     label: '工作偏好',
     icon: SlidersHorizontal,
     description: '調整新增紀錄時使用的預設值。'
+  },
+  {
+    id: 'plans',
+    label: '方案與帳單',
+    icon: CreditCard,
+    description: '查看方案、優惠體驗與付款狀態。'
   },
   { id: 'security', label: '帳號與安全', icon: Shield, description: '管理登入方式與帳號狀態。' },
   { id: 'data', label: '資料與裝置', icon: Database, description: '管理此裝置的暫存資料。' },
@@ -302,62 +472,27 @@ export function SettingsPage({ session }: { session: Session }) {
               }}
             />
           )}
+          {category === 'plans' && (
+            <PlanPanel
+              grant={grantQuery.data}
+              loading={grantQuery.isPending}
+              error={grantQuery.isError}
+              onRetry={() => void grantQuery.refetch()}
+              offerCode={offerCode}
+              onOfferCodeChange={setOfferCode}
+              onRedeem={(event) => {
+                event.preventDefault()
+                setOfferError('')
+                setOfferSuccess('')
+                offerMutation.mutate()
+              }}
+              redeeming={offerMutation.isPending}
+              offerError={offerError}
+              offerSuccess={offerSuccess}
+            />
+          )}
           {category === 'security' && (
             <section className="settings-panel account-settings-panel">
-              <div className="settings-row">
-                <div className="settings-row-copy">
-                  <strong>使用資格</strong>
-                  <span>
-                    {grantQuery.isError
-                      ? '暫時無法取得使用資格。'
-                      : betaGrantDescription(grantQuery.data)}
-                  </span>
-                </div>
-                {grantQuery.isError && (
-                  <button
-                    type="button"
-                    className="settings-row-action"
-                    onClick={() => void grantQuery.refetch()}
-                  >
-                    重試
-                  </button>
-                )}
-              </div>
-              {grantQuery.data?.state === 'free' && !grantQuery.data.startedAt && (
-                <form
-                  className="settings-offer-form"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    setOfferError('')
-                    setOfferSuccess('')
-                    offerMutation.mutate()
-                  }}
-                >
-                  <label htmlFor="settings-offer-code">有優惠碼？</label>
-                  <div className="settings-offer-controls">
-                    <input
-                      id="settings-offer-code"
-                      value={offerCode}
-                      onChange={(event) => setOfferCode(event.target.value)}
-                      autoComplete="off"
-                      required
-                    />
-                    <button type="submit" disabled={offerMutation.isPending || !offerCode.trim()}>
-                      {offerMutation.isPending ? '套用中…' : '套用優惠碼'}
-                    </button>
-                  </div>
-                  {offerError && (
-                    <p role="alert" className="form-error">
-                      {offerError}
-                    </p>
-                  )}
-                </form>
-              )}
-              {offerSuccess && (
-                <p role="status" className="settings-feedback">
-                  {offerSuccess}
-                </p>
-              )}
               <div className="settings-row">
                 <div className="settings-row-copy">
                   <strong>登入帳號</strong>

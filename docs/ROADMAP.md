@@ -624,7 +624,10 @@ desktop/390px checks and security cases. Preserve physical installed-device acce
 
 **Sol gate:** let every verified Coach use a free Workspace, and implement optional server-owned,
 atomic Beta-code redemption and 90-day/permanent eligibility; show promotional/free/permanent states
-without automatic billing or deletion. Add the external feedback link
+in a dedicated Settings `方案與帳單` surface with current plan, available-plan comparison, optional
+code entry, empty billing/payment states and an explanation of unavailable paid-plan management.
+Do not imply a real paid checkout, invoice or feature distinction before M9. No automatic billing
+or deletion occurs. Add the external feedback link
 and necessary PWA/update corrections. Test critical Coach flows and two-Coach isolation locally
 with synthetic data. Keep development migration tools unavailable in a production build.
 
