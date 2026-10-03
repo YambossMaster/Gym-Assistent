@@ -9,7 +9,7 @@
 | ------------------ | ---------------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                            |
 | Current package    | **M8-B Contract revision held on its separate branch**                                   |
-| Package state      | **M8-A complete; non-M8-B local fixes verified for Main**                                |
+| Package state      | **Main verify passed; migration dry-run blocked by branch-only M8-B history**            |
 | Completed baseline | M0–M7.5, including M3.5, Done                                                            |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                    |
 | Worktree           | `main` delivery isolated from M8-B; local M8-B branches preserved                        |
@@ -50,7 +50,7 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Keep the M8-B branch for the Product Owner's planned revision. Freeze its current plan-policy Contract there before continuing Sol. This Main delivery contains M8-A and local Web/reliability corrections only; it does not deliver M8-B or admit real Coaches.
+**Next:** Keep the M8-B branch for the Product Owner's planned revision. Freeze its current plan-policy Contract there before continuing Sol. This Main delivery contains M8-A and local Web/reliability corrections only; it does not deliver M8-B or admit real Coaches. Main CI run `37118446509` passed `verify`, but `migration-dry-run` failed because the linked development database already records three branch-only M8-B migrations. Resolve this database/Main split before claiming the Main migration gate.
 
 ## Stage 2 evidence
 
@@ -590,10 +590,11 @@ local pass or successful push is not a remote CI completion claim.
   a desktop Training note editor with selection protection. Windows Prettier accepts local CRLF
   checkout files. M8-B admission, plans, migrations and Contract edits are excluded.
 - **Verification:** Root check passed API 28 files/133 tests and Web 59 files/253 tests; root build
-  passed with the existing large-chunk advisory; diff hygiene passed. Remote Main CI is pending.
+  passed with the existing large-chunk advisory; diff hygiene passed. Main CI run `37118446509` passed `verify` (API 133, Web 253) but `migration-dry-run` failed: the linked development database has remote migration versions `20261003021805`, `20261003035550` and `20261003085455`, which are intentionally absent from Main while M8-B is held on its branch.
 - **Known issue:** Production deployment, real-Coach admission and installed-device acceptance
-  remain for later M8 gates. The separate M8-B Contract needs its planned revision.
-- **Next:** Keep M8-B on its branch, revise and freeze its Contract, then resume its Sol gate.
+  remain for later M8 gates. The separate M8-B Contract needs its planned revision. Main migration CI cannot pass against the current linked development migration history without resolving that branch/database split. No migration history was repaired or database schema changed.
+- **Next:** Keep M8-B on its branch, revise and freeze its Contract, then resolve the
+  development migration history/Main split before claiming a complete Main CI gate.
 
 ### 2026-10-01 — LOG-376 — Deliver M8-A dedicated branch and exact-SHA CI
 
