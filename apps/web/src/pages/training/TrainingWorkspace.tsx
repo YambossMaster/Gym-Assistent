@@ -303,7 +303,6 @@ function TrainingEditor({
     conflictRef = useRef(false)
   const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id)
   const latest = useRef(draft)
-  const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const touchStartY = useRef<number | null>(null)
   useEffect(() => {
     if (!noteFocused) return
@@ -1251,9 +1250,7 @@ function TrainingEditor({
               </p>
             </div>
             <div className="context-divider" />
-            <label className="session-note-label" htmlFor="session-private-note">
-              NOTE
-            </label>
+            <span className="session-note-label">NOTE</span>
             <MobileNoteEditor
               value={draft.privateNote}
               onChange={(privateNote) =>
@@ -1281,24 +1278,6 @@ function TrainingEditor({
                 }
               ]}
             />
-            <textarea
-              ref={noteRef}
-              id="session-private-note"
-              className="note-area"
-              maxLength={5000}
-              onFocus={() => setNoteFocused(true)}
-              onBlur={() => setNoteFocused(false)}
-              value={draft.privateNote}
-              onChange={(event) =>
-                change({
-                  ...draft,
-                  privateNote: event.target.value,
-                  operationId: crypto.randomUUID()
-                })
-              }
-              placeholder="記錄今天的觀察、訓練反應或下次安排…"
-            />
-            <small className="session-note-count">{draft.privateNote.length} / 5000</small>
           </div>
         </aside>
         <main className="training-editor" id="session-training-panel" role="tabpanel">

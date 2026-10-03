@@ -7,6 +7,26 @@ import { expect, it, vi } from 'vitest'
 import type { CalendarSession } from './api'
 import { StudentCourseRecord, StudentPerformance } from './coach-workspace'
 
+const performanceQuery = vi.hoisted(() => ({
+  current: {
+    data: undefined as
+      | undefined
+      | Array<{
+          definitionId: string
+          metric: 'weight'
+          name: string
+          sessionCount: number
+          latest: number
+          personal: number
+          unit: string
+          latestAt: string
+        }>,
+    isLoading: true,
+    isError: false,
+    refetch: vi.fn()
+  }
+}))
+
 vi.mock('./config', () => ({
   loadWebConfig: () => ({
     supabaseUrl: 'https://example.supabase.co',
@@ -16,22 +36,7 @@ vi.mock('./config', () => ({
 
 vi.mock('./pages/training/queries', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./pages/training/queries')>()),
-  useStudentPerformance: () => ({
-    data: [
-      {
-        definitionId: 'squat',
-        metric: 'weight',
-        name: '深蹲',
-        sessionCount: 1,
-        latest: 55.5,
-        personal: 55.5,
-        unit: 'kg',
-        latestAt: '2026-09-23T10:00:00Z'
-      }
-    ],
-    isLoading: false,
-    isError: false
-  }),
+  useStudentPerformance: () => performanceQuery.current,
   useStudentTrend: () => ({
     data: {
       points: [
@@ -50,6 +55,23 @@ function RouteResult() {
 }
 
 it('opens a Student trajectory history row in its original class and exercise', async () => {
+  performanceQuery.current = {
+    data: [
+      {
+        definitionId: 'squat',
+        metric: 'weight',
+        name: '深蹲',
+        sessionCount: 1,
+        latest: 55.5,
+        personal: 55.5,
+        unit: 'kg',
+        latestAt: '2026-09-23T10:00:00Z'
+      }
+    ],
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn()
+  }
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   vi.stubGlobal(
     'ResizeObserver',
@@ -94,6 +116,49 @@ it('opens a Student trajectory history row in its original class and exercise', 
     expect(host.querySelector('[data-testid="route-result"]')?.textContent).toBe(
       '/sessions/session-1?exercise=squat'
     )
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('keeps the Student performance card visible through first load and request failure', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  performanceQuery.current = { data: undefined, isLoading: true, isError: false, refetch: vi.fn() }
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const render = async () =>
+    act(async () =>
+      root.render(
+        <MemoryRouter>
+          <StudentPerformance
+            session={{ user: { id: 'coach' } } as Session}
+            studentId="student-1"
+            studentName="學生甲"
+          />
+        </MemoryRouter>
+      )
+    )
+  try {
+    await render()
+    expect(host.querySelector('.performance-portal')?.textContent).toContain('個人運動表現')
+    expect(host.querySelector('.performance-portal')?.classList.contains('is-loading')).toBe(true)
+    expect(host.querySelector('.performance-portal')?.getAttribute('disabled')).not.toBeNull()
+    expect(host.querySelector('.performance-portal-count .performance-loading-mark')).not.toBeNull()
+
+    performanceQuery.current = {
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn()
+    }
+    await render()
+    expect(host.querySelector('.performance-portal')?.textContent).toContain('個人運動表現')
+    expect(host.querySelector('.performance-portal')?.textContent).toContain('重試')
+    await act(async () => host.querySelector<HTMLButtonElement>('.performance-portal')!.click())
+    expect(performanceQuery.current.refetch).toHaveBeenCalledOnce()
   } finally {
     await act(async () => root.unmount())
     host.remove()

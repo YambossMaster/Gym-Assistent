@@ -1,21 +1,21 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-01. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-03. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                                 |
-| Current package    | **M8-B Beta admission and feedback — Contract next**                                          |
-| Package state      | **M8-A Contract, Sol and CI complete; M8-B Contract next**                                    |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                                 |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                         |
-| Worktree           | `codex/m8-a-lean-release`; M8-A code SHA `12f573b` passed CI run `36862665167`                |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run up to date      |
-| Production         | Not configured; no real customer data                                                         |
-| Approved M8 scope  | M8-A–D staged release; three-month shareable Beta codes and at most ten permanent free grants |
+| Field              | Current value                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                            |
+| Current package    | **M8-B Contract revision held on its separate branch**                                   |
+| Package state      | **M8-A complete; non-M8-B local fixes verified for Main**                                |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                            |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                    |
+| Worktree           | `main` delivery isolated from M8-B; local M8-B branches preserved                        |
+| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run up to date |
+| Production         | Not configured; no real customer data                                                    |
+| Approved M8 scope  | M8-A complete; M8-B plan decisions remain on their separate branch                       |
 
 The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
 the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
@@ -50,9 +50,7 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Draft the lean M8-B Contract for code-gated free admission, server-owned grants and a
-simple external feedback link. Resolve the remaining Coach-facing code and expiry choices with the
-Product Owner before Sol implementation.
+**Next:** Keep the M8-B branch for the Product Owner's planned revision. Freeze its current plan-policy Contract there before continuing Sol. This Main delivery contains M8-A and local Web/reliability corrections only; it does not deliver M8-B or admit real Coaches.
 
 ## Stage 2 evidence
 
@@ -582,6 +580,20 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — Deliver M8-A and local Web corrections to Main without M8-B
+
+- **Scope:** Integrate the already completed M8-A package and separate local reliability and Web
+  presentation corrections. Preserve both M8-B worktrees and their pending plan-policy revision.
+- **Outcome:** The isolated Main candidate contains M8-A, local launcher/read-retry improvements,
+  centered Training loading, Finance empty action, Student-detail loading/performance cards, and
+  a desktop Training note editor with selection protection. Windows Prettier accepts local CRLF
+  checkout files. M8-B admission, plans, migrations and Contract edits are excluded.
+- **Verification:** Root check passed API 28 files/133 tests and Web 59 files/253 tests; root build
+  passed with the existing large-chunk advisory; diff hygiene passed. Remote Main CI is pending.
+- **Known issue:** Production deployment, real-Coach admission and installed-device acceptance
+  remain for later M8 gates. The separate M8-B Contract needs its planned revision.
+- **Next:** Keep M8-B on its branch, revise and freeze its Contract, then resume its Sol gate.
 
 ### 2026-10-01 — LOG-376 — Deliver M8-A dedicated branch and exact-SHA CI
 

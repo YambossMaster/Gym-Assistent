@@ -187,6 +187,15 @@ afterEach(async () => {
   Reflect.deleteProperty(document.documentElement, 'scrollTop')
 })
 
+it('uses the shared rich note editor and its toolbar as the only private note input', () => {
+  const notePanel = host.querySelector('#session-note-panel')!
+  expect(notePanel.querySelectorAll('[contenteditable="true"]')).toHaveLength(1)
+  expect(notePanel.querySelector('textarea')).toBeNull()
+  expect(notePanel.querySelector('[aria-label="筆記工具列"]')).not.toBeNull()
+  expect(notePanel.querySelector('[aria-label="字級選擇"]')).not.toBeNull()
+  expect(notePanel.querySelector('[aria-label="導入課堂資訊"]')).not.toBeNull()
+})
+
 it('shows only the destination Session draft when navigating between Training records', async () => {
   const destination = {
     ...training,
