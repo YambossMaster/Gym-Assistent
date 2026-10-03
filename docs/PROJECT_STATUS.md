@@ -8,11 +8,11 @@
 | Field              | Current value                                                                     |
 | ------------------ | --------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                     |
-| Current package    | **M8-B plan and billing presentation — CI verification**                          |
-| Package state      | **M8-A complete; M8-B plan presentation implemented; final CI pending**           |
+| Current package    | **M8-B plan and billing presentation — browser acceptance**                       |
+| Package state      | **M8-A complete; M8-B code-SHA CI passed; visual check pending**                  |
 | Completed baseline | M0–M7.5, including M3.5, Done                                                     |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs             |
-| Worktree           | `codex/m8-b-beta-product` isolated; plan presentation awaits final commit and CI  |
+| Worktree           | `codex/m8-b-beta-product` isolated; plan UI pushed; final Status SHA CI pending   |
 | Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied   |
 | Production         | Not configured; no real customer data                                             |
 | Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants |
@@ -50,9 +50,10 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Commit and push the corrected M8-B plan presentation on its authorized dedicated branch,
-then confirm both GitHub Actions jobs against the final Status SHA. M8-C must choose
-deployment/legal/support details before production or real-Coach
+**Next:** Confirm both GitHub Actions jobs against the final Status SHA, then obtain desktop and
+390px browser acceptance of Settings `方案與帳單` in the local production-mode preview. Browser
+automation blocked the local page in this run, so do not claim visual acceptance or close M8-B
+on CI alone. M8-C must choose deployment/legal/support details before production or real-Coach
 admission. The actual support email remains M8-C setup.
 
 ## Stage 2 evidence
@@ -596,16 +597,17 @@ local pass or successful push is not a remote CI completion claim.
   checkout, invoice or cancellation action while no paid subscription exists. Corrected successful
   code feedback to a success colour.
 - **Verification:** Root check passed API 29 files/141 tests and Web 59 files/250 tests. Root
-  production build passed with the existing large-chunk advisory. Earlier commit `c69c027`
-  passed both GitHub Actions jobs in run `37097128481`; the new presentation SHA still needs its
-  own remote run. Browser automation rejected the local `127.0.0.1` page under URL policy, so the
-  new page has not received visual browser acceptance.
+  production build passed with the existing large-chunk advisory. Code commit `6a72c884` passed
+  GitHub Actions run `37099559276`: both `verify` and `migration-dry-run` succeeded. Browser
+  automation rejected the local `127.0.0.1` page under URL policy, so the new page has not
+  received visual browser acceptance. Final Status-only SHA still needs exact-SHA CI.
 - **Known issue:** Paid prices, feature differences, payment methods, invoices, change and cancel
   operations await M9 rules and provider work. No production or real-Coach data is involved.
 - **Cleanup:** After the Product Owner reiterated authorization to remove agent-created test data,
   reverified the exact isolated Auth identity, Workspace, grant, one-seat code, redemption and actor;
   deleted that fixture and confirmed Auth/Workspace removal. The temporary helper was removed.
-- **Next:** Confirm exact-SHA CI for this branch. M8-C remains the next release package.
+- **Next:** Confirm CI for the final Status SHA, then complete the missing local visual check.
+  M8-C remains the next release package.
 
 ### 2026-10-03 — LOG-380 — Correct M8-B to open free access and optional offers
 
