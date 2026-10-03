@@ -14,9 +14,8 @@ export type StudentAgeRange =
   | 'AGE_65_PLUS'
 
 export type BetaGrant =
-  | { state: 'unactivated' }
   | { state: 'promotional'; startedAt: string; endsAt: string }
-  | { state: 'free'; startedAt: string; endsAt: string }
+  | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
 
 export async function readBetaGrant(accessToken: string): Promise<BetaGrant> {
@@ -24,15 +23,11 @@ export async function readBetaGrant(accessToken: string): Promise<BetaGrant> {
   return response.grant
 }
 
-export async function redeemBetaCode(
-  accessToken: string,
-  code: string,
-  acknowledged: boolean
-): Promise<BetaGrant> {
+export async function redeemBetaCode(accessToken: string, code: string): Promise<BetaGrant> {
   const response = await request<{ grant: BetaGrant }>(
     '/api/v1/beta/redeem',
     accessToken,
-    json('POST', { code, acknowledged })
+    json('POST', { code })
   )
   return response.grant
 }

@@ -6,7 +6,6 @@ import {
   BetaAdmissionModule,
   BetaRedemptionRateError,
   codeDigest,
-  DISCLOSURE_VERSION,
   newBetaCode,
 } from '../beta-admission/beta-admission.js'
 import { PostgresBetaAdmissionRepository } from '../beta-admission/postgres-beta-admission-repository.js'
@@ -30,6 +29,7 @@ const emailB = `${local}+${marker}-b@${domain}`
 const emailC = `${local}+${marker}-c@${domain}`
 const emailD = `${local}+${marker}-d@${domain}`
 const emailE = `${local}+${marker}-e@${domain}`
+const emailF = `${local}+${marker}-f@${domain}`
 const pool = new Pool({ connectionString: databaseUrl })
 const execFileAsync = promisify(execFile)
 const repository = new PostgresBetaAdmissionRepository(pool, betaSecret)
@@ -107,7 +107,7 @@ async function siteRequest(path: string, token: string, init: RequestInit = {}) 
 try {
   const first = await create(emailA)
   const second = await create(emailB)
-  if ((await beta.status(first)).state !== 'unactivated') throw new Error('New Coach was active')
+  if ((await beta.status(first)).state !== 'free') throw new Error('New Coach was not free')
   await pool.query(
     `insert into app_private.beta_code
       (id,code_digest,redemption_limit,closes_at) values ($1,$2,3,$3)`,
@@ -126,10 +126,15 @@ try {
     if (!token) throw new Error('Synthetic sign-in returned no token')
     siteToken = token
     const before = await siteRequest('/v1/students', token)
-    if (before.status !== 403) throw new Error('Unactivated identity read private Students')
+    if (!before.ok) throw new Error('Free identity could not read private Students')
+    const freeStudent = await siteRequest('/v1/students', token, {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Isolated Beta free-first smoke' }),
+    })
+    if (freeStudent.status !== 201) throw new Error('Free Coach could not create Student')
     const activated = await siteRequest('/v1/beta/redeem', token, {
       method: 'POST',
-      body: JSON.stringify({ code, acknowledged: true }),
+      body: JSON.stringify({ code }),
     })
     if (!activated.ok) throw new Error(`HTTP activation returned ${activated.status}`)
     const createdStudent = await siteRequest('/v1/students', token, {
@@ -141,10 +146,10 @@ try {
     if (!listed.ok || !(await listed.text()).includes('Isolated Beta HTTP smoke'))
       throw new Error('Activated Coach could not reload Student')
   }
-  const grantA = await beta.redeem(first, '192.0.2.11', { code, acknowledged: true })
+  const grantA = await beta.redeem(first, '192.0.2.11', { code })
   if (grantA.state !== 'promotional') throw new Error('First redemption did not activate')
-  await beta.redeem(first, '192.0.2.11', { code, acknowledged: true })
-  const grantB = await beta.redeem(second, '192.0.2.12', { code, acknowledged: true })
+  await beta.redeem(first, '192.0.2.11', { code })
+  const grantB = await beta.redeem(second, '192.0.2.12', { code })
   if (grantB.state !== 'promotional') throw new Error('Second redemption did not activate')
   await execFileAsync(process.execPath, [
     '--import',
@@ -168,10 +173,39 @@ try {
   ])
   if ((await beta.status(second)).state !== 'promotional')
     throw new Error('Operator permanent revocation did not restore the prior grant')
+  const freePermanent = await create(emailF)
+  await pool.query('insert into app_private.workspace(id,owner_user_id) values ($1,$2)', [
+    randomUUID(),
+    freePermanent.userId,
+  ])
+  if ((await beta.status(freePermanent)).state !== 'free')
+    throw new Error('Workspace without offer was not free')
+  await execFileAsync(process.execPath, [
+    '--import',
+    'tsx',
+    'src/beta-admission/operator.ts',
+    'grant-permanent',
+    freePermanent.userId,
+    marker,
+    'isolated free grant check',
+  ])
+  if ((await beta.status(freePermanent)).state !== 'permanent')
+    throw new Error('Operator could not grant permanent eligibility to free Coach')
+  await execFileAsync(process.execPath, [
+    '--import',
+    'tsx',
+    'src/beta-admission/operator.ts',
+    'revoke-permanent',
+    freePermanent.userId,
+    marker,
+    'isolated free reversal check',
+  ])
+  if ((await beta.status(freePermanent)).state !== 'free')
+    throw new Error('Free Coach did not return to free after grant revocation')
   const audit = await pool.query<{
     redemption_count: number
-    disclosure_version: string
-    disclosure_accepted_at: Date
+    disclosure_version: string | null
+    disclosure_accepted_at: Date | null
   }>(
     `select c.redemption_count,g.disclosure_version,g.disclosure_accepted_at
      from app_private.beta_code c
@@ -184,10 +218,10 @@ try {
   if (
     !row ||
     row.redemption_count !== 2 ||
-    row.disclosure_version !== DISCLOSURE_VERSION ||
-    !row.disclosure_accepted_at
+    row.disclosure_version !== null ||
+    row.disclosure_accepted_at !== null
   )
-    throw new Error('Activation transaction or disclosure audit did not persist')
+    throw new Error('Redemption count or removed disclosure gate did not persist')
   if (siteToken) {
     await pool.query(
       `update app_private.beta_grant
@@ -211,7 +245,7 @@ try {
   const replacement = await create(emailA)
   let blocked = false
   try {
-    await beta.redeem(replacement, '192.0.2.13', { code, acknowledged: true })
+    await beta.redeem(replacement, '192.0.2.13', { code })
   } catch (error) {
     blocked = error instanceof Error && error.message === 'already_used'
   }
@@ -230,9 +264,7 @@ try {
   if (!limitedAfterRestart)
     throw new Error('Durable identity rate limit did not survive Module restart')
   const third = await create(emailC)
-  if (
-    (await beta.redeem(third, '192.0.2.14', { code, acknowledged: true })).state !== 'promotional'
-  )
+  if ((await beta.redeem(third, '192.0.2.14', { code })).state !== 'promotional')
     throw new Error('Remaining shareable seat was unavailable to another Coach')
   const count = await pool.query<{ redemption_count: number }>(
     'select redemption_count from app_private.beta_code where id=$1',
@@ -250,8 +282,8 @@ try {
   const fourth = await create(emailD)
   const fifth = await create(emailE)
   const outcomes = await Promise.allSettled([
-    beta.redeem(fourth, '192.0.2.15', { code: raceCode, acknowledged: true }),
-    beta.redeem(fifth, '192.0.2.16', { code: raceCode, acknowledged: true }),
+    beta.redeem(fourth, '192.0.2.15', { code: raceCode }),
+    beta.redeem(fifth, '192.0.2.16', { code: raceCode }),
   ])
   if (outcomes.filter((outcome) => outcome.status === 'fulfilled').length !== 1)
     throw new Error('Parallel redemption did not enforce the one-seat limit')
@@ -262,7 +294,7 @@ try {
   if (raceCount.rows[0]?.redemption_count !== 1)
     throw new Error('Parallel redemption count exceeded capacity')
   console.log(
-    'Beta live E2E passed: activation, disclosure audit, deletion, durable throttling, operator grant reversal, parallel capacity and optional free-plan HTTP write.',
+    'Beta live E2E passed: free-first HTTP access, optional offer, deletion, durable throttling, operator grant reversal, parallel capacity and free-plan write.',
   )
 } finally {
   await pool.query('delete from app_private.beta_operator_event where actor=$1', [marker])

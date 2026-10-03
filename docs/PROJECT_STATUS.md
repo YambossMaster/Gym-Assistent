@@ -5,17 +5,17 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                            |
-| Current package    | **M8-B Beta admission and feedback — manual Sol acceptance**                             |
-| Package state      | **M8-A complete; M8-B code CI passed, manual acceptance remains**                        |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                            |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                    |
-| Worktree           | `codex/m8-b-beta-product` pushed at M8-B code SHA `ae0def7`; no PR or merge              |
-| Linked database    | Development only; M8-B migration `20261003021805` applied and linted                     |
-| Production         | Not configured; no real customer data                                                    |
-| Approved M8 scope  | M8-A–D staged release; 90-day shareable Beta codes and at most ten permanent free grants |
+| Field              | Current value                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                       |
+| Current package    | **M8-B open Beta correction — CI verification**                                     |
+| Package state      | **M8-A complete; M8-B corrected Sol and local acceptance passed; final CI pending** |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                       |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs               |
+| Worktree           | `codex/m8-b-beta-product` isolated; corrected code awaits final commit and CI       |
+| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied     |
+| Production         | Not configured; no real customer data                                               |
+| Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants   |
 
 The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
 the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
@@ -50,12 +50,10 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Finish M8-B manual acceptance in the isolated worktree: authenticated desktop and
-390×844 activation, Settings, Session/Training save/reload, public result and sign-out. Synthetic
-HTTP admission and post-90-day free-plan writes already passed. The Product Owner authorized the
-dedicated branch, whose code SHA passed both CI jobs; verify the final documentation SHA after
-this Status update. The actual support email remains M8-C setup; no production or real-Coach
-admission is authorized.
+**Next:** Commit and push the corrected open-Beta M8-B package on its authorized dedicated branch,
+then confirm both GitHub Actions jobs against the final Status SHA. On successful exact-SHA CI,
+M8-B closes at the milestone boundary; M8-C must choose deployment/legal/support details before
+production or real-Coach admission. The actual support email remains M8-C setup.
 
 ## Stage 2 evidence
 
@@ -585,6 +583,36 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — LOG-380 — Correct M8-B to open free access and optional offers
+
+- **Scope:** The Product Owner corrected the Beta premise: every verified Coach starts on the free
+  Workspace; an optional code marks a 90-day future paid-plan trial eligibility. The earlier
+  code-gated activation and standalone no-backup waiver were rejected. M8 still has no feature
+  difference or charge between free and promotional eligibility.
+- **Outcome:** Revised and froze the M8-B Contract and approved Roadmap language. Removed the API
+  activation guard, signup code requirement and activation page. Settings now displays the current
+  eligibility and lets an ordinary free Coach optionally apply a code. Sign-out and account deletion
+  remain in account settings; the no-backup fact appears as a non-binding notice under data settings.
+  The forward migration makes disclosure columns nullable while keeping historical development
+  records. Permanent-free operator grants now work for a Workspace without a prior code.
+- **Verification:** Official CLI dry-ran and applied `20261003035550` to the linked **development**
+  project; private-schema lint found no errors. Final root `npm run check` passed API 29 files/141
+  tests and Web 59 files/250 tests; root production build passed with its existing large-chunk
+  advisory. Isolated live E2E through the local production-mode
+  origin proved free-first Student creation, optional code redemption, 90-day free writes, seat
+  non-restoration on deletion, durable rate limits, permanent grant/reversal for promotional and
+  ordinary free Coaches, and one-seat concurrent redemption. Fixtures were removed. Desktop
+  authenticated Settings displayed the promotional marker, account actions and data notice.
+  A separate unauthenticated 390×844 browser showed signup without a code field and no horizontal
+  overflow. Existing earlier M8-B acceptance covered authenticated Session/Training save/reload,
+  private-note-safe public result and link revocation; those fixtures were removed.
+- **Known issue:** The Chrome authenticated 390px override did not change its actual 1440px viewport;
+  authenticated small-screen acceptance remains separate from the unauthenticated 390px check.
+  Published Beta Terms, privacy text and actual support address are M8-C work. No production
+  environment or real Coach is involved. Final exact-SHA remote CI remains pending.
+- **Next:** Commit/push the corrected package, confirm exact-SHA `verify` and `migration-dry-run`,
+  then record the completion SHA without merging or deploying.
 
 ### 2026-10-03 — LOG-379 — Deliver M8-B code branch and observe exact-SHA CI
 

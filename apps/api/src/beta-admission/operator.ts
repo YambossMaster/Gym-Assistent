@@ -72,37 +72,50 @@ async function main(args: string[]) {
       await client.query("select pg_advisory_xact_lock(hashtext('beta-permanent-grants'))")
       const result = await client.query<{
         workspace_id: string
-        kind: string
+        kind: string | null
         ends_at: Date | null
         prior_ends_at: Date | null
       }>(
-        `select g.workspace_id,g.kind,g.ends_at,g.prior_ends_at
-         from app_private.workspace w join app_private.beta_grant g on g.workspace_id=w.id
-         where w.owner_user_id=$1 for update of g`,
+        `select w.id as workspace_id,g.kind,g.ends_at,g.prior_ends_at
+         from app_private.workspace w left join app_private.beta_grant g on g.workspace_id=w.id
+         where w.owner_user_id=$1 for update of w`,
         [userId],
       )
       const grant = result.rows[0]
-      if (!grant) throw new Error('Activated Coach not found')
+      if (!grant) throw new Error('Coach Workspace not found')
       if (action === 'grant-permanent') {
         if (grant.kind === 'permanent') return
         const count = await client.query<{ count: string }>(
           "select count(*) from app_private.beta_grant where kind='permanent'",
         )
         if (Number(count.rows[0]?.count) >= 10) throw new Error('Permanent grant limit reached')
-        await client.query(
-          `update app_private.beta_grant
-           set kind='permanent',prior_ends_at=ends_at,ends_at=null where workspace_id=$1`,
-          [grant.workspace_id],
-        )
+        if (grant.kind) {
+          await client.query(
+            `update app_private.beta_grant
+             set kind='permanent',prior_ends_at=ends_at,ends_at=null where workspace_id=$1`,
+            [grant.workspace_id],
+          )
+        } else {
+          await client.query(
+            `insert into app_private.beta_grant
+              (workspace_id,kind,started_at) values ($1,'permanent',now())`,
+            [grant.workspace_id],
+          )
+        }
         await event(client, 'grant_permanent', actor, reason, null, grant.workspace_id)
       } else {
-        if (grant.kind !== 'permanent' || !grant.prior_ends_at)
-          throw new Error('Permanent grant not found')
-        await client.query(
-          `update app_private.beta_grant
-           set kind='promotional',ends_at=prior_ends_at,prior_ends_at=null where workspace_id=$1`,
-          [grant.workspace_id],
-        )
+        if (grant.kind !== 'permanent') throw new Error('Permanent grant not found')
+        if (grant.prior_ends_at) {
+          await client.query(
+            `update app_private.beta_grant
+             set kind='promotional',ends_at=prior_ends_at,prior_ends_at=null where workspace_id=$1`,
+            [grant.workspace_id],
+          )
+        } else {
+          await client.query('delete from app_private.beta_grant where workspace_id=$1', [
+            grant.workspace_id,
+          ])
+        }
         await event(client, 'revoke_permanent', actor, reason, null, grant.workspace_id)
       }
     })

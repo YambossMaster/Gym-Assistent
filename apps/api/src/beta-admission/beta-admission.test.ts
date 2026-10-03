@@ -4,7 +4,6 @@ import {
   BetaAdmissionModule,
   BetaRedemptionRateError,
   codeDigest,
-  DISCLOSURE_VERSION,
   newBetaCode,
 } from './beta-admission.js'
 import { MemoryBetaAdmissionRepository } from './memory-beta-admission-repository.js'
@@ -28,18 +27,12 @@ function setup() {
 }
 
 describe('Beta admission', () => {
-  it('requires acknowledgment and a verified Email before consuming a seat', async () => {
+  it('starts free and requires verified Email only when redeeming', async () => {
     const { module, repository, code, emails } = setup()
-    await expect(
-      module.redeem(first, '127.0.0.1', { code, acknowledged: false }),
-    ).rejects.toMatchObject({
-      reason: 'acknowledgment_required',
-    })
+    expect(await module.status(first)).toEqual({ state: 'free' })
     expect(repository.usageForTest(codeDigest(code))).toBe(0)
     emails.delete(first.userId)
-    await expect(
-      module.redeem(first, '127.0.0.1', { code, acknowledged: true }),
-    ).rejects.toMatchObject({
+    await expect(module.redeem(first, '127.0.0.1', { code })).rejects.toMatchObject({
       reason: 'email_unverified',
     })
     expect(repository.usageForTest(codeDigest(code))).toBe(0)
@@ -47,7 +40,7 @@ describe('Beta admission', () => {
 
   it('grants exactly 90 days and keeps the existing core access in free state', async () => {
     const { module, code, setClock } = setup()
-    const grant = await module.redeem(first, '127.0.0.1', { code, acknowledged: true })
+    const grant = await module.redeem(first, '127.0.0.1', { code })
     expect(grant).toEqual({
       state: 'promotional',
       startedAt: '2026-10-03T02:00:00.000Z',
@@ -55,26 +48,21 @@ describe('Beta admission', () => {
     })
     setClock(new Date('2027-01-01T02:00:00.000Z'))
     expect(await module.status(first)).toMatchObject({ state: 'free' })
-    await expect(module.requireActive(first)).resolves.toBeUndefined()
   })
 
   it('never restores a consumed seat or permits same-Email reuse after deletion', async () => {
     const { module, repository, code, emails } = setup()
-    await module.redeem(first, '127.0.0.1', { code, acknowledged: true })
+    await module.redeem(first, '127.0.0.1', { code })
     repository.deleteUserForTest(first.userId)
     const replacement = { userId: '22222222-2222-4222-8222-222222222222' }
     emails.set(replacement.userId, 'coach@example.com')
-    await expect(
-      module.redeem(replacement, '127.0.0.2', { code, acknowledged: true }),
-    ).rejects.toMatchObject({
+    await expect(module.redeem(replacement, '127.0.0.2', { code })).rejects.toMatchObject({
       reason: 'already_used',
     })
     expect(repository.usageForTest(codeDigest(code))).toBe(1)
     const other = { userId: '33333333-3333-4333-8333-333333333333' }
     emails.set(other.userId, 'other@example.com')
-    await expect(
-      module.redeem(other, '127.0.0.3', { code, acknowledged: true }),
-    ).resolves.toMatchObject({
+    await expect(module.redeem(other, '127.0.0.3', { code })).resolves.toMatchObject({
       state: 'promotional',
     })
     expect(repository.usageForTest(codeDigest(code))).toBe(2)
@@ -84,18 +72,17 @@ describe('Beta admission', () => {
     const { module, repository, code } = setup()
     for (let count = 0; count < 5; count += 1)
       await expect(module.redeem(first, '127.0.0.1', {})).rejects.toBeInstanceOf(BetaAdmissionError)
-    await expect(
-      module.redeem(first, '127.0.0.1', { code, acknowledged: true }),
-    ).rejects.toBeInstanceOf(BetaRedemptionRateError)
+    await expect(module.redeem(first, '127.0.0.1', { code })).rejects.toBeInstanceOf(
+      BetaRedemptionRateError,
+    )
     expect(repository.usageForTest(codeDigest(code))).toBe(0)
   })
 
-  it('uses a random full-length code and a fixed disclosure version', () => {
+  it('uses a random full-length code', () => {
     const a = newBetaCode()
     const b = newBetaCode()
     expect(a).toMatch(/^[A-Za-z0-9_-]{43}$/)
     expect(a).not.toBe(b)
     expect(codeDigest(a)).toMatch(/^[0-9a-f]{64}$/)
-    expect(DISCLOSURE_VERSION).toBe('m8-no-backup-2026-10-03')
   })
 })

@@ -202,15 +202,6 @@ export function buildServer({
       const identity = await identityVerifier.verify(request.headers.authorization)
       await betaAdmission.throttle(identity, betaClientIp(request))
     })
-    server.addHook('preHandler', async (request) => {
-      const path = request.routeOptions.url
-      if (!path?.startsWith('/v1/')) return
-      if (path.startsWith('/v1/public/') || path.startsWith('/v1/beta/')) return
-      if (path === '/v1/account-registration-check') return
-      if (path === '/v1/account' && request.method === 'DELETE') return
-      const identity = await identityVerifier.verify(request.headers.authorization)
-      await betaAdmission.requireActive(identity)
-    })
   }
 
   server.addHook('onResponse', async (request, reply) => {

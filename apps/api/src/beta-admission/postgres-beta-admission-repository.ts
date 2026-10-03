@@ -7,6 +7,7 @@ interface GrantRow {
   started_at: Date
   ends_at: Date | null
   state: 'promotional' | 'free' | 'permanent'
+  code_digest: string | null
 }
 
 interface CodeRow {
@@ -25,11 +26,12 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
 
   async grant(userId: string): Promise<BetaGrant> {
     const result = await this.pool.query<GrantRow>(
-      `select g.kind,g.started_at,g.ends_at,
+      `select g.kind,g.started_at,g.ends_at,c.code_digest,
         case when g.kind='permanent' then 'permanent'
              when g.ends_at>now() then 'promotional' else 'free' end as state
        from app_private.workspace w
        join app_private.beta_grant g on g.workspace_id=w.id
+       left join app_private.beta_code c on c.id=g.code_id
        where w.owner_user_id=$1`,
       [userId],
     )
@@ -40,7 +42,6 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
     userId: string
     verifiedEmail: string
     codeDigest: string
-    disclosureVersion: string
     now: Date
     endsAt: Date
   }): Promise<BetaGrant | RedemptionFailure> {
@@ -51,7 +52,7 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       const existing = await grantForUser(client, input.userId)
       if (existing) {
         await client.query('commit')
-        return mapGrant(existing)
+        return existing.code_digest === input.codeDigest ? mapGrant(existing) : 'already_eligible'
       }
       const code = (
         await client.query<CodeRow>(
@@ -81,9 +82,9 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       )
       await client.query(
         `insert into app_private.beta_grant
-          (workspace_id,code_id,kind,started_at,ends_at,disclosure_version,disclosure_accepted_at)
-         values ($1,$2,'promotional',$3,$4,$5,$3)`,
-        [workspaceId, code.id, input.now, input.endsAt, input.disclosureVersion],
+          (workspace_id,code_id,kind,started_at,ends_at)
+         values ($1,$2,'promotional',$3,$4)`,
+        [workspaceId, code.id, input.now, input.endsAt],
       )
       await client.query(
         'update app_private.beta_code set redemption_count=redemption_count+1 where id=$1',
@@ -129,11 +130,12 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
 
 async function grantForUser(client: PoolClient, userId: string): Promise<GrantRow | undefined> {
   const result = await client.query<GrantRow>(
-    `select g.kind,g.started_at,g.ends_at,
+    `select g.kind,g.started_at,g.ends_at,c.code_digest,
       case when g.kind='permanent' then 'permanent'
            when g.ends_at>now() then 'promotional' else 'free' end as state
      from app_private.workspace w
      join app_private.beta_grant g on g.workspace_id=w.id
+     left join app_private.beta_code c on c.id=g.code_id
      where w.owner_user_id=$1 for update of g`,
     [userId],
   )
@@ -160,7 +162,7 @@ async function decline(client: PoolClient, reason: RedemptionFailure): Promise<R
 }
 
 function mapGrant(row: GrantRow | undefined): BetaGrant {
-  if (!row) return { state: 'unactivated' }
+  if (!row) return { state: 'free' }
   if (row.state === 'permanent')
     return { state: 'permanent', startedAt: row.started_at.toISOString() }
   return {

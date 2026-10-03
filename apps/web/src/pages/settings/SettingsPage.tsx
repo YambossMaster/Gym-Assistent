@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
   CircleCheck,
@@ -19,6 +19,7 @@ import {
   ApiError,
   deleteAccountImmediately,
   readBetaGrant,
+  redeemBetaCode,
   type BetaGrant,
   type WorkspaceSettings
 } from '../../api'
@@ -41,10 +42,9 @@ import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
 function betaGrantDescription(grant: BetaGrant | undefined): string {
-  if (!grant) return '正在確認使用資格…'
+  if (!grant) return '正在讀取方案…'
   if (grant.state === 'permanent') return '永久免費使用資格。'
-  if (grant.state === 'free')
-    return '體驗期間已結束，已轉為免費方案。你可以繼續使用目前的功能與資料。'
+  if (grant.state === 'free') return '免費方案。'
   if (grant.state === 'promotional') {
     const date = new Date(grant.endsAt).toLocaleString('zh-TW', {
       timeZone: 'Asia/Taipei',
@@ -54,9 +54,9 @@ function betaGrantDescription(grant: BetaGrant | undefined): string {
       hour: '2-digit',
       minute: '2-digit'
     })
-    return `90 天體驗期間至 ${date}。目前所有功能皆可使用。`
+    return `90 天方案體驗資格 · 至 ${date}。`
   }
-  return '尚未啟用。'
+  return '免費方案。'
 }
 
 function FeedbackPanel() {
@@ -142,7 +142,11 @@ function timeZoneOptions(current: string) {
 }
 
 export function SettingsPage({ session }: { session: Session }) {
+  const queryClient = useQueryClient()
   const [category, setCategory] = useState<SettingsCategory>('profile')
+  const [offerCode, setOfferCode] = useState('')
+  const [offerError, setOfferError] = useState('')
+  const [offerSuccess, setOfferSuccess] = useState('')
   const [message, setMessage] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
@@ -158,6 +162,33 @@ export function SettingsPage({ session }: { session: Session }) {
   const grantQuery = useQuery({
     queryKey: betaGrantKey(session.user.id),
     queryFn: () => readBetaGrant(session.access_token)
+  })
+  const offerMutation = useMutation({
+    mutationFn: () => redeemBetaCode(session.access_token, offerCode.trim()),
+    onSuccess: (grant) => {
+      queryClient.setQueryData(betaGrantKey(session.user.id), grant)
+      setOfferCode('')
+      setOfferError('')
+      setOfferSuccess('優惠碼已套用。')
+    },
+    onError: (reason) => {
+      const messages: Record<string, string> = {
+        invalid_code: '優惠碼無效，請確認後再試。',
+        code_closed: '這組優惠碼已停止使用。',
+        code_exhausted: '這組優惠碼的名額已用完。',
+        already_used: '這組優惠碼已由此 Email 使用過。',
+        already_eligible: '這個帳號已有優惠資格。',
+        email_unverified: '請先完成電子信箱驗證。',
+        rate_limited: '嘗試次數過多，請稍後再試。'
+      }
+      if (reason instanceof ApiError) {
+        setOfferError(
+          reason.details.error === 'rate_limited' && reason.details.retryAfter
+            ? `嘗試次數過多，請於 ${reason.details.retryAfter} 秒後再試。`
+            : (messages[reason.details.error ?? ''] ?? '暫時無法套用，請稍後再試。')
+        )
+      } else setOfferError('暫時無法套用，請稍後再試。')
+    }
   })
   const { settings: settingsMutation, lifecycle: lifecycleMutation } = useSettingsRouteMutations({
     session,
@@ -292,6 +323,41 @@ export function SettingsPage({ session }: { session: Session }) {
                   </button>
                 )}
               </div>
+              {grantQuery.data?.state === 'free' && !grantQuery.data.startedAt && (
+                <form
+                  className="settings-offer-form"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    setOfferError('')
+                    setOfferSuccess('')
+                    offerMutation.mutate()
+                  }}
+                >
+                  <label htmlFor="settings-offer-code">有優惠碼？</label>
+                  <div className="settings-offer-controls">
+                    <input
+                      id="settings-offer-code"
+                      value={offerCode}
+                      onChange={(event) => setOfferCode(event.target.value)}
+                      autoComplete="off"
+                      required
+                    />
+                    <button type="submit" disabled={offerMutation.isPending || !offerCode.trim()}>
+                      {offerMutation.isPending ? '套用中…' : '套用優惠碼'}
+                    </button>
+                  </div>
+                  {offerError && (
+                    <p role="alert" className="form-error">
+                      {offerError}
+                    </p>
+                  )}
+                </form>
+              )}
+              {offerSuccess && (
+                <p role="status" className="settings-feedback">
+                  {offerSuccess}
+                </p>
+              )}
               <div className="settings-row">
                 <div className="settings-row-copy">
                   <strong>登入帳號</strong>
@@ -602,6 +668,12 @@ function DeviceDataPanel({ session }: { session: Session }) {
   const [open, setOpen] = useState(false)
   return (
     <section className="settings-panel">
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>資料保存提醒</strong>
+          <span>目前沒有定期資料庫備份；若服務或資料庫發生故障，學員與訓練紀錄可能無法還原。</span>
+        </div>
+      </div>
       <div className="settings-row">
         <div className="settings-row-copy">
           <strong>這台裝置的暫存</strong>

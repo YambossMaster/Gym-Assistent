@@ -12,6 +12,7 @@ interface Code {
 export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
   private readonly codes = new Map<string, Code>()
   private readonly grants = new Map<string, BetaGrant>()
+  private readonly grantCodes = new Map<string, string>()
   private readonly redeemed = new Set<string>()
   private readonly buckets = new Map<string, number>()
 
@@ -31,6 +32,7 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
 
   deleteUserForTest(userId: string) {
     this.grants.delete(userId)
+    this.grantCodes.delete(userId)
   }
 
   usageForTest(digest: string) {
@@ -39,7 +41,7 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
 
   async grant(userId: string): Promise<BetaGrant> {
     const grant = this.grants.get(userId)
-    if (!grant) return { state: 'unactivated' }
+    if (!grant) return { state: 'free' }
     if (grant.state === 'promotional' && new Date(grant.endsAt) <= this.now())
       return { ...grant, state: 'free' }
     return grant
@@ -49,12 +51,12 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
     userId: string
     verifiedEmail: string
     codeDigest: string
-    disclosureVersion: string
     now: Date
     endsAt: Date
   }): Promise<BetaGrant | RedemptionFailure> {
     const existing = await this.grant(input.userId)
-    if (existing.state !== 'unactivated') return existing
+    if (this.grants.has(input.userId))
+      return this.grantCodes.get(input.userId) === input.codeDigest ? existing : 'already_eligible'
     const code = this.codes.get(input.codeDigest)
     if (!code) return 'invalid_code'
     if (code.revoked || code.closesAt <= input.now) return 'code_closed'
@@ -71,6 +73,7 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
       endsAt: input.endsAt.toISOString(),
     }
     this.grants.set(input.userId, grant)
+    this.grantCodes.set(input.userId, input.codeDigest)
     return grant
   }
 

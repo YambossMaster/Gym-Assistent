@@ -1,24 +1,23 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 
-export const DISCLOSURE_VERSION = 'm8-no-backup-2026-10-03'
 const PERIOD_MS = 90 * 24 * 60 * 60 * 1000
 
 export type BetaGrant =
-  | { state: 'unactivated' }
   | { state: 'promotional'; startedAt: string; endsAt: string }
-  | { state: 'free'; startedAt: string; endsAt: string }
+  | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
 
-export type RedemptionFailure = 'invalid_code' | 'code_closed' | 'code_exhausted' | 'already_used'
+export type RedemptionFailure =
+  | 'invalid_code'
+  | 'code_closed'
+  | 'code_exhausted'
+  | 'already_used'
+  | 'already_eligible'
 
 export class BetaAdmissionError extends Error {
   constructor(
-    readonly reason:
-      | RedemptionFailure
-      | 'email_unverified'
-      | 'acknowledgment_required'
-      | 'not_activated',
+    readonly reason: RedemptionFailure | 'email_unverified',
     readonly statusCode = 400,
   ) {
     super(reason)
@@ -37,7 +36,6 @@ export interface BetaAdmissionRepository {
     userId: string
     verifiedEmail: string
     codeDigest: string
-    disclosureVersion: string
     now: Date
     endsAt: Date
   }): Promise<BetaGrant | RedemptionFailure>
@@ -65,11 +63,6 @@ export class BetaAdmissionModule {
     return this.repository.grant(identity.userId)
   }
 
-  async requireActive(identity: AuthenticatedIdentity): Promise<void> {
-    if ((await this.status(identity)).state === 'unactivated')
-      throw new BetaAdmissionError('not_activated', 403)
-  }
-
   async redeem(
     identity: AuthenticatedIdentity,
     clientIp: string,
@@ -79,7 +72,6 @@ export class BetaAdmissionModule {
     const now = this.now()
     if (!alreadyThrottled) await this.throttle(identity, clientIp, now)
     const input = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
-    if (input.acknowledged !== true) throw new BetaAdmissionError('acknowledgment_required')
     const email = await this.verifiedEmail.getVerifiedEmail(identity.userId)
     if (!email) throw new BetaAdmissionError('email_unverified', 403)
     if (typeof input.code !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(input.code))
@@ -88,7 +80,6 @@ export class BetaAdmissionModule {
       userId: identity.userId,
       verifiedEmail: email.trim().toLowerCase(),
       codeDigest: codeDigest(input.code),
-      disclosureVersion: DISCLOSURE_VERSION,
       now,
       endsAt: new Date(now.getTime() + PERIOD_MS),
     })
