@@ -1,12 +1,13 @@
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
   CircleCheck,
   Database,
   KeyRound,
   LogOut,
+  MessageSquare,
   SlidersHorizontal,
   Shield,
   Trash2,
@@ -14,7 +15,14 @@ import {
   X
 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { ApiError, deleteAccountImmediately, type WorkspaceSettings } from '../../api'
+import {
+  ApiError,
+  deleteAccountImmediately,
+  readBetaGrant,
+  type BetaGrant,
+  type WorkspaceSettings
+} from '../../api'
+import { betaGrantKey } from '../../beta-admission/BetaGate'
 import {
   changePassword,
   passwordRecoveryRedirect,
@@ -32,6 +40,50 @@ import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
+function betaGrantDescription(grant: BetaGrant | undefined): string {
+  if (!grant) return '正在確認使用資格…'
+  if (grant.state === 'permanent') return '永久免費使用資格。'
+  if (grant.state === 'free')
+    return '體驗期間已結束，已轉為免費方案。你可以繼續使用目前的功能與資料。'
+  if (grant.state === 'promotional') {
+    const date = new Date(grant.endsAt).toLocaleString('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    return `90 天體驗期間至 ${date}。目前所有功能皆可使用。`
+  }
+  return '尚未啟用。'
+}
+
+function FeedbackPanel() {
+  const address = (import.meta.env.VITE_SUPPORT_EMAIL ?? '').trim()
+  const available = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)
+  return (
+    <section className="settings-panel account-settings-panel">
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>意見回饋</strong>
+          <span>可回報問題或提出建議。請勿寄送密碼、分享連結或非必要的學員資料。</span>
+        </div>
+        {available ? (
+          <a
+            className="settings-row-action"
+            href={`mailto:${address}?subject=${encodeURIComponent('FORM 意見回饋')}`}
+          >
+            寄送 Email <ArrowRight aria-hidden="true" />
+          </a>
+        ) : (
+          <span className="settings-account-value">聯絡方式準備中</span>
+        )}
+      </div>
+    </section>
+  )
+}
+
 const settingsCategories = [
   {
     id: 'profile',
@@ -46,7 +98,8 @@ const settingsCategories = [
     description: '調整新增紀錄時使用的預設值。'
   },
   { id: 'security', label: '帳號與安全', icon: Shield, description: '管理登入方式與帳號狀態。' },
-  { id: 'data', label: '資料與裝置', icon: Database, description: '管理此裝置的暫存資料。' }
+  { id: 'data', label: '資料與裝置', icon: Database, description: '管理此裝置的暫存資料。' },
+  { id: 'feedback', label: '協助與回饋', icon: MessageSquare, description: '回報問題或提出建議。' }
 ] as const
 type SettingsCategory = (typeof settingsCategories)[number]['id']
 
@@ -102,6 +155,10 @@ export function SettingsPage({ session }: { session: Session }) {
   const [immediateDelete, setImmediateDelete] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const { settings: settingsQuery, lifecycle: lifecycleQuery } = useSettingsRouteQueries(session)
+  const grantQuery = useQuery({
+    queryKey: betaGrantKey(session.user.id),
+    queryFn: () => readBetaGrant(session.access_token)
+  })
   const { settings: settingsMutation, lifecycle: lifecycleMutation } = useSettingsRouteMutations({
     session,
     onMessage: setMessage,
@@ -218,6 +275,25 @@ export function SettingsPage({ session }: { session: Session }) {
             <section className="settings-panel account-settings-panel">
               <div className="settings-row">
                 <div className="settings-row-copy">
+                  <strong>使用資格</strong>
+                  <span>
+                    {grantQuery.isError
+                      ? '暫時無法取得使用資格。'
+                      : betaGrantDescription(grantQuery.data)}
+                  </span>
+                </div>
+                {grantQuery.isError && (
+                  <button
+                    type="button"
+                    className="settings-row-action"
+                    onClick={() => void grantQuery.refetch()}
+                  >
+                    重試
+                  </button>
+                )}
+              </div>
+              <div className="settings-row">
+                <div className="settings-row-copy">
                   <strong>登入帳號</strong>
                   <span>目前用於登入的電子郵件。</span>
                 </div>
@@ -305,6 +381,7 @@ export function SettingsPage({ session }: { session: Session }) {
               )}
             </>
           )}
+          {category === 'feedback' && <FeedbackPanel />}
         </div>
       </section>
       {passwordOpen && (

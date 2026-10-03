@@ -6,6 +6,8 @@ import { TodayModule } from '../today/today-module.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { AccountLifecycleModule } from '../account-lifecycle/account-lifecycle-module.js'
 import { buildServer } from './server.js'
+import { BetaAdmissionModule, codeDigest, newBetaCode } from '../beta-admission/beta-admission.js'
+import { MemoryBetaAdmissionRepository } from '../beta-admission/memory-beta-admission-repository.js'
 
 const openServers: ReturnType<typeof buildServer>[] = []
 
@@ -49,6 +51,105 @@ describe('readiness', () => {
     const response = await server.inject('/ready')
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({ status: 'ready' })
+  })
+})
+
+describe('Beta admission HTTP boundary', () => {
+  it('blocks automatic Workspace creation until atomic redemption and keeps other Coaches isolated', async () => {
+    const repository = new MemoryStudentRepository()
+    const secret = 'test-secret-that-is-at-least-32-characters'
+    const betaRepository = new MemoryBetaAdmissionRepository(secret)
+    const code = newBetaCode()
+    betaRepository.issueForTest(codeDigest(code), 2, new Date('2027-01-01T00:00:00.000Z'))
+    const server = buildServer({
+      identityVerifier: new DevelopmentIdentityVerifier(),
+      students: new StudentModule({ repository }),
+      today: new TodayModule(repository),
+      workspace: new WorkspaceModule({ repository }),
+      accountLifecycle: new AccountLifecycleModule({
+        repository,
+        deletionExecutor: { deleteCoach: async () => undefined },
+      }),
+      registrationEmails: { isRegistered: async () => false },
+      betaAdmission: new BetaAdmissionModule(
+        betaRepository,
+        { getVerifiedEmail: async () => 'verified@example.com' },
+        secret,
+        () => new Date('2026-10-03T02:00:00.000Z'),
+      ),
+    })
+    openServers.push(server)
+    const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+    expect((await server.inject({ url: '/v1/students', headers })).statusCode).toBe(403)
+    expect((await server.inject({ url: '/v1/beta/status', headers })).json()).toEqual({
+      grant: { state: 'unactivated' },
+    })
+    const redeemed = await server.inject({
+      method: 'POST',
+      url: '/v1/beta/redeem',
+      headers,
+      payload: { code, acknowledged: true },
+    })
+    expect(redeemed.statusCode).toBe(200)
+    expect(redeemed.json().grant.state).toBe('promotional')
+    expect(
+      (
+        await server.inject({
+          method: 'POST',
+          url: '/v1/students',
+          headers,
+          payload: { name: 'Beta Coach Student' },
+        })
+      ).statusCode,
+    ).toBe(201)
+    const other = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000002' }
+    expect((await server.inject({ url: '/v1/students', headers: other })).statusCode).toBe(403)
+    expect(betaRepository.usageForTest(codeDigest(code))).toBe(1)
+  })
+
+  it('counts malformed JSON before parsing and returns Retry-After without code lookup', async () => {
+    const repository = new MemoryStudentRepository()
+    const secret = 'test-secret-that-is-at-least-32-characters'
+    const betaRepository = new MemoryBetaAdmissionRepository(secret)
+    const server = buildServer({
+      identityVerifier: new DevelopmentIdentityVerifier(),
+      students: new StudentModule({ repository }),
+      today: new TodayModule(repository),
+      workspace: new WorkspaceModule({ repository }),
+      accountLifecycle: new AccountLifecycleModule({
+        repository,
+        deletionExecutor: { deleteCoach: async () => undefined },
+      }),
+      registrationEmails: { isRegistered: async () => false },
+      betaAdmission: new BetaAdmissionModule(
+        betaRepository,
+        { getVerifiedEmail: async () => 'verified@example.com' },
+        secret,
+        () => new Date('2026-10-03T02:00:00.000Z'),
+      ),
+    })
+    openServers.push(server)
+    const headers = {
+      authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001',
+      'content-type': 'application/json',
+    }
+    for (let count = 0; count < 5; count += 1) {
+      const invalid = await server.inject({
+        method: 'POST',
+        url: '/v1/beta/redeem',
+        headers,
+        payload: '{',
+      })
+      expect(invalid.statusCode).toBe(400)
+    }
+    const limited = await server.inject({
+      method: 'POST',
+      url: '/v1/beta/redeem',
+      headers,
+      payload: '{}',
+    })
+    expect(limited.statusCode).toBe(429)
+    expect(limited.headers['retry-after']).toBe('300')
   })
 })
 

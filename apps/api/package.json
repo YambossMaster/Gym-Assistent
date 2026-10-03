@@ -8,10 +8,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "beta:operator": "node --env-file=.env --import tsx src/beta-admission/operator.ts",
     "check": "npm run typecheck && npm test",
     "dev": "node --watch --env-file=.env --import tsx src/start.ts",
     "e2e:m1": "node --env-file=.env.e2e --import tsx src/e2e/run-m1-live.ts",
     "e2e:password": "node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/run-password-live.ts",
+    "e2e:beta": "node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/run-beta-admission-live.ts",
     "e2e:m3": "node --env-file=.env.e2e --import tsx src/e2e/run-m3-live.ts",
     "e2e:m4": "node --env-file=.env.e2e --import tsx src/e2e/run-m4-live.ts",
     "e2e:m5": "node --env-file=.env.e2e --import tsx src/e2e/run-m5-live.ts",

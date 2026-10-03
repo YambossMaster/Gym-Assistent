@@ -16124,3 +16124,98 @@ button:disabled {
     margin-bottom: 22px;
   }
 }
+.beta-gate-message,
+.beta-activation {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f6f5f0;
+  color: #242923;
+}
+
+.beta-gate-message {
+  align-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.beta-activation-card {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 18px;
+  padding: clamp(24px, 5vw, 40px);
+  background: #fffefa;
+  border: 1px solid #deded4;
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgb(31 45 34 / 8%);
+}
+
+.beta-activation-card h1 {
+  margin: 0;
+  font-size: clamp(26px, 5vw, 34px);
+}
+
+.beta-activation-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.beta-activation-card > label:not(.beta-disclosure) {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.beta-activation-card > label > input:not([type='checkbox']) {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #bec7bb;
+  border-radius: 10px;
+  background: white;
+  font: inherit;
+}
+
+.beta-disclosure {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #deded4;
+  border-radius: 12px;
+  line-height: 1.55;
+}
+
+.beta-disclosure input {
+  margin-top: 4px;
+  flex: none;
+}
+
+.beta-activation-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.beta-activation-actions button,
+.beta-delete-confirm button {
+  border: 0;
+  background: none;
+  color: #345c49;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.beta-delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d8b7a9;
+  border-radius: 12px;
+}
+
+.beta-delete-confirm p {
+  flex-basis: 100%;
+}

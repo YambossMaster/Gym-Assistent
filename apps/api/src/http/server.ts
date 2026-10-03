@@ -1,6 +1,6 @@
 import { FinanceModule } from '../finances/finance-module.js'
 import { FinanceError } from '../finances/finance.js'
-import Fastify, { LogController, type FastifyInstance } from 'fastify'
+import Fastify, { LogController, type FastifyInstance, type FastifyRequest } from 'fastify'
 import { z, ZodError } from 'zod'
 import { type IdentityVerifier, IdentityVerificationError } from '../identity/identity.js'
 import {
@@ -34,6 +34,11 @@ import { TrainingVersionConflictError } from '../training/training-repository.js
 import { PublicAccessModule } from '../public-access/public-access-module.js'
 import { PublicCapabilityError, PublicRateLimitError } from '../public-access/public-access.js'
 import { DemoImportConflictError, DemoImportModule } from '../demo-import/demo-import.js'
+import {
+  BetaAdmissionError,
+  BetaAdmissionModule,
+  BetaRedemptionRateError,
+} from '../beta-admission/beta-admission.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -48,6 +53,7 @@ export interface ServerDependencies {
   publicAccess?: PublicAccessModule
   finances?: FinanceModule
   demoImport?: DemoImportModule
+  betaAdmission?: BetaAdmissionModule
   readiness?: () => Promise<void>
   logger?: boolean | Record<string, unknown>
 }
@@ -179,6 +185,7 @@ export function buildServer({
   training,
   publicAccess,
   demoImport,
+  betaAdmission,
   finances,
   readiness,
   logger = false,
@@ -188,6 +195,23 @@ export function buildServer({
     logController: new LogController({ disableRequestLogging: true }),
     ajv: { customOptions: { removeAdditional: false } },
   })
+
+  if (betaAdmission) {
+    server.addHook('onRequest', async (request) => {
+      if (request.routeOptions.url !== '/v1/beta/redeem' || request.method !== 'POST') return
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      await betaAdmission.throttle(identity, betaClientIp(request))
+    })
+    server.addHook('preHandler', async (request) => {
+      const path = request.routeOptions.url
+      if (!path?.startsWith('/v1/')) return
+      if (path.startsWith('/v1/public/') || path.startsWith('/v1/beta/')) return
+      if (path === '/v1/account-registration-check') return
+      if (path === '/v1/account' && request.method === 'DELETE') return
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      await betaAdmission.requireActive(identity)
+    })
+  }
 
   server.addHook('onResponse', async (request, reply) => {
     server.log.info(
@@ -309,6 +333,18 @@ export function buildServer({
     if (error instanceof IdentityVerificationError) {
       return reply.status(401).send({ error: 'unauthorized', message: error.message })
     }
+    if ((error as { code?: string }).code === 'FST_ERR_CTP_INVALID_JSON_BODY') {
+      return reply.status(400).send({ error: 'invalid_request', message: 'Invalid JSON body' })
+    }
+    if (error instanceof BetaAdmissionError) {
+      return reply.status(error.statusCode).send({ error: error.reason })
+    }
+    if (error instanceof BetaRedemptionRateError) {
+      return reply
+        .header('Retry-After', String(error.retryAfter))
+        .status(429)
+        .send({ error: 'rate_limited' })
+    }
     if (error instanceof ZodError) {
       return reply.status(400).send({ error: 'invalid_request', message: z.prettifyError(error) })
     }
@@ -382,6 +418,18 @@ export function buildServer({
   })
 
   server.get('/health', async () => ({ status: 'ok' }))
+  if (betaAdmission) {
+    server.get('/v1/beta/status', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return { grant: await betaAdmission.status(identity) }
+    })
+    server.post<{ Body: unknown }>('/v1/beta/redeem', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return {
+        grant: await betaAdmission.redeem(identity, betaClientIp(request), request.body, true),
+      }
+    })
+  }
   server.get('/ready', async (_request, reply) => {
     try {
       if (!readiness) throw new Error('Readiness is not configured')
@@ -395,7 +443,8 @@ export function buildServer({
   server.addHook('onSend', async (request, reply, payload) => {
     if (
       request.routeOptions.url?.startsWith('/v1/public/') ||
-      request.routeOptions.url?.startsWith('/v1/demo-imports')
+      request.routeOptions.url?.startsWith('/v1/demo-imports') ||
+      request.routeOptions.url?.startsWith('/v1/beta/')
     ) {
       reply.header('Cache-Control', 'no-store, private')
       reply.header('Pragma', 'no-cache')
@@ -1240,4 +1289,11 @@ export function buildServer({
 
 function capabilityHeader(value: string | string[] | undefined) {
   return typeof value === 'string' ? value : ''
+}
+
+function betaClientIp(request: FastifyRequest) {
+  const forwarded = request.headers['x-site-client-ip']
+  return typeof forwarded === 'string' && ['127.0.0.1', '::1'].includes(request.ip)
+    ? forwarded
+    : request.ip
 }

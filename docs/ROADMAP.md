@@ -547,8 +547,10 @@ Beta product, M8-C deploys production for internal Alpha, and M8-D admits real C
 deployment alone does not authorize real-Coach admission.
 
 **Product Owner decisions — 2026-09-30 to 2026-10-01, simplified 2026-10-01:** start a small,
-code-gated, free Taiwan Beta. A valid shareable Beta code permits registration and grants three
-months of free use from redemption; no automatic charge or deletion occurs at expiry. At most ten
+code-gated, free Taiwan Beta. A valid shareable Beta code permits workspace activation and starts
+a 90-day (fixed 90 × 24-hour, no-grace-period) promotional state from redemption. After that,
+the Coach moves to a free plan and keeps all existing M8 core functions, including writes. No
+automatic charge or deletion occurs at the transition. At most ten
 permanent free grants may be issued and remain free while the service operates. Both classes are
 server-owned entitlements. M9 owns payments. The Beta uses **Local + Production** only: the
 existing development project remains local development's database/Auth service, and a separate
@@ -614,12 +616,12 @@ admit Coaches.
 
 #### M8-B — Beta product and pre-release checks
 
-**Contract gate:** freeze Beta-code issuance, redemption, limits, expiry and post-expiry access;
+**Contract gate:** freeze Beta-code issuance, redemption, limits, 90-day transition and free-plan access;
 choose the external feedback channel and exact copy; define the minimum onboarding disclosure,
 desktop/390px checks and security cases. Preserve physical installed-device acceptance for M8-C.
 
-**Sol gate:** implement server-owned, atomic Beta-code redemption and three-month/permanent grants;
-show grant and expiry states without automatic billing or deletion. Add the external feedback link
+**Sol gate:** implement server-owned, atomic Beta-code redemption and 90-day/permanent grants;
+show promotional/free/permanent states without automatic billing or deletion. Add the external feedback link
 and necessary PWA/update corrections. Test critical Coach flows and two-Coach isolation locally
 with synthetic data. Keep development migration tools unavailable in a production build.
 
@@ -650,8 +652,8 @@ alerts, database-size view, and no known release-blocking defect.
 #### M8-D — Code-gated, free, real-Coach Beta
 
 **Contract gate:** approve the first small cohort, code distribution, published terms/privacy,
-external feedback channel and criteria to pause new admissions. State the three-month and limited
-permanent-free promises clearly. Paid access remains M9.
+external feedback channel and criteria to pause new admissions. State the 90-day promotional,
+continuing-free and limited permanent-free promises clearly. Paid access remains M9.
 
 **Sol gate:** admit only approved code holders, keep existing Coach data behind verified identity,
 make expiry/grant state visible, and collect product feedback through the selected external channel.
@@ -671,14 +673,14 @@ positioning research may begin during M8; no Coach is charged before M9's full r
 
 **Contract gate:** freeze who pays, plan features/limits, price and currency, trial or paid discount
 terms, upgrade/downgrade/cancellation/refund handling, failed-payment access, tax/invoice and legal
-review, privacy/terms, customer support, three-month Beta expiry/plan selection, and continued M8
+review, privacy/terms, customer support, 90-day Beta transition/plan selection, and continued M8
 permanent free grants. Ordinary paid-plan discount codes are distinct from both free-grant classes.
 Define a measurable paid-launch and support exit criterion.
 
 **Sol gate:** implement provider-verified payment events and server-owned subscription/access
 state with idempotent retries, reconciliation, and auditability; never derive access solely from a
 browser success page. Keep redeemed M8 permanent grants effective without billing them; handle
-expired three-month grants without data loss or automatic charges.
+completed 90-day promotional grants without data loss or automatic charges.
 
 Make plan choice, price, payment, free-grant status, failures, cancellation, and help
 clear on Web/PWA. Complete Taiwan launch onboarding and public-facing product/support materials.

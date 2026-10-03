@@ -303,6 +303,11 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       if (initial.purpose !== 'reschedule_session')
         throw new PublicCapabilityError('invalid_link', 404)
       await setWorkspace(client, initial.workspace_id)
+      const activation = await client.query(
+        'select 1 from app_private.beta_grant where workspace_id=$1',
+        [initial.workspace_id],
+      )
+      if (!activation.rowCount) throw new PublicCapabilityError('invalid_link', 404)
       await client.query(
         'select id from app_private.course_session where workspace_id=$1 and id=$2 for update',
         [initial.workspace_id, initial.session_id],

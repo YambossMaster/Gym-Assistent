@@ -26,6 +26,9 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assertProductionBoundary } from './deployment-boundary.js'
 import { createSiteServer } from './http/site-server.js'
+import { BetaAdmissionModule } from './beta-admission/beta-admission.js'
+import { PostgresBetaAdmissionRepository } from './beta-admission/postgres-beta-admission-repository.js'
+import { SupabaseVerifiedCoachEmail } from './beta-admission/supabase-verified-coach-email.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -35,6 +38,9 @@ const pool = new Pool({
   connectionTimeoutMillis: 10_000,
 })
 const repository = new PostgresStudentRepository(pool)
+if (!config.SUPABASE_SECRET_KEY || !config.BETA_ADMISSION_SECRET) {
+  throw new Error('M8-B requires SUPABASE_SECRET_KEY and BETA_ADMISSION_SECRET')
+}
 const supabaseIssuer = `${config.SUPABASE_URL.replace(/\/$/, '')}/auth/v1`
 const identityVerifier = new OidcIdentityVerifier({
   issuer: supabaseIssuer,
@@ -70,7 +76,14 @@ const server = buildServer({
     new PostgresPublicAccessRepository(pool),
     config.CAPABILITY_RATE_LIMIT_SECRET ?? config.SUPABASE_SECRET_KEY ?? config.DATABASE_URL,
   ),
-  demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)),
+  betaAdmission: new BetaAdmissionModule(
+    new PostgresBetaAdmissionRepository(pool, config.BETA_ADMISSION_SECRET),
+    new SupabaseVerifiedCoachEmail(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY),
+    config.BETA_ADMISSION_SECRET,
+  ),
+  ...(config.NODE_ENV === 'production'
+    ? {}
+    : { demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)) }),
   readiness: async () => {
     await pool.query('select 1')
   },

@@ -22,10 +22,13 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    set the real app name, and keep one Machine running. Do not call a usage alert a hard cap.
 2. Create a separate production Supabase project. Configure Auth URLs, custom SMTP and a runtime
    database role. Store `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
-   `CAPABILITY_RATE_LIMIT_SECRET`, and `EXPECTED_SUPABASE_PROJECT_REF` only in the host's secret
+   `CAPABILITY_RATE_LIMIT_SECRET`, `BETA_ADMISSION_SECRET`, and
+   `EXPECTED_SUPABASE_PROJECT_REF` only in the host's secret
    store. Set `NODE_ENV=production` and `DEPLOYMENT_TARGET=production`. The production startup
    compares the runtime URL, database connection target and Web build's public URL against the
    expected project ref before it listens publicly.
+   Keep `BETA_ADMISSION_SECRET` stable: it keys the deletion-surviving same-Email redemption
+   ledger. Rotating it requires a planned ledger migration before accepting new redemptions.
 3. From an isolated release checkout, use the installed Supabase CLI's `migration list
 --project-ref <production-ref>` and `db push --dry-run --project-ref <production-ref>` against
    the production target. Review the exact migration list and stop on unexpected history. Apply
@@ -33,7 +36,8 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    through the CLI's protected prompt or secret environment, never inline in a saved command.
    These are serial release operations, not part of Fly app startup.
 4. Build the Docker image using the **public** `VITE_SUPABASE_URL` and
-   `VITE_SUPABASE_PUBLISHABLE_KEY` build arguments. Check the resulting build's public URL matches
+   `VITE_SUPABASE_PUBLISHABLE_KEY` build arguments. Set the public `VITE_SUPPORT_EMAIL` to the
+   dedicated rights/support address selected in M8-C. Check the resulting build's public URL matches
    the intended production project. Deploy the exact approved commit with host auto-deploy off.
 5. Manually check `/api/ready`, sign-in, one Student/Session/Training save and reload, a public
    capability link, and sign-out. Inspect Fly usage/errors and Supabase database size. If a write

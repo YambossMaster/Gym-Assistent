@@ -15,6 +15,7 @@ import {
   verifySignupEmail
 } from './account-auth'
 import { CoachWorkspace } from './app-shell/CoachWorkspace'
+import { BetaGate } from './beta-admission/BetaGate'
 import { Brand } from './shared/primitives'
 import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
 import { clearOtherCoachCapabilityLinks } from './pages/public/capability-link-session'
@@ -53,6 +54,7 @@ function AuthenticatedApp() {
       () => initialRecoveryPending || window.location.pathname === '/account/recover'
     ),
     [recoveryVerified, setRecoveryVerified] = useState(false),
+    [pendingBetaCode, setPendingBetaCode] = useState(''),
     previousSubject = useRef<string | null>(null)
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
@@ -66,6 +68,7 @@ function AuthenticatedApp() {
       const nextSubject = next?.user.id ?? null
       if (previous && previous !== nextSubject) {
         client.clear()
+        setPendingBetaCode('')
         clearOtherCoachCapabilityLinks(nextSubject)
         void new CoachLocalStore().clearCoach({
           environment: import.meta.env.MODE,
@@ -127,10 +130,12 @@ function AuthenticatedApp() {
       />
     )
   }
-  if (!session) return <SignIn key="ordinary-sign-in" />
+  if (!session) return <SignIn key="ordinary-sign-in" onBetaCode={setPendingBetaCode} />
   return (
     <QueryClientProvider client={client}>
-      <CoachWorkspace session={session} />
+      <BetaGate session={session} initialCode={pendingBetaCode}>
+        <CoachWorkspace session={session} />
+      </BetaGate>
     </QueryClientProvider>
   )
 }
@@ -139,12 +144,14 @@ function SignIn({
   initialMode = 'signin',
   initialNotice = '',
   externalError = '',
-  onReturn
+  onReturn,
+  onBetaCode
 }: {
   initialMode?: Mode
   initialNotice?: string
   externalError?: string
   onReturn?: () => void
+  onBetaCode?: (code: string) => void
 }) {
   const [mode, setMode] = useState<Mode>(initialMode),
     [mobileView, setMobileView] = useState<'welcome' | 'form'>(
@@ -154,6 +161,7 @@ function SignIn({
     [password, setPassword] = useState(''),
     [confirm, setConfirm] = useState(''),
     [code, setCode] = useState(''),
+    [betaCode, setBetaCode] = useState(''),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(initialNotice),
     [submitting, setSubmitting] = useState(false),
@@ -205,7 +213,9 @@ function SignIn({
         }
       } else if (mode === 'signup') {
         if (password !== confirm) throw new Error('兩次輸入的密碼不一致。')
+        if (!betaCode.trim()) throw new Error('請輸入邀請碼。')
         if (await isRegistrationEmailTaken(email)) throw new Error('此帳號已經註冊過。')
+        onBetaCode?.(betaCode.trim())
         await signUpCoach(supabase.auth, email, password, window.location.origin)
         setMode('verify')
         setNow(Date.now())
@@ -344,6 +354,17 @@ function SignIn({
                 忘記密碼？
               </button>
             </div>
+          )}
+          {mode === 'signup' && (
+            <label>
+              邀請碼
+              <input
+                value={betaCode}
+                onChange={(e) => setBetaCode(e.target.value)}
+                autoComplete="off"
+                required
+              />
+            </label>
           )}
           {mode === 'signup' && (
             <label>

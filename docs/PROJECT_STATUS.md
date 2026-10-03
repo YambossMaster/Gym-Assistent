@@ -1,21 +1,21 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-01. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-03. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                                 |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                                 |
-| Current package    | **M8-B Beta admission and feedback — Contract next**                                          |
-| Package state      | **M8-A Contract, Sol and CI complete; M8-B Contract next**                                    |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                                 |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                         |
-| Worktree           | `codex/m8-a-lean-release`; M8-A code SHA `12f573b` passed CI run `36862665167`                |
-| Linked database    | Development only; migrations through `20260928194356` applied; linked dry-run up to date      |
-| Production         | Not configured; no real customer data                                                         |
-| Approved M8 scope  | M8-A–D staged release; three-month shareable Beta codes and at most ten permanent free grants |
+| Field              | Current value                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                            |
+| Current package    | **M8-B Beta admission and feedback — Sol verification**                                  |
+| Package state      | **M8-A complete; M8-B Contract frozen, Sol implemented locally, CI pending**             |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                            |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                    |
+| Worktree           | Isolated M8-B worktree from M8-A final SHA `cb6257d`; no M8-B push                       |
+| Linked database    | Development only; M8-B migration `20261003021805` applied and linted                     |
+| Production         | Not configured; no real customer data                                                    |
+| Approved M8 scope  | M8-A–D staged release; 90-day shareable Beta codes and at most ten permanent free grants |
 
 The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
 the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
@@ -50,9 +50,11 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Draft the lean M8-B Contract for code-gated free admission, server-owned grants and a
-simple external feedback link. Resolve the remaining Coach-facing code and expiry choices with the
-Product Owner before Sol implementation.
+**Next:** Finish M8-B Sol acceptance in the isolated worktree: complete desktop and 390×844
+browser journeys, local production-mode Auth/core/public writes and post-90-day write evidence,
+the final root check/build and development migration dry-run. Then seek Product Owner approval
+for the dedicated remote branch and run M8-B CI for that exact SHA. The actual support email
+remains M8-C setup; no production or real-Coach admission is authorized.
 
 ## Stage 2 evidence
 
@@ -582,6 +584,50 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — LOG-378 — Implement M8-B admission and development evidence
+
+- **Scope:** Execute the frozen M8-B Sol package in an isolated managed worktree from M8-A
+  `cb6257d`; keep the shared checkout's unrelated edits intact.
+- **Outcome:** Added private code/grant/redemption/rate-limit/operator tables, server-owned
+  activation and verified-Email checks, fixed 90-day/free/permanent states, admission guards,
+  one-time bounded operator codes, transactional disclosure audit, Coach activation and Settings
+  feedback UI. Public reschedule redemption now requires an activated owning Workspace. The
+  dedicated support address remains a required M8-C configuration value.
+- **Verification:** Official Supabase CLI applied migration `20261003021805` to the linked
+  **development** project after dry-run; `db lint --linked --schema app_private --fail-on error`
+  found no schema error. Development live E2E passed synthetic activation, disclosure persistence,
+  irreversible seat use and same-Email denial after deletion, another Coach's remaining seat,
+  durable throttle across Module instances, operator permanent grant/reversal and parallel
+  one-seat redemption, with exact fixture cleanup. Final root check passed formatting, types,
+  API 29 files/141 tests and Web 59 files/250 tests; root build passed. A repeat linked migration
+  dry-run reported no pending migration. Local production-mode smoke returned HTML 200 for
+  `/`, `/today`, `/t/<synthetic-token>`, JSON 200 for `/api/health` and `/api/ready`, and 404 for
+  unknown API and disabled Demo import. Synthetic Auth over the same local production-mode origin
+  proved unactivated Student access 403, HTTP activation, Student create/reload, `free` status
+  after the 90-day boundary and continued Student create/reload. The browser showed the new signup
+  form at 390×844 and 1440×900; measured document width did not exceed the viewport. The
+  authenticated browser journey, Session/Training and public-result manual path remain unverified.
+- **Known issue:** Supabase security advisor reports pre-existing development Auth leaked-password
+  protection disabled; performance advisor notes informational new-code foreign-key indexes.
+  Neither is a production rollout claim. No production resource, real Coach, M8-B remote branch,
+  PR or CI result exists.
+- **Next:** Complete the remaining browser and local production-mode paths, rerun exact local
+  checks, then obtain the Product Owner's remote-branch approval before CI delivery.
+
+### 2026-10-03 — LOG-377 — Freeze M8-B Contract after Product Owner review
+
+- **Scope:** Begin the authorized M8-B package from the delivered M8-A SHA in an isolated worktree.
+- **Outcome:** Froze `M8-B-CONTRACT.md` with bounded shareable codes, fixed 90-day promotional
+  access, continuing free core access, at most ten permanent grants, external email feedback,
+  durable redemption throttling, irreversible seat consumption after account deletion and a
+  transactional disclosure record. Updated the Roadmap's approved 90-day/free-plan wording.
+- **Verification:** Product Owner reviewed and supplied the security/deletion/disclosure conditions;
+  targeted Contract/Roadmap formatting and diff hygiene passed in the shared checkout. No M8-B
+  implementation, migration, live database, browser or CI result is yet claimed.
+- **Known issue:** M8-C still owns the actual support address, published legal text and production
+  provider configuration. The shared checkout's unrelated local UI edits remain separate.
+- **Next:** Implement the frozen M8-B Sol package and its local acceptance matrix.
 
 ### 2026-10-01 — LOG-376 — Deliver M8-A dedicated branch and exact-SHA CI
 

@@ -38,8 +38,10 @@ async function handleApi(
       if (!value || ['host', 'connection', 'content-length', 'transfer-encoding'].includes(name))
         continue
       if (name.startsWith('x-forwarded-')) continue
+      if (name === 'x-site-client-ip') continue
       forwarded.set(name, Array.isArray(value) ? value.join(', ') : value)
     }
+    forwarded.set('x-site-client-ip', request.socket.remoteAddress ?? 'unknown')
     const upstream = await fetch(target, {
       method: request.method ?? 'GET',
       headers: forwarded,

@@ -13,6 +13,30 @@ export type StudentAgeRange =
   | 'AGE_55_64'
   | 'AGE_65_PLUS'
 
+export type BetaGrant =
+  | { state: 'unactivated' }
+  | { state: 'promotional'; startedAt: string; endsAt: string }
+  | { state: 'free'; startedAt: string; endsAt: string }
+  | { state: 'permanent'; startedAt: string }
+
+export async function readBetaGrant(accessToken: string): Promise<BetaGrant> {
+  const response = await request<{ grant: BetaGrant }>('/api/v1/beta/status', accessToken)
+  return response.grant
+}
+
+export async function redeemBetaCode(
+  accessToken: string,
+  code: string,
+  acknowledged: boolean
+): Promise<BetaGrant> {
+  const response = await request<{ grant: BetaGrant }>(
+    '/api/v1/beta/redeem',
+    accessToken,
+    json('POST', { code, acknowledged })
+  )
+  return response.grant
+}
+
 export interface Student {
   id: string
   name: string
@@ -1165,7 +1189,11 @@ export async function request<T>(
 
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse
-    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', error)
+    const retryAfter = Number(response.headers.get('retry-after'))
+    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', {
+      ...error,
+      ...(Number.isInteger(retryAfter) && retryAfter > 0 ? { retryAfter } : {})
+    })
   }
 
   if (response.status === 204) {

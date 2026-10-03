@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { Session } from '@supabase/supabase-js'
-import { act } from 'react'
+import { act, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -17,6 +17,9 @@ vi.mock('./supabase', () => ({
 }))
 vi.mock('./app-shell/CoachWorkspace', () => ({
   CoachWorkspace: () => <div>coach-dashboard</div>
+}))
+vi.mock('./beta-admission/BetaGate', () => ({
+  BetaGate: ({ children }: { children: ReactNode }) => <>{children}</>
 }))
 
 import { App } from './App'

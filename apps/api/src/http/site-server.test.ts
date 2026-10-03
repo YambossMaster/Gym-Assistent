@@ -27,6 +27,8 @@ async function fixture() {
   const api = createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json')
     if (request.url === '/health') return response.end('{"status":"ok"}')
+    if (request.url === '/v1/ip')
+      return response.end(JSON.stringify({ clientIp: request.headers['x-site-client-ip'] }))
     if (request.url === '/v1/write' && request.method === 'POST') {
       let body = ''
       for await (const chunk of request) body += chunk
@@ -64,6 +66,15 @@ describe('same-origin site server', () => {
     })
     expect(write.status).toBe(200)
     expect(await write.json()).toEqual({ body: '{"example":true}', authorized: true })
+  })
+
+  it('replaces a client-supplied internal IP header with the socket peer', async () => {
+    const origin = await fixture()
+    const response = await fetch(origin + '/api/v1/ip', {
+      headers: { 'x-site-client-ip': '198.51.100.55', 'x-forwarded-for': '198.51.100.55' },
+    })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ clientIp: '127.0.0.1' })
   })
 
   it('serves SPA links but not missing or hidden files', async () => {
