@@ -8,11 +8,11 @@
 | Field              | Current value                                                                            |
 | ------------------ | ---------------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                            |
-| Current package    | **M8-B Beta admission and feedback — Sol verification**                                  |
-| Package state      | **M8-A complete; M8-B Contract frozen, Sol implemented locally, CI pending**             |
+| Current package    | **M8-B Beta admission and feedback — manual Sol acceptance**                             |
+| Package state      | **M8-A complete; M8-B code CI passed, manual acceptance remains**                        |
 | Completed baseline | M0–M7.5, including M3.5, Done                                                            |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs                    |
-| Worktree           | Isolated M8-B worktree from M8-A final SHA `cb6257d`; no M8-B push                       |
+| Worktree           | `codex/m8-b-beta-product` pushed at M8-B code SHA `ae0def7`; no PR or merge              |
 | Linked database    | Development only; M8-B migration `20261003021805` applied and linted                     |
 | Production         | Not configured; no real customer data                                                    |
 | Approved M8 scope  | M8-A–D staged release; 90-day shareable Beta codes and at most ten permanent free grants |
@@ -50,11 +50,12 @@ about USD 30/month planning cost, manual provider dashboards and release checks,
 The public support address and final domain are deferred to M8-C before real-Coach admission.
 M8-A code SHA `12f573b` passed GitHub Actions run `36862665167`: both `verify` and
 `migration-dry-run` succeeded. No production resource was created and no real Coach was admitted.
-**Next:** Finish M8-B Sol acceptance in the isolated worktree: complete desktop and 390×844
-browser journeys, local production-mode Auth/core/public writes and post-90-day write evidence,
-the final root check/build and development migration dry-run. Then seek Product Owner approval
-for the dedicated remote branch and run M8-B CI for that exact SHA. The actual support email
-remains M8-C setup; no production or real-Coach admission is authorized.
+**Next:** Finish M8-B manual acceptance in the isolated worktree: authenticated desktop and
+390×844 activation, Settings, Session/Training save/reload, public result and sign-out. Synthetic
+HTTP admission and post-90-day free-plan writes already passed. The Product Owner authorized the
+dedicated branch, whose code SHA passed both CI jobs; verify the final documentation SHA after
+this Status update. The actual support email remains M8-C setup; no production or real-Coach
+admission is authorized.
 
 ## Stage 2 evidence
 
@@ -584,6 +585,22 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — LOG-379 — Deliver M8-B code branch and observe exact-SHA CI
+
+- **Scope:** With explicit Product Owner approval, publish the dedicated M8-B branch for remote
+  checks. No PR, merge, deployment or real-Coach admission is included.
+- **Outcome:** Pushed `codex/m8-b-beta-product` at code SHA `ae0def7` from the isolated worktree.
+  The shared checkout's unrelated local edits were not included.
+- **Verification:** GitHub Actions run `37093428873` targeted `ae0def7`; both `verify` and
+  `migration-dry-run` completed successfully. Final Status documentation will create a new SHA
+  that requires its own exact-SHA CI confirmation. Local synthetic production-mode HTTP checks
+  also proved unactivated private access denied, activation, Student save/reload and continued
+  Student writes after the state became `free`.
+- **Known issue:** Authenticated desktop/mobile browser, Session/Training and public-result manual
+  acceptance are outstanding; M8-B is not yet marked Done. The actual support email is M8-C.
+- **Next:** Verify the documentation SHA's CI, then finish the named manual M8-B paths before
+  deciding on the next milestone boundary.
 
 ### 2026-10-03 — LOG-378 — Implement M8-B admission and development evidence
 
