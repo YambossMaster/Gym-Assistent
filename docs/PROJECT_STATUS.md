@@ -5,26 +5,37 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                     |
-| ------------------ | --------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                     |
-| Current package    | **M8-B main integration — remote push approval pending**                          |
-| Package state      | **M8-A and M8-B integrated locally; desktop/390px plan review passed**            |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                     |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs             |
-| Worktree           | Existing `D:` checkout on clean local `main`; M8-A/B and corrections committed    |
-| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied   |
-| Production         | Not configured; no real customer data                                             |
-| Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants |
+| Field              | Current value                                                              |
+| ------------------ | -------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                            |
+| Current package    | **M8-B plan-policy Sol implementation**                                    |
+| Package state      | **Sol implemented locally; browser acceptance and remote CI pending**      |
+| Completed baseline | M0–M7.5, including M3.5, Done                                              |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs      |
+| Worktree           | Isolated `codex/m8-b-plan-policy` worktree; shared `D:` checkout untouched |
+| Linked database    | Development only; M8-B migrations through `20261003085455` applied         |
+| Production         | Not configured; no real customer data                                      |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants    |
 
 The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
 the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
 manual verification; no staging, custom operator dashboard, feedback backend, rollback drill or
 mandatory paid legal review. The goal is real Coaches signing in and saving training records soon.
+On 2026-10-03, the Product Owner clarified that Beta can open before paid checkout. Payment
+development starts at real-Coach Beta launch, and paid Basic/Advanced checkout must be live
+before the first redeemed 60-day offer expires. A Beta code gives Advanced access at
+100% off for 60 days without collecting a card; afterward the Coach actively subscribes or
+returns to Free. Paid subscriptions renew monthly until cancelled. If Free capacity is exceeded,
+preserve all data while locking operational writes until usage falls within the limits or paid
+access becomes active. The Product Owner has a preferred payment provider and will name it later.
+The prior no-scheduled-backup acceptance was for a free Beta. The Product Owner now requires a
+verifiable backup and isolated restore before charging real Coaches; M8-E must select and prove
+the concrete method, cadence, retention and protected storage before enabling checkout.
 The Product Owner also approved agent-operated synthetic Alpha, manual core-path checks on an
 available installed phone during Alpha, external feedback without a per-submission reply promise,
-and no routine
-Coach-facing export/backup/record-deletion feature. Existing account deletion and legal rights
+and no M8-B
+Coach-facing export/backup/record-deletion feature. Per-area PDF/CSV/JSON export is planned for a
+later contract and unavailable during M8 Beta. Existing account deletion and legal rights
 requests need a private process. Terms and privacy drafts await actual operator, contact,
 provider and retention facts before publication.
 The Product Owner uses about USD 30/month as a planning target, not a hard recurring ceiling.
@@ -60,12 +71,28 @@ Root check passed API 29 files/141 tests and Web 59 files/251 tests; root build 
 development migration dry-run passed. The corrections and integration record were committed on
 local `main`; the temporary stash containing duplicate M8-A work was dropped after verifying both
 M8 branch tips are ancestors and the worktree is clean. No production resource was created and no
-real Coach was admitted. **Next:** Remote `main` push was rejected by automatic approval review
-because the Product Owner explicitly named the local Vite directory but did not separately name
-the shared remote default branch. Await the Product Owner's answer to the exact remote-push
-question; if authorized, push and confirm `verify` plus `migration-dry-run` for the exact Main SHA.
-Then begin the M8-C Contract handoff; actual support email, provider accounts, legal text, and
-deployment remain M8-C decisions.
+real Coach was admitted. The Product Owner subsequently approved M8-B plan locks and Advanced
+access for both promotional and permanent grants, then shortened the promotional period to
+60 days. The later instruction replaced recalculation of existing development test eligibility:
+its single grant was removed and its one live code revoked pending the frozen Contract and 60-day
+implementation. The historical redemption ledger remains, with no Student or Training data touched.
+The Product Owner then approved Beta admission before paid checkout: payment development begins
+at Beta launch, and live checkout is due before the first offer expires. The no-card 60-day
+Advanced offer and over-limit operational write lock on Free remain. The Product Owner confirmed
+that the over-limit lock includes edits and deletion of existing operational records. The
+[M8-B Contract](M8-B-CONTRACT.md) now enumerates the exact API operation policy and is frozen in
+the isolated `m8-b-plan-policy` worktree. Its Sol gate now has server-owned capacity counts,
+60-day redemption, Free feature locks, upgrade explanations, and a transaction-serialized
+Student/Venue seat guard in linked development. Desktop and 390×844 browser checks confirmed the
+Free locks and over-capacity presentation; the remaining redemption, recovery and public-link
+cases still need acceptance. **Next:** finish those isolated browser cases, then deliver the exact commit through `verify` and
+`migration-dry-run` remote CI when remote branch delivery is authorized. Payment-provider selection
+belongs to M8-E and does not block M8-B or the initial Beta. The
+earlier remote `main` push was rejected by automatic approval review because
+the Product Owner explicitly named the local Vite directory but did not separately name the shared
+remote default branch; no new remote-push authorization is inferred. M8-C remains after the revised
+M8-B delivery and requires actual support email, provider accounts, legal text and deployment
+decisions. M8-D admits Beta Coaches; M8-E delivers paid checkout before the earliest offer expiry.
 
 ## Stage 2 evidence
 
@@ -595,6 +622,145 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-03 — LOG-390 — Inspect M8-B desktop and 390×844 plan locks
+
+- **Scope:** Review the isolated M8-B preview on ports 3001/5174 after the Product Owner signed
+  in, without touching the shared 3000/5173 processes or operational records.
+- **Outcome:** The Free over-capacity banner showed six active Students against five seats and
+  five active Venues against one seat. All six Students and existing Session/Training history
+  remained readable. The entire Finance page and Student performance directory showed upgrade
+  explanations; Settings showed Free, planned NT$199 Basic and NT$259 Advanced with checkout
+  honestly unavailable. The Training trend button initially squeezed into a narrow mobile
+  header column; it now sits below the card heading and reveals its upgrade panel beside the
+  clicked exercise, scrolling that panel into view.
+- **Verification:** Authenticated Chrome displayed the expected locked routes and links on
+  desktop. At 390×844, the revised Training panel, Finance lock and Settings plan page remained
+  readable; each measured document width was 375px inside a 390px viewport, with no horizontal
+  overflow. Clicking the Training trend action exposed the plan explanation and `查看方案` link.
+  After the correction, root check passed API 32 files/149 tests and Web 59 files/251 tests;
+  root build passed with the existing chunk advisory. The isolated development Beta live E2E
+  passed free-first HTTP access, optional redemption, expiry to Free, permanent grant reversal,
+  durable throttling and parallel one-seat redemption. Its synthetic users and codes were
+  removed; a separate read-only check found zero grants, zero unrevoked codes and the one older
+  retained redemption.
+- **Known issue:** The browser has not exercised an actual promotional-code form, capacity
+  recovery, Google return/sign-out or a public link. The prior development code remains revoked,
+  and no production checkout exists. Exact-SHA remote CI is pending separate authorization for
+  the independent remote branch.
+- **Next:** Finish the remaining safe browser cases using isolated fixtures, then confirm the
+  final branch's remote `verify` and `migration-dry-run` after authorized push. M8-C remains
+  behind this gate.
+
+### 2026-10-03 — LOG-389 — Implement M8-B plan access and Free capacity policy
+
+- **Scope:** Deliver the frozen 60-day Advanced offer, server-owned Free limits and feature locks in
+  an isolated worktree while Bug and export work proceeds separately.
+- **Outcome:** The API now projects effective plan and active Student/Venue counts from verified
+  Workspace ownership, rejects premium Finance/performance reads for Free, pauses operational
+  writes above Free capacity while allowing versioned Student/Venue archiving, and returns
+  explicit `plan_required`/`capacity_limit` responses. A private-schema trigger serializes active
+  seat claims. The Web presents locked Finance/performance/trend views, plan comparison and
+  upgrade links, over-limit and 14/3-day notices, and clears cached premium projections on
+  downgrade while retaining Training drafts. No checkout or export control was added.
+- **Verification:** Final root `npm run check` passed API 32 files/149 tests and Web 59 files/251
+  tests; root build passed with the existing large-chunk advisory. Focused plan route tests
+  covered Free limit, expired offer, blocked operational edits and recovery archive. Linked
+  development migration list includes `20261003085455`; `app_private` lint found no errors.
+  A transaction-only live capacity fixture verified five active Students and one active Venue,
+  blocked the next active insert of each, rolled back and left no fixture rows. Supabase security
+  advisors reported only the existing leaked-password-protection warning; performance advisors
+  reported informational/warning indexes and policy issues outside this slice. A fresh read-only
+  development check found zero grants, zero unrevoked codes and one preserved redemption row.
+- **Known issue:** The local CLI `db push --linked --dry-run` failed while authenticating its
+  temporary login role, so it is not claimed as a fresh dry-run pass. Authenticated desktop and
+  390×844 browser acceptance and exact-SHA remote `verify`/`migration-dry-run` remain open. No
+  production environment or real-Coach admission exists.
+- **Next:** Review the isolated branch in an authenticated browser without disturbing the shared
+  local server, then deliver an approved remote branch and confirm exact-SHA CI. Do not advance
+  to M8-C before these M8-B gates close.
+
+### 2026-10-03 — LOG-388 — Freeze M8-B over-limit operation policy
+
+- **Scope:** Start M8-B in an isolated worktree while the Product Owner handles Bug and export
+  work in other conversations. Resolve the remaining over-limit mutation decision.
+- **Outcome:** The Product Owner confirmed that edits and deletion of existing operational
+  records also pause above the Free limit. The M8-B Contract now enumerates capacity checks,
+  recovery actions, protected reads, operational write groups, capability-link exceptions and
+  Training draft recovery. No product code or development database was changed in this step.
+- **Verification:** Inspected the existing Student/Venue active flags, route mutations, Demo
+  Student detail and Settings references; implementation and CI checks remain pending.
+- **Next:** Implement server-owned tier/capacity policy and 60-day redemption, then wire API and
+  Web locks and run the Contract verification matrix.
+
+### 2026-10-03 — LOG-387 — Remove obsolete development Beta test eligibility
+
+- **Scope:** The Product Owner withdrew the request to recalculate the existing test account's
+  90-day grant and directed removal of its Beta eligibility until the plan and 60-day offer are
+  implemented.
+- **Outcome:** In the linked development project, removed the only promotional `beta_grant` and
+  revoked its only live `beta_code` in one transaction. Kept the redemption ledger and all Coach
+  data. M8-B no longer requires a migration for old test grant expiry. The current 90-day runtime
+  and Settings copy remain for M8-B Sol; no new code should be issued before that change.
+- **Verification:** Development API host and pooler username matched the linked project ref.
+  Before change: one promotional grant and one live code tied to it. After change: zero grants,
+  zero live codes and one retained redemption ledger row. No production environment was touched.
+- **Next:** Freeze M8-B's exact operational-write allowlist, then implement and verify the 60-day
+  plan policy and issue a new isolated test code only when that implementation is ready.
+
+### 2026-10-03 — LOG-386 — Sequence Beta admission before paid checkout
+
+- **Scope:** The Product Owner clarified that real-Coach Beta may launch before payment entry.
+  Payment development starts at Beta launch and must reach production within the first 60-day
+  offer window, before the earliest redemption expires.
+- **Outcome:** Roadmap now orders M8-B plan policy, M8-C production Alpha, M8-D initial no-charge
+  real-Coach Beta and M8-E paid checkout. M8-E owns the named payment provider, subscription
+  lifecycle and backup/restore proof before live charges. M8-B no longer waits for a provider.
+  The no-card Advanced offer, active Free limits and over-limit write lock remain approved.
+- **Verification:** Documentation Prettier and `git diff --check` passed. No payment code, provider account, backup,
+  production resource or real-Coach admission is claimed.
+- **Next:** Freeze M8-B's exact operational-write allowlist, then implement and verify its Sol gate.
+
+### 2026-10-03 — LOG-385 — Move paid checkout into the first real-Coach Beta
+
+- **Scope:** The Product Owner corrected M8 to a commercial Beta, with paid Basic/Advanced checkout
+  available before real Coaches join. Beta-code holders receive 60 days of Advanced access at
+  100% off without entering a card, then actively subscribe or return to Free. Ordinary paid
+  subscriptions renew monthly until cancelled.
+- **Outcome:** Roadmap moves the initial payment lifecycle from M9 to M8-B/C/D. The M8-B Contract
+  is reopened for the named provider and its payment, cancellation, failure, refund and invoice
+  details. Over-limit Free Coaches retain readable data but operational writes lock until capacity
+  is reduced or paid access activates. M9 is post-Beta refinement. A verifiable backup and isolated
+  restore are required before paid real-Coach admission.
+- **Verification:** Documentation checks are pending. No payment implementation, merchant account,
+  live charge, production resource or real-Coach admission is claimed.
+- **Next:** Receive the Product Owner's named payment provider, freeze the provider-specific M8-B
+  Contract, then implement its Sol and CI gates before M8-C.
+
+### 2026-10-03 — LOG-384 — Shorten proposed Advanced trial to 60 days
+
+- **Scope:** The Product Owner shortened the optional Advanced trial from 90 to 60 days and
+  raised the effect of expiry on Coaches above the Free Student limit.
+- **Outcome:** Roadmap and M8-B Contract now specify 60 days, including recalculation of already
+  redeemed development grants from their original starts. The Contract revision is reopened for
+  the over-limit Training write policy. No automatic charge or deletion is proposed.
+- **Verification:** Documentation formatting and whitespace checks pending. Runtime still grants
+  90 days; no policy implementation or live evidence is claimed.
+- **Next:** Resolve the pending over-limit write choice, freeze M8-B Contract, then implement Sol.
+
+### 2026-10-03 — LOG-383 — Record approved M8-B plan-policy revision
+
+- **Scope:** The Product Owner set Free, Basic and Advanced limits, specified the complete
+  `本月收支` and performance-directory/trend locks, chose Advanced for both Beta grant classes,
+  and moved plan-lock enforcement into M8-B. Per-area exports are planned for later work.
+- **Outcome:** Revised Roadmap scope and froze the M8-B Contract with active-record limits,
+  non-destructive downgrade, Today/performance entry points and server-enforced locks. Existing
+  Venue expense settings, Lesson Purchase amounts, Training Records and scheduling stay available
+  on Free. Planned prices are NT$199 and NT$259 monthly; no Beta checkout or export is represented
+  as available.
+- **Verification:** Documentation formatting and whitespace checks passed. No plan-lock
+  implementation, migration, browser acceptance or remote CI is claimed for this revision.
+- **Next:** Implement and verify the revised M8-B Sol gate before any M8-C handoff.
 
 ### 2026-10-03 — LOG-382 — Integrate M8-A/B and local corrections in the existing checkout
 

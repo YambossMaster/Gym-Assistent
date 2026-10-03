@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 
-const PERIOD_MS = 90 * 24 * 60 * 60 * 1000
+const PERIOD_MS = 60 * 24 * 60 * 60 * 1000
 
 export type BetaGrant =
   | { state: 'promotional'; startedAt: string; endsAt: string }

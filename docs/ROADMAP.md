@@ -45,8 +45,8 @@ Priorities, in order:
 - Web/PWA ships first for Taiwan. Default time zone is `Asia/Taipei`; stored instants are UTC.
 - Microservices, Kubernetes, Kafka, CQRS, Event Sourcing, and multi-region deployment are outside
   the Taiwan Web/PWA launch baseline. Native packaging and full international rollout require M10
-  decisions. Online payment is not required for the free closed Beta; charging Coaches requires the
-  separate M9 contract and release gate.
+  decisions. Paid checkout follows real-Coach Beta admission in M8, with development starting at
+  Beta launch and activation before the first 60-day offer expires.
 
 ## 3. Delivery model: three gates
 
@@ -546,15 +546,30 @@ remain sequential Contract → Sol → CI packages. M8-A prepares the release pa
 Beta product, M8-C deploys production for internal Alpha, and M8-D admits real Coaches. An internet
 deployment alone does not authorize real-Coach admission.
 
-**Product Owner decisions — 2026-09-30 to 2026-10-03:** start a small, open,
-free Taiwan Beta. Every verified Coach can sign in and use the free Workspace. An optional
-shareable Beta offer code marks a 90-day (fixed 90 × 24-hour, no-grace-period) paid-plan trial
-eligibility from redemption. M8 has no paid-feature difference yet. After expiry the Coach
-remains on the free plan with all existing M8 core functions, including writes. No
-automatic charge or deletion occurs at the transition. At most ten
-permanent free grants may be issued and remain free while the service operates. Both classes are
-server-owned entitlements. M9 owns payments. The Beta uses **Local + Production** only: the
-existing development project remains local development's database/Auth service, and a separate
+**Product Owner decisions — 2026-09-30 to 2026-10-03:** launch a small, open Taiwan Beta of the
+formal product. Every verified Coach can sign in and use the Free Workspace. Basic and Advanced
+checkout development starts at Beta launch and must reach production before the first redeemed
+60-day offer expires. An optional shareable Beta offer code grants Advanced access at 100% off
+for 60 days (fixed 60 × 24 hours) without requiring a payment method at redemption. M8-B
+introduces server-owned plan limits: Free permits five active Students
+and one active Venue, retains lesson-count, scheduling, Training Record and Venue expense settings,
+but locks the entire `本月收支` page, the Student `個人運動表現` directory and all `成長軌跡`
+views. Basic is planned at NT$199/month with 15 active Students; Advanced is planned at
+NT$259/month with unlimited Students. Both paid tiers remove the Venue and feature locks. During
+the initial Beta, Coaches use Free or the Advanced offer; they can subscribe after checkout opens.
+At most ten permanent free grants provide Advanced access while the service operates. On
+promotional expiry, no charge
+occurs without an active paid subscription; the Coach otherwise returns to Free. Existing records
+remain visible and preserved. If the active Student/Venue count exceeds Free capacity, new Training
+and other record writes are locked until the Coach pays or reduces usage below Free limits. Both
+grant classes and paid access are server-owned entitlements. M8-E owns the first paid checkout and
+subscription lifecycle; M9 owns post-Beta commercial refinement. If checkout misses the first
+offer expiry, affected Coaches must retain usable Advanced access until a payable path exists;
+the exact extension and notice rule must be frozen before Beta admission.
+Per-area PDF/CSV/JSON exports for Training Records, finance details, performance trends and Calendar
+are planned for a later contract; no export control or availability claim is part of M8 Beta. The
+Beta uses **Local + Production** only: the existing development project remains local
+development's database/Auth service, and a separate
 Supabase Free project holds production data. There is no persistent staging environment or
 project-pause rotation. One Fly.io app is the proposed same-origin Web/Fastify host. The initial
 planning target is about USD 30/month, informed by [the Product Owner's cost estimate](M8-OPERATING-COST-ESTIMATE.md);
@@ -562,10 +577,13 @@ it is not a guaranteed bill or an automatic spending authorization. Check actual
 usage alerts and any available caps before enabling billing. Do not claim a hard cap where a
 provider does not offer one.
 
-The Product Owner accepts a Free Beta with **no scheduled database backup** and possible permanent
-Coach/Student data loss. The complete published Beta Terms must plainly state that there is no
-guaranteed data restoration before real-Coach admission; Settings carries an accessible data
-notice during development. Terms and privacy text must identify the actual operator, contact,
+The earlier Product Owner acceptance of **no scheduled database backup** and possible permanent
+Coach/Student data loss applied to a free Beta. The Product Owner now requires a verifiable backup
+and restore process before charging real Coaches. The initial no-charge Beta must disclose its
+actual recovery limits. M8-E freezes and proves a concrete backup cadence, retention, secure
+storage and isolated restore path before checkout goes live. The published Terms must state the
+actual backup and restoration policy; Settings carries an accessible data notice during
+development. Terms and privacy text must identify the actual operator, contact,
 providers, data practices and a manual route for applicable rights requests before real Coaches
 join. A template may start the drafting; a paid lawyer review is not an M8 gate. Disclosure does
 not waive statutory rights or replace reasonable security measures. Supabase Free may pause for
@@ -616,32 +634,34 @@ credentials are available, and exact-SHA GitHub Actions jobs for the delivered c
 local smoke and unresolved production setup values. This gate does not create production or
 admit Coaches.
 
-#### M8-B — Beta product and pre-release checks
+#### M8-B — Beta plans and pre-release checks
 
-**Contract gate:** freeze optional Beta-code issuance, redemption, limits, 90-day transition and free-plan access;
-choose the external feedback channel and exact copy; define the data notice and later terms boundary,
-desktop/390px checks and security cases. Preserve physical installed-device acceptance for M8-C.
+**Contract gate:** freeze optional Beta-code issuance and the no-card 60-day Advanced offer;
+Free/Basic/Advanced access, capacity counting, downgrade write lock and locked-surface behaviour.
+Choose the external feedback channel and exact copy; define the data notice, later terms boundary,
+desktop/390px checks and security cases. M8-D freezes the expiry contingency before admitting
+real Coaches. Preserve physical installed-device acceptance for M8-C.
 
-**Sol gate:** let every verified Coach use a free Workspace, and implement optional server-owned,
-atomic Beta-code redemption and 90-day/permanent eligibility; show promotional/free/permanent states
-in a dedicated Settings `方案與帳單` surface with current plan, available-plan comparison, optional
-code entry, empty billing/payment states and an explanation of unavailable paid-plan management.
-Do not imply a real paid checkout, invoice or feature distinction before M9. No automatic billing
-or deletion occurs. Add the external feedback link
-and necessary PWA/update corrections. Test critical Coach flows and two-Coach isolation locally
+**Sol gate:** let every verified Coach use a Free Workspace; implement server-owned, atomic
+Beta-code redemption, no-card 60-day Advanced access and permanent grants. Show Free, Advanced
+offer and permanent states, planned Basic/Advanced prices and the current unavailability of paid
+checkout in Settings `方案與帳單`. Enforce plan limits and the over-limit downgrade write lock at
+API and Web boundaries; preserve every record. Add the external feedback link and necessary
+PWA/update corrections. Test critical Coach flows and two-Coach isolation locally
 with synthetic data. Keep development migration tools unavailable in a production build.
 
 **CI gate:** run root check/build, migration and security checks, focused code/entitlement cases,
-and a manual local production-mode path for sign-in, Session and Training save, plus one public
-link. Confirm exact-SHA remote CI. Do not run a large staging load fixture or rollback drill.
+and a manual local production-mode path for sign-in, Session/Training save, expiry/downgrade and
+one public link. Confirm exact-SHA remote CI. Do not run a large staging load fixture or rollback
+drill.
 
 #### M8-C — Production deployment and internal Alpha
 
 **Contract gate:** choose the domain, public support/privacy contact, Auth mail sender, provider
 accounts and realistic monthly cost; approve any purchase/deployment. Finish and publish accurate
-Terms/Privacy text with the no-backup disclosure and an integrated acceptance flow before real
-Coaches are invited. Select
-the initial synthetic Alpha accounts and a short pass/fail checklist.
+Terms/Privacy text with the current no-backup disclosure and an integrated acceptance flow before
+real Coaches are invited. Select the initial synthetic Alpha accounts and a short pass/fail
+checklist.
 
 **Sol gate:** provision the separate production Supabase Free project and Fly app, configure
 separate secrets, apply reviewed migrations, deploy the exact release build and configure available
@@ -651,50 +671,65 @@ found; stop unsafe writes or admissions if a migration or data failure makes con
 No automated rollback or database-loss rehearsal is required.
 
 **CI gate:** confirm exact-SHA jobs and production migration evidence; manually smoke Auth,
-Session/Training persistence, a public capability link and sign-out. On an available installed
+Session/Training persistence,
+a public capability link and sign-out. On an available installed
 phone, check the core save path, touch, keyboard and safe-area behavior; record any untested
 platform as a limitation without claiming it passed. Confirm support contact, disclosure, provider
 alerts, database-size view, and no known release-blocking defect.
 
-#### M8-D — Open, free, real-Coach Beta
+#### M8-D — Open real-Coach Beta
 
 **Contract gate:** approve an open real-Coach Beta, optional code distribution, published
-terms/privacy, external feedback channel and criteria to pause new signups. State the 90-day promotional,
-continuing-free and limited permanent-free promises clearly. Paid access remains M9.
+terms/privacy, external feedback channel and criteria to pause new signups. State the 60-day
+Advanced offer, continuing Free limits, checkout launch timing and limited permanent Advanced
+grants clearly. Identify the earliest offer expiry and start M8-E checkout work at Beta launch.
 
 **Sol gate:** admit verified Coaches with or without an offer code, keep existing Coach data behind verified identity,
 make expiry/grant state visible, and collect product feedback through the selected external channel.
 The Product Owner reviews Fly usage and Supabase size/billing notices manually at a practical
-cadence and adjusts admissions if service quality or capacity deteriorates.
+cadence and adjusts admissions if service quality or capacity deteriorates. M8-E payment work
+begins at Beta launch; no Coach is charged before its own release gate.
 
 **CI gate:** spot-check a real Coach's onboarding, Session and Training save, public-link scope,
 grant state, and support route without using real records as fixtures. Check the production health,
-cost and database-size dashboards and resolve release-blocking defects. The Product Owner decides
-whether to extend Beta, correct the product or authorize M9. A Beta invite is not M8 completion by
-itself.
+cost and database-size dashboards and resolve release-blocking defects. A Beta invite is not M8
+completion by itself; the first offer expiry sets the M8-E deadline.
 
-### M9 — Taiwan commercialization and paid launch
+#### M8-E — Paid checkout before first offer expiry
 
-**Dependency:** M8-D Beta outcomes and Product Owner approval of a paid launch. Pricing and
-positioning research may begin during M8; no Coach is charged before M9's full release gate.
+**Contract gate:** freeze the named payment provider, merchant prerequisites, Basic/Advanced
+monthly subscriptions, voluntary paid activation after a no-card offer, auto-renewal, cancellation,
+failed-payment, refunds, invoices/tax, verified events and reconciliation. Freeze the exact
+over-limit transition and extension rule if checkout deployment slips. Choose and document the
+backup method, cadence, retention, protected storage and restore check before charging Coaches.
 
-**Contract gate:** freeze who pays, plan features/limits, price and currency, trial or paid discount
-terms, upgrade/downgrade/cancellation/refund handling, failed-payment access, tax/invoice and legal
-review, privacy/terms, customer support, 90-day Beta transition/plan selection, and continued M8
-permanent free grants. Ordinary paid-plan discount codes are distinct from both free-grant classes.
-Define a measurable paid-launch and support exit criterion.
+**Sol gate:** start payment implementation at real-Coach Beta launch. Implement working Basic and
+Advanced checkout, provider-verified subscription authority, billing/management states and
+monthly renewal until cancellation. Keep the 60-day offer card-free and never charge on expiry
+without an active paid subscription. Deploy a verifiable backup process before enabling live
+checkout; preserve all Coach data on downgrade.
 
-**Sol gate:** implement provider-verified payment events and server-owned subscription/access
-state with idempotent retries, reconciliation, and auditability; never derive access solely from a
-browser success page. Keep redeemed M8 permanent grants effective without billing them; handle
-completed 90-day promotional grants without data loss or automatic charges.
+**CI gate:** prove provider sandbox activation, renewal, cancellation, failed payment, refund and
+reconciliation; exact-SHA remote CI; controlled live checkout and cancellation; backup plus an
+isolated restore; and desktop/mobile plan flows. Enable live paid access before the earliest
+redeemed offer expires. No missed payment or expired offer may silently delete Coach data.
 
-Make plan choice, price, payment, free-grant status, failures, cancellation, and help
-clear on Web/PWA. Complete Taiwan launch onboarding and public-facing product/support materials.
+### M9 — Post-Beta commercialization refinement
 
-**CI gate:** prove sandbox and limited live payment lifecycles, code/entitlement preservation,
-refund/failure/cancel behavior, tenant isolation, recovery, security, deployment, and support
-readiness before enabling general paid access.
+**Dependency:** M8-E checkout and Beta outcomes, plus Product Owner approval of further commercial
+changes. The initial paid checkout and subscription lifecycle belong to M8-E.
+
+**Contract gate:** use M8-D payment, support and Coach feedback evidence to choose bounded
+pricing, packaging, onboarding or export improvements. Freeze per-area export formats, selection
+scope and privacy rules before implementing exports. Preserve M8 permanent grants and existing
+subscriptions when changing commercial terms.
+
+**Sol gate:** implement only the approved post-Beta improvements with explicit migration and
+existing-customer treatment. Keep provider-verified payment authority, auditability and the
+non-destructive downgrade boundary established in M8.
+
+**CI gate:** verify affected payment and entitlement lifecycles, tenant isolation, exports where
+added, local/browser behaviour and exact-SHA remote CI before releasing each M9 change.
 
 ### M10 — Internationalization and native-app decision — Conditional
 
@@ -720,7 +755,8 @@ Always serialize:
 
 M4–M6 may overlap only where frozen interfaces do not share a migration or Course Session contract.
 A UI skeleton is not authority to invent an adjacent milestone's model.
-M7.5 Stage 2 must close before M8-A. M8-A → M8-B → M8-C → M8-D are serial release gates; M9
+M7.5 Stage 2 must close before M8-A. M8-A → M8-B → M8-C → M8-D → M8-E are ordered release
+gates, with M8-E Sol beginning at M8-D Beta launch; M9
 requires Beta evidence and Product Owner approval, and M10 remains conditional. Production access,
 code distribution, and any paid charging require their own completed gate and release decision.
 

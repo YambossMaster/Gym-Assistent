@@ -18,6 +18,22 @@ export type BetaGrant =
   | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
 
+export interface PlanAccess {
+  tier: 'free' | 'basic' | 'advanced'
+  source: 'free' | 'promotional' | 'permanent' | 'subscription'
+  activeStudents: number
+  activeVenues: number
+  studentLimit: number | null
+  venueLimit: number | null
+  overCapacity: boolean
+  offerEndsAt?: string
+}
+
+export async function readPlanAccess(accessToken: string): Promise<PlanAccess> {
+  const response = await request<{ plan: PlanAccess }>('/api/v1/plan', accessToken)
+  return response.plan
+}
+
 export async function readBetaGrant(accessToken: string): Promise<BetaGrant> {
   const response = await request<{ grant: BetaGrant }>('/api/v1/beta/status', accessToken)
   return response.grant
@@ -1186,10 +1202,14 @@ export async function request<T>(
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ErrorResponse
     const retryAfter = Number(response.headers.get('retry-after'))
-    throw new ApiError(response.status, error.message || '雲端服務暫時無法完成要求', {
-      ...error,
-      ...(Number.isInteger(retryAfter) && retryAfter > 0 ? { retryAfter } : {})
-    })
+    throw new ApiError(
+      response.status,
+      planErrorMessage(error) ?? error.message ?? '雲端服務暫時無法完成要求',
+      {
+        ...error,
+        ...(Number.isInteger(retryAfter) && retryAfter > 0 ? { retryAfter } : {})
+      }
+    )
   }
 
   if (response.status === 204) {
@@ -1197,6 +1217,14 @@ export async function request<T>(
   }
 
   return (await response.json()) as T
+}
+
+function planErrorMessage(error: ErrorResponse): string | null {
+  if (error.error === 'plan_required')
+    return '這項功能需要基礎或進階方案。請到「方案與帳單」查看方案。'
+  if (error.error === 'capacity_limit')
+    return '目前名額已超過方案上限，作業內容暫時無法儲存。請封存學員或場地以回到額度內，或到「方案與帳單」查看升級方案。'
+  return null
 }
 
 function json(method: string, body: unknown): RequestInit {

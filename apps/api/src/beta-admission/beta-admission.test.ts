@@ -38,15 +38,15 @@ describe('Beta admission', () => {
     expect(repository.usageForTest(codeDigest(code))).toBe(0)
   })
 
-  it('grants exactly 90 days and keeps the existing core access in free state', async () => {
+  it('grants exactly 60 days and returns to free at expiry', async () => {
     const { module, code, setClock } = setup()
     const grant = await module.redeem(first, '127.0.0.1', { code })
     expect(grant).toEqual({
       state: 'promotional',
       startedAt: '2026-10-03T02:00:00.000Z',
-      endsAt: '2027-01-01T02:00:00.000Z',
+      endsAt: '2026-12-02T02:00:00.000Z',
     })
-    setClock(new Date('2027-01-01T02:00:00.000Z'))
+    setClock(new Date('2026-12-02T02:00:00.000Z'))
     expect(await module.status(first)).toMatchObject({ state: 'free' })
   })
 

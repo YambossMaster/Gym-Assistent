@@ -29,6 +29,8 @@ import { createSiteServer } from './http/site-server.js'
 import { BetaAdmissionModule } from './beta-admission/beta-admission.js'
 import { PostgresBetaAdmissionRepository } from './beta-admission/postgres-beta-admission-repository.js'
 import { SupabaseVerifiedCoachEmail } from './beta-admission/supabase-verified-coach-email.js'
+import { PlanAccessModule } from './plan-access/plan-access.js'
+import { PostgresPlanAccessRepository } from './plan-access/postgres-plan-access-repository.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -81,6 +83,7 @@ const server = buildServer({
     new SupabaseVerifiedCoachEmail(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY),
     config.BETA_ADMISSION_SECRET,
   ),
+  planAccess: new PlanAccessModule(new PostgresPlanAccessRepository(pool)),
   ...(config.NODE_ENV === 'production'
     ? {}
     : { demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)) }),

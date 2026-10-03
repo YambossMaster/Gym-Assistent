@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, request } from '../../api'
+import { planAccessKey } from '../../beta-admission/usePlanAccess'
 
 export type Rule = {
   id: string
@@ -185,6 +186,7 @@ export function useFinanceMutation(session: Session) {
       }),
     onSuccess: (_result, variables) => {
       if (variables.path.endsWith('/preview')) return
+      void client.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       for (const name of [
         'finances',
         'venues',

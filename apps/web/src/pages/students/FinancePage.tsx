@@ -6,6 +6,8 @@ import { request } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
 import { financeKey, financeMoney, financeReadRecovery, type MonthlyFinance } from './finance-api'
 import { FinanceLedger } from './FinanceLedger'
+import { usePlanAccess } from '../../beta-admission/usePlanAccess'
+import { PlanLocked } from '../../beta-admission/PlanLocked'
 
 const monthLabel = (value: string) => {
   const [year, month] = value.split('-')
@@ -13,6 +15,8 @@ const monthLabel = (value: string) => {
 }
 
 export function FinancePage({ session }: { session: Session }) {
+  const plan = usePlanAccess(session)
+  const canRead = plan.data?.tier !== 'free' && Boolean(plan.data)
   const [params, setParams] = useSearchParams(),
     month = params.get('month')
   const selectMonth = (value?: string) => {
@@ -26,7 +30,8 @@ export function FinancePage({ session }: { session: Session }) {
         `/api/v1/finances/${month ? `months/${encodeURIComponent(month)}` : 'current'}`,
         session.access_token
       ),
-    ...financeReadRecovery
+    ...financeReadRecovery,
+    enabled: canRead
   })
   const history = useInfiniteQuery({
     queryKey: [...financeKey(session.user.id), 'months'],
@@ -37,6 +42,7 @@ export function FinancePage({ session }: { session: Session }) {
         session.access_token
       ),
     ...financeReadRecovery,
+    enabled: canRead,
     getNextPageParam: (p) => p.nextCursor ?? undefined
   })
   const data = query.data,
@@ -54,6 +60,29 @@ export function FinancePage({ session }: { session: Session }) {
         ? [{ value: '__more__', label: history.isFetchingNextPage ? '載入中…' : '載入更早月份' }]
         : [])
     ]
+  if (plan.isPending)
+    return (
+      <section className="page">
+        <p>正在讀取方案…</p>
+      </section>
+    )
+  if (plan.isError)
+    return (
+      <section className="page">
+        <p role="alert">
+          暫時無法確認方案。
+          <button type="button" onClick={() => void plan.refetch()}>
+            重試
+          </button>
+        </p>
+      </section>
+    )
+  if (!canRead)
+    return (
+      <section className="page">
+        <PlanLocked title="本月收支" />
+      </section>
+    )
   return (
     <section className="page income-page finance-page">
       <Link className="student-detail-back" to="/students">
