@@ -29,6 +29,9 @@ npm run check
 npm run build
 ```
 
+變更範圍對應的驗證順序、隔離瀏覽器測試資料與提交前格式防呆，見
+[`docs/VERIFICATION_WORKFLOW.md`](docs/VERIFICATION_WORKFLOW.md)。
+
 開發時分別執行 `npm run dev:api` 與 `npm run dev:web`。Web 端只使用 Supabase 的
 publishable key；資料庫密碼與 secret/service-role key 不得進入瀏覽器。
 

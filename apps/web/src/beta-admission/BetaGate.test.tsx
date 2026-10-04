@@ -73,7 +73,7 @@ it('keeps an in-flight Today read connected when Free access arrives', async () 
       complete(today)
       await pending
     })
-    expect(host.textContent).toContain('2026-10-04')
+    await vi.waitFor(() => expect(host.textContent).toContain('2026-10-04'))
   } finally {
     await act(async () => root.unmount())
     host.remove()

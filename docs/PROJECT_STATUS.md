@@ -5,18 +5,18 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                               |
-| ------------------ | --------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                             |
-| Current package    | **M8-B delivered on Main**                                                  |
-| Package state      | **Authenticated local production-mode path and exact-SHA remote CI passed** |
-| Approved next      | **M8-B-Export Contract, before M8-C production Alpha**                      |
-| Completed baseline | M0–M7.5, including M3.5, Done                                               |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs       |
-| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged             |
-| Linked database    | Development only; M8-B migrations through `20261003085455` applied          |
-| Production         | Not configured; no real customer data                                       |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants     |
+| Field              | Current value                                                            |
+| ------------------ | ------------------------------------------------------------------------ |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                          |
+| Current package    | **M8-B acceptance follow-up and verification workflow hardening**        |
+| Package state      | **Code/remote CI passed; manual expiry/downgrade browser evidence open** |
+| Approved next      | **Finish M8-B manual gate, then M8-B-Export Contract**                   |
+| Completed baseline | M0–M7.5, including M3.5, Done                                            |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs    |
+| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged          |
+| Linked database    | Development only; M8-B migrations through `20261003085455` applied       |
+| Production         | Not configured; no real customer data                                    |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants  |
 
 The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
 Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
@@ -168,7 +168,14 @@ local production-mode manual sign-in/Session/Training save path was subsequently
 browser journey as recorded in LOG-401. The desktop locked-trend spacing correction passed its
 exact-SHA remote CI in Actions run `37208330207`.
 
-**Next:** Begin the approved M8-B-Export Contract gate before M8-C.
+**2026-10-04 verification correction:** The authenticated local production-mode browser path
+covered sign-in, Session/Training save and reload, and one public result. The isolated Beta tests
+covered expiry and downgrade rules, but an expiry/downgrade browser path was not completed. The
+M8-B manual CI-gate evidence is therefore still open despite successful code CI. LOG-402 records
+the faster fixture and verification workflow prepared for that remaining check.
+
+**Next:** Complete the M8-B local production-mode expiry/downgrade browser acceptance using
+isolated API fixtures, then begin the approved M8-B-Export Contract gate.
 
 ## Stage 2 evidence
 
@@ -698,6 +705,24 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-04 — LOG-402 — Make verification change-aware and fixture-driven
+
+- **Scope:** Address the Product Owner's review of slow browser setup, missing local format guard,
+  redundant documentation CI, incomplete responsive checks, and a flaky `BetaGate` assertion.
+- **Outcome:** Added an API-only isolated Student/Session browser fixture with exact-ID cleanup;
+  activated a staged-content Git format hook on npm install; made Markdown-only CI retain a format
+  check while skipping code tests/build and migration operations; and changed `BetaGate` to await
+  the actual Today state. The verification guide maps change scope to required checks and desktop/
+  390×844 viewport evidence. No product feature, migration, or Roadmap scope changed.
+- **Verification:** The fixture prepared and cleaned a local development Student/Session in one
+  command sequence. The hook rejected unformatted staged Markdown and accepted its formatted form.
+  Historical Markdown-only and mixed commits classified correctly. Focused `BetaGate` tests,
+  CI-scope tests, root check (API 32 files/150 tests, Web 60 files/258 tests), root build and
+  `git diff --check` passed locally. Remote delivery remains to be observed.
+- **Known issue:** There is no automated pixel-baseline suite yet; viewport checks remain a
+  documented browser matrix. M8-B expiry/downgrade still lacks the required browser evidence.
+- **Next:** Confirm exact-SHA remote CI for this workflow change, then finish the M8-B manual gate.
 
 ### 2026-10-04 — LOG-401 — Production-mode M8-B acceptance and Training header spacing
 

@@ -11,12 +11,13 @@
   },
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "check": "npm run format:check && npm run check --workspaces --if-present",
+    "check": "npm run format:check && node --test scripts/ci-scope.test.mjs && npm run check --workspaces --if-present",
     "dev:api": "npm run dev --workspace @gym-assistant/api",
     "dev:web": "npm run dev --workspace @gym-assistant/web",
     "db:push": "supabase db push --linked",
     "db:push:dry": "supabase db push --linked --dry-run",
     "format:check": "prettier --check .",
+    "prepare": "node scripts/install-hooks.mjs",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
