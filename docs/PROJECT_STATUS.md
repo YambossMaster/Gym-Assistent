@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-04. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-05. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
@@ -9,7 +9,7 @@
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
 | Current package    | **M8-B-Export Contract**                                                |
-| Package state      | **M8-B browser gate passed locally; Export Contract draft awaits PO**   |
+| Package state      | **M8-B delivered; Export Contract draft awaits PO**                     |
 | Approved next      | **Review and freeze the M8-B-Export Contract**                          |
 | Completed baseline | M0–M7.5, including M3.5, Done                                           |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
@@ -182,9 +182,10 @@ fixture Student removed the warning; an existing Student edit saved and remained
 At 390×844, Settings showed the expired-offer state, readable plan cards and mobile navigation.
 The local test API briefly hit the development session-pool limit while two APIs were running; a
 targeted read retry succeeded. The synthetic Auth user, Workspace, six Students and code were
-deleted after exact-ID/name checks. The reusable fixture is under local verification; its new
-code has not yet passed remote CI. The earlier M8-B production code SHA and GitHub Actions evidence
-remain as recorded in the Engineering log.
+deleted after exact-ID/name checks. The reusable fixture and Contract Draft reached remote `main`
+at SHA `d2a1295`; GitHub Actions run `37215318255` passed `verify` and `migration-dry-run` for that
+exact SHA. M8-B's Contract, Sol and CI gates are now complete. No production resource or real Coach
+was involved.
 
 **Next:** Review and freeze the proposed [M8-B-Export Contract](M8-B-EXPORT-CONTRACT.md). The
 Draft decisions cover plan access, date/filter and included-row rules, private notes and file
@@ -720,6 +721,19 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-05 — LOG-405 — Deliver M8-B browser-gate evidence at exact SHA
+
+- **Scope:** Push the isolated expiry/downgrade browser fixture, its verification guide and
+  evidence, and the reviewable M8-B-Export Contract Draft to remote `main`.
+- **Outcome:** M8-B's remaining manual browser path and its code/CI evidence now agree. The
+  Export Contract is still a Draft awaiting Product Owner decisions; no Export feature code exists.
+- **Verification:** Main SHA `d2a1295` passed GitHub Actions run `37215318255`: `verify` passed
+  API 32 files/150 tests and Web 60 files/258 tests; `migration-dry-run` passed. Local root
+  check/build and exact synthetic-data cleanup are recorded in LOG-404.
+- **Next:** Product Owner reviews and freezes the Export Draft's plan access, filters/inclusion,
+  privacy and size decisions. Sol then integrates the approved feedback branch and implements the
+  full Export package.
 
 ### 2026-10-04 — LOG-404 — Complete M8-B downgrade browser acceptance and draft Export Contract
 
