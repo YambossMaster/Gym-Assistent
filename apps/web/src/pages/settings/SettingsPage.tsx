@@ -97,21 +97,23 @@ function PlanPanel({
               : error
                 ? '暫時無法取得方案'
                 : promotional
-                  ? '進階方案・60 天優惠'
+                  ? 'Prime 方案・60 天優惠'
                   : permanent
-                    ? '進階方案・永久資格'
-                    : '免費方案'}
+                    ? 'Prime 方案・永久資格'
+                    : 'Free 方案'}
           </h3>
           <p>
             {loading || error
               ? '方案資料讀取後，會顯示目前資格與優惠期限。'
-              : promotional
-                ? `優惠至 ${planDate(plan!.offerEndsAt!)}（台灣時間）；到期後可主動訂閱，否則回到免費方案。`
-                : permanent
-                  ? '你的帳號具有永久進階方案權限。'
-                  : previouslyRedeemed
-                    ? '優惠已結束，現有資料仍會保留。超出免費名額時，請封存學員或場地後繼續記錄。'
-                    : '免費方案可管理最多 5 名學員與 1 個場地。'}
+              : plan?.overCapacity
+                ? '已超出 Free 方案額度。資料仍可查看；封存學員或場地至額度內，即可恢復儲存。'
+                : promotional
+                  ? `優惠至 ${planDate(plan!.offerEndsAt!)}（台灣時間）；到期後可主動訂閱，否則回到 Free 方案。`
+                  : permanent
+                    ? '你的帳號具有永久 Prime 方案權限。'
+                    : previouslyRedeemed
+                      ? '優惠已結束，現有資料仍會保留。超出 Free 方案額度時，請封存學員或場地後繼續記錄。'
+                      : 'Free 方案可管理最多 5 名學員與 1 個場地。'}
           </p>
           <div className="settings-plan-quicklinks">
             <a href="#available-plans-title">查看方案</a>
@@ -132,12 +134,12 @@ function PlanPanel({
       <section className="settings-plan-section" aria-labelledby="available-plans-title">
         <div className="settings-plan-section-heading">
           <h3 id="available-plans-title">查看與選擇方案</h3>
-          <p>可先使用免費方案；付費訂閱功能準備中。</p>
+          <p>可先使用 Free 方案；付費訂閱功能準備中。</p>
         </div>
         <div className="settings-plan-grid">
           <article className="settings-plan-card">
             <span className="settings-plan-card-tag">目前可用</span>
-            <h4>免費方案</h4>
+            <h4>Free 方案</h4>
             <p className="settings-plan-price">免費</p>
             <p>最多 5 名學員、1 個場地；課程、排程與訓練紀錄可用。</p>
             <span className="settings-plan-card-state">
@@ -147,14 +149,14 @@ function PlanPanel({
           </article>
           <article className="settings-plan-card">
             <span className="settings-plan-card-tag">尚未開放訂閱</span>
-            <h4>基礎方案</h4>
+            <h4>Pro 方案</h4>
             <p className="settings-plan-price">NT$199／月</p>
             <p>最多 15 名學員；場地不限，可查看收支與成長軌跡。</p>
             <span className="settings-plan-card-state">目前無法選購或付款</span>
           </article>
           <article className="settings-plan-card">
             <span className="settings-plan-card-tag">尚未開放訂閱</span>
-            <h4>進階方案</h4>
+            <h4>Prime 方案</h4>
             <p className="settings-plan-price">NT$259／月</p>
             <p>學員與場地不限，可查看收支與成長軌跡。</p>
             <span className="settings-plan-card-state">目前無法選購或付款</span>
@@ -165,7 +167,7 @@ function PlanPanel({
       <section className="settings-plan-section" aria-labelledby="offer-title">
         <div className="settings-plan-section-heading">
           <h3 id="offer-title">優惠體驗</h3>
-          <p>優惠碼提供 60 天進階方案權限，套用時不需綁定付款方式。</p>
+          <p>優惠碼提供 60 天 Prime 方案權限，套用時不需綁定付款方式。</p>
         </div>
         {canRedeem ? (
           <form className="settings-offer-form" onSubmit={onRedeem}>
@@ -193,7 +195,7 @@ function PlanPanel({
             {promotional
               ? `已套用優惠碼，優惠至 ${planDate(plan!.offerEndsAt!)}。不會自動扣款。`
               : permanent
-                ? '你已具有永久進階方案權限，不需套用優惠碼。'
+                ? '你已具有永久 Prime 方案權限，不需套用優惠碼。'
                 : previouslyRedeemed
                   ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
                   : '方案資料讀取後可在此套用優惠碼。'}
@@ -231,7 +233,7 @@ function PlanPanel({
         <div className="settings-plan-section-heading">
           <h3 id="manage-plan-title">更換或取消方案</h3>
           <p>
-            付費訂閱尚未開放，因此目前沒有需要取消的訂閱。優惠到期後可主動訂閱，否則回到免費方案。
+            付費訂閱尚未開放，因此目前沒有需要取消的訂閱。優惠到期後可主動訂閱，否則回到 Free 方案。
           </p>
         </div>
       </section>

@@ -567,6 +567,11 @@ grant classes and paid access are server-owned entitlements. M8-E owns the first
 subscription lifecycle; M9 owns post-Beta commercial refinement. If checkout misses the first
 offer expiry, affected Coaches must retain usable Advanced access until a payable path exists;
 the exact extension and notice rule must be frozen before Beta admission.
+
+**Plan naming decision — 2026-10-04:** the Coach-facing plan names are `Free 方案`, `Pro 方案`,
+and `Prime 方案`. They map to the existing `free`, `basic`, and `advanced` tiers respectively;
+the earlier Free/Basic/Advanced references in engineering contracts denote those stable tier
+identifiers. This naming decision does not change prices, limits, grants, or checkout timing.
 M8-B-Export delivers one-file-at-a-time PDF/CSV/JSON exports for Training Records, performance
 trend data, Calendar and finance details from Settings before production Alpha. Growth-trajectory
 PNG belongs at the Growth Trajectory view and is outside that package. M8-B does not show export

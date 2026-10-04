@@ -5,18 +5,18 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                   |
-| ------------------ | ------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                 |
-| Current package    | **M8-B Beta-plan Contract revision**                                            |
-| Package state      | **No-card offer and write lock approved; exact mutation rules pending**         |
-| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**                     |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                   |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs           |
-| Worktree           | Existing `D:` checkout on local `main`; plan-policy docs have local changes     |
-| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied |
-| Production         | Not configured; no real customer data                                           |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants         |
+| Field              | Current value                                                           |
+| ------------------ | ----------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
+| Current package    | **M8-B main integration and CI delivery**                               |
+| Package state      | **Main local check/build/migration passed; remote CI pending**          |
+| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**             |
+| Completed baseline | M0–M7.5, including M3.5, Done                                           |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
+| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged         |
+| Linked database    | Development only; M8-B migrations through `20261003085455` applied      |
+| Production         | Not configured; no real customer data                                   |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants |
 
 The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
 Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
@@ -144,6 +144,18 @@ the Product Owner explicitly named the local Vite directory but did not separate
 remote default branch; no new remote-push authorization is inferred. M8-B-Export follows M8-B CI;
 M8-C then requires actual support email, provider accounts, legal text and deployment
 decisions. M8-D admits Beta Coaches; M8-E delivers paid checkout before the earliest offer expiry.
+
+**2026-10-04 integration update:** The Product Owner explicitly authorized merging M8-B into
+remote `main`. Local `main` now merges the remote M8-A/reliability history and the committed
+M8-B plan-policy branch, with the previously separate local Calendar, Training and Student
+corrections preserved. The M8-B worktree's latest Free-plan presentation, Pro/Prime naming and
+Today recovery changes have been reapplied on local `main`. The exact over-limit operation
+allowlist is frozen in the M8-B Contract. Root check passed API 32 files/149 tests and Web 60
+files/257 tests; root build passed with the existing large-chunk advisory. Linked development
+`db:push:dry` reported an up-to-date migration plan. Security advisors found no error-level
+issue and retained the known leaked-password-protection warning. The final Main push and its
+exact-SHA Actions remain the current delivery gate; outstanding M8-B manual browser paths must
+be recorded before M8-B-Export begins.
 
 ## Stage 2 evidence
 
@@ -673,6 +685,21 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-04 — LOG-399 — Merge M8-B into Main and run local CI gate
+
+- **Scope:** Integrate the local M8-B history with the newer remote Main history after explicit
+  Product Owner authorization, retaining the separately completed local UI corrections.
+- **Outcome:** Merged remote M8-A/reliability commits and the M8-B plan-policy branch into local
+  `main`. Reapplied the M8-B worktree's latest plan names, locked-feature presentation and Today
+  recovery. Reconciled Student performance first-load behavior with the Free-plan lock; retained
+  M8-B-Export's approved Roadmap position. No production deployment or real-Coach admission.
+- **Verification:** Root check passed API 32 files/149 tests and Web 60 files/257 tests; root
+  build passed with the existing chunk-size advisory. Linked development migration dry-run was
+  up to date. Security advisors found no error-level issue; leaked-password protection remains
+  a known warning. `git diff --check` and exact-SHA remote Actions are pending this final commit.
+- **Next:** Push the final Main commit, confirm its `verify` and `migration-dry-run` jobs, then
+  complete the remaining M8-B browser acceptance before M8-B-Export.
 
 ### 2026-10-04 — LOG-398 — Route touchpad distance through Calendar stages
 

@@ -84,7 +84,8 @@ import { Confirmation } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { filterExerciseDefinitions } from '../exercises/filter'
 import { usePlanAccess } from '../../beta-admission/usePlanAccess'
-import { PlanLocked } from '../../beta-admission/PlanLocked'
+import { PlanUpsellDialog } from '../../beta-admission/PlanLocked'
+import { PlanAccessMark } from '../../beta-admission/PlanAccessMark'
 import { DefinitionEditor } from '../exercises/ExercisesPage'
 import {
   CoachLocalStore,
@@ -310,16 +311,6 @@ function TrainingEditor({
   useEffect(() => {
     if (plan.data?.tier === 'free') setTrendId(null)
   }, [plan.data?.tier])
-  useEffect(() => {
-    if (!trendLockedId) return
-    const frame = requestAnimationFrame(() => {
-      const card = Array.from(document.querySelectorAll<HTMLElement>('[data-exercise-id]')).find(
-        (element) => element.dataset.exerciseId === trendLockedId
-      )
-      card?.querySelector('.plan-locked')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    })
-    return () => cancelAnimationFrame(frame)
-  }, [trendLockedId])
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const touchStartY = useRef<number | null>(null)
   useEffect(() => {
@@ -1464,6 +1455,7 @@ function TrainingEditor({
                           if (plan.data && plan.data.tier !== 'free') setTrendId(exercise.id)
                           else setTrendLockedId(exercise.id)
                         }}
+                        onCloseTrend={() => setTrendLockedId(null)}
                         focused={exercise.id === focusedExerciseId}
                         onChange={(next) =>
                           change({
@@ -1650,6 +1642,7 @@ function ExerciseCard({
   onDragPointerDown,
   onDragKeyDown,
   onShowTrend,
+  onCloseTrend,
   onChange,
   onRemove
 }: {
@@ -1667,6 +1660,7 @@ function ExerciseCard({
   onDragPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void
   onDragKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
   onShowTrend: () => void
+  onCloseTrend: () => void
   onChange: (value: TrainingDraftPayload['exercises'][number]) => void
   onRemove: () => void
 }) {
@@ -1731,7 +1725,7 @@ function ExerciseCard({
             {details ? `${details.bodyParts.join('、')} · ${details.equipment}` : '訓練動作'}
           </small>
         </div>
-        {summary ? (
+        {summary && !showLockedTrend ? (
           <div
             className={`exercise-performance-inline${primarySummary?.metric === 'weight' ? ' is-weight-summary' : ''}`}
           >
@@ -1772,17 +1766,26 @@ function ExerciseCard({
               <TrendingUp /> 成長軌跡
             </button>
           </div>
+        ) : showLockedTrend ? (
+          <div className="exercise-performance-inline is-plan-locked">
+            <div>
+              <span>本次 / 上次 最佳</span>
+              <strong>— / —</strong>
+            </div>
+            <div>
+              <span>個人最佳</span>
+              <strong>—</strong>
+            </div>
+            <button type="button" onClick={onShowTrend} aria-label="成長軌跡，需 Pro 或 Prime 方案">
+              <TrendingUp aria-hidden="true" /> 成長軌跡 <PlanAccessMark compact />
+            </button>
+          </div>
         ) : null}
         <button className="icon-button" aria-label="移除動作" onClick={onRemove}>
           <XCircle />
         </button>
       </header>
-      {showLockedTrend && !summary && (
-        <button type="button" className="exercise-trend-locked" onClick={onShowTrend}>
-          <TrendingUp /> 成長軌跡 · 方案功能
-        </button>
-      )}
-      {trendLocked && <PlanLocked title="成長軌跡" />}
+      {trendLocked && <PlanUpsellDialog title="成長軌跡" onClose={onCloseTrend} />}
       <div
         className="training-sets-scroll"
         onFocusCapture={(event) => selectTrainingSetValue(event.target)}

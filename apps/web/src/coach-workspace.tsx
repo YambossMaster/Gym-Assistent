@@ -74,7 +74,8 @@ import { MobilePageAppBar } from './shared/MobilePageAppBar'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
 import { usePlanAccess } from './beta-admission/usePlanAccess'
-import { PlanLocked } from './beta-admission/PlanLocked'
+import { PlanLocked, PlanUpsellDialog } from './beta-admission/PlanLocked'
+import { PlanAccessMark } from './beta-admission/PlanAccessMark'
 import { planAccessKey } from './beta-admission/usePlanAccess'
 import type { PerformanceEntry } from './api'
 
@@ -105,6 +106,7 @@ export function StudentsPage({
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [createOpen, setCreateOpen] = useState(false)
   const [createPlanLocked, setCreatePlanLocked] = useState(false)
+  const [financeUpsellOpen, setFinanceUpsellOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
@@ -158,6 +160,9 @@ export function StudentsPage({
       }
     >
       {createPlanLocked && <PlanLocked title="新增學生名額" />}
+      {financeUpsellOpen && (
+        <PlanUpsellDialog title="本月收支" onClose={() => setFinanceUpsellOpen(false)} />
+      )}
       <div className="toolbar" data-search-open={mobileSearchOpen}>
         <label className="search-box">
           <Search aria-hidden="true" />
@@ -259,15 +264,19 @@ export function StudentsPage({
         </section>
       )}
       <div className="student-management-links">
-        <Link className="student-finance-entry" to="/students/finances">
+        <Link
+          className="student-finance-entry"
+          to="/students/finances"
+          onClick={(event) => {
+            if (plan.data?.tier !== 'free') return
+            event.preventDefault()
+            setFinanceUpsellOpen(true)
+          }}
+        >
           <span className="student-finance-copy">
             <small>FINANCE / MONTHLY SUMMARY</small>
-            <strong>本月收支</strong>
-            <span>
-              {plan.data?.tier === 'free'
-                ? '方案功能 · 查看基礎與進階方案'
-                : '查看購課總額、場地支出與各月紀錄'}
-            </span>
+            <strong>本月收支 {plan.data?.tier === 'free' && <PlanAccessMark />}</strong>
+            <span>查看購課總額、場地支出與各月紀錄</span>
           </span>
           <ArrowRight aria-hidden="true" />
         </Link>
@@ -2096,6 +2105,7 @@ export function StudentPerformance({
   }
   const [selected, setSelected] = useState<PerformanceEntry | null>(null)
   const [allOpen, setAllOpen] = useState(false)
+  const [upsellOpen, setUpsellOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'count' | 'latest'>('count')
   const firstLoad = query.data === undefined && query.isLoading
   const firstLoadError = query.data === undefined && query.isError
@@ -2172,36 +2182,49 @@ export function StudentPerformance({
         </p>
       </section>
     )
-  if (plan.data?.tier === 'free') return <PlanLocked title="個人運動表現與成長軌跡" />
   return (
     <section className="performance-directory" aria-label="動作表現">
       <button
-        className={`performance-portal${firstLoad ? ' is-loading' : ''}`}
+        className={`performance-portal${firstLoad && plan.data?.tier !== 'free' ? ' is-loading' : ''}`}
         type="button"
-        disabled={firstLoad}
-        aria-busy={firstLoad}
+        disabled={firstLoad && plan.data?.tier !== 'free'}
+        aria-busy={firstLoad && plan.data?.tier !== 'free'}
         onClick={() => {
-          if (firstLoadError) void query.refetch()
+          if (plan.data?.tier === 'free') setUpsellOpen(true)
+          else if (firstLoadError) void query.refetch()
           else setAllOpen(true)
         }}
       >
         <span className="performance-portal-copy">
           <small>PERFORMANCE / MOVEMENT RECORDS</small>
-          <strong>個人運動表現</strong>
+          <strong>個人運動表現 {plan.data?.tier === 'free' && <PlanAccessMark />}</strong>
           <span role={firstLoadError ? 'alert' : undefined}>
-            {firstLoadError ? '無法載入動作表現，請重試。' : '查看所有動作的紀錄與成長軌跡'}
+            {firstLoadError && plan.data?.tier !== 'free'
+              ? '無法載入動作表現，請重試。'
+              : '查看所有動作的紀錄與成長軌跡'}
           </span>
         </span>
         <span className="performance-portal-count">
-          {firstLoad ? (
+          {firstLoad && plan.data?.tier !== 'free' ? (
             <span className="performance-loading-mark" aria-hidden="true" />
           ) : (
-            <strong>{firstLoadError ? '重試' : entries.length}</strong>
+            <strong>
+              {plan.data?.tier === 'free' ? '—' : firstLoadError ? '重試' : entries.length}
+            </strong>
           )}
-          <small>{firstLoad ? '載入中' : firstLoadError ? '重新載入' : '項動作'}</small>
+          <small>
+            {plan.data?.tier === 'free'
+              ? '項動作'
+              : firstLoad
+                ? '載入中'
+                : firstLoadError
+                  ? '重新載入'
+                  : '項動作'}
+          </small>
         </span>
         <ArrowRight aria-hidden="true" />
       </button>
+      {upsellOpen && <PlanUpsellDialog title="個人運動表現" onClose={() => setUpsellOpen(false)} />}
       {allOpen && (
         <SchedulingDialog
           variant="performance"

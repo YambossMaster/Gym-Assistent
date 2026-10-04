@@ -5,6 +5,11 @@ and training history while granting students narrowly scoped access without stud
 
 ## Language
 
+**Plan display names**:
+The three Coach-facing plans are `Free 方案`, `Pro 方案`, and `Prime 方案`.
+Their stable internal tier identifiers remain `free`, `basic`, and `advanced`, respectively.
+Promotional and permanent grants are access sources, not separate plan names.
+
 **Coach**:
 The authenticated person who owns and operates one private-coaching business data set.
 _Avoid_: Admin, staff, trainer account

@@ -1221,7 +1221,7 @@ export async function request<T>(
 
 function planErrorMessage(error: ErrorResponse): string | null {
   if (error.error === 'plan_required')
-    return '這項功能需要基礎或進階方案。請到「方案與帳單」查看方案。'
+    return '這項功能需要 Pro 或 Prime 方案。請到「方案與帳單」查看方案。'
   if (error.error === 'capacity_limit')
     return '目前名額已超過方案上限，作業內容暫時無法儲存。請封存學員或場地以回到額度內，或到「方案與帳單」查看升級方案。'
   return null

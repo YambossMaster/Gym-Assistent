@@ -56,14 +56,19 @@ Coaches. M8-E must finish merchant, backup/restore and paid-subscription gates b
 
 ## Plan access approved for M8-B
 
-| Capability                                                              | Free      | Basic (planned NT$199/month) | Advanced (planned NT$259/month) |
-| ----------------------------------------------------------------------- | --------- | ---------------------------- | ------------------------------- |
-| Active Students                                                         | Up to 5   | Up to 15                     | Unlimited                       |
-| Active Venues                                                           | Up to 1   | Unlimited                    | Unlimited                       |
-| Student lesson counts, scheduling, Training Records                     | Available | Available                    | Available                       |
-| Venue expense settings and records                                      | Available | Available                    | Available                       |
-| Entire `本月收支` route, including historical months and finance ledger | Locked    | Available                    | Available                       |
-| Student `個人運動表現` directory and all `成長軌跡` views               | Locked    | Available                    | Available                       |
+Product Owner naming update (2026-10-04): Coach-facing names are `Free 方案`, `Pro 方案`, and
+`Prime 方案`. They map to the existing internal `free`, `basic`, and `advanced` tiers; access
+rules, prices, promotional grants, and server identifiers do not change. The `Pro` mark on
+locked features refers to the paid feature family; both Pro and Prime can unlock it.
+
+| Capability                                                              | Free 方案 | Pro 方案 (planned NT$199/month) | Prime 方案 (planned NT$259/month) |
+| ----------------------------------------------------------------------- | --------- | ------------------------------- | --------------------------------- |
+| Active Students                                                         | Up to 5   | Up to 15                        | Unlimited                         |
+| Active Venues                                                           | Up to 1   | Unlimited                       | Unlimited                         |
+| Student lesson counts, scheduling, Training Records                     | Available | Available                       | Available                         |
+| Venue expense settings and records                                      | Available | Available                       | Available                         |
+| Entire `本月收支` route, including historical months and finance ledger | Locked    | Available                       | Available                         |
+| Student `個人運動表現` directory and all `成長軌跡` views               | Locked    | Available                       | Available                         |
 
 The Free lock covers the whole `本月收支` page, not individual Venue expense settings or
 Lesson Purchase amounts. The Student performance directory and both Student/Training trend
@@ -72,10 +77,12 @@ remain available. Locked entry points may show a concise upgrade explanation and
 `方案與帳單`. Direct URLs and corresponding API projections must enforce the same restrictions.
 Existing public capability links retain their prior scope and never expose a Coach's plan.
 
-Per-area PDF/CSV/JSON exports for Training Records, finance details, performance trends and
-Calendar are planned for a later contract. Export is unavailable to Free when implemented, but
-M8-B must not display controls or copy implying that an export exists now. Export formats,
-selection scope and delivery evidence are deferred to that later contract.
+The Product Owner moved the four Settings exports to the separate M8-B-Export package immediately
+after M8-B and before M8-C. It owns one-file-at-a-time PDF/CSV/JSON downloads for Training Records,
+Growth Trajectory numeric data, Calendar and finance details. Growth Trajectory PNG is separate and
+belongs at the Growth Trajectory view. Export is unavailable to Free under the current plan intent;
+M8-B-Export must freeze its exact entitlement before implementation. M8-B must not display controls
+or copy implying that an export exists now.
 
 Capacity counts active Students and active Venues in the verified Workspace. Archived records do
 not consume capacity. Creating or reactivating a Student/Venue is rejected if it would exceed the
@@ -123,7 +130,7 @@ clear previously cached premium projections immediately when access ends.
 Free Coaches see the `本月收支` entry on Students and Today with a lock/upgrade explanation; no
 finance report content is rendered. Free Coaches see the Student performance-directory entry and
 Training `成長軌跡` action with the same upgrade explanation. The wording names the unavailable
-capability, identifies Basic or Advanced as unlocking it, and links to `方案與帳單`, which states
+capability, identifies Pro or Prime as unlocking it, and links to `方案與帳單`, which states
 when checkout is available. Entry points are keyboard and touch accessible at desktop and
 390×844. The server returns an explicit authenticated `403 plan_required` for premium finance and
 performance projections and `403 capacity_limit` for blocked Student/Venue creation/reactivation.
@@ -177,7 +184,7 @@ data notice, without a standalone defect checkbox in the first-use path.
   deletion and sign-out in Settings, in their existing account context.
 - Settings has a distinct `方案與帳單` category, separate from account security. Show the current
   Free, 60-day Advanced offer or permanent Advanced state, Taiwan-time offer end date and the
-  downgrade effect. The comparison shows Free, planned Basic NT$199/month and planned Advanced
+  downgrade effect. The comparison shows Free 方案, planned Pro 方案 NT$199/month and Prime 方案
   NT$259/month, with an honest checkout-unavailable state until M8-E goes live.
   Only ordinary free Coaches who have never redeemed may apply an optional code; update the state
   in place, retain typed input on recoverable failure, and clear private cache/input on Auth subject

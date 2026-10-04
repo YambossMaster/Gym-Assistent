@@ -26,6 +26,7 @@ const performanceQuery = vi.hoisted(() => ({
     refetch: vi.fn()
   }
 }))
+const planState = vi.hoisted(() => ({ tier: 'advanced' }))
 
 vi.mock('./config', () => ({
   loadWebConfig: () => ({
@@ -34,7 +35,7 @@ vi.mock('./config', () => ({
   })
 }))
 vi.mock('./beta-admission/usePlanAccess', () => ({
-  usePlanAccess: () => ({ data: { tier: 'advanced', overCapacity: false } })
+  usePlanAccess: () => ({ data: { tier: planState.tier, overCapacity: false } })
 }))
 
 vi.mock('./pages/training/queries', async (importOriginal) => ({
@@ -56,6 +57,40 @@ function RouteResult() {
   const location = useLocation()
   return <p data-testid="route-result">{location.pathname + location.search}</p>
 }
+
+it('keeps the performance card visible on Free and opens a dismissible upgrade dialog', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  planState.tier = 'free'
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <StudentPerformance
+            session={{ user: { id: 'coach' } } as Session}
+            studentId="student-1"
+            studentName="學生甲"
+          />
+        </MemoryRouter>
+      )
+    )
+    const portal = host.querySelector<HTMLButtonElement>('.performance-portal')!
+    expect(portal.textContent).toContain('個人運動表現')
+    expect(portal.querySelector('.plan-access-mark')?.textContent).toContain('Pro')
+    await act(async () => portal.click())
+    expect(document.querySelector('.plan-upsell[role="dialog"]')).not.toBeNull()
+    await act(async () => document.querySelector<HTMLButtonElement>('.plan-upsell-close')!.click())
+    expect(document.querySelector('.plan-upsell')).toBeNull()
+    expect(host.querySelector('.performance-portal')).not.toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+    planState.tier = 'advanced'
+    vi.unstubAllGlobals()
+  }
+})
 
 it('opens a Student trajectory history row in its original class and exercise', async () => {
   performanceQuery.current = {

@@ -26,6 +26,8 @@ import { trainingQuotes } from './quotes'
 import { useTodayRouteQuery } from './queries'
 import { selectTodayRouteState, todayErrorMessage } from './state'
 import { usePlanAccess } from '../../beta-admission/usePlanAccess'
+import { PlanUpsellDialog } from '../../beta-admission/PlanLocked'
+import { PlanAccessMark } from '../../beta-admission/PlanAccessMark'
 
 export function TodayPage({ session, coachName }: { session: Session; coachName: string }) {
   const todayQuery = useTodayRouteQuery(session)
@@ -36,6 +38,15 @@ export function TodayPage({ session, coachName }: { session: Session; coachName:
     error: todayQuery.error
   })
   const today = todayQuery.data
+  const [slowLoading, setSlowLoading] = useState(false)
+  useEffect(() => {
+    if (state !== 'loading') {
+      setSlowLoading(false)
+      return
+    }
+    const timeout = window.setTimeout(() => setSlowLoading(true), 6_000)
+    return () => window.clearTimeout(timeout)
+  }, [state])
   return (
     <Page
       className="today-page"
@@ -47,14 +58,24 @@ export function TodayPage({ session, coachName }: { session: Session; coachName:
       eyebrow={today ? formatToday(today.date, today.timeZone) : '工作台'}
       description="今天，又是有條有理的一天。"
     >
-      {state === 'loading' ? <TodaySkeleton /> : null}
+      {state === 'loading' ? (
+        <TodaySkeleton slow={slowLoading} onRetry={() => void todayQuery.refetch()} />
+      ) : null}
       {state === 'error' ? (
         <TodayError error={todayQuery.error} onRetry={() => void todayQuery.refetch()} />
       ) : null}
       {todayQuery.isRefetchError && today ? (
-        <p className="cloud-state error" role="status">
-          暫時無法更新；顯示上次資料。
-        </p>
+        <div className="today-refresh-notice" role="status">
+          <span className="today-refresh-notice-dot" aria-hidden="true" />
+          <span>目前未取得最新資料，仍顯示上次內容。</span>
+          <button
+            type="button"
+            onClick={() => void todayQuery.refetch()}
+            disabled={todayQuery.isFetching}
+          >
+            {todayQuery.isFetching ? '更新中…' : '重新整理'}
+          </button>
+        </div>
       ) : null}
       {today ? <TodaySignals today={today} session={session} /> : null}
     </Page>
@@ -69,8 +90,12 @@ function TodaySignals({
   session: Session
 }) {
   const plan = usePlanAccess(session)
+  const [financeUpsellOpen, setFinanceUpsellOpen] = useState(false)
   return (
     <>
+      {financeUpsellOpen && (
+        <PlanUpsellDialog title="本月收支" onClose={() => setFinanceUpsellOpen(false)} />
+      )}
       <section className="today-signals" aria-label="今日數字">
         <div className="today-signal today-signal-hero">
           <span>今日課程</span>
@@ -96,18 +121,25 @@ function TodaySignals({
         <Link
           className="today-signal today-signal-link income"
           to="/students/finances"
-          aria-label="前往本月收支頁面"
+          aria-label={plan.data?.tier === 'free' ? '了解本月收支方案功能' : '前往本月收支頁面'}
+          onClick={(event) => {
+            if (plan.data?.tier !== 'free') return
+            event.preventDefault()
+            setFinanceUpsellOpen(true)
+          }}
         >
           <span className="today-signal-icon">
             <WalletCards />
           </span>
           <div>
-            <span>{formatPeriod(today.summary.incomePeriod)}</span>
+            <span className="today-finance-period">
+              {formatPeriod(today.summary.incomePeriod)}
+              {plan.data?.tier === 'free' && <PlanAccessMark />}
+            </span>
             <strong className="today-finance-label">
               <span className="today-finance-desktop-label">收支明細概覽</span>
               <span className="today-finance-mobile-label">收支明細</span>
             </strong>
-            {plan.data?.tier === 'free' && <small>方案功能 · 查看升級方案</small>}
           </div>
           <ChevronRight className="today-signal-chevron" aria-hidden="true" />
         </Link>
@@ -467,27 +499,51 @@ function trainingPlanDescription(plan: { exerciseCount: number; status: string }
     : `${plan.exerciseCount} 個動作${plan.status === 'ready' ? '・安排已完成' : '・規劃中'}`
 }
 
-function TodaySkeleton() {
+function TodaySkeleton({ slow, onRetry }: { slow: boolean; onRetry: () => void }) {
   return (
     <div role="status" aria-label="正在載入今日資訊">
-      <section className="today-signals today-signals-skeleton" aria-hidden="true">
-        <div className="skeleton-block" />
-        <div className="skeleton-block" />
-        <div className="skeleton-block" />
-        <div className="skeleton-block" />
+      <section className="today-signals today-signals-skeleton" aria-label="今日數字載入中">
+        <div className="today-signal today-signal-hero today-signal-skeleton-item">
+          <span>今日課程</span>
+          <span className="skeleton-line skeleton-metric" aria-hidden="true" />
+        </div>
+        <div className="today-signal today-signal-skeleton-item">
+          <span>活躍學生</span>
+          <span className="skeleton-line skeleton-metric" aria-hidden="true" />
+        </div>
+        <div className="today-signal today-signal-skeleton-item">
+          <span>本月收支</span>
+          <span className="skeleton-line skeleton-metric" aria-hidden="true" />
+        </div>
+        <div className="today-signal today-signal-skeleton-item">
+          <span>待處理與課程提醒</span>
+          <span className="skeleton-line skeleton-metric" aria-hidden="true" />
+        </div>
       </section>
-      <div className="today-workspace today-workspace-skeleton" aria-hidden="true">
+      <div className="today-workspace today-workspace-skeleton">
         <section className="today-schedule today-schedule-skeleton">
           <div className="today-schedule-skeleton-heading">
-            <span className="skeleton-line skeleton-heading-label" />
-            <span className="skeleton-line skeleton-heading-title" />
+            <span className="eyebrow dark">TODAY'S FLOW</span>
+            <h2>今日課表</h2>
           </div>
-          <div className="today-schedule-skeleton-row">
+          <div className="today-schedule-skeleton-row" aria-hidden="true">
             <span className="skeleton-line skeleton-time" />
             <span className="skeleton-line skeleton-person" />
             <span className="skeleton-line skeleton-detail" />
           </div>
+          {slow && (
+            <div className="today-loading-status">
+              取得資料比預期久。
+              <button type="button" onClick={onRetry}>
+                重新載入
+              </button>
+            </div>
+          )}
         </section>
+        <div className="today-quote today-quote-skeleton" aria-hidden="true">
+          <span className="skeleton-line" />
+          <span className="skeleton-line" />
+        </div>
       </div>
     </div>
   )

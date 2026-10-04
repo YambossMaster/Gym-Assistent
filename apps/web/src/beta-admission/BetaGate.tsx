@@ -2,7 +2,9 @@ import type { Session } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { readBetaGrant, type SessionTraining } from '../api'
+import { ArrowUpRight, Pause, X } from 'lucide-react'
+import { readBetaGrant, type SessionTraining, type TodayProjection } from '../api'
+import { queryKeys } from '../query-keys'
 import { planAccessKey, usePlanAccess } from './usePlanAccess'
 
 export const betaGrantKey = (coachId: string) => ['coach', coachId, 'beta-grant'] as const
@@ -17,10 +19,19 @@ export function BetaGate({ session, children }: { session: Session; children: Re
   })
   const grant = query.data
   const [now, setNow] = useState(() => Date.now())
+  const [dismissedOffer, setDismissedOffer] = useState<string | null>(null)
+  const [dismissedCapacity, setDismissedCapacity] = useState<string | null>(null)
   const offerDaysLeft =
     grant?.state === 'promotional'
       ? Math.ceil((new Date(grant.endsAt).getTime() - now) / 86_400_000)
       : null
+  const offerNoticeKey = grant?.state === 'promotional' ? `${grant.endsAt}:${offerDaysLeft}` : null
+  const capacityNoticeKey = plan.data?.overCapacity
+    ? `${plan.data.activeStudents}/${plan.data.studentLimit}:${plan.data.activeVenues}/${plan.data.venueLimit}`
+    : null
+
+  useEffect(() => setDismissedOffer(null), [offerNoticeKey])
+  useEffect(() => setDismissedCapacity(null), [capacityNoticeKey])
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 60 * 60 * 1000)
@@ -37,7 +48,15 @@ export function BetaGate({ session, children }: { session: Session; children: Re
       (record) => (record ? { ...record, exerciseSummaries: [] } : record)
     )
     void client.invalidateQueries({ queryKey: ['session-training', session.user.id] })
-    client.removeQueries({ queryKey: ['today', session.user.id] })
+    const todayKey = queryKeys.today(session.user.id)
+    const cachedToday = client.getQueryData<TodayProjection>(todayKey)
+    if (cachedToday) {
+      client.setQueryData<TodayProjection>(todayKey, {
+        ...cachedToday,
+        summary: { ...cachedToday.summary, incomeByCurrency: [] }
+      })
+    }
+    void client.invalidateQueries({ queryKey: todayKey })
   }, [client, plan.data?.tier, session.user.id])
 
   useEffect(() => {
@@ -55,26 +74,88 @@ export function BetaGate({ session, children }: { session: Session; children: Re
 
   return (
     <>
-      {offerDaysLeft !== null && offerDaysLeft > 0 && offerDaysLeft <= 14 && (
-        <div className="plan-capacity-banner" role="status">
-          <p>
-            進階方案優惠剩餘 {offerDaysLeft}{' '}
-            天。到期後若未訂閱，將轉為免費方案；超出免費名額時，作業儲存會暫停。
-          </p>
-          <Link to="/settings?category=plans">查看方案</Link>
-        </div>
-      )}
-      {plan.data?.overCapacity && (
-        <div className="plan-capacity-banner" role="alert">
-          <p>
-            目前學員 {plan.data.activeStudents}/{plan.data.studentLimit}、場地{' '}
-            {plan.data.activeVenues}/{plan.data.venueLimit}
-            ，已超過免費方案名額。資料仍可瀏覽；作業儲存暫停。封存學員或場地至額度內即可恢復。
-          </p>
-          <Link to="/settings?category=plans">查看方案</Link>
-        </div>
-      )}
+      <div className="plan-toast-stack">
+        {offerNoticeKey &&
+          offerDaysLeft !== null &&
+          offerDaysLeft > 0 &&
+          offerDaysLeft <= 14 &&
+          dismissedOffer !== offerNoticeKey && (
+            <PlanNotice
+              key={offerNoticeKey}
+              role="status"
+              closeLabel="關閉優惠提醒"
+              onDismiss={() => setDismissedOffer(offerNoticeKey)}
+            >
+              <span className="plan-toast-kicker">優惠提醒</span>
+              <strong>Prime 優惠剩餘 {offerDaysLeft} 天</strong>
+              <p>到期後會回到 Free 方案。</p>
+              <Link to="/settings?category=plans">
+                查看方案 <ArrowUpRight aria-hidden="true" />
+              </Link>
+            </PlanNotice>
+          )}
+        {capacityNoticeKey && plan.data && dismissedCapacity !== capacityNoticeKey && (
+          <PlanNotice
+            key={capacityNoticeKey}
+            role="alert"
+            closeLabel="關閉名額提醒"
+            onDismiss={() => setDismissedCapacity(capacityNoticeKey)}
+          >
+            <span className="plan-toast-kicker">
+              <Pause aria-hidden="true" /> Free 方案額度
+            </span>
+            <strong>超出額度，儲存暫停</strong>
+            <p>
+              學員 {plan.data.activeStudents} 名（上限 {plan.data.studentLimit}） · 場地{' '}
+              {plan.data.activeVenues} 個（上限 {plan.data.venueLimit}）
+            </p>
+            <p className="plan-toast-support">資料仍可查看；封存至額度內即可恢復儲存。</p>
+            <Link
+              to="/settings?category=plans"
+              onClick={() => setDismissedCapacity(capacityNoticeKey)}
+            >
+              了解恢復方式 <ArrowUpRight aria-hidden="true" />
+            </Link>
+          </PlanNotice>
+        )}
+      </div>
       {children}
     </>
+  )
+}
+
+function PlanNotice({
+  children,
+  role,
+  closeLabel,
+  onDismiss
+}: {
+  children: ReactNode
+  role: 'alert' | 'status'
+  closeLabel: string
+  onDismiss: () => void
+}) {
+  const [exiting, setExiting] = useState(false)
+  return (
+    <aside
+      className={`plan-capacity-toast${exiting ? ' is-exiting' : ''}`}
+      role={role}
+      onAnimationEnd={(event) => {
+        if (exiting && event.target === event.currentTarget) onDismiss()
+      }}
+    >
+      <button
+        type="button"
+        className="plan-toast-close"
+        aria-label={closeLabel}
+        onClick={() => {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) onDismiss()
+          else setExiting(true)
+        }}
+      >
+        <X aria-hidden="true" />
+      </button>
+      {children}
+    </aside>
   )
 }
