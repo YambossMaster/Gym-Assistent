@@ -8,12 +8,12 @@
 | Field              | Current value                                                           |
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
-| Current package    | **M8-B-Export CI**                                                      |
-| Package state      | **Export Sol implemented; local CI evidence in progress**               |
-| Approved next      | **Finish checks, push exact SHA and confirm remote CI**                 |
-| Completed baseline | M0–M7.5, including M3.5, Done                                           |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
-| Worktree           | Existing `D:` checkout on `codex/m8-b-export`; feedback branch merged   |
+| Current package    | **M8-B-Export Done**                                                    |
+| Package state      | **Contract, Sol and CI complete at `92f39dc`**                          |
+| Approved next      | **M8-C Contract after Product Owner deployment decisions**              |
+| Completed baseline | M0–M7.5, M8-A, M8-B and M8-B-Export Done                                |
+| Branch baseline    | Export `92f39dc` reached Main; CI run `37221850693` passed both jobs    |
+| Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved   |
 | Linked database    | Development only; M8-B migrations through `20261003085455` applied      |
 | Production         | Not configured; no real customer data                                   |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants |
@@ -194,9 +194,11 @@ at SHA `d2a1295`; GitHub Actions run `37215318255` passed `verify` and `migratio
 exact SHA. M8-B's Contract, Sol and CI gates are now complete. No production resource or real Coach
 was involved.
 
-**Next:** Commit the verified Export integration branch, preserve it on the remote, fast-forward the
-approved `main` integration, then confirm both GitHub Actions jobs for the exact `main` SHA. Stop
-at the M8-B-Export milestone boundary before M8-C Contract.
+**Next:** M8-B-Export is complete. Stop at this milestone boundary. Before M8-C Contract, the
+Product Owner must settle the actual domain, public support/privacy contact, Auth mail sender,
+provider accounts, purchase/deployment scope and legal text called for by the Roadmap. Carry the
+development Auth deletion permission issue into that release-readiness review; no production
+resource or real Coach has been admitted.
 
 ## Stage 2 evidence
 
@@ -727,7 +729,7 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
-### 2026-10-05 — LOG-408 — Implement M8-B-Export Sol and local acceptance
+### 2026-10-05 — LOG-408 — Deliver M8-B-Export through exact-SHA CI
 
 - **Scope:** Merged approved feedback branch `84a38f2` into Export branch (merge `5a8f910`),
   implemented Prime-only Settings export and server-owned Training, Growth, Calendar and Finance
@@ -745,14 +747,17 @@ local pass or successful push is not a remote CI completion claim.
   JSON and PDF attachments for an isolated Prime Coach (PDF 18.8 s), `404 export_empty` for no
   Growth points, and `403 plan_required` after downgrade. Browser 390px document width stayed
   at 390px. Final post-fix root check passed API 35 files/163 tests and Web 61 files/267 tests;
-  final root build passed. Remote exact-SHA CI remains open.
+  final root build passed. Export commit `92f39dc` was pushed to `main`; GitHub Actions run
+  `37221850693` completed successfully with both `verify` and `migration-dry-run` for that exact
+  SHA. M8-B-Export Contract, Sol and CI gates are complete.
 - **Known issue:** Supabase Auth admin user deletion returned 500 for the synthetic Coach because
   its database role lacks `app_private` schema permission during Workspace cascade. After exact
   owner, six-Student, one-Session and grant-code checks, the isolated Workspace was removed with
   the Supabase SQL connector; the fixture then removed the Auth user and Beta code and confirmed
   the Workspace was absent. This pre-existing account-deletion permission issue needs a separate
   reviewed correction before real-Coach admission.
-- **Next:** Commit and push Export, confirm `main` exact-SHA jobs, then stop before M8-C.
+- **Next:** Stop at the Export milestone boundary; M8-C Contract requires the Product Owner's
+  deployment, contact and legal decisions.
 
 ### 2026-10-05 — LOG-407 — Freeze M8-B-Export Contract
 
