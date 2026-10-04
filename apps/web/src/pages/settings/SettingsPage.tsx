@@ -43,6 +43,7 @@ import { useTrainingMutations, useTrainingPreference } from '../training/queries
 import { DemoImportPanel } from './DemoImportPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
+import { getFeedbackFormUrl } from './feedback-link'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
 function planDate(instant: string): string {
@@ -242,6 +243,7 @@ function PlanPanel({
 }
 
 function FeedbackPanel() {
+  const formUrl = getFeedbackFormUrl(import.meta.env.VITE_FEEDBACK_FORM_URL)
   const address = (import.meta.env.VITE_SUPPORT_EMAIL ?? '').trim()
   const available = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)
   return (
@@ -249,12 +251,30 @@ function FeedbackPanel() {
       <div className="settings-row">
         <div className="settings-row-copy">
           <strong>意見回饋</strong>
-          <span>可回報問題或提出建議。請勿寄送密碼、分享連結或非必要的學員資料。</span>
+          <span>回報問題或提出建議。請勿填寫密碼、分享連結或非必要的學員資料。</span>
+        </div>
+        {formUrl ? (
+          <a
+            className="settings-row-action"
+            href={formUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            填寫回饋表單 <ArrowRight aria-hidden="true" />
+          </a>
+        ) : (
+          <span className="settings-account-value">表單準備中</span>
+        )}
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <strong>聯絡我們</strong>
+          <span>帳號、隱私或資料相關問題，請透過 Email 聯絡。</span>
         </div>
         {available ? (
           <a
             className="settings-row-action"
-            href={`mailto:${address}?subject=${encodeURIComponent('FORM 意見回饋')}`}
+            href={`mailto:${address}?subject=${encodeURIComponent('FORM 協助')}`}
           >
             寄送 Email <ArrowRight aria-hidden="true" />
           </a>
