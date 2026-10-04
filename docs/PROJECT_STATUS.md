@@ -9,7 +9,7 @@
 | ------------------ | -------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                  |
 | Current package    | **M8-B main integration and CI delivery**                                        |
-| Package state      | **Free Training correction on Main with CI passed; manual M8-B acceptance open** |
+| Package state      | **M8-B production-mode manual path passed; layout correction CI pending**       |
 | Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**                      |
 | Completed baseline | M0–M7.5, including M3.5, Done                                                    |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs            |
@@ -164,11 +164,12 @@ desktop and exact 390×844 preview showed the values and a locked trend action; 
 opened the Pro/Prime explanation. Local production-mode static routes, `/api/health`, and
 `/api/ready` passed on the development configuration. Root check/build, isolated Beta, Training
 save/reload, and public-result E2E, migration dry-run and private-schema lint passed. The final
-local production-mode manual sign-in/Session/Training save path remains to be observed before
-M8-B CI can be declared complete and M8-B-Export starts.
+local production-mode manual sign-in/Session/Training save path was subsequently observed in one
+browser journey as recorded in LOG-401. The desktop locked-trend spacing correction is awaiting
+its own CI delivery evidence before M8-B-Export starts.
 
-**Next:** Complete the remaining authenticated local production-mode M8-B manual path, record its
-result, and only then begin the approved M8-B-Export Contract gate.
+**Next:** Deliver the desktop locked-trend spacing correction to Main and confirm exact-SHA CI,
+then begin the approved M8-B-Export Contract gate.
 
 ## Stage 2 evidence
 
@@ -698,6 +699,27 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-04 — LOG-401 — Production-mode M8-B acceptance and Training header spacing
+
+- **Scope:** Complete the Product Owner-requested local production-mode authenticated path and
+  correct the locked `成長軌跡` button squeezing the Training record summaries.
+- **Outcome:** The old `5174` tab was running a stale M8-B worktree; the affected Session on Main's
+  `5173` showed current/previous/personal best values with only the trend locked. For locked desktop
+  headers, the summary receives more grid width to its left and the trend button moves slightly
+  right; the mobile layout is unchanged. An isolated development Coach signed in to a local
+  production-mode Web/API process, created a Student, Venue, Lesson Purchase and Session, saved
+  80 kg × 5 with RPE 7, reloaded and saw persisted values plus the Free inline best summary,
+  completed the Session, and opened its public result link. The page showed the completed set.
+  The exact isolated Student and Venue were then deleted; the Venue list returned zero active
+  and zero archived venues. No production environment or real Coach was involved.
+- **Verification:** Authenticated browser journey above passed. Desktop Chrome showed the corrected
+  locked header without the `個人最佳` label wrapping. Web check passed 60 files/258 tests, Web build
+  passed with the existing large-chunk advisory, and `git diff --check` passed. CI delivery is in
+  progress.
+- **Known issue:** Local browser evidence is limited to the inspected desktop width; the new layout
+  rule applies above 900px only.
+- **Next:** Push this correction and confirm both Actions jobs for its exact SHA.
 
 ### 2026-10-04 — LOG-400 — Restore Free Training summaries and verify M8-B paths
 

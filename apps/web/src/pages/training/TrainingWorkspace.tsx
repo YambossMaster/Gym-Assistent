@@ -1706,7 +1706,7 @@ function ExerciseCard({
       data-focused-exercise={focused ? 'true' : undefined}
       role="listitem"
     >
-      <header>
+      <header className={showLockedTrend ? 'has-locked-trend' : undefined}>
         <div className="exercise-order-control">
           <button
             type="button"

@@ -7057,6 +7057,16 @@ body.is-reordering-exercise .session-body {
   border-bottom: 1px solid var(--line);
 }
 
+@media (min-width: 901px) {
+  .session-workspace .training-exercise-card > header.has-locked-trend {
+    grid-template-columns: 48px minmax(120px, 0.62fr) minmax(255px, 1.45fr) 35px;
+  }
+
+  .exercise-performance-inline.is-plan-locked button {
+    margin-right: 4px;
+  }
+}
+
 .session-workspace .training-exercise-card > header > .icon-button {
   width: 38px;
   height: 38px;
