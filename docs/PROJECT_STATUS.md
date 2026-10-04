@@ -5,18 +5,18 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                       |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                     |
-| Current package    | **M8-B main integration and CI delivery**                                           |
-| Package state      | **Free Training correction verified locally; remote CI and final manual path open** |
-| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**                         |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                       |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs               |
-| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged                     |
-| Linked database    | Development only; M8-B migrations through `20261003085455` applied                  |
-| Production         | Not configured; no real customer data                                               |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants             |
+| Field              | Current value                                                                    |
+| ------------------ | -------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                  |
+| Current package    | **M8-B main integration and CI delivery**                                        |
+| Package state      | **Free Training correction on Main with CI passed; manual M8-B acceptance open** |
+| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**                      |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                    |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs            |
+| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged                  |
+| Linked database    | Development only; M8-B migrations through `20261003085455` applied               |
+| Production         | Not configured; no real customer data                                            |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants          |
 
 The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
 Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
@@ -167,8 +167,7 @@ save/reload, and public-result E2E, migration dry-run and private-schema lint pa
 local production-mode manual sign-in/Session/Training save path remains to be observed before
 M8-B CI can be declared complete and M8-B-Export starts.
 
-**Next:** Push the verified Free Training correction to `main` and confirm exact-SHA GitHub
-Actions. Then complete the remaining authenticated local production-mode manual path, record its
+**Next:** Complete the remaining authenticated local production-mode M8-B manual path, record its
 result, and only then begin the approved M8-B-Export Contract gate.
 
 ## Stage 2 evidence
@@ -716,10 +715,11 @@ local pass or successful push is not a remote CI completion claim.
   showed the inline values and locked trend; mobile upsell opened correctly. Local production-mode
   `/`, `/today`, `/t/<synthetic-token>`, `/api/health`, `/api/ready` returned 200 and an unknown
   `/api` route returned 404. API typecheck and targeted Prettier passed after the live script edit.
+  Correction commit `76e946f76dec268f0c7415dc6ca8780ae7ac3a8b` reached remote `main`;
+  GitHub Actions run `37204809824` passed both `verify` and `migration-dry-run` for that SHA.
 - **Known issue:** The manual authenticated local production-mode sign-in, Session/Training save,
   expiry/downgrade and public-link sequence has not been run end to end in one browser path.
-- **Next:** Deliver this correction to remote `main`, confirm exact-SHA Actions jobs, then finish
-  the remaining manual production-mode path before M8-B-Export.
+- **Next:** Finish the remaining manual production-mode path before M8-B-Export.
 
 ### 2026-10-04 — LOG-399 — Merge M8-B into Main and run local CI gate
 
