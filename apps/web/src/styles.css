@@ -16658,8 +16658,84 @@ button:disabled {
 }
 .settings-plan-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+.plan-locked {
+  margin: 24px auto;
+  max-width: 640px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.plan-locked h2 {
+  margin: 10px 0;
+}
+.plan-locked p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.plan-capacity-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  background: #fff1d6;
+  color: #604316;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.plan-capacity-banner p {
+  margin: 0;
+}
+.plan-capacity-banner a {
+  color: inherit;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.exercise-trend-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 36px);
+  margin: 12px 18px;
+  padding: 9px 12px;
+  border: 1px solid #d9e3c4;
+  border-radius: 8px;
+  background: #f5f8ec;
+  color: #4b6327;
+  font-size: 12px;
+  font-weight: 700;
+}
+.exercise-trend-locked svg {
+  width: 16px;
+  height: 16px;
+}
+.training-exercise-card .plan-locked {
+  max-width: none;
+  margin: 0 18px 12px;
+  padding: 16px;
+}
+.training-exercise-card .plan-locked h2 {
+  font-size: 18px;
+}
+@media (max-width: 600px) {
+  .exercise-trend-locked {
+    width: calc(100% - 20px);
+    margin: 8px 10px;
+  }
+  .training-exercise-card .plan-locked {
+    margin: 0 10px 10px;
+  }
+  .plan-capacity-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 16px;
+  }
 }
 .settings-plan-card {
   min-width: 0;

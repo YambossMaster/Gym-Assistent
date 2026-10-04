@@ -15,6 +15,9 @@ vi.mock('./queries', () => ({
   useExerciseLibrary: () => ({ data: { definitions: [] } })
 }))
 vi.mock('../calendar/queries', () => ({ useSchedulingMutations: () => ({}) }))
+vi.mock('../../beta-admission/usePlanAccess', () => ({
+  usePlanAccess: () => ({ data: { tier: 'advanced', overCapacity: false } })
+}))
 vi.mock('../../local-resilience', async (original) => ({
   ...(await original<typeof import('../../local-resilience')>()),
   CoachLocalStore: class {

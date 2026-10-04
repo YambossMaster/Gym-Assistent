@@ -41,10 +41,11 @@ export function useTrainingPreference(session: Session) {
     queryFn: () => getTrainingPreference(session.access_token)
   })
 }
-export function useStudentPerformance(session: Session, studentId: string) {
+export function useStudentPerformance(session: Session, studentId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.studentPerformance(session.user.id, studentId),
-    queryFn: () => getStudentPerformance(session.access_token, studentId)
+    queryFn: () => getStudentPerformance(session.access_token, studentId),
+    enabled
   })
 }
 export function useStudentTrend(

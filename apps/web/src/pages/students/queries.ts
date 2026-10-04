@@ -13,6 +13,7 @@ import {
 } from '../../api'
 import { queryKeys } from '../../query-keys'
 import { invalidateTodayRoute } from '../today/queries'
+import { planAccessKey } from '../../beta-admission/usePlanAccess'
 
 export function invalidateStudentPurchaseQueries(
   queryClient: QueryClient,
@@ -70,6 +71,7 @@ export function useStudentRouteMutations({
         (current) => (current ? { ...current, student } : current)
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
+      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       invalidateTodayRoute(queryClient, session.user.id)
       onNotice('')
     },
@@ -89,6 +91,7 @@ export function useStudentRouteMutations({
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: queryKeys.student(session.user.id, studentId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
+      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       invalidateTodayRoute(queryClient, session.user.id)
       onDeleted()
     },

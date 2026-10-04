@@ -83,6 +83,8 @@ import { FormSelect } from '../../shared/FormSelect'
 import { Confirmation } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { filterExerciseDefinitions } from '../exercises/filter'
+import { usePlanAccess } from '../../beta-admission/usePlanAccess'
+import { PlanLocked } from '../../beta-admission/PlanLocked'
 import { DefinitionEditor } from '../exercises/ExercisesPage'
 import {
   CoachLocalStore,
@@ -269,6 +271,7 @@ function TrainingEditor({
   sessionNotice?: string
   timeZone: string
 }) {
+  const plan = usePlanAccess(session)
   const navigate = useNavigate()
   const routeLocation = useLocation()
   const focusedDefinitionId = new URLSearchParams(routeLocation.search).get('exercise')
@@ -289,6 +292,7 @@ function TrainingEditor({
     [storageError, setStorageError] = useState(false),
     [notice, setNotice] = useState(''),
     [trendId, setTrendId] = useState<string | null>(null),
+    [trendLockedId, setTrendLockedId] = useState<string | null>(null),
     [completing, setCompleting] = useState(false),
     [dragOrder, setDragOrder] = useState<string[] | null>(null),
     [draggingId, setDraggingId] = useState<string | null>(null),
@@ -303,6 +307,20 @@ function TrainingEditor({
     conflictRef = useRef(false)
   const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id)
   const latest = useRef(draft)
+  useEffect(() => {
+    if (plan.data?.tier === 'free') setTrendId(null)
+  }, [plan.data?.tier])
+  useEffect(() => {
+    if (!trendLockedId) return
+    const frame = requestAnimationFrame(() => {
+      const card = Array.from(document.querySelectorAll<HTMLElement>('[data-exercise-id]')).find(
+        (element) => element.dataset.exerciseId === trendLockedId
+      )
+      card?.querySelector('.plan-locked')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [trendLockedId])
+  const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const touchStartY = useRef<number | null>(null)
   useEffect(() => {
     if (!noteFocused) return
@@ -1432,6 +1450,8 @@ function TrainingEditor({
                         summary={initial.exerciseSummaries.find(
                           (x) => x.occurrenceId === exercise.id
                         )}
+                        showLockedTrend={plan.data?.tier === 'free'}
+                        trendLocked={trendLockedId === exercise.id}
                         details={initial.record.exercises.find((x) => x.id === exercise.id)}
                         defaultUnit={initial.defaultWeightUnit}
                         preference={initial}
@@ -1440,7 +1460,10 @@ function TrainingEditor({
                         dragPressed={pressedDragId === exercise.id}
                         onDragPointerDown={(event) => beginDrag(exercise.id, event)}
                         onDragKeyDown={(event) => handleDragKey(exercise.id, index, event)}
-                        onShowTrend={() => setTrendId(exercise.id)}
+                        onShowTrend={() => {
+                          if (plan.data && plan.data.tier !== 'free') setTrendId(exercise.id)
+                          else setTrendLockedId(exercise.id)
+                        }}
                         focused={exercise.id === focusedExerciseId}
                         onChange={(next) =>
                           change({
@@ -1615,6 +1638,8 @@ export function SessionLifecycleButton({
 function ExerciseCard({
   exercise,
   summary,
+  showLockedTrend,
+  trendLocked,
   details,
   defaultUnit,
   preference,
@@ -1630,6 +1655,8 @@ function ExerciseCard({
 }: {
   exercise: TrainingDraftPayload['exercises'][number]
   summary: SessionTraining['exerciseSummaries'][number] | undefined
+  showLockedTrend: boolean
+  trendLocked: boolean
   details: SessionTraining['record']['exercises'][number] | undefined
   defaultUnit: 'kg' | 'lb'
   preference: SessionTraining
@@ -1750,6 +1777,12 @@ function ExerciseCard({
           <XCircle />
         </button>
       </header>
+      {showLockedTrend && !summary && (
+        <button type="button" className="exercise-trend-locked" onClick={onShowTrend}>
+          <TrendingUp /> 成長軌跡 · 方案功能
+        </button>
+      )}
+      {trendLocked && <PlanLocked title="成長軌跡" />}
       <div
         className="training-sets-scroll"
         onFocusCapture={(event) => selectTrainingSetValue(event.target)}

@@ -25,6 +25,7 @@ import { Page } from '../../shared/primitives'
 import { trainingQuotes } from './quotes'
 import { useTodayRouteQuery } from './queries'
 import { selectTodayRouteState, todayErrorMessage } from './state'
+import { usePlanAccess } from '../../beta-admission/usePlanAccess'
 
 export function TodayPage({ session, coachName }: { session: Session; coachName: string }) {
   const todayQuery = useTodayRouteQuery(session)
@@ -67,6 +68,7 @@ function TodaySignals({
   today: NonNullable<ReturnType<typeof useTodayRouteQuery>['data']>
   session: Session
 }) {
+  const plan = usePlanAccess(session)
   return (
     <>
       <section className="today-signals" aria-label="今日數字">
@@ -105,6 +107,7 @@ function TodaySignals({
               <span className="today-finance-desktop-label">收支明細概覽</span>
               <span className="today-finance-mobile-label">收支明細</span>
             </strong>
+            {plan.data?.tier === 'free' && <small>方案功能 · 查看升級方案</small>}
           </div>
           <ChevronRight className="today-signal-chevron" aria-hidden="true" />
         </Link>

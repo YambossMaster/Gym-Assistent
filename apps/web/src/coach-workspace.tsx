@@ -73,6 +73,9 @@ import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
 import { MobilePageAppBar } from './shared/MobilePageAppBar'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
+import { usePlanAccess } from './beta-admission/usePlanAccess'
+import { PlanLocked } from './beta-admission/PlanLocked'
+import { planAccessKey } from './beta-admission/usePlanAccess'
 import type { PerformanceEntry } from './api'
 
 const studentAgeRangeOptions: { value: StudentAgeRange | ''; label: string }[] = [
@@ -101,10 +104,25 @@ export function StudentsPage({
   const [query, setQuery] = useState('')
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [createOpen, setCreateOpen] = useState(false)
+  const [createPlanLocked, setCreatePlanLocked] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
   const { students: studentsQuery } = useStudentsRouteQuery(session)
+  const plan = usePlanAccess(session)
+  const openCreate = () => {
+    if (
+      plan.data?.overCapacity ||
+      (plan.data?.studentLimit !== null &&
+        plan.data?.studentLimit !== undefined &&
+        plan.data.activeStudents >= plan.data.studentLimit)
+    ) {
+      setCreatePlanLocked(true)
+      return
+    }
+    setCreatePlanLocked(false)
+    setCreateOpen(true)
+  }
   const students = studentsQuery.data ?? []
   const activeCount = students.filter((student) => student.active).length
   const archivedCount = students.length - activeCount
@@ -126,22 +144,20 @@ export function StudentsPage({
           title="學生"
           count={studentsQuery.data ? students.length : undefined}
           addLabel="新增學生"
-          onAdd={() => setCreateOpen(true)}
+          onAdd={openCreate}
         />
       }
       className="students-page"
       title="學生"
       eyebrow={`學生名單 · ${students.length}`}
       actions={
-        <button
-          className="primary-button compact ui-action-add"
-          onClick={() => setCreateOpen(true)}
-        >
+        <button className="primary-button compact ui-action-add" onClick={openCreate}>
           <Plus />
           新增學生
         </button>
       }
     >
+      {createPlanLocked && <PlanLocked title="新增學生名額" />}
       <div className="toolbar" data-search-open={mobileSearchOpen}>
         <label className="search-box">
           <Search aria-hidden="true" />
@@ -214,7 +230,7 @@ export function StudentsPage({
           <UserRound />
           <h2>建立第一位學生</h2>
           <p>先留下姓名，學生簡介與備註之後可再補上。</p>
-          <button className="text-button" onClick={() => setCreateOpen(true)}>
+          <button className="text-button" onClick={openCreate}>
             建立學生 <ArrowRight />
           </button>
         </section>
@@ -247,7 +263,11 @@ export function StudentsPage({
           <span className="student-finance-copy">
             <small>FINANCE / MONTHLY SUMMARY</small>
             <strong>本月收支</strong>
-            <span>查看購課總額、場地支出與各月紀錄</span>
+            <span>
+              {plan.data?.tier === 'free'
+                ? '方案功能 · 查看基礎與進階方案'
+                : '查看購課總額、場地支出與各月紀錄'}
+            </span>
           </span>
           <ArrowRight aria-hidden="true" />
         </Link>
@@ -270,6 +290,7 @@ export function StudentsPage({
               (current = []) => [...current, student]
             )
             void queryClient.invalidateQueries({ queryKey: queryKeys.income(session.user.id) })
+            void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
             invalidateTodayRoute(queryClient, session.user.id)
             setCreateOpen(false)
           }}
@@ -2062,7 +2083,12 @@ export function StudentPerformance({
   studentId: string
   studentName: string
 }) {
-  const query = useStudentPerformance(session, studentId)
+  const plan = usePlanAccess(session)
+  const query = useStudentPerformance(
+    session,
+    studentId,
+    Boolean(plan.data && plan.data.tier !== 'free')
+  )
   const navigate = useNavigate()
   const openHistory = (definitionId: string, historySessionId: string) => {
     setSelected(null)
@@ -2129,6 +2155,24 @@ export function StudentPerformance({
       </button>
     )
   }
+  if (plan.isPending)
+    return (
+      <section className="performance-directory">
+        <p>正在讀取方案…</p>
+      </section>
+    )
+  if (plan.isError)
+    return (
+      <section className="performance-directory">
+        <p role="alert">
+          暫時無法確認方案。
+          <button type="button" onClick={() => void plan.refetch()}>
+            重試
+          </button>
+        </p>
+      </section>
+    )
+  if (plan.data?.tier === 'free') return <PlanLocked title="個人運動表現與成長軌跡" />
   return (
     <section className="performance-directory" aria-label="動作表現">
       <button

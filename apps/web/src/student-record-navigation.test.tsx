@@ -33,6 +33,9 @@ vi.mock('./config', () => ({
     supabasePublishableKey: 'test-publishable-key'
   })
 }))
+vi.mock('./beta-admission/usePlanAccess', () => ({
+  usePlanAccess: () => ({ data: { tier: 'advanced', overCapacity: false } })
+}))
 
 vi.mock('./pages/training/queries', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./pages/training/queries')>()),

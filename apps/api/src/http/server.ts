@@ -30,6 +30,7 @@ import {
   SchedulingVersionConflictError,
 } from '../scheduling/scheduling-repository.js'
 import { TrainingModule } from '../training/training-module.js'
+import type { SessionTraining } from '../training/training.js'
 import { TrainingVersionConflictError } from '../training/training-repository.js'
 import { PublicAccessModule } from '../public-access/public-access-module.js'
 import { PublicCapabilityError, PublicRateLimitError } from '../public-access/public-access.js'
@@ -39,6 +40,12 @@ import {
   BetaAdmissionModule,
   BetaRedemptionRateError,
 } from '../beta-admission/beta-admission.js'
+import { PlanAccessError, PlanAccessModule } from '../plan-access/plan-access.js'
+import {
+  isStudentArchiveOnly,
+  isVenueArchiveOnly,
+  routePolicy,
+} from '../plan-access/route-policy.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -54,6 +61,7 @@ export interface ServerDependencies {
   finances?: FinanceModule
   demoImport?: DemoImportModule
   betaAdmission?: BetaAdmissionModule
+  planAccess?: PlanAccessModule
   readiness?: () => Promise<void>
   logger?: boolean | Record<string, unknown>
 }
@@ -186,6 +194,7 @@ export function buildServer({
   publicAccess,
   demoImport,
   betaAdmission,
+  planAccess,
   finances,
   readiness,
   logger = false,
@@ -195,12 +204,85 @@ export function buildServer({
     logController: new LogController({ disableRequestLogging: true }),
     ajv: { customOptions: { removeAdditional: false } },
   })
+  const visibleTraining = async (identity: { userId: string }, record: SessionTraining) =>
+    (await planAccess?.get(identity))?.tier === 'free'
+      ? { ...record, exerciseSummaries: [] }
+      : record
 
   if (betaAdmission) {
     server.addHook('onRequest', async (request) => {
       if (request.routeOptions.url !== '/v1/beta/redeem' || request.method !== 'POST') return
       const identity = await identityVerifier.verify(request.headers.authorization)
       await betaAdmission.throttle(identity, betaClientIp(request))
+    })
+  }
+
+  if (planAccess) {
+    server.addHook('preHandler', async (request) => {
+      const policy = routePolicy(request.method, request.routeOptions.url)
+      if (policy === 'allow') return
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      const plan = await planAccess.get(identity)
+      if (policy === 'premium') {
+        if (plan.tier === 'free') throw new PlanAccessError('plan_required')
+        return
+      }
+      if (policy === 'create-student' || policy === 'create-venue') {
+        if (plan.overCapacity) throw new PlanAccessError('capacity_limit')
+        const active = (request.body as { active?: boolean } | undefined)?.active !== false
+        const count = policy === 'create-student' ? plan.activeStudents : plan.activeVenues
+        const limit = policy === 'create-student' ? plan.studentLimit : plan.venueLimit
+        if (active && limit !== null && count >= limit) throw new PlanAccessError('capacity_limit')
+        return
+      }
+      if (policy === 'update-student' || policy === 'delete-student') {
+        const studentId = (request.params as { studentId: string }).studentId
+        const current = (await students.detail(identity, studentId))?.student
+        if (!current) return
+        if (policy === 'delete-student') {
+          if (plan.overCapacity && current.active) throw new PlanAccessError('capacity_limit')
+          return
+        }
+        const wantsActive = (request.body as { active?: boolean } | undefined)?.active
+        if (
+          !current.active &&
+          wantsActive &&
+          plan.studentLimit !== null &&
+          plan.activeStudents >= plan.studentLimit
+        )
+          throw new PlanAccessError('capacity_limit')
+        if (
+          plan.overCapacity &&
+          !isStudentArchiveOnly(request.body, current as unknown as Record<string, unknown>)
+        )
+          throw new PlanAccessError('capacity_limit')
+        return
+      }
+      if (policy === 'update-venue' || policy === 'delete-venue') {
+        if (!finances) return
+        const venueId = (request.params as { venueId: string }).venueId
+        const view = (await finances.read(identity, 'venues')) as {
+          venues: Array<Record<string, unknown>>
+        }
+        const current = view.venues.find((venue) => venue.id === venueId)
+        if (!current) return
+        if (policy === 'delete-venue') {
+          if (plan.overCapacity && current.active) throw new PlanAccessError('capacity_limit')
+          return
+        }
+        const wantsActive = (request.body as { active?: boolean } | undefined)?.active
+        if (
+          !current.active &&
+          wantsActive &&
+          plan.venueLimit !== null &&
+          plan.activeVenues >= plan.venueLimit
+        )
+          throw new PlanAccessError('capacity_limit')
+        if (plan.overCapacity && !isVenueArchiveOnly(request.body, current))
+          throw new PlanAccessError('capacity_limit')
+        return
+      }
+      if (plan.overCapacity) throw new PlanAccessError('capacity_limit')
     })
   }
 
@@ -289,6 +371,12 @@ export function buildServer({
       })
   }
   server.setErrorHandler((error, _request, reply) => {
+    if (error instanceof PlanAccessError) return reply.status(403).send({ error: error.reason })
+    if (
+      (error as { code?: string; message?: string }).code === 'P0003' &&
+      (error as { message?: string }).message === 'active_capacity_limit'
+    )
+      return reply.status(403).send({ error: 'capacity_limit' })
     if (error instanceof FinanceError)
       return reply.status(error.statusCode).send({
         error:
@@ -421,6 +509,12 @@ export function buildServer({
       }
     })
   }
+  if (planAccess) {
+    server.get('/v1/plan', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return { plan: await planAccess.get(identity) }
+    })
+  }
   server.get('/ready', async (_request, reply) => {
     try {
       if (!readiness) throw new Error('Readiness is not configured')
@@ -468,8 +562,13 @@ export function buildServer({
   server.get<{ Querystring: { date?: string } }>('/v1/today', async (request) => {
     const identity = await identityVerifier.verify(request.headers.authorization)
     const projection = await today.get(identity)
+    const plan = planAccess ? await planAccess.get(identity) : null
+    const visibleProjection =
+      plan?.tier === 'free'
+        ? { ...projection, summary: { ...projection.summary, incomeByCurrency: [] } }
+        : projection
     await accountLifecycle.recordActivity(identity)
-    if (!scheduling) return { today: projection }
+    if (!scheduling) return { today: visibleProjection }
     const schedule = await scheduling.today(identity, request.query.date ?? projection.date)
     const plans = training
       ? await training.todayTrainingPlans(
@@ -487,7 +586,7 @@ export function buildServer({
       : []
     return {
       today: {
-        ...projection,
+        ...visibleProjection,
         notifications,
         schedule: {
           ...schedule,
@@ -881,7 +980,7 @@ export function buildServer({
             .status(404)
             .send({ error: 'session_not_found', message: 'Course Session was not found.' })
         await accountLifecycle.recordActivity(identity)
-        return { training: workspace }
+        return { training: await visibleTraining(identity, workspace) }
       },
     )
     server.put<{ Params: { sessionId: string }; Body: unknown }>(
@@ -898,7 +997,7 @@ export function buildServer({
             .status(404)
             .send({ error: 'session_not_found', message: 'Course Session was not found.' })
         await accountLifecycle.recordActivity(identity)
-        return { training: workspace }
+        return { training: await visibleTraining(identity, workspace) }
       },
     )
     server.post<{ Params: { sessionId: string }; Body: unknown }>(
@@ -916,7 +1015,7 @@ export function buildServer({
             .status(404)
             .send({ error: 'session_not_found', message: 'Course Session was not found.' })
         await accountLifecycle.recordActivity(identity)
-        return { training: workspace }
+        return { training: await visibleTraining(identity, workspace) }
       },
     )
     server.get<{

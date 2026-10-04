@@ -2,7 +2,8 @@
 
 > Beta release sequence revised 2026-10-03 by the Product Owner. M8-B prepares Free and
 > promotional access; M8-D opens real-Coach Beta and M8-E develops paid checkout before the
-> first offer expires. Exact over-limit operation allowlists still need Contract freeze.
+> first offer expires. Contract frozen 2026-10-03 after the Product Owner confirmed the
+> over-limit write rule.
 > M8-A is complete. M8-B remains local development and verification; M8-C owns production
 > deployment, published terms, the support address, and installed-phone acceptance.
 
@@ -71,12 +72,10 @@ remain available. Locked entry points may show a concise upgrade explanation and
 `方案與帳單`. Direct URLs and corresponding API projections must enforce the same restrictions.
 Existing public capability links retain their prior scope and never expose a Coach's plan.
 
-The Product Owner moved the four Settings exports to the separate M8-B-Export package immediately
-after M8-B and before M8-C. It owns one-file-at-a-time PDF/CSV/JSON downloads for Training Records,
-Growth Trajectory numeric data, Calendar and finance details. Growth Trajectory PNG is separate and
-belongs at the Growth Trajectory view. Export is unavailable to Free under the current plan intent;
-M8-B-Export must freeze its exact entitlement before implementation. M8-B must not display controls
-or copy implying that an export exists now.
+Per-area PDF/CSV/JSON exports for Training Records, finance details, performance trends and
+Calendar are planned for a later contract. Export is unavailable to Free when implemented, but
+M8-B must not display controls or copy implying that an export exists now. Export formats,
+selection scope and delivery evidence are deferred to that later contract.
 
 Capacity counts active Students and active Venues in the verified Workspace. Archived records do
 not consume capacity. Creating or reactivating a Student/Venue is rejected if it would exceed the
@@ -86,8 +85,40 @@ Operational writes, including new or changed Training Records, Session/Purchase 
 expense records, are locked while either Free limit is exceeded. The Coach may archive active
 Students/Venues to get within both limits, manage their plan/account and request account deletion;
 the lock then lifts without an operator action. Paid activation also lifts it. No automatic
-archiving, deletion or reassignment occurs. Exact mutation allowlists and recovery of an unsaved
-Training draft must be enumerated in the provider-specific Contract before Sol implementation.
+archiving, deletion or reassignment occurs. The Product Owner confirmed that the write lock also
+covers changes and deletion of existing operational records. The exact API policy follows.
+
+### Capacity and over-limit operation policy
+
+The API resolves the effective tier and active counts from the authenticated Workspace for each
+operation. A Free Workspace at exactly five active Students or one active Venue may continue
+working with existing records, but cannot create/reactivate another active item of that type. If
+either count is **above** its limit after an offer expires, ordinary operational writes stop until
+both counts return within Free limits or Advanced access becomes active. Basic's fifteen-Student
+limit applies at paid activation/change in M8-E; M8-B must represent the tier in the policy model
+without inventing payment authority. An archived Student/Venue counts zero even if its history
+remains; capacity checks for creation/reactivation serialize per Workspace so parallel requests
+cannot both take the last seat.
+
+| Operation group                                                                                                                                                                                                                                                                                   | Free within both limits                                                                                 | Free above either limit                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| All authorized ordinary reads, including archived Students, Training history, Calendar, Venue settings and course records                                                                                                                                                                         | Allow                                                                                                   | Allow                                                                       |
+| Finance monthly/current/history/deleted projections and manual finance-ledger entry commands; Student performance directory/trend projections                                                                                                                                                     | `403 plan_required`                                                                                     | `403 plan_required`                                                         |
+| Create or reactivate active Student/Venue                                                                                                                                                                                                                                                         | Allow only if the resulting active count stays within that tier's limit; otherwise `403 capacity_limit` | `403 capacity_limit`                                                        |
+| Archive an active Student/Venue through its versioned update                                                                                                                                                                                                                                      | Allow                                                                                                   | Allow, with no other field changes in the same request                      |
+| Student profile and Lesson Purchase writes; Schedule Series, Session, Calendar Block and availability writes; Exercise library/preference/metric writes; Training Record saves/completion; Venue expense/rule/history writes; capability-link issuance/reissue; Demo import/continuation/rollback | Allow under existing validation and authorization                                                       | `403 capacity_limit`, including edit/delete of existing operational records |
+| Settings/profile/security, Beta-code redemption, plan management, notification read/dismiss, account-deletion request/cancel and account deletion                                                                                                                                                 | Allow                                                                                                   | Allow                                                                       |
+| Existing capability-link reads, revocation and public result/reschedule actions                                                                                                                                                                                                                   | Allow under existing capability rules                                                                   | Allow under the same rules; do not expose Coach plan state to the Student   |
+
+An over-limit Coach may also read and delete an already archived Student/Venue through the existing
+manual deletion rules, but deleting an active record is not the recovery path. Any versioned archive
+must still reject stale versions and preserve existing history; the lock check must not turn a
+conflict into a successful archive. A Student/Venue update that sets `active: false` while also
+changing name, expense settings or other fields is treated as an operational edit and remains
+locked. A failed Training save keeps the local draft and offers retry after capacity recovery or
+upgrade; no client-side disabled control is the sole enforcement point. On an entitlement or count
+change, invalidate plan and affected route caches before showing newly available actions, and
+clear previously cached premium projections immediately when access ends.
 
 Free Coaches see the `本月收支` entry on Students and Today with a lock/upgrade explanation; no
 finance report content is rendered. Free Coaches see the Student performance-directory entry and
@@ -160,33 +191,9 @@ data notice, without a standalone defect checkbox in the first-use path.
   requires a verifiable backup and restore process before charging real Coaches. M8-C publishes
   the initial no-charge Beta recovery boundary; M8-E selects backup method, cadence, retention
   and protected storage and proves an isolated restore before enabling live checkout.
-- Settings `協助與回饋` links to a Product Owner-approved Google Form for product feedback and
-  offers a separate dedicated support `mailto:` address for account, privacy and data-rights
-  requests. M8-C chooses the actual Form URL and support address before real-Coach admission.
-  Until configured, show honest unavailable guidance. The Web only opens the external Form; it
-  neither submits feedback nor claims an in-app receipt or individual reply time. Do not request
-  passwords, capability links or unnecessary Student data.
-
-## External feedback intake and operation
-
-- The Form asks for feedback type (problem, suggestion, experience or other), product area,
-  short title and details. Reproduction steps and contact Email are optional. It explains that
-  feedback is reviewed without a guaranteed individual response and directs account or urgent
-  data matters to the separate support address. Google Forms' confirmation is the only submission
-  receipt.
-- Use a published responder link without requiring a Google account or verified Google Email.
-  Do not add file uploads, a one-response limit, public response summaries, or automatic Coach
-  identity/Student-data prefill. Unverified identity and possible spam are accepted Beta risks;
-  neither grants access to Gym Assistant data or writes to its API.
-- Link responses to a private Google Sheet. Limit operator access to the Product Owner and any
-  specifically authorized assistant access. Triage manually with status, priority, topic and
-  handling notes; move only selected product decisions into the development backlog. No feedback
-  notification or digest automation belongs to this package. The Product Owner may arrange
-  reminders separately.
-- Retention of 12 months after closure is a draft policy, not published fact. M8-C must confirm
-  the actual policy, Google processing disclosure and rights-contact procedure before real-Coach
-  admission. A deletion request must check both Form responses and the linked Sheet. Do not
-  promise automatic deletion while the process remains manual.
+- Settings `協助與回饋` uses a dedicated `mailto:` address chosen in M8-C. Until configured, show
+  honest unavailable guidance. Do not request passwords, capability links or unnecessary Student
+  data; do not promise an individual reply time.
 
 ## Acceptance and handoff
 

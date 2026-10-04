@@ -15,16 +15,19 @@ import {
   UserRound,
   X
 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   ApiError,
   deleteAccountImmediately,
   readBetaGrant,
   redeemBetaCode,
   type BetaGrant,
+  type PlanAccess,
   type WorkspaceSettings
 } from '../../api'
 import { betaGrantKey } from '../../beta-admission/BetaGate'
+import { planAccessKey, usePlanAccess } from '../../beta-admission/usePlanAccess'
 import {
   changePassword,
   passwordRecoveryRedirect,
@@ -55,6 +58,7 @@ function planDate(instant: string): string {
 
 function PlanPanel({
   grant,
+  plan,
   loading,
   error,
   onRetry,
@@ -66,6 +70,7 @@ function PlanPanel({
   offerSuccess
 }: {
   grant: BetaGrant | undefined
+  plan: PlanAccess | undefined
   loading: boolean
   error: boolean
   onRetry: () => void
@@ -76,8 +81,8 @@ function PlanPanel({
   offerError: string
   offerSuccess: string
 }) {
-  const promotional = grant?.state === 'promotional'
-  const permanent = grant?.state === 'permanent'
+  const promotional = plan?.source === 'promotional'
+  const permanent = plan?.source === 'permanent'
   const previouslyRedeemed = grant?.state === 'free' && Boolean(grant.startedAt)
   const canRedeem = grant?.state === 'free' && !grant.startedAt
 
@@ -92,19 +97,21 @@ function PlanPanel({
               : error
                 ? '暫時無法取得方案'
                 : promotional
-                  ? '90 天方案體驗'
-                  : '免費方案'}
+                  ? '進階方案・60 天優惠'
+                  : permanent
+                    ? '進階方案・永久資格'
+                    : '免費方案'}
           </h3>
           <p>
             {loading || error
               ? '方案資料讀取後，會顯示目前資格與優惠期限。'
               : promotional
-                ? `體驗至 ${planDate(grant.endsAt)}（台灣時間）；到期後自動回到免費方案。`
+                ? `優惠至 ${planDate(plan!.offerEndsAt!)}（台灣時間）；到期後可主動訂閱，否則回到免費方案。`
                 : permanent
-                  ? '你的帳號具有永久免費使用資格。'
+                  ? '你的帳號具有永久進階方案權限。'
                   : previouslyRedeemed
-                    ? '優惠體驗已結束，已回到免費方案；現有資料與功能可以繼續使用。'
-                    : '登入即可使用目前的教練工作台功能。'}
+                    ? '優惠已結束，現有資料仍會保留。超出免費名額時，請封存學員或場地後繼續記錄。'
+                    : '免費方案可管理最多 5 名學員與 1 個場地。'}
           </p>
           <div className="settings-plan-quicklinks">
             <a href="#available-plans-title">查看方案</a>
@@ -125,14 +132,14 @@ function PlanPanel({
       <section className="settings-plan-section" aria-labelledby="available-plans-title">
         <div className="settings-plan-section-heading">
           <h3 id="available-plans-title">查看與選擇方案</h3>
-          <p>目前所有教練都能使用現有核心功能；付費方案的內容與價格尚未公布。</p>
+          <p>可先使用免費方案；付費訂閱功能準備中。</p>
         </div>
         <div className="settings-plan-grid">
           <article className="settings-plan-card">
             <span className="settings-plan-card-tag">目前可用</span>
             <h4>免費方案</h4>
             <p className="settings-plan-price">免費</p>
-            <p>學員、課程、排程與訓練紀錄等現有功能。</p>
+            <p>最多 5 名學員、1 個場地；課程、排程與訓練紀錄可用。</p>
             <span className="settings-plan-card-state">
               <CircleCheck aria-hidden="true" />
               {promotional ? '體驗結束後自動使用' : '目前使用中'}
@@ -140,9 +147,16 @@ function PlanPanel({
           </article>
           <article className="settings-plan-card">
             <span className="settings-plan-card-tag">尚未開放訂閱</span>
-            <h4>付費方案</h4>
-            <p className="settings-plan-price">價格待公布</p>
-            <p>功能差異、價格及訂閱方式確認後，會在這裡提供完整資訊。</p>
+            <h4>基礎方案</h4>
+            <p className="settings-plan-price">NT$199／月</p>
+            <p>最多 15 名學員；場地不限，可查看收支與成長軌跡。</p>
+            <span className="settings-plan-card-state">目前無法選購或付款</span>
+          </article>
+          <article className="settings-plan-card">
+            <span className="settings-plan-card-tag">尚未開放訂閱</span>
+            <h4>進階方案</h4>
+            <p className="settings-plan-price">NT$259／月</p>
+            <p>學員與場地不限，可查看收支與成長軌跡。</p>
             <span className="settings-plan-card-state">目前無法選購或付款</span>
           </article>
         </div>
@@ -151,7 +165,7 @@ function PlanPanel({
       <section className="settings-plan-section" aria-labelledby="offer-title">
         <div className="settings-plan-section-heading">
           <h3 id="offer-title">優惠體驗</h3>
-          <p>優惠碼用於記錄 90 天方案體驗資格，不影響免費方案的使用。</p>
+          <p>優惠碼提供 60 天進階方案權限，套用時不需綁定付款方式。</p>
         </div>
         {canRedeem ? (
           <form className="settings-offer-form" onSubmit={onRedeem}>
@@ -177,9 +191,9 @@ function PlanPanel({
         ) : (
           <p className="settings-plan-note">
             {promotional
-              ? `已套用優惠碼，體驗至 ${planDate(grant.endsAt)}。不會自動扣款。`
+              ? `已套用優惠碼，優惠至 ${planDate(plan!.offerEndsAt!)}。不會自動扣款。`
               : permanent
-                ? '你已具有永久免費資格，不需套用優惠碼。'
+                ? '你已具有永久進階方案權限，不需套用優惠碼。'
                 : previouslyRedeemed
                   ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
                   : '方案資料讀取後可在此套用優惠碼。'}
@@ -216,7 +230,9 @@ function PlanPanel({
       <section className="settings-plan-section" aria-labelledby="manage-plan-title">
         <div className="settings-plan-section-heading">
           <h3 id="manage-plan-title">更換或取消方案</h3>
-          <p>付費訂閱尚未開放，因此目前沒有需要取消的訂閱。優惠體驗到期後會自動回到免費方案。</p>
+          <p>
+            付費訂閱尚未開放，因此目前沒有需要取消的訂閱。優惠到期後可主動訂閱，否則回到免費方案。
+          </p>
         </div>
       </section>
     </div>
@@ -313,7 +329,13 @@ function timeZoneOptions(current: string) {
 
 export function SettingsPage({ session }: { session: Session }) {
   const queryClient = useQueryClient()
-  const [category, setCategory] = useState<SettingsCategory>('profile')
+  const location = useLocation()
+  const [category, setCategory] = useState<SettingsCategory>(
+    new URLSearchParams(location.search).get('category') === 'plans' ? 'plans' : 'profile'
+  )
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('category') === 'plans') setCategory('plans')
+  }, [location.search])
   const [offerCode, setOfferCode] = useState('')
   const [offerError, setOfferError] = useState('')
   const [offerSuccess, setOfferSuccess] = useState('')
@@ -333,10 +355,12 @@ export function SettingsPage({ session }: { session: Session }) {
     queryKey: betaGrantKey(session.user.id),
     queryFn: () => readBetaGrant(session.access_token)
   })
+  const planQuery = usePlanAccess(session)
   const offerMutation = useMutation({
     mutationFn: () => redeemBetaCode(session.access_token, offerCode.trim()),
     onSuccess: (grant) => {
       queryClient.setQueryData(betaGrantKey(session.user.id), grant)
+      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       setOfferCode('')
       setOfferError('')
       setOfferSuccess('優惠碼已套用。')
@@ -475,9 +499,13 @@ export function SettingsPage({ session }: { session: Session }) {
           {category === 'plans' && (
             <PlanPanel
               grant={grantQuery.data}
-              loading={grantQuery.isPending}
-              error={grantQuery.isError}
-              onRetry={() => void grantQuery.refetch()}
+              plan={planQuery.data}
+              loading={grantQuery.isPending || planQuery.isPending}
+              error={grantQuery.isError || planQuery.isError}
+              onRetry={() => {
+                void grantQuery.refetch()
+                void planQuery.refetch()
+              }}
               offerCode={offerCode}
               onOfferCodeChange={setOfferCode}
               onRedeem={(event) => {
