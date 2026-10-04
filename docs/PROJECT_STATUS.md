@@ -5,18 +5,18 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                    |
-| ------------------ | -------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                  |
-| Current package    | **M8-B main integration and CI delivery**                                        |
-| Package state      | **M8-B production-mode manual path passed; layout correction CI pending**       |
-| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**                      |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                    |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs            |
-| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged                  |
-| Linked database    | Development only; M8-B migrations through `20261003085455` applied               |
-| Production         | Not configured; no real customer data                                            |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants          |
+| Field              | Current value                                                             |
+| ------------------ | ------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                           |
+| Current package    | **M8-B main integration and CI delivery**                                 |
+| Package state      | **M8-B production-mode manual path passed; layout correction CI pending** |
+| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**               |
+| Completed baseline | M0–M7.5, including M3.5, Done                                             |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs     |
+| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged           |
+| Linked database    | Development only; M8-B migrations through `20261003085455` applied        |
+| Production         | Not configured; no real customer data                                     |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants   |
 
 The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
 Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
@@ -715,8 +715,10 @@ local pass or successful push is not a remote CI completion claim.
   and zero archived venues. No production environment or real Coach was involved.
 - **Verification:** Authenticated browser journey above passed. Desktop Chrome showed the corrected
   locked header without the `個人最佳` label wrapping. Web check passed 60 files/258 tests, Web build
-  passed with the existing large-chunk advisory, and `git diff --check` passed. CI delivery is in
-  progress.
+  passed with the existing large-chunk advisory, and `git diff --check` passed. Main commit
+  `c8cab78` reached remote, but Actions run `37208148750` stopped at the root Prettier check on
+  this Status file; the code tests were not run remotely in that attempt. Formatting was corrected
+  for the follow-up commit, whose CI delivery is in progress.
 - **Known issue:** Local browser evidence is limited to the inspected desktop width; the new layout
   rule applies above 900px only.
 - **Next:** Push this correction and confirm both Actions jobs for its exact SHA.
