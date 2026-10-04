@@ -669,6 +669,15 @@ drill.
 package's Contract, Sol and CI before M8-C production deployment. It does not depend on paid
 checkout or a production environment.
 
+**Parallel feedback handoff — approved 2026-10-04:** the external feedback entry is already
+implemented and locally verified on `codex/feedback-form-link` at `84a38f2`; this branch has not
+been merged into `main` or pushed. During M8-B-Export Sol, merge that branch into the Export
+integration branch and preserve both the Settings `匯出資料` flow and `協助與回饋` Form link when
+resolving any overlap. Include the combined Settings desktop/390×844 behavior in CI evidence and
+record the resulting merge and verification in Project Status. The feedback branch also carries
+the bilingual Form links and their setup/verification log. This handoff does not add a feedback
+backend or change the M8-B-Export data-export contract.
+
 **Contract gate:** freeze the Settings `匯出資料` flow for one data type and one directly downloaded
 file per request. The four types are Training Records, Growth Trajectory numeric data, Calendar,
 and finance details. Freeze each type's date and entity filters, date/time-zone interpretation,
