@@ -1,8 +1,6 @@
 # M8-B-Export Contract — Coach data export
 
-> Revised Draft for Product Owner review, 2026-10-05. This is not a frozen Contract or implementation
-> authorization. The Roadmap owns scope and gate order; this document proposes the precise
-> decisions needed to implement its export package.
+> Frozen by Product Owner confirmation, 2026-10-05. The Roadmap owns scope and gate order.
 
 ## Job and route
 
@@ -19,7 +17,7 @@ locked explanation and a `方案與帳單` link, not an enabled download control
 requested. Changing type resets type-specific filters and the private-note checkbox. The UI never
 suggests that it exports all Workspace data or can restore records.
 
-## Proposed selection rules
+## Selection rules
 
 `start` and `end` are inclusive local calendar dates in the Workspace time zone read by the server.
 The server interprets them as `[start at local midnight, day after end at local midnight)` in UTC.
@@ -177,14 +175,12 @@ migration dry-run and exact-SHA GitHub Actions. Browser
 acceptance proves one downloaded file per action and verifies its name and contents. No test claims
 that an export is a backup or a complete data-rights response.
 
-## Product Owner decisions to freeze
+## Frozen decision record
 
-The Product Owner has decided that every export type is Prime-only and directed this revision of
-the date, capacity, empty-state and timeout rules. The remaining choice to freeze is the four
-included-row/filter rules above and the per-request private-note opt-in scope. The revised limits
-also need acceptance as a single coherent synchronous-request contract: CSV/JSON 30 default and
+The Product Owner confirmed Prime-only access, the four included-row/filter rules, the per-request
+private-note opt-in and these synchronous-request limits on 2026-10-05: CSV/JSON 30 default and
 31-day maximum with 2,000 rows; PDF 7 default and maximum with 500 rows; 10 MiB final file and
-30-second server work deadline. The PDF 7-day choice resolves the offered 7-or-14-day alternative
+30-second server work deadline. The 7-day PDF choice resolves the offered 7-or-14-day alternative
 conservatively. A focused load fixture must demonstrate that these bounds can complete within the
 actual host path before Sol can claim the feature ready.
 

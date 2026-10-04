@@ -8,9 +8,9 @@
 | Field              | Current value                                                           |
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
-| Current package    | **M8-B-Export Contract**                                                |
-| Package state      | **M8-B delivered; revised Export Contract draft awaits PO**             |
-| Approved next      | **Review and freeze the M8-B-Export Contract**                          |
+| Current package    | **M8-B-Export Sol**                                                     |
+| Package state      | **Export Contract frozen; Sol in progress**                             |
+| Approved next      | **Implement and verify the frozen M8-B-Export Contract**                |
 | Completed baseline | M0–M7.5, including M3.5, Done                                           |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
 | Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged         |
@@ -187,13 +187,10 @@ at SHA `d2a1295`; GitHub Actions run `37215318255` passed `verify` and `migratio
 exact SHA. M8-B's Contract, Sol and CI gates are now complete. No production resource or real Coach
 was involved.
 
-**Next:** Review and freeze the proposed [M8-B-Export Contract](M8-B-EXPORT-CONTRACT.md). The
-Product Owner has fixed access at Prime only. The revised Draft addresses the 90-day/2,000-row
-conflict, synchronous PDF limits, empty selection, timeout guidance, finance totals, and Workspace
-midnight. Review its remaining included-row/filter and private-note choices and accept or revise
-the proposed per-format limits. Begin Sol only after Product Owner acceptance; merge the approved
-`codex/feedback-form-link` handoff during Sol, then execute its combined Settings CI gate before
-M8-C.
+**Next:** Implement the frozen [M8-B-Export Contract](M8-B-EXPORT-CONTRACT.md). The Product Owner
+confirmed Prime-only access, the included-row/filter and private-note rules, and the revised
+per-format limits on 2026-10-05. Merge the approved `codex/feedback-form-link` handoff during Sol,
+then execute its combined Settings CI gate before M8-C.
 
 ## Stage 2 evidence
 
@@ -723,6 +720,16 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-05 — LOG-407 — Freeze M8-B-Export Contract
+
+- **Scope:** Record the Product Owner's explicit confirmation of the revised Prime-only Contract.
+- **Outcome:** Four data selections, filters and included rows, per-request note opt-in, CSV/JSON/PDF
+  fields, synchronous limits, error states and responsive acceptance are frozen. Sol may begin.
+- **Verification:** Contract/Roadmap consistency and targeted document formatting check; no Export
+  implementation or CI evidence is claimed by this gate.
+- **Next:** Implement the bounded API and Settings flow, merge the approved feedback branch, and
+  run the Contract's Sol and CI matrix.
 
 ### 2026-10-05 — LOG-406 — Revise Export Contract for Prime access and bounded synchronous work
 
