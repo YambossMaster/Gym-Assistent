@@ -41,6 +41,7 @@ import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
 import { useTrainingMutations, useTrainingPreference } from '../training/queries'
 import { DemoImportPanel } from './DemoImportPanel'
+import { ExportPanel } from './ExportPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
@@ -301,7 +302,12 @@ const settingsCategories = [
     description: '查看方案、優惠體驗與付款狀態。'
   },
   { id: 'security', label: '帳號與安全', icon: Shield, description: '管理登入方式與帳號狀態。' },
-  { id: 'data', label: '資料與裝置', icon: Database, description: '管理此裝置的暫存資料。' },
+  {
+    id: 'data',
+    label: '資料與裝置',
+    icon: Database,
+    description: '匯出工作台資料並管理此裝置的暫存。'
+  },
   {
     id: 'feedback',
     label: '協助與回饋',
@@ -616,6 +622,16 @@ export function SettingsPage({ session }: { session: Session }) {
           )}
           {category === 'data' && (
             <>
+              <ExportPanel
+                session={session}
+                plan={planQuery.data}
+                timeZone={settingsQuery.data?.timeZone}
+                loadingError={planQuery.isError || settingsQuery.isError}
+                onRetryLoading={() => {
+                  void planQuery.refetch()
+                  void settingsQuery.refetch()
+                }}
+              />
               <DeviceDataPanel session={session} />
               {import.meta.env.DEV && settingsQuery.data && (
                 <details className="settings-dev-tools">

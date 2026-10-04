@@ -28,6 +28,17 @@ export class FinanceModule {
     private readonly repository: FinanceRepository,
     private readonly now: () => Date = () => new Date(),
   ) {}
+  async exportVisibleRows(identity: AuthenticatedIdentity) {
+    const snapshot = await this.repository.snapshot(await this.workspace.resolveWorkspace(identity))
+    const today = localMonthPeriod(this.now(), snapshot.timeZone).date
+    return {
+      rows: financeLedger(snapshot, today).rows,
+      venues: snapshot.venues.map(({ id, name }) => ({ id, name })),
+      manualNotes: new Map(
+        (snapshot.manualEntries ?? []).map(({ id, privateNote }) => [`manual:${id}`, privateNote]),
+      ),
+    }
+  }
   async read(
     identity: AuthenticatedIdentity,
     kind: 'venues' | 'current' | 'months' | 'month' | 'deleted' | 'course-records',

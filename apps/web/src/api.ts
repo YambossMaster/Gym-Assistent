@@ -1254,6 +1254,40 @@ export function isRetryableReadError(error: unknown): boolean {
   return error instanceof ApiError ? error.status >= 500 : error instanceof TypeError
 }
 
+export type ExportRequest = {
+  type: 'training' | 'growth' | 'calendar' | 'finance'
+  format: 'csv' | 'json' | 'pdf'
+  start: string
+  end: string
+  studentId?: string
+  definitionId?: string
+  venueId?: string
+  includeBlocks?: boolean
+  income?: boolean
+  expense?: boolean
+  reference?: boolean
+  includePrivateNotes: boolean
+}
+
+export async function downloadExport(accessToken: string, selection: ExportRequest) {
+  const response = await fetch('/api/v1/exports', {
+    method: 'POST',
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer',
+    signal: AbortSignal.timeout(35_000),
+    headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+    body: JSON.stringify(selection)
+  })
+  if (!response.ok) {
+    const details = (await response.json().catch(() => ({}))) as ErrorResponse
+    throw new ApiError(response.status, details.message ?? '匯出失敗', details)
+  }
+  const disposition = response.headers.get('content-disposition') ?? ''
+  const filename = disposition.match(/filename="([a-zA-Z0-9_.-]+)"/)?.[1]
+  if (!filename) throw new Error('匯出檔案名稱無效。')
+  return { blob: await response.blob(), filename }
+}
+
 async function capabilityRequest<T>(
   path: string,
   token: string,

@@ -147,23 +147,57 @@ try {
     const user = await auth(`/admin/users/${fixture.userId}`)
     assert.equal(user.status, 200)
     assert.equal(((await user.json()) as { email: string }).email, fixture.email)
-    const students = await pool.query<{ id: string; name: string }>(
-      'select id,name from app_private.student where workspace_id=$1',
-      [fixture.workspaceId],
-    )
-    assert.equal(students.rows.length, fixture.studentIds.length)
+    const workspaceExists = fixture.workspaceId
+      ? (
+          await pool.query('select 1 from app_private.workspace where id=$1 and owner_user_id=$2', [
+            fixture.workspaceId,
+            fixture.userId,
+          ])
+        ).rowCount === 1
+      : false
+    const students = fixture.workspaceId
+      ? await pool.query<{ id: string; name: string }>(
+          'select id,name from app_private.student where workspace_id=$1',
+          [fixture.workspaceId],
+        )
+      : { rows: [] as { id: string; name: string }[] }
+    if (!fixture.workspaceId) {
+      assert.equal(fixture.studentIds.length, 0)
+      assert.equal(
+        (
+          await pool.query('select 1 from app_private.workspace where owner_user_id=$1', [
+            fixture.userId,
+          ])
+        ).rowCount,
+        0,
+      )
+    }
+    assert.equal(students.rows.length, workspaceExists ? fixture.studentIds.length : 0)
+    if (fixture.workspaceId && !workspaceExists)
+      assert.equal(
+        (
+          await pool.query('select 1 from app_private.beta_grant where workspace_id=$1', [
+            fixture.workspaceId,
+          ])
+        ).rowCount,
+        0,
+      )
     for (const row of students.rows) {
       assert.ok(fixture.studentIds.includes(row.id))
       assert.ok(row.name.startsWith('M8-B expiry '))
     }
     const deleted = await auth(`/admin/users/${fixture.userId}`, { method: 'DELETE' })
-    assert.ok(deleted.ok, 'delete exact synthetic Auth user')
-    assert.equal((await auth(`/admin/users/${fixture.userId}`)).status, 404)
-    assert.equal(
-      (await pool.query('select 1 from app_private.workspace where id=$1', [fixture.workspaceId]))
-        .rowCount,
-      0,
+    assert.ok(
+      deleted.ok,
+      `delete exact synthetic Auth user (${deleted.status}): ${await deleted.text()}`,
     )
+    assert.equal((await auth(`/admin/users/${fixture.userId}`)).status, 404)
+    if (fixture.workspaceId)
+      assert.equal(
+        (await pool.query('select 1 from app_private.workspace where id=$1', [fixture.workspaceId]))
+          .rowCount,
+        0,
+      )
     await pool.query('delete from app_private.beta_redemption where code_id=$1', [fixture.codeId])
     await pool.query('delete from app_private.beta_code where id=$1', [fixture.codeId])
     assert.equal(

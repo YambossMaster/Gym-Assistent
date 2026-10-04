@@ -1,4 +1,7 @@
 import { FinanceModule } from '../finances/finance-module.js'
+import { ExportError, ExportModule } from '../exports/export-module.js'
+import { csvFile, exportFilename, jsonFile } from '../exports/export-format.js'
+import { pdfFile } from '../exports/export-pdf.js'
 import { FinanceError } from '../finances/finance.js'
 import Fastify, { LogController, type FastifyInstance, type FastifyRequest } from 'fastify'
 import { z, ZodError } from 'zod'
@@ -59,6 +62,7 @@ export interface ServerDependencies {
   training?: TrainingModule
   publicAccess?: PublicAccessModule
   finances?: FinanceModule
+  exports?: ExportModule
   demoImport?: DemoImportModule
   betaAdmission?: BetaAdmissionModule
   planAccess?: PlanAccessModule
@@ -196,6 +200,7 @@ export function buildServer({
   betaAdmission,
   planAccess,
   finances,
+  exports,
   readiness,
   logger = false,
 }: ServerDependencies): FastifyInstance {
@@ -204,6 +209,7 @@ export function buildServer({
     logController: new LogController({ disableRequestLogging: true }),
     ajv: { customOptions: { removeAdditional: false } },
   })
+  const exporting = new Set<string>()
   const visibleTraining = async (identity: { userId: string }, record: SessionTraining) =>
     (await planAccess?.get(identity))?.tier === 'free'
       ? {
@@ -378,6 +384,8 @@ export function buildServer({
       })
   }
   server.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ExportError)
+      return reply.status(error.statusCode).send({ error: error.code })
     if (error instanceof PlanAccessError) return reply.status(403).send({ error: error.reason })
     if (
       (error as { code?: string; message?: string }).code === 'P0003' &&
@@ -536,7 +544,8 @@ export function buildServer({
     if (
       request.routeOptions.url?.startsWith('/v1/public/') ||
       request.routeOptions.url?.startsWith('/v1/demo-imports') ||
-      request.routeOptions.url?.startsWith('/v1/beta/')
+      request.routeOptions.url?.startsWith('/v1/beta/') ||
+      request.routeOptions.url === '/v1/exports'
     ) {
       reply.header('Cache-Control', 'no-store, private')
       reply.header('Pragma', 'no-cache')
@@ -551,6 +560,53 @@ export function buildServer({
     { schema: { body: registrationCheckBodySchema } },
     async (request) => ({ exists: await registrationEmails.isRegistered(request.body.email) }),
   )
+
+  if (exports && planAccess) {
+    server.post<{ Body: unknown }>('/v1/exports', async (request, reply) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      if ((await planAccess.get(identity)).tier !== 'advanced')
+        return reply.status(403).send({ error: 'plan_required', requiredPlan: 'prime' })
+      if (exporting.has(identity.userId)) return reply.status(429).send({ error: 'export_busy' })
+      exporting.add(identity.userId)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 30_000)
+      const work = exports
+        .select(identity, request.body)
+        .then(async (data) => {
+          if (controller.signal.aborted) throw new ExportError(422, 'export_processing_limit')
+          const body =
+            data.format === 'csv'
+              ? csvFile(data)
+              : data.format === 'json'
+                ? jsonFile(data)
+                : await pdfFile(data, controller.signal)
+          if (controller.signal.aborted) throw new ExportError(422, 'export_processing_limit')
+          return { data, body }
+        })
+        .finally(() => {
+          clearTimeout(timer)
+          exporting.delete(identity.userId)
+        })
+      const deadline = new Promise<never>((_resolve, reject) => {
+        controller.signal.addEventListener(
+          'abort',
+          () => reject(new ExportError(422, 'export_processing_limit')),
+          { once: true },
+        )
+      })
+      const { data, body } = await Promise.race([work, deadline])
+      reply.header(
+        'Content-Type',
+        data.format === 'pdf'
+          ? 'application/pdf'
+          : data.format === 'csv'
+            ? 'text/csv; charset=utf-8'
+            : 'application/json; charset=utf-8',
+      )
+      reply.header('Content-Disposition', `attachment; filename="${exportFilename(data)}"`)
+      return reply.send(body)
+    })
+  }
 
   server.get('/v1/students', async (request) => {
     const identity = await identityVerifier.verify(request.headers.authorization)

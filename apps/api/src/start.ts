@@ -31,6 +31,7 @@ import { PostgresBetaAdmissionRepository } from './beta-admission/postgres-beta-
 import { SupabaseVerifiedCoachEmail } from './beta-admission/supabase-verified-coach-email.js'
 import { PlanAccessModule } from './plan-access/plan-access.js'
 import { PostgresPlanAccessRepository } from './plan-access/postgres-plan-access-repository.js'
+import { ExportModule } from './exports/export-module.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -84,6 +85,13 @@ const server = buildServer({
     config.BETA_ADMISSION_SECRET,
   ),
   planAccess: new PlanAccessModule(new PostgresPlanAccessRepository(pool)),
+  exports: new ExportModule({
+    workspace: new WorkspaceModule({ repository }),
+    students: new StudentModule({ repository }),
+    scheduling: new SchedulingModule(new PostgresSchedulingRepository(pool)),
+    training: new TrainingModule(new PostgresTrainingRepository(pool)),
+    finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
+  }),
   ...(config.NODE_ENV === 'production'
     ? {}
     : { demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)) }),
