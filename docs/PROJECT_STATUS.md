@@ -90,12 +90,19 @@ and is outside this package. Existing account deletion and legal rights
 requests need a private process. Terms and privacy drafts await actual operator, contact,
 provider and retention facts before publication.
 On 2026-10-04, the Product Owner selected Google Forms linked to a private Sheet for product
-feedback, with a separate support Email for account and rights matters. The Form may accept
-unverified respondents; spam is an accepted bounded risk. No feedback notification or digest
-automation is requested. Twelve months after closure is a retention draft for M8-C to finalize,
-and deletion handling must cover both Form and Sheet. Actual Form URL, support address, published
-privacy language and real-Coach end-to-end submission remain M8-C/M8-D work; no external Form or
-production resource was created by this documentation decision.
+feedback, with a separate support Email for account and rights matters. Chinese and English Forms
+are now published and link to each other. Both accept anonymous responses; a validated contact
+Email is optional. Their responses go to separate tabs in one private Sheet. File upload was
+considered and then explicitly declined. Spam is an accepted bounded risk; no feedback notification
+or digest automation is requested. Twelve months after closure is a retention draft for M8-C to
+finalize, and deletion handling must cover the matching Form and Sheet tab. The live links are
+[Chinese Form](https://docs.google.com/forms/d/e/1FAIpQLSfr_F8ilQEAyO7AIX1-CkFCCirGEr4td8eN_qyd3oMJWkdWuA/viewform),
+[English Form](https://docs.google.com/forms/d/e/1FAIpQLSfjAcjfzTODwaLqt27TSVcGx114lMmCFNyYMufYP3Uioiaqow/viewform),
+and [private response Sheet](https://docs.google.com/spreadsheets/d/1HCDxtAmeEvS6yYxmIiEaEYwOvuONAIdg8mIeCcZ6gDE/edit).
+The Product Owner then approved connecting the Settings feedback entry in parallel with
+M8-B-Export. The local entry opens the Chinese Form, which links to English. The support address,
+published privacy language and real-Coach submission remain M8-C/M8-D work; no production resource
+was created.
 The Product Owner uses about USD 30/month as a planning target, not a hard recurring ceiling.
 They consider a USD 35.87/month Pro-based configuration affordable for a later live-service
 decision, while controlled Beta remains Supabase Free-first. Actual use should justify a Pro
@@ -705,6 +712,41 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-04 — LOG-404 — Connect Settings to the published feedback Form
+
+- **Scope:** Implement the Product Owner's approved early feedback entry in the existing checkout,
+  independently of M8-B-Export and without adding a backend or a new worktree.
+- **Outcome:** Settings → 協助與回饋 now opens the published Chinese Google Form in a new tab. Its
+  description welcomes feedback, states that anonymous responses and the English version are
+  available, and warns against entering secrets or unnecessary Student details. Account, data and
+  privacy assistance stays separate; the support address remains unavailable until M8-C. Removed
+  the stale direction to use that unavailable contact option from both live Form descriptions.
+- **Verification:** Targeted Prettier, Web typecheck, the feedback-link suite (1 file/9 tests), Web
+  production build and `git diff --check` passed. Authenticated Chrome on desktop and at 390×844
+  displayed the entry; clicking it opened the live Chinese responder Form, which showed its English
+  version link. Both responder views showed their revised descriptions. This is local browser
+  evidence, not remote CI or real-Coach acceptance.
+- **Known issue:** A dedicated support address and final privacy/retention notice are still needed
+  before real-Coach admission. The independent M8-B expiry/downgrade manual gate remains open.
+- **Next:** Merge this bounded feedback entry after review while M8-B-Export follows its approved
+  Contract → Sol → CI sequence; complete support, privacy and real-Coach feedback checks at M8-C/D.
+
+### 2026-10-04 — LOG-403 — Publish bilingual external feedback forms
+
+- **Scope:** Prepare Chinese and English Google Forms for the approved lightweight feedback channel
+  without adding a feedback backend, attachment upload or notification automation.
+- **Outcome:** Published two mutually linked five-question Forms under the Product Owner's Google
+  account. Both use three required feedback questions and optional operation details and contact
+  Email. Responses link to separate `中文回覆` and `English responses` tabs in one owner-private
+  Sheet. The browser-facing feedback link remains a later M8-C integration step.
+- **Verification:** Anonymous browser views showed both published forms and working language links.
+  A synthetic anonymous English response displayed the confirmation and appeared in the linked
+  English Sheet tab. With the Product Owner's action-time confirmation, its exact Form response and
+  Sheet row were deleted; the Form returned to zero responses and the Sheet tab to header only.
+  Chinese anonymous submission and cleanup were verified in the preceding Form setup session.
+- **Next:** Keep M8-B-Export as the approved engineering handoff. At M8-C, connect Settings to the
+  Chinese Form and verify desktop/390px access, support contact, privacy text and real-Coach flow.
 
 ### 2026-10-04 — LOG-402 — Make verification change-aware and fixture-driven
 

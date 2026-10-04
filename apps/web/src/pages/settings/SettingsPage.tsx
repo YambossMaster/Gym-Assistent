@@ -43,7 +43,7 @@ import { useTrainingMutations, useTrainingPreference } from '../training/queries
 import { DemoImportPanel } from './DemoImportPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
-import { getFeedbackFormUrl } from './feedback-link'
+import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
 function planDate(instant: string): string {
@@ -243,7 +243,8 @@ function PlanPanel({
 }
 
 function FeedbackPanel() {
-  const formUrl = getFeedbackFormUrl(import.meta.env.VITE_FEEDBACK_FORM_URL)
+  const formUrl =
+    getFeedbackFormUrl(import.meta.env.VITE_FEEDBACK_FORM_URL) ?? DEFAULT_FEEDBACK_FORM_URL
   const address = (import.meta.env.VITE_SUPPORT_EMAIL ?? '').trim()
   const available = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)
   return (
@@ -251,20 +252,14 @@ function FeedbackPanel() {
       <div className="settings-row">
         <div className="settings-row-copy">
           <strong>意見回饋</strong>
-          <span>回報問題或提出建議。請勿填寫密碼、分享連結或非必要的學員資料。</span>
+          <span>
+            每一則回饋都是我們改進產品的線索。遇到不順手的地方、發現問題，或想到更好的做法，都歡迎告訴我們。
+          </span>
+          <span>可匿名填寫；表單內可切換 English。請勿填寫密碼、分享連結或非必要的學員資料。</span>
         </div>
-        {formUrl ? (
-          <a
-            className="settings-row-action"
-            href={formUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            填寫回饋表單 <ArrowRight aria-hidden="true" />
-          </a>
-        ) : (
-          <span className="settings-account-value">表單準備中</span>
-        )}
+        <a className="settings-row-action" href={formUrl} target="_blank" rel="noopener noreferrer">
+          填寫意見回饋 <ArrowRight aria-hidden="true" />
+        </a>
       </div>
       <div className="settings-row">
         <div className="settings-row-copy">
@@ -307,7 +302,12 @@ const settingsCategories = [
   },
   { id: 'security', label: '帳號與安全', icon: Shield, description: '管理登入方式與帳號狀態。' },
   { id: 'data', label: '資料與裝置', icon: Database, description: '管理此裝置的暫存資料。' },
-  { id: 'feedback', label: '協助與回饋', icon: MessageSquare, description: '回報問題或提出建議。' }
+  {
+    id: 'feedback',
+    label: '協助與回饋',
+    icon: MessageSquare,
+    description: '分享使用感受、問題與建議。'
+  }
 ] as const
 type SettingsCategory = (typeof settingsCategories)[number]['id']
 
