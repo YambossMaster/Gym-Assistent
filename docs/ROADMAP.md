@@ -669,6 +669,11 @@ drill.
 package's Contract, Sol and CI before M8-C production deployment. It does not depend on paid
 checkout or a production environment.
 
+**Product Owner access decision — 2026-10-05:** all four Settings export types and all three file
+formats require current Prime (`advanced`) entitlement. Existing read-view access rules remain in
+force; Free and Pro cannot download through this export feature. The manual route for applicable
+data-rights requests remains available. An active Prime promotional or permanent grant qualifies.
+
 **Parallel feedback handoff — approved 2026-10-04:** the external feedback entry is already
 implemented and locally verified on `codex/feedback-form-link` at `84a38f2`; this branch has not
 been merged into `main` or pushed. During M8-B-Export Sol, merge that branch into the Export

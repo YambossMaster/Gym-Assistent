@@ -1,6 +1,6 @@
 # M8-B-Export Contract — Coach data export
 
-> Draft for Product Owner review, 2026-10-04. This is not a frozen Contract or implementation
+> Revised Draft for Product Owner review, 2026-10-05. This is not a frozen Contract or implementation
 > authorization. The Roadmap owns scope and gate order; this document proposes the precise
 > decisions needed to implement its export package.
 
@@ -14,26 +14,34 @@ this package. The Demo's Settings backup button is not copied into the formal pr
 exports the Demo's local-storage graph.
 
 The panel presents four data types, a format selector, the relevant filters, a short privacy notice
-and one `下載檔案` action. Only the selected type is requested. Changing type resets type-specific
-filters and the private-note checkbox. The UI never suggests that it exports all Workspace data or
-can restore records.
+and one `下載檔案` action to a Coach with current Prime (`advanced`) entitlement. Free and Pro see a
+locked explanation and a `方案與帳單` link, not an enabled download control. Only the selected type is
+requested. Changing type resets type-specific filters and the private-note checkbox. The UI never
+suggests that it exports all Workspace data or can restore records.
 
 ## Proposed selection rules
 
 `start` and `end` are inclusive local calendar dates in the Workspace time zone read by the server.
 The server interprets them as `[start at local midnight, day after end at local midnight)` in UTC.
-Invalid local dates, `start > end`, and ranges longer than 366 local days are rejected before
-generating a file. The default is the most recent 90 local days including today; the Coach can
-change both dates. Archived Students remain selectable and their retained records remain eligible.
-Entity IDs are validated within the verified Workspace; a foreign or missing ID returns the same
-`404 not_found`.
+The initial CSV/JSON selection is the most recent 30 local dates including Workspace-local today;
+its maximum is 31 inclusive local dates. PDF initially selects the most recent 7 local dates and
+allows at most 7 inclusive local dates. These are calendar-date counts, not fixed 24-hour windows.
+The Web derives today from the Workspace time zone supplied by the authenticated Settings
+projection, never from the device time zone. The server independently checks its own Workspace
+time zone and the selected dates. Invalid local dates, `start > end`, and overlong ranges return
+`400 invalid_export_range` before querying data. On a format switch, preserve valid dates; if the
+range exceeds the new format's maximum, keep its end date and move its start to the earliest legal
+date, show the corrected range and an inline explanation, and require a fresh click to download.
+Changing a date or filter never silently requests a file. Archived Students remain selectable and
+their retained records remain eligible. Entity IDs are validated within the verified Workspace;
+a foreign or missing ID returns the same `404 not_found`.
 
-| Type                           | Filters                                                                                   | Included rows and date rule                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------ | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Training Records               | Date range; optional one Student (or all)                                                 | Existing non-legacy Session Training Records with saved exercises, sets, or a private note. Select by Session start date. Include scheduled, completed and cancelled Session records, labelled by status; do not invent an empty record for a Session without a Training Record. A record with no set remains in JSON/PDF and has one row with empty set fields in CSV.                                          |
-| Growth Trajectory numeric data | Date range; optional one Student; optional one Exercise definition (or all)               | One point per Student, Exercise, metric, unit and qualifying Session, using the current Training performance-series rules. Select by Session start date. Keep the current rule that a completed set in a scheduled or completed Session can contribute; cancelled Sessions do not. Export the numeric points, not a chart image or private note.                                                                 |
-| Calendar                       | Date range; optional one Student; `包含行事曆區塊` switch, off by default                 | Sessions whose time interval intersects the selected local-day interval, including scheduled, completed and cancelled states. Filter Sessions by Student if selected. When enabled, add intersecting Calendar Blocks independently of the Student filter. Do not export availability rules, conflict warnings, or unmaterialized future recurrence. An event crossing midnight appears once.                     |
-| Finance details                | Date range; optional one Venue; income, expense and reference switches, all on by default | Current visible `financeLedger` rows whose effective local date is within range. Preserve manual entries and corrections from the server-derived ledger, including row status and source-change flags. Exclude hidden/deleted rows and source-only draft data; the existing manual rights route covers a comprehensive data request. Rows without a Venue are included only when the Venue filter is `全部場地`. |
+| Type                           | Filters                                                                                   | Included rows and date rule                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Training Records               | Date range; optional one Student (or all)                                                 | Existing non-legacy Session Training Records with saved exercises, sets, or a private note. Select by Session start date. Include scheduled, completed and cancelled Session records, labelled by status; do not invent an empty record for a Session without a Training Record. A record with no set remains in JSON/PDF and has one row with empty set fields in CSV.                                              |
+| Growth Trajectory numeric data | Date range; optional one Student; optional one Exercise definition (or all)               | One point per Student, Exercise, metric, unit and qualifying Session, using the current Training performance-series rules. Select by Session start date. Keep the current rule that a completed set in a scheduled or completed Session can contribute; cancelled Sessions do not. Export the numeric points, not a chart image or private note.                                                                     |
+| Calendar                       | Date range; optional one Student; `包含行事曆區塊` switch, off by default                 | Sessions whose time interval intersects the selected local-day interval, including scheduled, completed and cancelled states. Filter Sessions by Student if selected. When enabled, add intersecting Calendar Blocks independently of the Student filter. Do not export availability rules, conflict warnings, or unmaterialized future recurrence. An event crossing midnight appears once.                         |
+| Finance details                | Date range; optional one Venue; income, expense and reference switches, all on by default | Current visible `financeLedger.rows` whose effective local date is within range. Preserve manual entries and corrections from the server-derived ledger, including row status and source-change flags. Exclude `financeLedger.deleted` and source-only draft data; the existing manual rights route covers a comprehensive data request. Rows without a Venue are included only when the Venue filter is `全部場地`. |
 
 The type/format/filter choices are explicit before download. No background multi-file job, ZIP,
 scheduled export, saved file, or export history is created.
@@ -84,10 +92,13 @@ not present as blank columns by default.
 - **PDF:** A4 portrait or landscape as needed for the selected type, with title, filter summary,
   generation time and time zone, repeated table headings and page numbers. Training groups sets
   under Session/Student and Exercise; Calendar is an ordered agenda; Growth is a numeric table;
-  Finance is a ledger table with per-currency totals derived from the selected visible rows. The
-  PDF shows the human-readable fields in the table above, with source IDs in a compact secondary
+  Finance is a ledger table with per-currency **selection totals** derived only from the exported
+  visible rows: income, expense and income minus expense in each currency, with no running or
+  account-balance claim. These may differ from the Settings monthly totals when the export uses a
+  narrower date range, Venue or direction filter. Both use the same visible-ledger rules; hidden
+  rows are absent from both. The PDF shows the human-readable fields in the table above, with source IDs in a compact secondary
   line for reconciliation. Long text wraps without clipping. Private notes, when opted in, are
-  clearly labelled. No hidden rows are omitted to force a PDF page limit.
+  clearly labelled. No selected rows are omitted to shorten the PDF.
 
 Suggested stable filenames are
 `form-coach-{training|growth|calendar|finance}-{start}_{end}-{YYYYMMDD-HHmm}.{csv|json|pdf}`.
@@ -103,25 +114,42 @@ query caches do not store the body.
 plan at generation time, validates selected entities, and obtains data through the owning Training,
 Scheduling and Finance rules. There is no new persistent export table or client-supplied Workspace
 ID. The API builds a bounded file before sending a success response, so no partial success or silent
-truncation occurs. A request may contain at most 2,000 flat output rows and 10 MiB of final file;
-PDF may contain at most 100 pages. A larger selection returns `413 export_too_large` with guidance
-to narrow dates or entities. The server caps work time at 30 seconds and returns a retryable error
-if it cannot finish; it never returns a partial file. Concurrent downloads per Coach are bounded
-to prevent resource exhaustion.
+truncation occurs. CSV/JSON permit at most 2,000 flat output rows; PDF permits at most 500 flat
+output rows. A Training row means one set, or one no-set record; other row definitions are in the
+format contract above. The server counts no more than the relevant limit plus one selected row
+before starting any file writer. A larger selection returns `413 export_too_large` without
+rendering PDF. The final file may be at most 10 MiB; crossing that limit also returns 413 before
+any attachment bytes are sent. There is no page-count limit or automatic truncation. A date range
+within its limit can still produce too many rows; the UI gives the Coach date and entity filters to
+narrow it.
 
-Training and Calendar exports follow the existing Free read access, even if Free is above capacity.
-Growth Trajectory and Finance exports require current Pro/Prime access, matching their locked
-projections. The API returns `403 plan_required` after a downgrade; the Web clears any in-memory
-premium export response or stale download state. A fresh plan check occurs for every request.
-Export does not itself count as an operational write, so the over-capacity write lock does not block
-an otherwise allowed data download.
+Generation stays in the same Fly.io-hosted Fastify API process as the existing application, not a
+Supabase Edge Function. It uses one synchronous request with bounded concurrency and a server-side
+work deadline of 30 seconds. Sol must use cancellation where the data and writer operations support
+it, and verify the deadline against the actual local production-mode host path. When the work
+deadline is reached, return `422 export_processing_limit` with no file if the connection still
+permits a structured response. An upstream disconnect may prevent that response; the Web treats a known
+generation timeout as the same narrowing guidance. This is an action rule for the same selected
+parameters, not a claim that every timeout has a deterministic cause. Network/service errors that
+are not known timeouts retain ordinary recovery. No background job or durable file is created.
 
-The panel has visible Loading, Ready, Empty, Generating, Downloaded, Recoverable Error and
-Plan-Locked states. Empty selection is reported before download; it does not create a misleading
-empty file. While generating, disable only the download action and keep filters visible. A failed
-request preserves selections but clears any previous success. Invalid filters show inline guidance;
-expired Auth follows the existing sign-in recovery; `403 plan_required` explains the plan and links
-to `方案與帳單`; `413 export_too_large` asks for a narrower range. The button has a stable accessible
+Every type requires current Prime (`advanced`) entitlement, including its active promotional or
+permanent grant. Free and Pro have no export access even when their ordinary Training or Calendar
+read projections are available. The API returns `403 plan_required` after a downgrade; the Web
+clears any in-memory export response or stale download state. A fresh server plan check occurs for
+every request. An over-capacity write lock does not affect an active Prime export.
+
+The panel has visible Loading, Ready, Empty-after-request, Generating, Downloaded, Recoverable
+Error and Plan-Locked states. There is no count endpoint or automatic count request when filters
+change: the download action stays available for a valid selection. If the selected result is empty,
+the API returns `404 export_empty` with no attachment; the Web then shows `此區間無資料，請調整篩選條件`,
+keeps the selected filters, and re-enables the action for a changed selection. While generating,
+disable only the download action and keep filters visible. A failed request preserves selections
+but clears any previous success. Invalid filters show inline guidance; expired Auth follows the
+existing sign-in recovery; `403 plan_required` explains Prime and links to `方案與帳單`. For
+`413 export_too_large`, `422 export_processing_limit`, or a known generation timeout, show
+`資料量過大，請縮小日期範圍或指定單一對象後再試` and do not offer an immediate retry with unchanged
+parameters. A normal network/service failure may offer Retry. The button has a stable accessible
 name and status messages are announced. At desktop and 390×844, filters, note consent, errors and
 download action remain visible and keyboard/touch reachable without horizontal overflow.
 
@@ -142,18 +170,23 @@ CI verifies all 12 type/format combinations with deterministic fixtures. Cover l
 DST boundaries, inclusive dates, archived Student and foreign entity filters, cancelled/cross-day
 events, corrected/hidden finance entries and multiple currencies, empty and oversized selections,
 private-note default exclusion and explicit opt-in, CSV formula injection, PDF Unicode/wrapping,
-two-Coach isolation, Free and premium plan changes, no-store headers, desktop and 390×844 download
-behavior, root check/build, applicable migration dry-run and exact-SHA GitHub Actions. Browser
+two-Coach isolation, Free/Pro/Prime plan changes, format-switch range correction, Workspace-local
+today across device time zones, pre-render row rejection, processing deadline and no-count empty
+response, no-store headers, desktop and 390×844 download behavior, root check/build, applicable
+migration dry-run and exact-SHA GitHub Actions. Browser
 acceptance proves one downloaded file per action and verifies its name and contents. No test claims
 that an export is a backup or a complete data-rights response.
 
 ## Product Owner decisions to freeze
 
-1. Confirm the proposed Free access for Training/Calendar and Pro/Prime access for Growth/Finance,
-   including download access while Free is over capacity.
-2. Confirm the date defaults and 366-day maximum, the four inclusion/filter rules above, and
-   whether Finance should exclude hidden/deleted rows by default.
-3. Confirm the 2,000-row, 10 MiB and 100-page per-request limits and the private-note opt-in scope.
+The Product Owner has decided that every export type is Prime-only and directed this revision of
+the date, capacity, empty-state and timeout rules. The remaining choice to freeze is the four
+included-row/filter rules above and the per-request private-note opt-in scope. The revised limits
+also need acceptance as a single coherent synchronous-request contract: CSV/JSON 30 default and
+31-day maximum with 2,000 rows; PDF 7 default and maximum with 500 rows; 10 MiB final file and
+30-second server work deadline. The PDF 7-day choice resolves the offered 7-or-14-day alternative
+conservatively. A focused load fixture must demonstrate that these bounds can complete within the
+actual host path before Sol can claim the feature ready.
 
 After these decisions are accepted, remove the Draft marker, record the frozen Contract in
 `PROJECT_STATUS.md`, and begin Sol. Do not implement against unapproved product rules.

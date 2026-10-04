@@ -9,7 +9,7 @@
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
 | Current package    | **M8-B-Export Contract**                                                |
-| Package state      | **M8-B delivered; Export Contract draft awaits PO**                     |
+| Package state      | **M8-B delivered; revised Export Contract draft awaits PO**             |
 | Approved next      | **Review and freeze the M8-B-Export Contract**                          |
 | Completed baseline | M0–M7.5, including M3.5, Done                                           |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
@@ -188,8 +188,10 @@ exact SHA. M8-B's Contract, Sol and CI gates are now complete. No production res
 was involved.
 
 **Next:** Review and freeze the proposed [M8-B-Export Contract](M8-B-EXPORT-CONTRACT.md). The
-Draft decisions cover plan access, date/filter and included-row rules, private notes and file
-limits. Begin Sol only after Product Owner acceptance; merge the approved
+Product Owner has fixed access at Prime only. The revised Draft addresses the 90-day/2,000-row
+conflict, synchronous PDF limits, empty selection, timeout guidance, finance totals, and Workspace
+midnight. Review its remaining included-row/filter and private-note choices and accept or revise
+the proposed per-format limits. Begin Sol only after Product Owner acceptance; merge the approved
 `codex/feedback-form-link` handoff during Sol, then execute its combined Settings CI gate before
 M8-C.
 
@@ -721,6 +723,28 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-05 — LOG-406 — Revise Export Contract for Prime access and bounded synchronous work
+
+- **Scope:** Apply the Product Owner's Prime-only export decision and review the Draft's date,
+  volume, PDF, empty-state, timeout, finance-total and time-zone risks against the current
+  Fastify/Fly architecture and visible-ledger rules.
+- **Outcome:** Roadmap records Prime-only access. The revised Draft proposes CSV/JSON at 30 default
+  and 31 maximum local dates with 2,000 rows, PDF at 7 default and maximum dates with 500 rows,
+  a shared 10 MiB output cap, pre-render row rejection, and a 30-second server work deadline.
+  It removes page-count and count-endpoint assumptions, defines `404 export_empty`, distinguishes
+  selected-row Finance totals from account balance, anchors today to Workspace time zone, and
+  gives narrowing guidance after resource limits or known generation timeouts. No Export code or
+  schema changed.
+- **Verification:** Contract and Roadmap cross-check against `financeLedger.rows`,
+  `monthlyFinance` and the approved Fly/Fastify deployment shape; targeted Prettier and
+  `git diff --check` passed. No runtime, browser, migration or remote CI evidence is claimed for
+  the Export feature.
+- **Known issue:** The four inclusion/filter rules, private-note scope and revised numeric limits
+  still require Product Owner acceptance before this Contract can freeze. A Sol load fixture must
+  prove the limits on the actual production-mode request path.
+- **Next:** Resolve those Contract decisions, freeze M8-B-Export, then begin Sol and integrate the
+  approved feedback branch.
 
 ### 2026-10-05 — LOG-405 — Deliver M8-B browser-gate evidence at exact SHA
 
