@@ -48,7 +48,7 @@ import { useCalendarRouteQuery, useSchedulingMutations } from './queries'
 import { SchedulingDialog } from './SchedulingDialog'
 import { SchedulingTimeInput } from './SchedulingTimeInput'
 import { calendarSessionVisualState, selectCalendarRouteState } from './state'
-import { calendarHeaderWheelAction } from './calendar-header-wheel'
+import { calendarHeaderWheelStep } from './calendar-header-wheel'
 
 type CalendarView = 'agenda' | 'day' | 'week' | 'month'
 type Draft =
@@ -112,9 +112,11 @@ export function CalendarPage({
   const [draftError, setDraftError] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const pageRef = useRef<HTMLElement | null>(null)
+  const headerRef = useRef<HTMLDivElement | null>(null)
+  const headerInnerRef = useRef<HTMLDivElement | null>(null)
   const calendarViewportRef = useRef<HTMLDivElement | null>(null)
   const collapsedRef = useRef(false)
-  const headerGestureLockUntilRef = useRef(0)
+  const hiddenHeaderPxRef = useRef(0)
   const range = rangeFor(anchor, view, preferences.calendarWeekStart)
   const query = useCalendarRouteQuery(session, range)
   const students =
@@ -148,26 +150,72 @@ export function CalendarPage({
     const handleWheel = (event: WheelEvent) => {
       if (window.matchMedia('(max-width: 720px)').matches) return
       if (document.querySelector('[aria-modal="true"]')) return
-      const now = performance.now()
-      if (now < headerGestureLockUntilRef.current) {
-        event.preventDefault()
-        headerGestureLockUntilRef.current = now + 180
+      const header = headerRef.current
+      const headerInner = headerInnerRef.current
+      const planner = calendarViewportRef.current
+      if (!header || !headerInner || !planner) return
+      const headerHeight = headerInner.scrollHeight
+      const deltaY =
+        event.deltaY *
+        (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? planner.clientHeight : 1)
+      const step = calendarHeaderWheelStep(
+        hiddenHeaderPxRef.current,
+        headerHeight,
+        planner.scrollTop,
+        deltaY
+      )
+      if (step.kind === 'planner') {
+        if (!planner.contains(event.target as Node)) {
+          event.preventDefault()
+          planner.scrollTop += deltaY
+        }
         return
       }
-      const action = calendarHeaderWheelAction(
-        collapsedRef.current,
-        calendarViewportRef.current?.scrollTop ?? 0,
-        event.deltaY
-      )
-      if (action === 'pass') return
       event.preventDefault()
-      const next = action === 'collapse'
-      collapsedRef.current = next
-      headerGestureLockUntilRef.current = now + 300
-      setCollapsed(next)
+      hiddenHeaderPxRef.current = step.hiddenPx
+      header.style.transition = 'none'
+      header.style.gridTemplateRows = '1fr'
+      if (step.hiddenPx === 0) {
+        header.style.removeProperty('height')
+        header.style.removeProperty('overflow')
+        headerInner.style.removeProperty('transform')
+      } else {
+        header.style.height = `${headerHeight - step.hiddenPx}px`
+        header.style.overflow = 'hidden'
+        headerInner.style.transform = `translateY(-${step.hiddenPx}px)`
+      }
+      const nextCollapsed = step.hiddenPx === headerHeight
+      if (collapsedRef.current !== nextCollapsed) {
+        collapsedRef.current = nextCollapsed
+        setCollapsed(nextCollapsed)
+      }
+    }
+    const handleResize = () => {
+      const header = headerRef.current
+      const headerInner = headerInnerRef.current
+      if (!header || !headerInner) return
+      if (window.matchMedia('(max-width: 720px)').matches) {
+        hiddenHeaderPxRef.current = 0
+        header.style.removeProperty('height')
+        header.style.removeProperty('transition')
+        header.style.removeProperty('grid-template-rows')
+        header.style.removeProperty('overflow')
+        headerInner.style.removeProperty('transform')
+        collapsedRef.current = false
+        setCollapsed(false)
+      } else if (hiddenHeaderPxRef.current > 0) {
+        const headerHeight = headerInner.scrollHeight
+        hiddenHeaderPxRef.current = Math.min(hiddenHeaderPxRef.current, headerHeight)
+        header.style.height = `${headerHeight - hiddenHeaderPxRef.current}px`
+        headerInner.style.transform = `translateY(-${hiddenHeaderPxRef.current}px)`
+      }
     }
     page.addEventListener('wheel', handleWheel, { capture: true, passive: false })
-    return () => page.removeEventListener('wheel', handleWheel, { capture: true })
+    window.addEventListener('resize', handleResize)
+    return () => {
+      page.removeEventListener('wheel', handleWheel, { capture: true })
+      window.removeEventListener('resize', handleResize)
+    }
   }, [])
   return (
     <section
@@ -175,8 +223,8 @@ export function CalendarPage({
       className={`page calendar-page compact-calendar-page${collapsed ? ' calendar-focus-mode' : ''}`}
     >
       <MobilePageAppBar title="行事曆" addLabel="安排課程" onAdd={() => setDraft(initialDraft())} />
-      <div className="calendar-collapsible-header">
-        <div className="calendar-header-inner">
+      <div ref={headerRef} className="calendar-collapsible-header">
+        <div ref={headerInnerRef} className="calendar-header-inner">
           <header className="page-header reveal">
             <div>
               <span className="eyebrow dark">{formatRange(range, timeZone)}</span>

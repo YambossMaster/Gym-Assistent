@@ -1,32 +1,101 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-03. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-04. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                     |
-| ------------------ | --------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA release and free Beta**                                     |
-| Current package    | **M8-B main integration — remote push approval pending**                          |
-| Package state      | **M8-A and M8-B integrated locally; desktop/390px plan review passed**            |
-| Completed baseline | M0–M7.5, including M3.5, Done                                                     |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs             |
-| Worktree           | Existing `D:` checkout on clean local `main`; M8-A/B and corrections committed    |
-| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied   |
-| Production         | Not configured; no real customer data                                             |
-| Approved M8 scope  | Open free Beta; optional 90-day offer codes and at most ten permanent free grants |
+| Field              | Current value                                                                   |
+| ------------------ | ------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                 |
+| Current package    | **M8-B Beta-plan Contract revision**                                            |
+| Package state      | **No-card offer and write lock approved; exact mutation rules pending**         |
+| Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**                     |
+| Completed baseline | M0–M7.5, including M3.5, Done                                                   |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs           |
+| Worktree           | Existing `D:` checkout on local `main`; plan-policy docs have local changes     |
+| Linked database    | Development only; M8-B migrations `20261003021805` and `20261003035550` applied |
+| Production         | Not configured; no real customer data                                           |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants         |
+
+The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
+Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
+on initial failure. The full Web test suite passed 59 files/252 tests before the final detail-skeleton
+addition; the focused regression and Web build passed again afterward. Authenticated desktop and
+390×844 preview passed, and Chrome showed the titled card in the first detail-loading frame. This
+is local verification only; no M8-B gate or remote CI completion is claimed.
+The subsequent local Student-detail spacing correction aligns the performance card's vertical
+padding with neighboring cards: 26px on desktop and 20px in the 390×844 preview. It preserves
+the mobile horizontal padding and the existing section-to-section grid gap.
+The latest local loading-state correction renders all four Student-detail sections as matching
+card skeletons, so the performance card remains identifiable without appearing fully loaded ahead
+of its neighbors. Desktop first-load Chrome captured the shared card treatment; 390×844 preview
+exposed all four section headings. The focused Student regression and Web build passed afterward.
+The latest local Training correction gives desktop Coach notes the same editable surface and
+Markdown toolbar used on mobile, while retaining the desktop session context layout. Desktop Chrome
+showed the toolbar docked below the note canvas; the 390×844 preview retained its note tab and
+focus-triggered toolbar. Web check passed 59 files/252 tests before the added integration assertion;
+focused editor and Training tests passed 2 files/26 tests afterward, and Web build passed. This is
+local verification only; the M8-B handoff and remote delivery state are unchanged.
+The Product Owner's follow-up desktop note correction removes the character count and shortens and
+lowers the toolbar to make room for more writing. A screen recording exposed a cross-paragraph
+selection bug: the editor's blank-area click handler collapsed a drag selection after release.
+The focused regression failed before the click guard and passed after it; authenticated desktop
+Chrome then retained a first-to-third-paragraph selection without changing the note. The isolated
+development note used for reproduction was restored to its original text, showed Saved, and remained
+unchanged after reloading the route. Final Web check passed 59 files/253 tests; Web build passed with
+only the established large-chunk advisory.
+The next local desktop note refinement gives its scrolling canvas the existing mobile thin,
+transparent-track scrollbar treatment with no arrow buttons. Its toolbar is about 37px high and
+has a 14px gap above the bottom bar at the inspected desktop viewport. Authenticated Chrome showed
+both changes with the current note intact; targeted Prettier, whitespace check and Web build passed.
+The next local desktop note refinement scales down the toolbar's Style and Class-information menus
+without changing their actions or the mobile menus. Authenticated Chrome showed the Style menu at
+150px wide and the Class-information menu at 260px with 11px row type; both fit the compact desktop
+toolbar. Targeted Prettier, whitespace check and Web build passed.
+
+The Product Owner's screen recording showed that the prior single-event Calendar wheel test did
+not preserve two stages on a touchpad: one physical swipe emitted several events and moved the
+header and planner together. A later idle-time guard would risk ignoring a new swipe. The local
+correction now spends wheel distance on the 132px header first, then routes subsequent events to
+the planner; upward movement returns the planner to top before expanding the header. No time gate
+or deferred scroll is used. Authenticated `5174` Chrome showed partial header heights of about
+`97px` and `58px` while planner `scrollTop` stayed `0`, then planner movement only after header
+height reached `0`; the reverse path was also observed. Focused Calendar tests passed 2 files/8
+tests in both worktrees. The M8-B worktree's full Web check passed 60 files/255 tests, and Web
+builds passed in both worktrees with the existing large-chunk advisory. Chrome's automated wheel
+steps are not a physical touchpad acceptance run. This is local verification only; the M8-B gate
+and remote delivery state are unchanged.
 
 The Product Owner approved M8 usage, capacity and alert visibility on 2026-10-01, then simplified
 the release for a single-developer MVP: Local + Production only; Fly/Supabase dashboards and
 manual verification; no staging, custom operator dashboard, feedback backend, rollback drill or
 mandatory paid legal review. The goal is real Coaches signing in and saving training records soon.
+On 2026-10-03, the Product Owner clarified that Beta can open before paid checkout. Payment
+development starts at real-Coach Beta launch, and paid Basic/Advanced checkout must be live
+before the first redeemed 60-day offer expires. A Beta code gives Advanced access at
+100% off for 60 days without collecting a card; afterward the Coach actively subscribes or
+returns to Free. Paid subscriptions renew monthly until cancelled. If Free capacity is exceeded,
+preserve all data while locking operational writes until usage falls within the limits or paid
+access becomes active. The Product Owner has a preferred payment provider and will name it later.
+The prior no-scheduled-backup acceptance was for a free Beta. The Product Owner now requires a
+verifiable backup and isolated restore before charging real Coaches; M8-E must select and prove
+the concrete method, cadence, retention and protected storage before enabling checkout.
 The Product Owner also approved agent-operated synthetic Alpha, manual core-path checks on an
 available installed phone during Alpha, external feedback without a per-submission reply promise,
-and no routine
-Coach-facing export/backup/record-deletion feature. Existing account deletion and legal rights
+and no M8-B Coach-facing export/backup/record-deletion feature. On 2026-10-03 the Product Owner
+moved the four Settings data exports into M8-B-Export, immediately after M8-B and before M8-C.
+Each request downloads one CSV, JSON or PDF file; Growth Trajectory PNG belongs at its own view
+and is outside this package. Existing account deletion and legal rights
 requests need a private process. Terms and privacy drafts await actual operator, contact,
 provider and retention facts before publication.
+On 2026-10-04, the Product Owner selected Google Forms linked to a private Sheet for product
+feedback, with a separate support Email for account and rights matters. The Form may accept
+unverified respondents; spam is an accepted bounded risk. No feedback notification or digest
+automation is requested. Twelve months after closure is a retention draft for M8-C to finalize,
+and deletion handling must cover both Form and Sheet. Actual Form URL, support address, published
+privacy language and real-Coach end-to-end submission remain M8-C/M8-D work; no external Form or
+production resource was created by this documentation decision.
 The Product Owner uses about USD 30/month as a planning target, not a hard recurring ceiling.
 They consider a USD 35.87/month Pro-based configuration affordable for a later live-service
 decision, while controlled Beta remains Supabase Free-first. Actual use should justify a Pro
@@ -60,12 +129,21 @@ Root check passed API 29 files/141 tests and Web 59 files/251 tests; root build 
 development migration dry-run passed. The corrections and integration record were committed on
 local `main`; the temporary stash containing duplicate M8-A work was dropped after verifying both
 M8 branch tips are ancestors and the worktree is clean. No production resource was created and no
-real Coach was admitted. **Next:** Remote `main` push was rejected by automatic approval review
-because the Product Owner explicitly named the local Vite directory but did not separately name
-the shared remote default branch. Await the Product Owner's answer to the exact remote-push
-question; if authorized, push and confirm `verify` plus `migration-dry-run` for the exact Main SHA.
-Then begin the M8-C Contract handoff; actual support email, provider accounts, legal text, and
-deployment remain M8-C decisions.
+real Coach was admitted. The Product Owner subsequently approved M8-B plan locks and Advanced
+access for both promotional and permanent grants, then shortened the promotional period to
+60 days. The later instruction replaced recalculation of existing development test eligibility:
+its single grant was removed and its one live code revoked pending the frozen Contract and 60-day
+implementation. The historical redemption ledger remains, with no Student or Training data touched.
+The Product Owner then approved Beta admission before paid checkout: payment development begins
+at Beta launch, and live checkout is due before the first offer expires. The no-card 60-day
+Advanced offer and over-limit operational write lock on Free remain. **Next:** finish the M8-B
+Contract's exact write-lock allowlist and implement its plan-policy Sol gate. Payment-provider
+selection belongs to M8-E and does not block M8-B or the initial Beta. The
+earlier remote `main` push was rejected by automatic approval review because
+the Product Owner explicitly named the local Vite directory but did not separately name the shared
+remote default branch; no new remote-push authorization is inferred. M8-B-Export follows M8-B CI;
+M8-C then requires actual support email, provider accounts, legal text and deployment
+decisions. M8-D admits Beta Coaches; M8-E delivers paid checkout before the earliest offer expiry.
 
 ## Stage 2 evidence
 
@@ -323,8 +401,8 @@ frozen and its local Sol work is complete; CI delivery is next.
 | M6 Public Capability Links             | Done        | Commit `658ce1a`; CI run `34966898151` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7 Local resilience and Demo migration | Done        | Commit `8885404`; CI run `34976808273` Verify and migration-dry-run succeeded after complete local/live/browser evidence        |
 | M7.5 Pre-deployment product hardening  | Done        | Stage 2 delivered to Main at `1f653d5`; run `36804355951` passed both jobs; device checks are M8-C entry evidence               |
-| M8 Taiwan Web/PWA free Beta release    | In progress | M8-A CI complete at `12f573b` / run `36862665167`; M8-B Contract next; no production environment                                |
-| M9 Taiwan paid launch                  | Deferred    | Requires M8 Beta outcomes and separate Product Owner approval                                                                   |
+| M8 Taiwan Web/PWA commercial Beta      | In progress | M8-B Contract revision active; M8-B-Export precedes production Alpha; no production environment                                 |
+| M9 Post-Beta commercialization         | Deferred    | Requires M8-E checkout, Beta outcomes and Product Owner approval                                                                |
 | M10 International/native decision      | Conditional | Requires evidence of demand or PWA limits                                                                                       |
 
 ## Preserved implementation inventory
@@ -595,6 +673,234 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-04 — LOG-398 — Route touchpad distance through Calendar stages
+
+- **Scope:** Correct the remaining desktop touchpad overlap shown in the Product Owner's
+  `20261004-1110-22.3227421.mp4` recording.
+- **Outcome:** Replace the idle-time wheel guard with distance-driven header reveal. Downward
+  deltas shorten the header before planner scrolling begins; upward deltas return the planner to
+  top before revealing the header. The boundary event changes only one stage, and no wheel input
+  is held for a timer.
+- **Verification:** A multi-event regression exposed the previous overlap. Focused Calendar
+  tests passed 2 files/8 tests in both worktrees. Authenticated `5174` Chrome showed header
+  height `132 → 97 → 58 → 0px` with planner `scrollTop 0`, then planner scrolling; the reverse
+  route moved the planner to top before expanding the header. The M8-B worktree's Web check
+  passed 60 files/255 tests; both local Web builds passed with the established large-chunk
+  advisory. Physical touchpad hand feel and remote delivery remain unverified.
+- **Next:** Finish the active M8-B Contract/Sol handoff without changing its scope.
+
+### 2026-10-04 — LOG-397 — Restore two-stage desktop Calendar wheel scrolling
+
+- **Scope:** Correct the local desktop Calendar's delayed or ignored vertical wheel gesture without
+  changing Scheduling data, mobile gestures, or the current M8-B Contract work.
+- **Outcome:** The Product Owner clarified that header collapse and planner scrolling must remain
+  separate. The first downward event is cancelled after collapsing the header; the next
+  same-direction event scrolls the planner. The guard's deadline no longer extends on every
+  event. The earlier same-event scrolling change was reversed.
+- **Known issue found afterward:** The test treated one `wheel` event as a whole gesture. The
+  Product Owner's touchpad recording showed several events per swipe, so the apparent two-stage
+  browser check did not establish real touchpad separation. LOG-398 replaces this approach.
+- **Next:** Finish M8-B Contract's exact operational-write allowlist and its Sol gate.
+
+### 2026-10-04 — LOG-396 — Select Google Form feedback intake
+
+- **Scope:** Record the Product Owner's selected external feedback channel and operating limits
+  within the current M8-B Contract.
+- **Outcome:** M8-B now specifies a Google Form linked to a private Sheet, a separate support Email,
+  minimal fields, manual triage and no notification automation. Unverified submissions and spam are
+  accepted Beta risks. A 12-month-after-closure retention draft and dual-location deletion check
+  are reserved for M8-C's published privacy and support procedure.
+- **Verification:** Documentation formatting and `git diff --check` were run for this focused edit.
+  No Form, account, Web code, live submission or remote CI was created or verified.
+- **Next:** Finish M8-B Contract's exact operational-write allowlist and its Sol gate. Configure
+  the real Form/support contact and perform desktop/mobile submission checks before real-Coach
+  admission.
+
+### 2026-10-03 — LOG-395 — Scale desktop Coach-note menus to the compact toolbar
+
+- **Scope:** Respond to the Product Owner's screenshots showing oversized Style and Class-information
+  menus above the desktop note toolbar.
+- **Outcome:** Reduced desktop menu widths, type, row height, checkbox size, padding and spacing;
+  used the same thin scrollbar treatment for the Class-information list. The mobile menu rules and
+  note editor behaviour remain unchanged.
+- **Verification:** Authenticated desktop Chrome showed the Style menu at 150px wide and the
+  Class-information menu at 260px wide, with 11px row type and roughly 35px rows. Both menus opened
+  and closed without changing the note. Targeted Prettier, `git diff --check` and Web build passed;
+  the build retained only the existing large-chunk advisory. No test was added for this CSS-only
+  correction.
+- **Next:** Continue M8-B Contract's exact operational-write allowlist.
+
+### 2026-10-03 — LOG-394 — Refine desktop Coach-note scrollbar and toolbar spacing
+
+- **Scope:** Follow the Product Owner's screenshot feedback on the desktop Coach-note scrollbar
+  and lower toolbar height.
+- **Outcome:** Applied the mobile 4px thumb, transparent track and hidden arrow buttons to the
+  desktop note canvas. Reduced desktop tool icon, caption and button height while keeping a 14px
+  gap below the toolbar. Mobile CSS and note input/data behaviour remain unchanged.
+- **Verification:** Authenticated desktop Chrome showed the thin scrollbar without the native
+  white track or arrows. Computed layout measured a roughly 37px toolbar and 14px bottom gap;
+  note content remained intact. Targeted Prettier, `git diff --check` and Web build passed; the
+  build retained only the existing large-chunk advisory. No new test was added for this CSS-only
+  correction.
+- **Next:** Continue M8-B Contract's exact operational-write allowlist.
+
+### 2026-10-03 — LOG-393 — Preserve desktop Coach-note selection and free writing space
+
+- **Scope:** Follow up on the Product Owner's desktop note screenshot and selection recording.
+- **Outcome:** Removed the character count, reduced the desktop toolbar height and bottom spacing,
+  and gave the note canvas the recovered space. The editor now distinguishes a completed drag
+  selection from a blank-area click, preserving cross-paragraph selection on release.
+- **Verification:** The focused cross-paragraph test failed before the fix and passed afterward;
+  focused note/Training tests passed 2 files/26 tests. Authenticated desktop Chrome retained a
+  selection spanning the first and third note paragraphs, with unchanged text and Saved status.
+  The development test note remained restored after route reload. Final Web check passed 59
+  files/253 tests; Web build passed with only the existing large-chunk advisory. Targeted Prettier
+  and `git diff --check` passed.
+- **Next:** Continue M8-B Contract's exact operational-write allowlist.
+
+### 2026-10-03 — LOG-392 — Bring mobile note editing to desktop Training context
+
+- **Scope:** Add the already validated mobile Coach-note input features to the desktop note area,
+  without changing the desktop Training layout, note storage, API, or M8-B plan policy.
+- **Outcome:** Removed the desktop-only textarea so both widths use one contenteditable note editor.
+  Desktop now has the Markdown block, list, bold, indent, and class-import toolbar at the bottom of
+  its note canvas. Native selection can span its blocks; the existing draft/autosave flow remains.
+- **Verification:** Desktop Chrome showed the note canvas and bottom toolbar alongside Training.
+  The 390×844 browser preview retained the note tab and focus-triggered toolbar; this is preview,
+  not physical-device evidence. Web check passed 59 files/252 tests before the added route assertion;
+  focused editor/Training tests passed 2 files/26 tests afterward. Web build and targeted Prettier
+  passed with only the existing large-chunk advisory; `git diff --check` passed.
+- **Next:** Continue M8-B Contract's exact operational-write allowlist, then its plan-policy Sol gate.
+
+### 2026-10-03 — LOG-391 — Unify Student detail first-load card skeletons
+
+- **Scope:** Correct the first Student-detail loading frame, where the newly added full-style
+  performance card stood out beneath two generic gray placeholder bars.
+- **Outcome:** Basic information, fixed schedule, performance and course history now use the same
+  titled card skeleton treatment with animated placeholder lines. The performance slot is present
+  from first load without presenting itself as the only completed card. The independent performance
+  query still keeps its card visible while its count loads and offers retry on initial failure.
+- **Verification:** Authenticated desktop Chrome captured the four-card first-load state and the
+  loaded Student page; 390×844 preview exposed all four section headings in the first-load state.
+  Focused Student navigation tests passed 3/3 and Web production build passed with only its
+  existing large-chunk advisory. Targeted Prettier and `git diff --check` passed.
+- **Next:** Continue the existing M8-B Contract handoff: freeze the operational-write allowlist,
+  then implement the plan-policy Sol gate.
+
+### 2026-10-03 — LOG-390 — Align Student performance card vertical spacing
+
+- **Scope:** Correct the `個人運動表現` card's visibly tighter top and bottom padding on the Student
+  detail page, as requested by the Product Owner.
+- **Outcome:** Increased the card's vertical padding from 18px to 26px on desktop and from 16px
+  to 20px on mobile. The mobile horizontal padding remains 16px so the eyebrow stays on one line;
+  adjacent-card gaps remain governed by the existing Student detail grid.
+- **Verification:** Authenticated desktop and 390×844 Chrome preview showed balanced card spacing
+  and the unchanged mobile single-line eyebrow. Web production build, targeted Prettier and
+  `git diff --check` passed. Build retained only the existing large-chunk advisory.
+- **Next:** Continue the existing M8-B Contract handoff: freeze the operational-write allowlist,
+  then implement the plan-policy Sol gate.
+
+### 2026-10-03 — LOG-389 — Move Coach data export directly after M8-B
+
+- **Scope:** The Product Owner approved moving the four Settings data exports ahead of production
+  Alpha and paid checkout, immediately after M8-B. Growth Trajectory PNG will be designed at its
+  own view, outside this package.
+- **Outcome:** Roadmap now orders M8-B-Export Contract → Sol → CI between M8-B and M8-C without
+  renumbering the existing release packages. The package owns one selected data type and one direct
+  CSV, JSON or PDF download per request, with no default ZIP. Its Contract must freeze exact ranges,
+  fields, privacy, limits and entitlement before implementation. M9 no longer owns the first
+  export release.
+- **Verification:** Scope and sequence were reconciled against the active M8-B Contract and Status;
+  targeted Prettier check and `git diff --check` passed. No export code, API, schema, browser, live
+  service, production or remote-CI evidence is claimed.
+- **Next:** Complete M8-B's exact write-lock allowlist, Sol and CI, then freeze M8-B-Export Contract.
+
+### 2026-10-03 — LOG-388 — Keep Student performance card present during first load
+
+- **Scope:** Correct the Student-detail `個人運動表現` loading and initial-error presentation reported by
+  the Product Owner, without changing the server projection or M8-B plan-policy Contract.
+- **Outcome:** The initial Student-detail skeleton now includes the titled performance card, which
+  stays in place while the independent performance request loads. Its count uses an animated
+  placeholder until data arrives. An initial request failure retains the card and makes it a retry
+  action. Loaded count and directory navigation remain intact.
+- **Verification:** Focused Student navigation test first reproduced the missing card, then passed
+  3/3 after the fix. Full Web Vitest passed 59 files/252 tests before the final detail-skeleton
+  addition; the focused regression and production build passed again afterward. Web typecheck,
+  Prettier and `git diff --check` passed; the build retained only its existing large-chunk advisory.
+  Authenticated Chrome showed the loaded card in desktop and 390×844 mobile preview and the titled
+  card in the first detail-loading frame; the mobile preview is not physical-device evidence.
+- **Next:** Continue the existing M8-B Contract handoff: freeze the exact operational-write
+  allowlist, then implement the plan-policy Sol gate.
+
+### 2026-10-03 — LOG-387 — Remove obsolete development Beta test eligibility
+
+- **Scope:** The Product Owner withdrew the request to recalculate the existing test account's
+  90-day grant and directed removal of its Beta eligibility until the plan and 60-day offer are
+  implemented.
+- **Outcome:** In the linked development project, removed the only promotional `beta_grant` and
+  revoked its only live `beta_code` in one transaction. Kept the redemption ledger and all Coach
+  data. M8-B no longer requires a migration for old test grant expiry. The current 90-day runtime
+  and Settings copy remain for M8-B Sol; no new code should be issued before that change.
+- **Verification:** Development API host and pooler username matched the linked project ref.
+  Before change: one promotional grant and one live code tied to it. After change: zero grants,
+  zero live codes and one retained redemption ledger row. No production environment was touched.
+- **Next:** Freeze M8-B's exact operational-write allowlist, then implement and verify the 60-day
+  plan policy and issue a new isolated test code only when that implementation is ready.
+
+### 2026-10-03 — LOG-386 — Sequence Beta admission before paid checkout
+
+- **Scope:** The Product Owner clarified that real-Coach Beta may launch before payment entry.
+  Payment development starts at Beta launch and must reach production within the first 60-day
+  offer window, before the earliest redemption expires.
+- **Outcome:** Roadmap now orders M8-B plan policy, M8-C production Alpha, M8-D initial no-charge
+  real-Coach Beta and M8-E paid checkout. M8-E owns the named payment provider, subscription
+  lifecycle and backup/restore proof before live charges. M8-B no longer waits for a provider.
+  The no-card Advanced offer, active Free limits and over-limit write lock remain approved.
+- **Verification:** Documentation Prettier and `git diff --check` passed. No payment code, provider account, backup,
+  production resource or real-Coach admission is claimed.
+- **Next:** Freeze M8-B's exact operational-write allowlist, then implement and verify its Sol gate.
+
+### 2026-10-03 — LOG-385 — Move paid checkout into the first real-Coach Beta
+
+- **Scope:** The Product Owner corrected M8 to a commercial Beta, with paid Basic/Advanced checkout
+  available before real Coaches join. Beta-code holders receive 60 days of Advanced access at
+  100% off without entering a card, then actively subscribe or return to Free. Ordinary paid
+  subscriptions renew monthly until cancelled.
+- **Outcome:** Roadmap moves the initial payment lifecycle from M9 to M8-B/C/D. The M8-B Contract
+  is reopened for the named provider and its payment, cancellation, failure, refund and invoice
+  details. Over-limit Free Coaches retain readable data but operational writes lock until capacity
+  is reduced or paid access activates. M9 is post-Beta refinement. A verifiable backup and isolated
+  restore are required before paid real-Coach admission.
+- **Verification:** Documentation checks are pending. No payment implementation, merchant account,
+  live charge, production resource or real-Coach admission is claimed.
+- **Next:** Receive the Product Owner's named payment provider, freeze the provider-specific M8-B
+  Contract, then implement its Sol and CI gates before M8-C.
+
+### 2026-10-03 — LOG-384 — Shorten proposed Advanced trial to 60 days
+
+- **Scope:** The Product Owner shortened the optional Advanced trial from 90 to 60 days and
+  raised the effect of expiry on Coaches above the Free Student limit.
+- **Outcome:** Roadmap and M8-B Contract now specify 60 days, including recalculation of already
+  redeemed development grants from their original starts. The Contract revision is reopened for
+  the over-limit Training write policy. No automatic charge or deletion is proposed.
+- **Verification:** Documentation formatting and whitespace checks pending. Runtime still grants
+  90 days; no policy implementation or live evidence is claimed.
+- **Next:** Resolve the pending over-limit write choice, freeze M8-B Contract, then implement Sol.
+
+### 2026-10-03 — LOG-383 — Record approved M8-B plan-policy revision
+
+- **Scope:** The Product Owner set Free, Basic and Advanced limits, specified the complete
+  `本月收支` and performance-directory/trend locks, chose Advanced for both Beta grant classes,
+  and moved plan-lock enforcement into M8-B. Per-area exports are planned for later work.
+- **Outcome:** Revised Roadmap scope and froze the M8-B Contract with active-record limits,
+  non-destructive downgrade, Today/performance entry points and server-enforced locks. Existing
+  Venue expense settings, Lesson Purchase amounts, Training Records and scheduling stay available
+  on Free. Planned prices are NT$199 and NT$259 monthly; no Beta checkout or export is represented
+  as available.
+- **Verification:** Documentation formatting and whitespace checks passed. No plan-lock
+  implementation, migration, browser acceptance or remote CI is claimed for this revision.
+- **Next:** Implement and verify the revised M8-B Sol gate before any M8-C handoff.
 
 ### 2026-10-03 — LOG-382 — Integrate M8-A/B and local corrections in the existing checkout
 

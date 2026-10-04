@@ -350,7 +350,12 @@ export function MobileNoteEditor({
         className="mobile-note-canvas"
         aria-label="教練筆記編輯器"
         onClick={(event) => {
-          if (event.target !== event.currentTarget || !editorRef.current) return
+          if (
+            event.target !== event.currentTarget ||
+            !editorRef.current ||
+            window.getSelection()?.isCollapsed === false
+          )
+            return
           const nodes = noteNodes(editorRef.current)
           focusAt(editorRef.current, nodes.length - 1, nodes.at(-1)?.textContent?.length ?? 0)
         }}
@@ -364,7 +369,10 @@ export function MobileNoteEditor({
           aria-label="教練筆記內文"
           aria-multiline="true"
           onClick={(event) => {
-            if (event.target === event.currentTarget) {
+            if (
+              event.target === event.currentTarget &&
+              window.getSelection()?.isCollapsed !== false
+            ) {
               const nodes = noteNodes(event.currentTarget)
               focusAt(event.currentTarget, nodes.length - 1, nodes.at(-1)?.textContent?.length ?? 0)
             } else updateActive()

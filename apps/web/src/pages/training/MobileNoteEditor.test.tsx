@@ -11,6 +11,7 @@ describe('mobile note editor', () => {
   })
 
   it('offers one continuous editable surface for cross-paragraph selection', async () => {
+    HTMLElement.prototype.scrollIntoView = vi.fn()
     const host = document.createElement('div')
     document.body.append(host)
     const root = createRoot(host)
@@ -35,6 +36,18 @@ describe('mobile note editor', () => {
     const selection = window.getSelection()!
     selection.removeAllRanges()
     selection.addRange(range)
+    expect(selection.toString()).toContain('第二')
+    await act(async () =>
+      host
+        .querySelector('.mobile-note-content')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    )
+    expect(selection.toString()).toContain('第二')
+    await act(async () =>
+      host
+        .querySelector('.mobile-note-canvas')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    )
     expect(selection.toString()).toContain('第二')
     await act(async () => root.unmount())
     host.remove()

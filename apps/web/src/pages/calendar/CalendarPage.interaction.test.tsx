@@ -72,9 +72,13 @@ describe('Calendar scheduling surface', () => {
       await act(async () =>
         root.render(<CalendarPage session={{} as Session} timeZone="Asia/Taipei" />)
       )
+      Object.defineProperty(host.querySelector('.calendar-header-inner')!, 'scrollHeight', {
+        configurable: true,
+        value: 132
+      })
       const page = host.querySelector('.calendar-page')!
       await act(async () =>
-        page.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 }))
+        page.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 160 }))
       )
       expect(page.classList.contains('calendar-focus-mode')).toBe(true)
       for (const view of ['月', '日', '課表', '週']) {
@@ -85,6 +89,68 @@ describe('Calendar scheduling surface', () => {
         })
         expect(page.classList.contains('calendar-focus-mode')).toBe(true)
       }
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
+  it('scrolls the desktop header and planner in sequence without dropping wheel steps', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(<CalendarPage session={{} as Session} timeZone="Asia/Taipei" />)
+      )
+      const planner = host.querySelector('.calendar-timeline-scroll')!
+      const header = host.querySelector<HTMLElement>('.calendar-collapsible-header')!
+      const headerInner = host.querySelector('.calendar-header-inner')!
+      Object.defineProperty(headerInner, 'scrollHeight', { configurable: true, value: 132 })
+
+      const first = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 })
+      await act(async () => planner.dispatchEvent(first))
+      expect(first.defaultPrevented).toBe(true)
+      expect(header.style.height).toBe('52px')
+      expect(host.querySelector('.calendar-page')?.classList.contains('calendar-focus-mode')).toBe(
+        false
+      )
+
+      const continuing = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 })
+      await act(async () => planner.dispatchEvent(continuing))
+      expect(continuing.defaultPrevented).toBe(true)
+      expect(header.style.height).toBe('0px')
+      expect(host.querySelector('.calendar-page')?.classList.contains('calendar-focus-mode')).toBe(
+        true
+      )
+
+      const nextGesture = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 })
+      await act(async () => planner.dispatchEvent(nextGesture))
+      expect(nextGesture.defaultPrevented).toBe(false)
+
+      planner.scrollTop = 100
+      const returning = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: -80 })
+      await act(async () => planner.dispatchEvent(returning))
+      expect(returning.defaultPrevented).toBe(false)
+
+      planner.scrollTop = 0
+      const returningTail = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -40
+      })
+      await act(async () => planner.dispatchEvent(returningTail))
+      expect(returningTail.defaultPrevented).toBe(true)
+      expect(header.style.height).toBe('40px')
+
+      const expand = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: -100 })
+      await act(async () => planner.dispatchEvent(expand))
+      expect(expand.defaultPrevented).toBe(true)
+      expect(header.style.height).toBe('')
+      expect(host.querySelector('.calendar-page')?.classList.contains('calendar-focus-mode')).toBe(
+        false
+      )
     } finally {
       await act(async () => root.unmount())
     }

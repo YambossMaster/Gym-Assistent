@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { calendarHeaderWheelAction } from './calendar-header-wheel'
+import { calendarHeaderWheelStep } from './calendar-header-wheel'
 
-describe('calendarHeaderWheelAction', () => {
-  it('collapses on the first downward wheel gesture from anywhere on the page', () => {
-    expect(calendarHeaderWheelAction(false, 0, 1)).toBe('collapse')
-    expect(calendarHeaderWheelAction(false, 450, 50)).toBe('collapse')
+describe('calendarHeaderWheelStep', () => {
+  it('spends downward wheel distance on the header before the planner', () => {
+    expect(calendarHeaderWheelStep(0, 132, 0, 80)).toEqual({ kind: 'header', hiddenPx: 80 })
+    expect(calendarHeaderWheelStep(80, 132, 0, 80)).toEqual({ kind: 'header', hiddenPx: 132 })
+    expect(calendarHeaderWheelStep(132, 132, 0, 80)).toEqual({ kind: 'planner' })
   })
 
-  it('expands only at the top of the planner', () => {
-    expect(calendarHeaderWheelAction(true, 100, -10)).toBe('pass')
-    expect(calendarHeaderWheelAction(true, 0, -10)).toBe('expand')
-    expect(calendarHeaderWheelAction(true, 0, 10)).toBe('pass')
+  it('returns the planner to its top before spending upward distance on the header', () => {
+    expect(calendarHeaderWheelStep(132, 132, 100, -80)).toEqual({ kind: 'planner' })
+    expect(calendarHeaderWheelStep(132, 132, 0, -80)).toEqual({ kind: 'header', hiddenPx: 52 })
+    expect(calendarHeaderWheelStep(52, 132, 0, -80)).toEqual({ kind: 'header', hiddenPx: 0 })
+    expect(calendarHeaderWheelStep(0, 132, 0, -80)).toEqual({ kind: 'planner' })
   })
 })

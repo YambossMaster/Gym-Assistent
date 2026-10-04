@@ -1600,10 +1600,27 @@ function PurchaseEditor({
 function StudentDetailSkeleton() {
   return (
     <Page title="學生資料" eyebrow="正在載入">
-      <section className="detail-skeleton" aria-label="正在載入學生資料">
-        <span />
-        <span />
-        <span />
+      <section className="student-detail-loading" aria-label="正在載入學生資料" aria-busy="true">
+        <div className="student-detail-loading-card">
+          <strong>基本資料</strong>
+          <span className="student-detail-loading-line" aria-hidden="true" />
+          <span className="student-detail-loading-line short" aria-hidden="true" />
+        </div>
+        <div className="student-detail-loading-card">
+          <small>FIXED SCHEDULE</small>
+          <strong>固定課程時間</strong>
+          <span className="student-detail-loading-line" aria-hidden="true" />
+        </div>
+        <div className="student-detail-loading-card">
+          <small>PERFORMANCE / MOVEMENT RECORDS</small>
+          <strong>個人運動表現</strong>
+          <span className="student-detail-loading-line short" aria-hidden="true" />
+        </div>
+        <div className="student-detail-loading-card">
+          <small>SESSION HISTORY</small>
+          <strong>課程紀錄</strong>
+          <span className="student-detail-loading-line" aria-hidden="true" />
+        </div>
       </section>
     </Page>
   )
@@ -2054,6 +2071,8 @@ export function StudentPerformance({
   const [selected, setSelected] = useState<PerformanceEntry | null>(null)
   const [allOpen, setAllOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'count' | 'latest'>('count')
+  const firstLoad = query.data === undefined && query.isLoading
+  const firstLoadError = query.data === undefined && query.isError
   const entries = [...(query.data ?? [])].sort(
     (a, b) =>
       (sortBy === 'count'
@@ -2112,26 +2131,33 @@ export function StudentPerformance({
   }
   return (
     <section className="performance-directory" aria-label="動作表現">
-      {query.isLoading ? (
-        <p>載入動作表現中…</p>
-      ) : query.isError ? (
-        <p>
-          無法載入動作表現。 <button onClick={() => void query.refetch()}>重試</button>
-        </p>
-      ) : (
-        <button className="performance-portal" type="button" onClick={() => setAllOpen(true)}>
-          <span className="performance-portal-copy">
-            <small>PERFORMANCE / MOVEMENT RECORDS</small>
-            <strong>個人運動表現</strong>
-            <span>查看所有動作的紀錄與成長軌跡</span>
+      <button
+        className={`performance-portal${firstLoad ? ' is-loading' : ''}`}
+        type="button"
+        disabled={firstLoad}
+        aria-busy={firstLoad}
+        onClick={() => {
+          if (firstLoadError) void query.refetch()
+          else setAllOpen(true)
+        }}
+      >
+        <span className="performance-portal-copy">
+          <small>PERFORMANCE / MOVEMENT RECORDS</small>
+          <strong>個人運動表現</strong>
+          <span role={firstLoadError ? 'alert' : undefined}>
+            {firstLoadError ? '無法載入動作表現，請重試。' : '查看所有動作的紀錄與成長軌跡'}
           </span>
-          <span className="performance-portal-count">
-            <strong>{entries.length}</strong>
-            <small>項動作</small>
-          </span>
-          <ArrowRight aria-hidden="true" />
-        </button>
-      )}
+        </span>
+        <span className="performance-portal-count">
+          {firstLoad ? (
+            <span className="performance-loading-mark" aria-hidden="true" />
+          ) : (
+            <strong>{firstLoadError ? '重試' : entries.length}</strong>
+          )}
+          <small>{firstLoad ? '載入中' : firstLoadError ? '重新載入' : '項動作'}</small>
+        </span>
+        <ArrowRight aria-hidden="true" />
+      </button>
       {allOpen && (
         <SchedulingDialog
           variant="performance"
