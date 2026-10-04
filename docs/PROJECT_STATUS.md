@@ -9,7 +9,7 @@
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
 | Current package    | **M8-B main integration and CI delivery**                               |
-| Package state      | **Main local check/build/migration passed; remote CI pending**          |
+| Package state      | **Main CI passed; remaining M8-B browser acceptance open**              |
 | Approved next      | **M8-B-Export after M8-B CI, before M8-C production Alpha**             |
 | Completed baseline | M0–M7.5, including M3.5, Done                                           |
 | Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
@@ -153,9 +153,10 @@ Today recovery changes have been reapplied on local `main`. The exact over-limit
 allowlist is frozen in the M8-B Contract. Root check passed API 32 files/149 tests and Web 60
 files/257 tests; root build passed with the existing large-chunk advisory. Linked development
 `db:push:dry` reported an up-to-date migration plan. Security advisors found no error-level
-issue and retained the known leaked-password-protection warning. The final Main push and its
-exact-SHA Actions remain the current delivery gate; outstanding M8-B manual browser paths must
-be recorded before M8-B-Export begins.
+issue and retained the known leaked-password-protection warning. Main SHA `4bb15b1` was
+confirmed on the remote; Actions run `37202636654` passed both `verify` and `migration-dry-run`
+for that exact SHA. Outstanding M8-B manual browser paths must be recorded before M8-B-Export
+begins.
 
 ## Stage 2 evidence
 
@@ -697,9 +698,9 @@ local pass or successful push is not a remote CI completion claim.
 - **Verification:** Root check passed API 32 files/149 tests and Web 60 files/257 tests; root
   build passed with the existing chunk-size advisory. Linked development migration dry-run was
   up to date. Security advisors found no error-level issue; leaked-password protection remains
-  a known warning. `git diff --check` and exact-SHA remote Actions are pending this final commit.
-- **Next:** Push the final Main commit, confirm its `verify` and `migration-dry-run` jobs, then
-  complete the remaining M8-B browser acceptance before M8-B-Export.
+  a known warning. `git diff --check` passed. Remote Main SHA `4bb15b1` passed both GitHub Actions
+  jobs in run `37202636654`: `verify` and `migration-dry-run`.
+- **Next:** Complete and record the remaining M8-B browser acceptance before M8-B-Export.
 
 ### 2026-10-04 — LOG-398 — Route touchpad distance through Calendar stages
 
