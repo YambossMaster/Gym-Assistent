@@ -719,10 +719,12 @@ local pass or successful push is not a remote CI completion claim.
   command sequence. The hook rejected unformatted staged Markdown and accepted its formatted form.
   Historical Markdown-only and mixed commits classified correctly. Focused `BetaGate` tests,
   CI-scope tests, root check (API 32 files/150 tests, Web 60 files/258 tests), root build and
-  `git diff --check` passed locally. Remote delivery remains to be observed.
+  `git diff --check` passed locally. Main commit `0516089` passed both `verify` and
+  `migration-dry-run` in GitHub Actions run `37212204378`; the full code gate ran as intended.
 - **Known issue:** There is no automated pixel-baseline suite yet; viewport checks remain a
   documented browser matrix. M8-B expiry/downgrade still lacks the required browser evidence.
-- **Next:** Confirm exact-SHA remote CI for this workflow change, then finish the M8-B manual gate.
+- **Next:** Confirm the Markdown-only CI path on this evidence commit, then finish the M8-B manual
+  gate.
 
 ### 2026-10-04 — LOG-401 — Production-mode M8-B acceptance and Training header spacing
 
