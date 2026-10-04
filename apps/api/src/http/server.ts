@@ -206,7 +206,14 @@ export function buildServer({
   })
   const visibleTraining = async (identity: { userId: string }, record: SessionTraining) =>
     (await planAccess?.get(identity))?.tier === 'free'
-      ? { ...record, exerciseSummaries: [] }
+      ? {
+          ...record,
+          exerciseSummaries: record.exerciseSummaries.map((summary) => ({
+            ...summary,
+            history: [],
+            series: summary.series?.map((series) => ({ ...series, points: [] })),
+          })),
+        }
       : record
 
   if (betaAdmission) {

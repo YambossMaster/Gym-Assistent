@@ -7,10 +7,66 @@ import { StudentModule } from '../students/student-module.js'
 import { TodayModule } from '../today/today-module.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { PlanAccessModule } from './plan-access.js'
+import type { TrainingModule } from '../training/training-module.js'
+import type { SessionTraining } from '../training/training.js'
 
 const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
 const servers: ReturnType<typeof buildServer>[] = []
 afterEach(async () => Promise.all(servers.splice(0).map((server) => server.close())))
+
+it('keeps inline Training bests on Free while withholding trajectory points', async () => {
+  const repository = new MemoryStudentRepository()
+  const summary = {
+    occurrenceId: 'exercise-1',
+    definitionId: 'squat',
+    metric: 'weight' as const,
+    unit: 'kg' as const,
+    current: 80,
+    previous: 75,
+    personal: 90,
+    history: [{ sessionId: 'older-session', startsAt: new Date(), value: 75, unit: 'kg' as const }],
+    series: [
+      {
+        metric: 'weight' as const,
+        unit: 'kg',
+        current: 80,
+        previous: 75,
+        personal: 90,
+        direction: 'higher' as const,
+        points: [{ sessionId: 'older-session', startsAt: new Date(), value: 75 }],
+      },
+    ],
+  }
+  const training = {
+    getSessionTraining: async () =>
+      ({ exerciseSummaries: [summary] }) as unknown as SessionTraining,
+  } as unknown as TrainingModule
+  const server = buildServer({
+    identityVerifier: new DevelopmentIdentityVerifier(),
+    students: new StudentModule({ repository }),
+    today: new TodayModule(repository),
+    workspace: new WorkspaceModule({ repository }),
+    accountLifecycle: new AccountLifecycleModule({
+      repository,
+      deletionExecutor: { deleteCoach: async () => undefined },
+    }),
+    registrationEmails: { isRegistered: async () => false },
+    training,
+    planAccess: new PlanAccessModule({
+      get: async () => ({ grant: null, activeStudents: 0, activeVenues: 0 }),
+    }),
+  })
+  servers.push(server)
+  const response = await server.inject({ url: '/v1/sessions/session-1/training', headers })
+  expect(response.statusCode).toBe(200)
+  expect(response.json().training.exerciseSummaries[0]).toMatchObject({
+    current: 80,
+    previous: 75,
+    personal: 90,
+    history: [],
+    series: [{ points: [] }],
+  })
+})
 
 function setup() {
   const repository = new MemoryStudentRepository()

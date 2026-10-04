@@ -167,12 +167,22 @@ try {
     completedEdit.record.privateNote !== 'PRIVATE-M5-E2E-EDITED'
   )
     throw new Error('Completed Training record was not editable.')
-  const performanceResponse = await expectStatus(
-    'performance',
-    await request(`/v1/students/${student.id}/performance`, coachA),
+  const reloadedResponse = await expectStatus(
+    'reload Training record',
+    await request(`/v1/sessions/${session.id}/training`, coachA),
     200,
   )
+  const reloaded = ((await reloadedResponse.json()) as any).training
+  if (reloaded.record.privateNote !== 'PRIVATE-M5-E2E-EDITED')
+    throw new Error('Saved Training record did not survive reload.')
+  const performanceResponse = await expectStatus(
+    'Free performance lock',
+    await request(`/v1/students/${student.id}/performance`, coachA),
+    403,
+  )
   const performanceText = await performanceResponse.text()
+  if (!performanceText.includes('plan_required'))
+    throw new Error('Free performance lock returned the wrong error.')
   if (performanceText.includes('PRIVATE-M5-E2E'))
     throw new Error('Private note leaked into performance response.')
   await expectStatus(
@@ -185,7 +195,7 @@ try {
     200,
   )
   console.log(
-    `M5 live E2E passed for isolated Student ${student.id}: 100-item catalog, Training save/replay/mismatch, atomic completion, completed-record editing, performance allowlist, reopen, and two-Coach isolation.`,
+    `M5 live E2E passed for isolated Student ${student.id}: 100-item catalog, Training save/replay/mismatch, atomic completion, completed-record edit/reload, Free performance lock, reopen, and two-Coach isolation.`,
   )
 } finally {
   const latest = await request(`/v1/students/${student.id}`, coachA)

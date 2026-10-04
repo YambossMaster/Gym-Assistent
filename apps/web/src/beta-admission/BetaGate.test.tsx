@@ -5,7 +5,7 @@ import type { Session } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { TodayProjection } from '../api'
+import type { SessionTraining, TodayProjection } from '../api'
 import { queryKeys } from '../query-keys'
 import { useTodayRouteQuery } from '../pages/today/queries'
 import { BetaGate } from './BetaGate'
@@ -89,6 +89,31 @@ it('removes cached income without blanking the Today projection on downgrade', a
   })
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   client.setQueryData(queryKeys.today(session.user.id), today)
+  client.setQueryData<SessionTraining>(queryKeys.sessionTraining(session.user.id, 'session-1'), {
+    exerciseSummaries: [
+      {
+        occurrenceId: 'exercise-1',
+        definitionId: 'squat',
+        metric: 'weight',
+        unit: 'kg',
+        current: 80,
+        previous: 75,
+        personal: 90,
+        history: [{ sessionId: 'older', startsAt: '2026-09-01T00:00:00Z', value: 75, unit: 'kg' }],
+        series: [
+          {
+            metric: 'weight',
+            unit: 'kg',
+            current: 80,
+            previous: 75,
+            personal: 90,
+            direction: 'higher',
+            points: [{ sessionId: 'older', startsAt: '2026-09-01T00:00:00Z', value: 75 }]
+          }
+        ]
+      }
+    ]
+  } as unknown as SessionTraining)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -109,6 +134,16 @@ it('removes cached income without blanking the Today projection on downgrade', a
       client.getQueryData<TodayProjection>(queryKeys.today(session.user.id))?.summary
         .incomeByCurrency
     ).toEqual([])
+    expect(
+      client.getQueryData<SessionTraining>(queryKeys.sessionTraining(session.user.id, 'session-1'))
+        ?.exerciseSummaries[0]
+    ).toMatchObject({
+      current: 80,
+      previous: 75,
+      personal: 90,
+      history: [],
+      series: [{ points: [] }]
+    })
   } finally {
     await act(async () => root.unmount())
     host.remove()

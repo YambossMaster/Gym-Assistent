@@ -76,6 +76,10 @@ entry points must share one entitlement rule; ordinary Training Record entry and
 remain available. Locked entry points may show a concise upgrade explanation and a link to
 `方案與帳單`. Direct URLs and corresponding API projections must enforce the same restrictions.
 Existing public capability links retain their prior scope and never expose a Coach's plan.
+The Training Record's inline `本次 / 上次 最佳` and `個人最佳` values remain visible on Free;
+only the `成長軌跡` action and historical trajectory data require Pro or Prime. The Free
+Training projection may return these scalar summary values while withholding trend history and
+series points.
 
 The Product Owner moved the four Settings exports to the separate M8-B-Export package immediately
 after M8-B and before M8-C. It owns one-file-at-a-time PDF/CSV/JSON downloads for Training Records,

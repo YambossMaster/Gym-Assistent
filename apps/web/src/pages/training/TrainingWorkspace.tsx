@@ -1725,9 +1725,9 @@ function ExerciseCard({
             {details ? `${details.bodyParts.join('、')} · ${details.equipment}` : '訓練動作'}
           </small>
         </div>
-        {summary && !showLockedTrend ? (
+        {summary || showLockedTrend ? (
           <div
-            className={`exercise-performance-inline${primarySummary?.metric === 'weight' ? ' is-weight-summary' : ''}`}
+            className={`exercise-performance-inline${primarySummary?.metric === 'weight' ? ' is-weight-summary' : ''}${showLockedTrend ? ' is-plan-locked' : ''}`}
           >
             {primarySummary ? (
               <>
@@ -1747,7 +1747,7 @@ function ExerciseCard({
                   </strong>
                 </div>
               </>
-            ) : (
+            ) : summary ? (
               <>
                 <div>
                   <span>本次 / 上次 最佳</span>
@@ -1761,23 +1761,25 @@ function ExerciseCard({
                   <strong>{formatValue(summary.personal, summary.metric, summary.unit)}</strong>
                 </div>
               </>
+            ) : (
+              <>
+                <div>
+                  <span>本次 / 上次 最佳</span>
+                  <strong>— / —</strong>
+                </div>
+                <div>
+                  <span>個人最佳</span>
+                  <strong>—</strong>
+                </div>
+              </>
             )}
-            <button type="button" onClick={onShowTrend}>
-              <TrendingUp /> 成長軌跡
-            </button>
-          </div>
-        ) : showLockedTrend ? (
-          <div className="exercise-performance-inline is-plan-locked">
-            <div>
-              <span>本次 / 上次 最佳</span>
-              <strong>— / —</strong>
-            </div>
-            <div>
-              <span>個人最佳</span>
-              <strong>—</strong>
-            </div>
-            <button type="button" onClick={onShowTrend} aria-label="成長軌跡，需 Pro 或 Prime 方案">
-              <TrendingUp aria-hidden="true" /> 成長軌跡 <PlanAccessMark compact />
+            <button
+              type="button"
+              onClick={onShowTrend}
+              aria-label={showLockedTrend ? '成長軌跡，需 Pro 或 Prime 方案' : undefined}
+            >
+              <TrendingUp aria-hidden="true" /> 成長軌跡
+              {showLockedTrend && <PlanAccessMark compact />}
             </button>
           </div>
         ) : null}

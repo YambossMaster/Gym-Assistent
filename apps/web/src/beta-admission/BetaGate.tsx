@@ -45,7 +45,17 @@ export function BetaGate({ session, children }: { session: Session; children: Re
     client.removeQueries({ queryKey: ['student-trend', session.user.id] })
     client.setQueriesData<SessionTraining>(
       { queryKey: ['session-training', session.user.id] },
-      (record) => (record ? { ...record, exerciseSummaries: [] } : record)
+      (record) =>
+        record
+          ? {
+              ...record,
+              exerciseSummaries: record.exerciseSummaries.map((summary) => ({
+                ...summary,
+                history: [],
+                series: summary.series?.map((series) => ({ ...series, points: [] }))
+              }))
+            }
+          : record
     )
     void client.invalidateQueries({ queryKey: ['session-training', session.user.id] })
     const todayKey = queryKeys.today(session.user.id)

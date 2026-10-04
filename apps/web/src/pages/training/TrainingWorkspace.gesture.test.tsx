@@ -10,13 +10,14 @@ import { TrainingWorkspace } from './TrainingWorkspace'
 import * as startAnchorExperiment from './exercise-drag-start-anchor'
 
 const calls = vi.hoisted(() => ({ save: vi.fn() }))
+const planState = vi.hoisted(() => ({ tier: 'advanced' }))
 vi.mock('./queries', () => ({
   useTrainingMutations: () => ({ save: { mutateAsync: calls.save } }),
   useExerciseLibrary: () => ({ data: { definitions: [] } })
 }))
 vi.mock('../calendar/queries', () => ({ useSchedulingMutations: () => ({}) }))
 vi.mock('../../beta-admission/usePlanAccess', () => ({
-  usePlanAccess: () => ({ data: { tier: 'advanced', overCapacity: false } })
+  usePlanAccess: () => ({ data: { tier: planState.tier, overCapacity: false } })
 }))
 vi.mock('../../local-resilience', async (original) => ({
   ...(await original<typeof import('../../local-resilience')>()),
@@ -185,9 +186,50 @@ afterEach(async () => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   vi.useRealTimers()
+  planState.tier = 'advanced'
   Reflect.deleteProperty(HTMLElement.prototype, 'setPointerCapture')
   Reflect.deleteProperty(HTMLElement.prototype, 'hasPointerCapture')
   Reflect.deleteProperty(document.documentElement, 'scrollTop')
+})
+
+it('shows Free Training bests while locking only the trajectory action', async () => {
+  planState.tier = 'free'
+  const withSummary = {
+    ...training,
+    exerciseSummaries: [
+      {
+        occurrenceId: 'one',
+        definitionId: 'one',
+        metric: 'weight',
+        unit: 'kg',
+        current: 80,
+        previous: 75,
+        personal: 90,
+        history: []
+      }
+    ]
+  } as SessionTraining
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: withSummary, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  const card = host.querySelector('[data-exercise-id="one"]')!
+  expect(card.querySelector('.exercise-performance-inline')?.textContent).toContain('80 kg / 75 kg')
+  expect(card.querySelector('.exercise-performance-inline')?.textContent).toContain('90 kg')
+  expect(card.querySelector('[aria-label="成長軌跡，需 Pro 或 Prime 方案"]')).not.toBeNull()
 })
 
 it('uses the shared rich note editor and its toolbar as the only private note input', () => {
