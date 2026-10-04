@@ -32,6 +32,19 @@ their execution order and test-data setup, not milestone scope.
    It refuses a different API origin or a manifest outside the temporary folder. Never point this
    fixture tool at a production API or a real Coach account.
 
+For the M8-B expiry/downgrade browser path, use the synthetic Coach fixture on a local
+production-mode site. Set `API_BASE_URL` to its local `/api` origin, then run
+`npm run fixture:beta-browser --workspace @gym-assistant/api -- prepare`. The command prints a
+temporary manifest path and synthetic Email. Sign in to that isolated Coach in the browser and
+verify the Prime offer. Run `... -- expire '<manifest path>'` with the local test server stopped
+if its session pool is full, restart the server, then verify Free, six retained Students and the
+write lock. Archive exactly one fixture Student in the browser, then verify the lock lifts and an
+existing Student edit persists after reload. Finally stop the test server and run
+`... -- cleanup '<manifest path>'`. Cleanup checks the exact synthetic Auth identity, Student IDs,
+names and Workspace before deletion and confirms the Auth user, Workspace and code are gone.
+The manifest contains a generated test password and must stay in the temporary folder; do not
+copy it into the repository or share it in logs.
+
 ## Choose checks from the changed files
 
 | Change                                        | Local checks                                           | Browser or live evidence                                                                                  |

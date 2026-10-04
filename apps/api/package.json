@@ -20,6 +20,7 @@
     "e2e:m6": "node --env-file=.env.e2e --import tsx src/e2e/run-m6-live.ts",
     "e2e:m7": "node --env-file=.env.e2e --import tsx src/e2e/run-m7-live.ts",
     "e2e:m7.5-venue": "node --env-file=.env.e2e --import tsx src/e2e/run-venue-model-live.ts",
+    "fixture:beta-browser": "node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/beta-browser-fixture.ts",
     "fixture:training-browser": "node --env-file=.env.e2e --import tsx src/e2e/training-browser-fixture.ts",
     "migration:preview:m3": "node --import tsx src/migration/preview-demo-student-entitlement.ts",
     "migration:preview:m4": "node --import tsx src/migration/preview-demo-scheduling.ts",

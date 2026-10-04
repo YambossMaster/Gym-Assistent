@@ -5,18 +5,18 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                            |
-| ------------------ | ------------------------------------------------------------------------ |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                          |
-| Current package    | **M8-B acceptance follow-up and verification workflow hardening**        |
-| Package state      | **Code/remote CI passed; manual expiry/downgrade browser evidence open** |
-| Approved next      | **Finish M8-B manual gate, then M8-B-Export Contract**                   |
-| Completed baseline | M0–M7.5, including M3.5, Done                                            |
-| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs    |
-| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged          |
-| Linked database    | Development only; M8-B migrations through `20261003085455` applied       |
-| Production         | Not configured; no real customer data                                    |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants  |
+| Field              | Current value                                                           |
+| ------------------ | ----------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
+| Current package    | **M8-B-Export Contract**                                                |
+| Package state      | **M8-B browser gate passed locally; Export Contract draft awaits PO**   |
+| Approved next      | **Review and freeze the M8-B-Export Contract**                          |
+| Completed baseline | M0–M7.5, including M3.5, Done                                           |
+| Branch baseline    | Stage 2 `1f653d5` reached Main; CI run `36804355951` passed both jobs   |
+| Worktree           | Existing `D:` checkout on local `main`; M8-B plan policy merged         |
+| Linked database    | Development only; M8-B migrations through `20261003085455` applied      |
+| Production         | Not configured; no real customer data                                   |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants |
 
 The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
 Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
@@ -174,8 +174,23 @@ covered expiry and downgrade rules, but an expiry/downgrade browser path was not
 M8-B manual CI-gate evidence is therefore still open despite successful code CI. LOG-402 records
 the faster fixture and verification workflow prepared for that remaining check.
 
-**Next:** Complete the M8-B local production-mode expiry/downgrade browser acceptance using
-isolated API fixtures, then begin the approved M8-B-Export Contract gate.
+**2026-10-04 M8-B browser gate:** An isolated synthetic Coach redeemed a Prime promotional code
+in local production mode. The browser showed its 60-day offer before the exact grant was expired.
+After reloading, Settings showed Free, six preserved Students and an over-capacity warning. The
+Students route kept all six readable and explained the blocked create action. Archiving one exact
+fixture Student removed the warning; an existing Student edit saved and remained after reload.
+At 390×844, Settings showed the expired-offer state, readable plan cards and mobile navigation.
+The local test API briefly hit the development session-pool limit while two APIs were running; a
+targeted read retry succeeded. The synthetic Auth user, Workspace, six Students and code were
+deleted after exact-ID/name checks. The reusable fixture is under local verification; its new
+code has not yet passed remote CI. The earlier M8-B production code SHA and GitHub Actions evidence
+remain as recorded in the Engineering log.
+
+**Next:** Review and freeze the proposed [M8-B-Export Contract](M8-B-EXPORT-CONTRACT.md). The
+Draft decisions cover plan access, date/filter and included-row rules, private notes and file
+limits. Begin Sol only after Product Owner acceptance; merge the approved
+`codex/feedback-form-link` handoff during Sol, then execute its combined Settings CI gate before
+M8-C.
 
 ## Stage 2 evidence
 
@@ -705,6 +720,25 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-04 — LOG-404 — Complete M8-B downgrade browser acceptance and draft Export Contract
+
+- **Scope:** Close the remaining local production-mode expiry/downgrade browser path with isolated
+  synthetic data, then prepare the next Roadmap Contract for Product Owner review.
+- **Outcome:** The promotional Coach visibly returned to Free with six Students preserved; the
+  over-capacity create boundary appeared, archiving one Student lifted the lock, and a subsequent
+  Student edit persisted after reload. The proposed Export Contract specifies the four Settings
+  types, three one-file formats, filters, privacy, plan checks, bounds and verification matrix.
+  It remains a Draft, so no Export implementation has started.
+- **Verification:** Browser acceptance used the local production-mode Web/API at desktop and
+  390×844. The synthetic user, Workspace, six Students and code passed exact-ID/name cleanup.
+  Root check passed (API 32 files/150 tests; Web 60 files/258 tests) and root build passed with
+  the existing large-chunk advisory. Known sandbox `spawn EPERM` required an elevated rerun.
+  Exact-SHA remote CI for the new fixture remains pending.
+- **Known issue:** Running two local APIs briefly exhausted the development session pool; one
+  Students read failed and passed on retry. It did not affect the observed entitlement transitions.
+- **Next:** Review the Export Draft decisions with the Product Owner, freeze the Contract, then
+  implement Sol. Deliver the fixture/documentation commit with its required local and remote CI.
 
 ### 2026-10-04 — LOG-402 — Make verification change-aware and fixture-driven
 
