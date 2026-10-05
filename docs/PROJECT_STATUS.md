@@ -8,11 +8,11 @@
 | Field              | Current value                                                           |
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
-| Current package    | **M8-B-Plan-Choice CI delivery**                                        |
-| Package state      | **Full local gate passed; remote exact-SHA verification pending**       |
-| Approved next      | **Push authorized Main delivery, then confirm both Actions jobs**       |
-| Completed baseline | M0–M7.5, M8-A, M8-B and M8-B-Export Done                                |
-| Branch baseline    | Export `92f39dc` reached Main; CI run `37221850693` passed both jobs    |
+| Current package    | **M8-C production deployment Contract**                                 |
+| Package state      | **M8-B-Plan-Choice Done; M8-C awaits Product Owner decisions**          |
+| Approved next      | **Resolve M8-C provider, domain, support/privacy and release facts**    |
+| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done              |
+| Branch baseline    | Plan Choice `83c30d5`; CI run `37338226966` passed both jobs            |
 | Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved   |
 | Linked database    | Development only; plan-choice migration `20261005071050` applied        |
 | Production         | Not configured; no real customer data                                   |
@@ -35,6 +35,13 @@ keyboard card navigation, zero document overflow, Settings chrome hide/reveal, p
 Calendar chrome, Training note-to-document gesture handoff and zero browser warnings/errors. No
 plan mutation was submitted in the real Coach session. Physical-device touch acceptance remains an
 M8-C entry check. Remote commit and Actions evidence are pending.
+
+**2026-10-06 M8-B-Plan-Choice remote delivery:** Commit `83c30d5` reached `origin/main`. GitHub
+Actions run `37338226966` completed successfully in 3 minutes 17 seconds: `verify` passed in 2
+minutes 7 seconds with API 168/168 and Web 272/272 tests, and `migration-dry-run` passed in 25
+seconds. The only annotations are GitHub-hosted runner notices for Node 20-based action deprecation
+and the future `ubuntu-latest` migration to Ubuntu 26. M8-B-Plan-Choice is Done; M8-C Contract is the
+next package and still requires the Product Owner's production/provider decisions.
 
 **2026-10-05 billing review and local plan-page correction:** The Product Owner approved launching
 both monthly and annual billing in M8-E: Pro NT$199/month or NT$1,990/year; Prime NT$259/month or
@@ -302,12 +309,11 @@ rights/support contact remain Beta entry conditions.
 
 ## Next handoff
 
-**Current executable handoff (2026-10-05):** Product Owner reviews the corrected local
-M8-B-Plan-Choice Settings summary and standalone `/plans` page, including the root-check Export
-timeout caveat. Apply
-review corrections with only focused checks. Begin the full local CI gate only when the Product
-Owner explicitly says the reviewed version is ready. Separately request authorization before any
-push or merge; after authorized delivery, confirm exact-SHA Actions and return to M8-C Contract.
+**Current executable handoff (2026-10-06):** M8-B-Plan-Choice is delivered. Before freezing M8-C,
+the Product Owner must resolve the production domain, public support/privacy contact, Auth mail
+sender, deployment/payment-provider direction, purchase scope and publishable legal facts required
+by the Roadmap. Then freeze the M8-C Contract before implementation; do not create production
+resources or admit real Coaches from this handoff alone.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -923,6 +929,20 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-06 — LOG-426 — Deliver Plan Choice to Main with exact-SHA CI
+
+- **Scope:** Push the Product Owner-authorized Plan-Choice package and confirm the exact delivered
+  commit's GitHub Actions results.
+- **Outcome:** Commit `83c30d5` is on `origin/main`; M8-B-Plan-Choice is Done. The next governed
+  package is M8-C Contract, which still requires the Product Owner's production, provider and
+  public-contact decisions before implementation or resource creation.
+- **Verification:** GitHub Actions run `37338226966` completed successfully in 3 minutes 17 seconds.
+  `verify` passed in 2 minutes 7 seconds with API 36 files/168 tests and Web 62 files/272 tests;
+  `migration-dry-run` passed in 25 seconds. The run annotations are the existing GitHub-hosted Node
+  20 action deprecation and future `ubuntu-latest` migration notices only.
+- **Next:** Resolve the M8-C Contract inputs listed in the current handoff, then freeze that Contract
+  before any production deployment work or real-Coach admission.
 
 ### 2026-10-06 — LOG-425 — Complete the Plan-Choice local CI gate
 
