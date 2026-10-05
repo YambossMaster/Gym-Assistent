@@ -1,10 +1,18 @@
-import { ArrowRight, ChartNoAxesCombined, TrendingUp, WalletCards, X } from 'lucide-react'
+import { ArrowRight, ChartNoAxesCombined, FileDown, TrendingUp, WalletCards, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useDialogBehavior } from '../shared/useDialogBehavior'
 
-export function PlanUpsellDialog({ title, onClose }: { title: string; onClose: () => void }) {
+export function PlanUpsellDialog({
+  title,
+  onClose,
+  requiredTier = 'Pro'
+}: {
+  title: string
+  onClose: () => void
+  requiredTier?: 'Pro' | 'Prime'
+}) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose)
 
@@ -35,7 +43,7 @@ export function PlanUpsellDialog({ title, onClose }: { title: string; onClose: (
         <div className="plan-upsell-visual">
           <div className="plan-upsell-kicker">
             <img className="plan-upsell-kicker-mark" src="/brand/form-icon.png" alt="" /> FORM COACH
-            DESK <span>／ PRO 功能</span>
+            DESK <span>／ {requiredTier.toUpperCase()} 功能</span>
           </div>
           <div className="plan-upsell-preview" aria-hidden="true">
             <div className="plan-upsell-preview-top">
@@ -68,10 +76,10 @@ export function PlanUpsellDialog({ title, onClose }: { title: string; onClose: (
           <div className="plan-upsell-divider" />
           <div className="plan-upsell-footer">
             <div className="plan-upsell-plan">
-              <strong>Pro 與 Prime 方案</strong>
+              <strong>{requiredTier === 'Prime' ? 'Prime 方案' : 'Pro 與 Prime 方案'}</strong>
               <span>可使用此功能</span>
             </div>
-            <Link className="plan-upsell-action" to="/settings?category=plans" onClick={onClose}>
+            <Link className="plan-upsell-action" to="/plans" onClick={onClose}>
               查看方案 <ArrowRight aria-hidden="true" />
             </Link>
           </div>
@@ -85,6 +93,12 @@ export function PlanUpsellDialog({ title, onClose }: { title: string; onClose: (
 
 function featurePresentation(title: string) {
   switch (title) {
+    case '匯出資料':
+      return {
+        description: 'Prime 方案可選擇訓練、成長、行事曆或收支資料，下載 CSV、JSON 或 PDF。',
+        previewLabel: '資料匯出',
+        Icon: FileDown
+      }
     case '本月收支':
       return {
         description: '整理每月購課、場地支出與收支紀錄。',
@@ -117,8 +131,8 @@ export function PlanLocked({ title }: { title: string }) {
     <section className="plan-locked" aria-label={title}>
       <span className="eyebrow dark">方案功能</span>
       <h2>{title}</h2>
-      <p>Pro 與 Prime 方案可使用此功能。付費訂閱即將開放。</p>
-      <Link className="primary-button compact" to="/settings?category=plans">
+      <p>Pro 與 Prime 方案可使用此功能。</p>
+      <Link className="primary-button compact" to="/plans">
         查看方案
       </Link>
     </section>

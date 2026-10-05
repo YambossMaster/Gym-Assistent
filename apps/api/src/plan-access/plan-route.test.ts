@@ -7,6 +7,7 @@ import { StudentModule } from '../students/student-module.js'
 import { TodayModule } from '../today/today-module.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { PlanAccessModule } from './plan-access.js'
+import { nextSubscription, type PlanSubscription } from './plan-subscription.js'
 import type { TrainingModule } from '../training/training-module.js'
 import type { SessionTraining } from '../training/training.js'
 
@@ -71,6 +72,8 @@ it('keeps inline Training bests on Free while withholding trajectory points', as
 function setup() {
   const repository = new MemoryStudentRepository()
   let grant: { kind: 'promotional'; endsAt: Date } | null = null
+  let subscription: PlanSubscription | null = null
+  const now = new Date('2026-10-03T02:00:00.000Z')
   const planAccess = new PlanAccessModule(
     {
       get: async (identity) => {
@@ -80,10 +83,15 @@ function setup() {
           activeStudents: (await repository.listStudents(workspaceId)).filter((s) => s.active)
             .length,
           activeVenues: 0,
+          subscription,
+          version: subscription?.version ?? 0,
         }
       },
+      change: async (_identity, action) => {
+        subscription = nextSubscription(subscription, action, now)
+      },
     },
-    () => new Date('2026-10-03T02:00:00.000Z'),
+    () => now,
   )
   const server = buildServer({
     identityVerifier: new DevelopmentIdentityVerifier(),
@@ -100,6 +108,55 @@ function setup() {
   servers.push(server)
   return { server, setGrant: (value: typeof grant) => (grant = value) }
 }
+
+it('lets an at-capacity Free Coach select Pro without payment and enforces version tokens', async () => {
+  const { server } = setup()
+  const created = []
+  for (let i = 0; i < 5; i++) {
+    const response = await server.inject({
+      method: 'POST',
+      url: '/v1/students',
+      headers,
+      payload: { name: `Student ${i}` },
+    })
+    expect(response.statusCode).toBe(201)
+    created.push(response.json().student)
+  }
+  const selected = await server.inject({
+    method: 'POST',
+    url: '/v1/plan/subscription',
+    headers,
+    payload: { kind: 'select', tier: 'basic', interval: 'month', version: 0 },
+  })
+  expect(selected.statusCode).toBe(200)
+  expect(selected.json().plan).toMatchObject({
+    tier: 'basic',
+    source: 'subscription',
+    version: 1,
+  })
+  const sixth = await server.inject({
+    method: 'POST',
+    url: '/v1/students',
+    headers,
+    payload: { name: 'Student 6' },
+  })
+  expect(sixth.statusCode).toBe(201)
+  const stale = await server.inject({
+    method: 'POST',
+    url: '/v1/plan/subscription',
+    headers,
+    payload: { kind: 'select', tier: 'advanced', interval: 'year', version: 0 },
+  })
+  expect(stale.statusCode).toBe(409)
+  const cancelled = await server.inject({
+    method: 'POST',
+    url: '/v1/plan/subscription',
+    headers,
+    payload: { kind: 'cancel', version: 1 },
+  })
+  expect(cancelled.statusCode).toBe(200)
+  expect(cancelled.json().plan.subscription.pendingTier).toBe('free')
+})
 
 it('limits Free creation and preserves all Students when an Advanced offer expires', async () => {
   const { server, setGrant } = setup()

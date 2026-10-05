@@ -11,6 +11,7 @@ import { financeReturnPath } from '../pages/students/finance-api'
 import { VenuePage } from '../pages/students/VenuePage'
 import { TodayPage } from '../pages/today/TodayPage'
 import { SettingsPage } from '../pages/settings/SettingsPage'
+import { PlansPage } from '../pages/settings/PlansPage'
 import { FinanceCurrencyProvider } from '../pages/settings/finance-currency'
 import { CalendarPage } from '../pages/calendar/CalendarPage'
 import { SessionPage } from '../pages/sessions/SessionPage'
@@ -33,16 +34,19 @@ export function CoachWorkspace({ session }: { session: Session }) {
   const location = useLocation()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLElement>(null)
+  const isPlansPage = location.pathname === '/plans'
   const isStudentDetail =
     /^\/students\/[^/]+$/.test(location.pathname) &&
     !['/students/finances', '/students/venues'].includes(location.pathname)
   const isMobileSubpage =
     isStudentDetail ||
+    isPlansPage ||
     ['/students/finances', '/students/venues'].includes(location.pathname) ||
     /^\/sessions\/[^/]+$/.test(location.pathname)
   const returnParams = new URLSearchParams(location.search)
-  const mobileBackPath =
-    location.pathname === '/students/finances'
+  const mobileBackPath = isPlansPage
+    ? '/settings?category=plans'
+    : location.pathname === '/students/finances'
       ? '/students'
       : returnParams.get('from') === 'finances'
         ? financeReturnPath(returnParams)
@@ -76,31 +80,33 @@ export function CoachWorkspace({ session }: { session: Session }) {
     void prefetchPrimaryCoachRoutes(queryClient, session, timeZone)
   }, [coachSettingsQuery.data, queryClient, session, timeZone])
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <img
-          className="sidebar-brand-logo"
-          src="/brand/form-horizontal.png"
-          alt="FORM Coach Desk"
-        />
-        <nav aria-label="主要導覽">
-          {navigation.map((item) => (
-            <NavLink key={item.to} to={item.to}>
-              <item.icon />
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="coach-card">
-            <div className="mini-avatar">{coach.initials}</div>
-            <div className="coach-card-identity">
-              <strong>{coach.name}</strong>
-              {coach.email && <small>{coach.email}</small>}
+    <div className={`app-shell${isPlansPage ? ' plans-shell' : ''}`}>
+      {!isPlansPage && (
+        <aside className="sidebar">
+          <img
+            className="sidebar-brand-logo"
+            src="/brand/form-horizontal.png"
+            alt="FORM Coach Desk"
+          />
+          <nav aria-label="主要導覽">
+            {navigation.map((item) => (
+              <NavLink key={item.to} to={item.to}>
+                <item.icon />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="coach-card">
+              <div className="mini-avatar">{coach.initials}</div>
+              <div className="coach-card-identity">
+                <strong>{coach.name}</strong>
+                {coach.email && <small>{coach.email}</small>}
+              </div>
             </div>
           </div>
-        </div>
-      </aside>
+        </aside>
+      )}
       <main className="main-content" ref={mainRef} tabIndex={-1}>
         <header className="mobile-header">
           {isMobileSubpage ? (
@@ -171,18 +177,21 @@ export function CoachWorkspace({ session }: { session: Session }) {
             />
             <Route path="/exercises" element={<ExercisesPage session={session} />} />
             <Route path="/settings" element={<SettingsPage session={session} />} />
+            <Route path="/plans" element={<PlansPage session={session} />} />
             <Route path="*" element={<Navigate to="/today" replace />} />
           </Routes>
         </FinanceCurrencyProvider>
       </main>
-      <nav className="bottom-nav" aria-label="主要導覽">
-        {navigation.slice(0, 4).map((item) => (
-          <NavLink key={item.to} to={item.to} viewTransition>
-            <item.icon />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      {!isPlansPage && (
+        <nav className="bottom-nav" aria-label="主要導覽">
+          {navigation.slice(0, 4).map((item) => (
+            <NavLink key={item.to} to={item.to} viewTransition>
+              <item.icon />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      )}
     </div>
   )
 }

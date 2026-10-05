@@ -1,4 +1,9 @@
 import type { AuthenticatedIdentity } from '../identity/identity.js'
+import {
+  activeSubscription,
+  type PlanSubscription,
+  type PlanSubscriptionAction,
+} from './plan-subscription.js'
 
 export type PlanTier = 'free' | 'basic' | 'advanced'
 export type PlanSource = 'free' | 'promotional' | 'permanent' | 'subscription'
@@ -12,6 +17,14 @@ export interface PlanAccess {
   venueLimit: number | null
   overCapacity: boolean
   offerEndsAt?: string
+  version: number
+  subscription?: {
+    tier: 'basic' | 'advanced'
+    interval: 'month' | 'year'
+    periodEndsAt: string
+    pendingTier: 'free' | 'basic' | 'advanced' | null
+    pendingInterval: 'month' | 'year' | null
+  }
 }
 
 export interface PlanAccessRepository {
@@ -19,7 +32,10 @@ export interface PlanAccessRepository {
     grant: { kind: 'promotional' | 'permanent'; endsAt: Date | null } | null
     activeStudents: number
     activeVenues: number
+    subscription?: PlanSubscription | null
+    version?: number
   }>
+  change?(identity: AuthenticatedIdentity, action: PlanSubscriptionAction, now: Date): Promise<void>
 }
 
 export class PlanAccessModule {
@@ -29,12 +45,21 @@ export class PlanAccessModule {
   ) {}
 
   async get(identity: AuthenticatedIdentity): Promise<PlanAccess> {
-    const { grant, activeStudents, activeVenues } = await this.repository.get(identity)
+    const { grant, activeStudents, activeVenues, subscription, version } =
+      await this.repository.get(identity)
+    const activeChoice = activeSubscription(subscription ?? null, this.now())
     const activeOffer =
       grant?.kind === 'promotional' && grant.endsAt !== null && grant.endsAt > this.now()
-    const tier: PlanTier = grant?.kind === 'permanent' || activeOffer ? 'advanced' : 'free'
+    const tier: PlanTier =
+      grant?.kind === 'permanent' || activeOffer ? 'advanced' : (activeChoice?.tier ?? 'free')
     const source: PlanSource =
-      grant?.kind === 'permanent' ? 'permanent' : activeOffer ? 'promotional' : 'free'
+      grant?.kind === 'permanent'
+        ? 'permanent'
+        : activeOffer
+          ? 'promotional'
+          : activeChoice
+            ? 'subscription'
+            : 'free'
     const { studentLimit, venueLimit } = limitsForTier(tier)
     return {
       tier,
@@ -47,7 +72,28 @@ export class PlanAccessModule {
         (studentLimit !== null && activeStudents > studentLimit) ||
         (venueLimit !== null && activeVenues > venueLimit),
       ...(activeOffer ? { offerEndsAt: grant.endsAt!.toISOString() } : {}),
+      version: version ?? subscription?.version ?? 0,
+      ...(activeChoice
+        ? {
+            subscription: {
+              tier: activeChoice.tier,
+              interval: activeChoice.interval,
+              periodEndsAt: activeChoice.periodEnd.toISOString(),
+              pendingTier: activeChoice.pendingTier,
+              pendingInterval: activeChoice.pendingInterval,
+            },
+          }
+        : {}),
     }
+  }
+
+  async change(
+    identity: AuthenticatedIdentity,
+    action: PlanSubscriptionAction,
+  ): Promise<PlanAccess> {
+    if (!this.repository.change) throw new Error('Plan selection unavailable')
+    await this.repository.change(identity, action, this.now())
+    return this.get(identity)
   }
 }
 

@@ -542,7 +542,7 @@ This Stage 1 correction stays local for review under the operating model above.
 ### M8 — Taiwan Web/PWA release and open Beta
 
 **Dependency:** M7.5 Stage 2 is delivered and the Product Owner authorizes M8. M8-A, M8-B,
-M8-B-Export, M8-C and M8-D are sequential Contract → Sol → CI packages. M8-A prepares the release
+M8-B-Export, M8-B-Plan-Choice, M8-C and M8-D are sequential Contract → Sol → CI packages. M8-A prepares the release
 path, M8-B finishes the Beta plan policy, M8-B-Export adds Coach data export, M8-C deploys
 production for internal Alpha, and M8-D admits real Coaches. An internet deployment alone does not
 authorize real-Coach admission.
@@ -572,11 +572,23 @@ the exact extension and notice rule must be frozen before Beta admission.
 and `Prime 方案`. They map to the existing `free`, `basic`, and `advanced` tiers respectively;
 the earlier Free/Basic/Advanced references in engineering contracts denote those stable tier
 identifiers. This naming decision does not change prices, limits, grants, or checkout timing.
+**Billing interval decision — 2026-10-05:** the first M8-E paid release offers both monthly and
+annual billing. Pro is NT$199/month or NT$1,990/year; Prime is NT$259/month or NT$2,590/year.
+The annual prices equal ten monthly payments. The M8-E Contract must freeze provider-backed
+switching, proration, cancellation, invoice, tax and failed-payment behavior before implementation.
 M8-B-Export delivers one-file-at-a-time PDF/CSV/JSON exports for Training Records, performance
 trend data, Calendar and finance details from Settings before production Alpha. Growth-trajectory
 PNG belongs at the Growth Trajectory view and is outside that package. M8-B does not show export
-controls before M8-B-Export is delivered. The Beta uses **Local + Production** only: the existing
-development project remains local
+controls before M8-B-Export is delivered.
+
+**Plan-choice correction — 2026-10-05:** after M8-B-Export, the Product Owner authorized a
+zero-price plan-selection slice before M8-C. Pro and Prime become selectable without a payment
+provider so the complete plan and entitlement interaction can be exercised. This slice records
+official no-charge subscriptions; it does not charge, collect a card or issue a payment-provider
+invoice. Paid-price activation, proration and provider events remain in M8-E. An existing NT$0
+selection never starts a paid renewal without the Coach's explicit later confirmation.
+
+The Beta uses **Local + Production** only: the existing development project remains local
 development's database/Auth service, and a separate
 Supabase Free project holds production data. There is no persistent staging environment or
 project-pause rotation. One Fly.io app is the proposed same-origin Web/Fastify host. The initial
@@ -703,6 +715,29 @@ filter boundaries, private-note exclusion/opt-in, two-Coach isolation, plan chan
 results, desktop and 390×844 Settings/download behavior, root check/build, migration dry-run where
 applicable, and exact-SHA remote CI. Do not treat export as a database backup.
 
+#### M8-B-Plan-Choice — Zero-price plan selection before payment integration
+
+**Dependency:** M8-B-Export completed; the Product Owner explicitly advanced plan-flow testing
+ahead of M8-C on 2026-10-05. This is a later correction, not a reopening of M8-B.
+
+**Contract gate:** freeze [the zero-price selection contract](M8-B-PLAN-CHOICE-CONTRACT.md),
+including plan-period timing, current and pending state, grant precedence, authorization, copy,
+desktop/mobile flows and evidence.
+
+**Sol gate:** persist one no-charge subscription choice per Workspace behind the API. Let Coaches
+select Pro or Prime and monthly or annual periods, upgrade immediately, schedule downgrade or
+cancellation at period end, and withdraw a scheduled change. Derive every feature and capacity
+check from the resulting server plan. Settings directly shows current-plan period and next-state
+facts, retains billing/payment structure and provides a `查看所有方案` entry; `/plans` owns comparison,
+monthly/annual pricing and selection. Keep cancellation visible in the current-plan management
+card, separated from its identity and status.
+Do not promote the temporary zero-price implementation as formal plan copy. Do not call a provider,
+collect a card or claim an invoice was paid.
+
+**CI gate:** verify lifecycle boundary instants, stale-write conflicts, tenant isolation, Free
+capacity recovery, feature locks, local migration, desktop/390px interaction, root check/build
+and exact-SHA remote CI after the Product Owner's delivery approval.
+
 #### M8-C — Production deployment and internal Alpha
 
 **Contract gate:** choose the domain, public support/privacy contact, Auth mail sender, provider
@@ -746,14 +781,14 @@ completion by itself; the first offer expiry sets the M8-E deadline.
 #### M8-E — Paid checkout before first offer expiry
 
 **Contract gate:** freeze the named payment provider, merchant prerequisites, Basic/Advanced
-monthly subscriptions, voluntary paid activation after a no-card offer, auto-renewal, cancellation,
+monthly and annual subscriptions, voluntary paid activation after a no-card offer, auto-renewal, cancellation,
 failed-payment, refunds, invoices/tax, verified events and reconciliation. Freeze the exact
 over-limit transition and extension rule if checkout deployment slips. Choose and document the
 backup method, cadence, retention, protected storage and restore check before charging Coaches.
 
 **Sol gate:** start payment implementation at real-Coach Beta launch. Implement working Basic and
-Advanced checkout, provider-verified subscription authority, billing/management states and
-monthly renewal until cancellation. Keep the 60-day offer card-free and never charge on expiry
+Advanced checkout for monthly and annual billing, provider-verified subscription authority,
+billing/management states and renewal at the selected interval until cancellation. Keep the 60-day offer card-free and never charge on expiry
 without an active paid subscription. Deploy a verifiable backup process before enabling live
 checkout; preserve all Coach data on downgrade.
 

@@ -99,7 +99,7 @@ export function BetaGate({ session, children }: { session: Session; children: Re
               <span className="plan-toast-kicker">優惠提醒</span>
               <strong>Prime 優惠剩餘 {offerDaysLeft} 天</strong>
               <p>到期後會回到 Free 方案。</p>
-              <Link to="/settings?category=plans">
+              <Link to="/plans">
                 查看方案 <ArrowUpRight aria-hidden="true" />
               </Link>
             </PlanNotice>

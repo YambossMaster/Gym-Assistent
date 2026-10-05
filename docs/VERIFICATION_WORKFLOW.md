@@ -1,8 +1,25 @@
 # Verification workflow
 
-Use the smallest check that reaches the changed behavior, then run the package's required delivery
-gate once. `docs/ROADMAP.md` and the active Contract determine mandatory checks; this file controls
-their execution order and test-data setup, not milestone scope.
+After each change, use only the smallest focused check that reaches the changed behavior. Show the
+current UI and behavior to the Product Owner, then apply feedback and repeat focused checks. Run
+the package's full delivery gate once only after the Product Owner inspects the current version and
+explicitly says it is ready for full verification. `docs/ROADMAP.md` and the active Contract
+determine mandatory checks; this file controls their execution order and test-data setup, not
+milestone scope. Until that gate starts, label broader checks unverified and do not claim package
+completion.
+
+Before checking a UI change, map the changed route, interaction, states, and viewport to existing
+acceptance evidence in `PROJECT_STATUS.md` and the active Contract. Reuse a prior pass when its
+behavior and relevant code or dependencies are unchanged; record the evidence being reused. Check
+only affected states and adjacent layout boundaries when something changed. Repeat a passed check
+only when a later change could affect its result, its evidence is missing or inconclusive, or a
+required package gate calls for a fresh run. A completed milestone stays closed unless a later
+approved package explicitly corrects it.
+
+For a newly added Coach choice or date field, compare the component and computed type roles against
+[`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md). Check the open choice/calendar state, not
+only the closed control. When the control is entitlement-gated, use an authorized unlocked preview
+before calling its presentation verified; record a locked-only check as incomplete.
 
 ## Before a browser journey
 
@@ -65,8 +82,8 @@ pixel-baseline suite yet, so do not claim visual regression coverage from a DOM/
 `npm install` activates the repository's local Git pre-commit hook. The hook checks the **staged**
 version of changed text files with Prettier and blocks unformatted commits. It does not rewrite or
 stage files, which avoids accidentally including unstaged edits. Run `npm run prepare` to activate
-the hook in an existing checkout. Before a push, run the required root checks once; the hook is a
-format guard, not a substitute for typecheck or tests.
+the hook in an existing checkout. At the Product Owner-authorized package gate, run the required root
+checks once before a push; the hook is a format guard, not a substitute for typecheck or tests.
 
 On GitHub, every push and pull request still gets a `verify` result. Markdown-only changes run
 root formatting only; code or mixed changes run the full check/build. The migration job reports a

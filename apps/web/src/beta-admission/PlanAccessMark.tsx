@@ -1,9 +1,15 @@
-export function PlanAccessMark({ compact = false }: { compact?: boolean }) {
+export function PlanAccessMark({
+  compact = false,
+  tier = 'Pro'
+}: {
+  compact?: boolean
+  tier?: 'Pro' | 'Prime'
+}) {
   return (
     <span
       className={`plan-access-mark${compact ? ' plan-access-mark-compact' : ''}`}
-      aria-label="Pro 功能，需方案解鎖"
-      title="Pro 或 Prime 方案可解鎖"
+      aria-label={`${tier} 功能，需方案解鎖`}
+      title={`${tier} 方案可解鎖`}
     >
       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path
@@ -16,7 +22,7 @@ export function PlanAccessMark({ compact = false }: { compact?: boolean }) {
         <circle cx="10" cy="12.2" r="1.15" fill="var(--plan-mark-cutout)" />
         <path d="M9.45 12.8h1.1l.45 2.1h-2z" fill="var(--plan-mark-cutout)" />
       </svg>
-      <span>Pro</span>
+      <span>{tier}</span>
     </span>
   )
 }

@@ -8,15 +8,108 @@
 | Field              | Current value                                                           |
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
-| Current package    | **M8-B-Export Done**                                                    |
-| Package state      | **Contract, Sol and CI complete at `92f39dc`**                          |
-| Approved next      | **M8-C Contract after Product Owner deployment decisions**              |
+| Current package    | **M8-B-Plan-Choice local implementation**                               |
+| Package state      | **Product review corrections implemented; focused checks passed**       |
+| Approved next      | **Product Owner review before full CI, then remote delivery approval**  |
 | Completed baseline | M0–M7.5, M8-A, M8-B and M8-B-Export Done                                |
 | Branch baseline    | Export `92f39dc` reached Main; CI run `37221850693` passed both jobs    |
 | Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved   |
-| Linked database    | Development only; M8-B migrations through `20261003085455` applied      |
+| Linked database    | Development only; plan-choice migration `20261005071050` applied        |
 | Production         | Not configured; no real customer data                                   |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants |
+
+**2026-10-05 billing review and local plan-page correction:** The Product Owner approved launching
+both monthly and annual billing in M8-E: Pro NT$199/month or NT$1,990/year; Prime NT$259/month or
+NT$2,590/year. The [M8-E billing draft](M8-E-BILLING-DRAFT.md) records proposed upgrade,
+downgrade, cancellation, checkout and failed-payment behavior for Contract review. Provider,
+merchant/tax-invoice path, cross-interval changes and retry policy remain undecided. The current
+Settings plan page now shows both prices. Its current-plan card keeps the over-capacity explanation
+without in-page jump links; the nearby plan comparison and billing sections need no duplicated
+navigation. The redundant no-subscription explanation and page-bottom management section are removed. At that point, checkout and
+cancellation were unavailable; the later Plan-Choice package below opens zero-price selection and cancellation. Root check passed API
+35 files/163 tests and Web 61 files/267 tests; root build passed with the existing large-chunk
+advisory. Authenticated desktop and 390×844 browser preview showed the updated plan card and annual
+price at that time. No schema change or live payment occurred in that correction. This is local
+work only; the newer Plan-Choice handoff below supersedes the M8-C release boundary.
+
+**2026-10-05 zero-price subscription sequencing:** The Product Owner proposed letting Coaches
+select, switch and cancel official plans at NT$0 before connecting a payment service. The
+[M8-E billing draft](M8-E-BILLING-DRAFT.md) now treats this as real server-owned subscription
+state, potentially available in production after normal release gates, rather than a synthetic-only
+test adapter. It must record zero amount truthfully and must never turn an existing zero-price
+subscription into a charge without the Coach's explicit confirmation and payment setup. The
+treatment of existing periods at paid cutover remains a Contract decision. Provider sandbox and
+controlled live-payment evidence remain separate gates. This note records the proposal before the
+Product Owner explicitly requested implementation below.
+
+**2026-10-05 M8-B-Plan-Choice implementation:** The Product Owner explicitly requested usable
+Pro/Prime subscription flows now, before payment integration. The [Plan-Choice Contract](M8-B-PLAN-CHOICE-CONTRACT.md)
+and Roadmap now place this package before M8-C. API-owned zero-amount subscription rows and a
+verified-Coach selection endpoint support monthly/annual Pro and Prime, immediate selection and
+upgrade, scheduled downgrade/cancellation, and stale-version rejection. Settings has working
+plan buttons, a NT$0 confirmation, current/pending state and cancellation action. The linked
+development migration `20261005071050` applied after a dry-run; `/ready` returned 200. An isolated
+synthetic Coach passed live API/DB selection, upgrade, scheduled downgrade, cancellation, resume,
+reload and exact-ID cleanup; stored due/paid amounts were both zero. Authenticated desktop and
+390px Chrome showed the selection modal; the existing real Coach's plan was not changed by this
+acceptance check. Focused Plan tests passed 2 files/7 tests. The first full root check hit three
+30-second timeouts in the unrelated Export PDF-format test; the Export file passed alone and the
+unchanged root check then passed API 36 files/168 tests and Web 61 files/267 tests. Root build
+passed with the established large-chunk advisory, and linked migration dry-run reported up to date. The
+browser did not execute a confirmed plan change because the open session belongs to the real
+Coach; the isolated live API/DB flow covers persistence and effective state. No remote delivery
+occurred.
+
+**2026-10-05 plan information-architecture correction:** The Product Owner rejected presenting the
+temporary no-payment testing mechanism as formal plan-page content and asked for the comparison
+flow to follow established subscription products. Review of current official ChatGPT, Notion,
+Linear, Figma and Canva pricing/billing guidance confirmed the common split: a dedicated comparison
+page owns monthly/annual selection and prices, while billing settings own the current plan, renewal
+details and cancellation management. After a rejected first presentation, Settings now uses a
+white current-plan card that directly shows the plan, interval, period end and next state. Its
+separated footer keeps `取消訂閱` visible when applicable, and the formal payment-method and billing-
+history structure remains present. One branded `查看所有方案` banner opens `/plans`. The standalone
+page uses a constrained pricing grid with stronger price typography, feature lists, aligned actions,
+a recommended-plan treatment, `月費方案` / `年費方案`, an approximately 17% annual discount and
+approved list prices. Test-only copy such as `目前免費使用` and `不需付款方式` is absent. The
+confirmation discloses only that the current selection will not charge. The latest focused and
+browser checks are recorded in LOG-415, LOG-417 and LOG-418; no plan selection or cancellation was
+confirmed.
+
+**2026-10-05 Product Owner export feedback:** After inspecting synthetic examples of all four data
+types in CSV, JSON and PDF, the Product Owner found the current downloads of limited practical use:
+the formats were designed around exporting available data without first defining what Coaches need
+to do with the files. Revisit the user jobs and recipient tools before designing a more usable data
+format. This is a future product-review item, not a change to the completed M8-B-Export gate or an
+approved new Roadmap package. Preserve the current M8-C decision boundary.
+
+**2026-10-05 local Settings presentation correction:** The `協助與回饋` action no longer underlines its label. `資料與裝置` now presents `匯出資料` separately from the data-preservation and device-cache rows without an extra outer card. For Free/Pro, the section remains an ordinary Settings field with a Prime lock mark and one `設定匯出` action; only that action opens the existing Prime-specific plan dialog. Details about data types and formats appear in the dialog. The `查看方案` link now reaches `方案與帳單` because Settings category selection follows the URL for every category; this fixes a stale local category when the URL was already `?category=plans`. Prime's export form is reorganized into data tiles, format choices and range/filter steps while retaining the contracted request behavior. The Demo import disclosure was removed from Settings without changing the delivered import API. Authenticated Chrome showed the locked field and dialog on desktop and the field at 390×844 browser preview; a desktop click through `設定匯出` → `查看方案` reached `方案與帳單`. The unlocked Prime presentation has not been live browser-checked in this correction. This is local presentation evidence only; no push or remote CI is claimed. The M8-C decision boundary below is unchanged.
+
+**2026-10-05 export-control standards correction:** Product Owner review of the unlocked Prime form
+found undersized data-choice descriptions and browser-native start/end date panels. The new export
+tile CSS used a route-local 11px description instead of the established 14px Secondary Text role,
+and the form added native `type="date"` inputs despite the prior Coach control correction. The
+Export Contract specified filter behavior but no shared-control acceptance, the control-standard
+document was scoped to M7.5, and the earlier browser review saw only the locked export state;
+these gaps let the visual regression pass local implementation. The form now uses shared text roles
+and `SeriesDatePicker` for both dates, with 14px calendar text in this route. The control standard
+and verification workflow now explicitly cover new controls and gated unlocked states. Authenticated
+Chrome showed the Prime form and both custom calendars on desktop and 390×844 preview. Web typecheck,
+targeted Prettier, focused date-picker test (1/1), and `git diff --check` passed; the first test
+attempt hit the known Windows `spawn EPERM` and the elevated rerun passed. Full local CI and remote
+delivery remain unverified for this correction; the Plan-Choice review handoff is unchanged.
+
+**2026-10-05 export interface correction:** The Product Owner moved the complete export workflow out
+of the Settings page. Every plan now sees the same ordinary `匯出設定` entry: Prime opens a centered,
+bounded settings interface, while Free and Pro open the existing Prime explanation. The interface
+owns data type, format, date range, filters, privacy notice and download action; its queries begin
+only when Prime opens it. A first composition accidentally inherited a generic dialog layout and
+appeared like a wide page. Removing that shared class restored the dedicated title bar, constrained
+width, centered overlay and responsive bottom-interface treatment. The title and download action
+each occupy a fixed row; only the settings content between them scrolls. The scrollbar begins below
+the title row, ends above the download row, and uses the established 4px olive thumb, transparent
+track and hidden arrow buttons. This remains a local Product Owner review correction; no automated
+check, full local CI, commit, push or remote CI is claimed after this change.
 
 The local Student-detail presentation correction keeps the `個人運動表現` card visible during initial
 Student detail loading and while its independent performance query first loads, with an animated count placeholder and an in-card retry
@@ -116,6 +209,16 @@ does not prevent Supabase database inactivity pausing. Clear Coach disclosure an
 rights/support contact remain Beta entry conditions.
 
 ## Next handoff
+
+**Current executable handoff (2026-10-05):** Product Owner reviews the corrected local
+M8-B-Plan-Choice Settings summary and standalone `/plans` page, including the root-check Export
+timeout caveat. Apply
+review corrections with only focused checks. Begin the full local CI gate only when the Product
+Owner explicitly says the reviewed version is ready. Separately request authorization before any
+push or merge; after authorized delivery, confirm exact-SHA Actions and return to M8-C Contract.
+
+The history below is retained as earlier handoff evidence; its older **Next** labels are not
+the current instruction.
 
 M3.5 and M0–M7 remain Done. **M7.5 Stage 2 was delivered to Main.** Exact Main SHA `1f653d5`
 passed GitHub Actions `verify` and `migration-dry-run` in run `36804355951`. The linked development
@@ -728,6 +831,156 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-05 — LOG-416 — Move export workflow into a contained settings interface
+
+- **Scope:** Keep one export field in Settings and move selection, filtering and download operations
+  into an interface opened from that field for Prime; keep the same entry for other plans.
+- **Cause:** Embedding the full Prime workflow made Settings long and harder to manage. The first
+  interface attempt also inherited an unrelated shared dialog layout and rendered like a page.
+- **Outcome:** The Settings page now retains one `匯出設定` entry. Prime opens a centered, bounded
+  interface with fixed title and download rows; only the full workflow between them scrolls. Free
+  and Pro open the existing plan explanation. The content scrollbar is bounded between the two
+  fixed rows and uses the formal 4px olive thumb, transparent track and no arrow buttons.
+- **Verification:** Product Owner screenshots confirmed the corrected interface composition and
+  identified the remaining default scrollbar, which was then replaced. No automated check, full
+  local CI, commit, push or remote CI is claimed for the latest visual correction.
+- **Next:** Product Owner inspects the scrollbar and final interface. Preserve the current full-CI
+  and remote-delivery approval checkpoints.
+
+### 2026-10-05 — LOG-418 — Productize current-plan management and restore renewal
+
+- **Scope:** Product Owner found the current-plan card still resembled a database field grid and
+  identified the missing reverse action after scheduling cancellation.
+- **Outcome:** The current-plan card now uses FORM's green-black visual language, one icon-led heading
+  for tier, interval and active state, and a reduced two-item detail area for period end and the
+  current-to-next transition. The management footer uses a quieter dark surface. A pending
+  cancellation exposes `繼續訂閱`; a pending downgrade exposes `保留目前方案`. Both use the existing
+  current-tier/current-interval selection transition to withdraw the scheduled change without
+  reopening `/plans` or checkout.
+- **Verification:** Web typecheck, targeted formatting and `git diff --check` passed. Authenticated
+  desktop and 390×844 browser preview showed the redesigned card and responsive footer. The mobile
+  session also exposed the pending-downgrade withdrawal action. No plan mutation was submitted.
+- **Next:** Product Owner inspects the corrected local UI. Full local CI starts only after explicit
+  approval; remote delivery remains a separate approval checkpoint.
+
+### 2026-10-05 — LOG-417 — Align every pricing card with current-plan and selection semantics
+
+- **Scope:** Product Owner found inconsistent capacity wording, a combined Prime capacity item, an
+  actionable button on the current Prime interval and an explanatory sentence where the Free
+  selection action should be.
+- **Outcome:** Pro and Prime use `無限場地數量`, and Prime separately uses `無限學員數量`. The
+  active tier badge states its monthly/annual interval, and its button is absent while the comparison
+  shows that same interval; selecting the other interval still offers the interval change. Free uses
+  the same full-width `選擇 Free 方案` action and schedules the existing subscription to Free at period
+  end. Settings directly shows the current interval and includes the interval in the next-plan value.
+- **Verification:** Web typecheck, targeted formatting and `git diff --check` passed. Authenticated
+  desktop and 390×844 browser preview showed the unified capacity wording, separate Prime features,
+  Free action, current Prime without a button, and the monthly badge; the annual comparison retained
+  a Prime interval-change action. No plan mutation was submitted.
+- **Next:** Product Owner inspects the corrected local UI. Full local CI starts only after explicit
+  approval; remote delivery remains a separate approval checkpoint.
+
+### 2026-10-05 — LOG-415 — Rebuild plan and billing presentation around formal information needs
+
+- **Scope:** Product Owner rejected the first route split because it removed the formal billing and
+  payment area, hid cancellation, and retained the old sparse pricing-card composition.
+- **Cause:** The first correction copied the broad comparison-versus-management split but did not
+  carry through the FORM design system, billing information architecture or direct visibility of
+  current-plan facts.
+- **Outcome:** Settings now presents a white current-plan card with four always-visible facts, a
+  separated and legible cancellation action, a branded plan-comparison entry, and retained billing
+  and payment rows. `/plans` now constrains its content width and gives price, features, recommendation
+  and bottom-aligned actions explicit hierarchy. The annual discount and offer entry remain bounded
+  and responsive.
+- **Verification:** Web typecheck, targeted Prettier and `git diff --check` passed. Authenticated
+  desktop and 390×844 browser preview showed the current-plan facts, visible cancellation action,
+  plan entry, billing/payment rows, three-column pricing composition, annual switch and single-column
+  mobile cards. The mobile document had no horizontal overflow and both tabs reported no browser
+  execution errors. No subscription mutation was submitted.
+- **Next:** Product Owner inspects the corrected local UI. Full local CI starts only after explicit
+  approval; remote delivery remains a separate approval checkpoint.
+
+### 2026-10-05 — LOG-414 — Restore export choices and dates to Coach control standards
+
+- **Scope:** Product Owner flagged the unlocked Prime export form's data choices and two dates as
+  inconsistent with approved typography and controls.
+- **Cause:** Route-local tile CSS set descriptions to 11px and used native date inputs. The Export
+  Contract omitted shared-control acceptance, the control standard was worded for M7.5, and the
+  previous browser pass did not inspect the unlocked Prime form.
+- **Outcome:** Data choices use shared 14px primary/secondary text roles and FORM selected color;
+  start/end dates use the existing site calendar picker. New-control and entitlement-gated preview
+  requirements are recorded in the control standard and verification workflow.
+- **Verification:** Authenticated desktop and 390×844 Chrome preview showed the corrected unlocked
+  form and open calendars. Web typecheck, focused date-picker test (1/1), targeted formatting and
+  `git diff --check` passed. The initial sandbox test hit Windows `spawn EPERM`; elevated rerun passed.
+  Full local CI, physical-device acceptance, commit, push and remote CI are not claimed.
+- **Next:** Product Owner inspects this local correction alongside the active Plan-Choice review;
+  retain the current full-CI and remote-approval checkpoints.
+
+### 2026-10-05 — LOG-413 — Separate plan comparison from subscription management
+
+- **Scope:** Correct the plan flow after Product Owner review, using current official subscription
+  products as interaction references rather than exposing the temporary test mechanism as product copy.
+- **Outcome:** Settings now contains a compact current-plan summary, expandable management details
+  and one `查看所有方案` banner. `/plans` is an independent full-width comparison page with monthly
+  and annual prices, an approximately 17% annual discount, plan selection and the existing offer-code
+  entry. `取消訂閱` appears only inside expanded current-plan management. Removed test-focused free
+  and payment-method messaging from visible plan content.
+- **Superseded presentation:** Product Owner rejected this visual and information hierarchy; LOG-415
+  replaces it while preserving the standalone route decision.
+- **Verification:** Web typecheck, targeted Prettier and `git diff --check` passed. Authenticated
+  desktop and 390×844 browser preview confirmed the Settings entry, expandable management,
+  standalone route, responsive cards and annual switch. No subscription mutation was submitted.
+- **Known issue:** Product Owner visual acceptance remains pending. Full local CI, migration dry-run
+  and remote delivery were not rerun after this review correction.
+- **Next:** Apply Product Owner corrections with focused checks. Start the full CI gate only after
+  explicit approval of the reviewed UI.
+
+### 2026-10-05 — LOG-412 — Specify official zero-price subscription phase
+
+- **Scope:** Capture the Product Owner's proposal to run the real plan lifecycle at zero price
+  before payment-provider integration.
+- **Outcome:** The M8-E draft now defines official server-owned zero-price subscriptions rather
+  than a synthetic-only test adapter. The later paid cutover requires explicit Coach confirmation
+  before any charge; payment-specific behavior stays in provider sandbox and live gates.
+- **Verification:** Planning documentation only; no code, schema, payment or remote check claimed.
+- **Known issue:** The active release handoff remains M8-C; M8-E Contract and implementation are not
+  frozen or started by this draft.
+- **Next:** Complete M8-C decisions and its gates, then freeze the M8-E no-charge rehearsal and
+  provider integration as ordered Contract/Sol work.
+
+### 2026-10-05 — LOG-411 — Record annual billing decision and refine the plan page
+
+- **Scope:** Add the approved M8-E annual prices and a provider-dependent billing decision draft;
+  remove redundant navigation and no-subscription copy from the current-plan card.
+- **Outcome:** Pro/Prime cards show monthly and annual prices while clearly saying checkout is
+  unavailable. The current-plan card states the Free capacity consequence without links to nearby
+  sections; the redundant no-subscription explanation and page-bottom management section are removed.
+- **Verification:** Root check passed API 35 files/163 tests and Web 61 files/267 tests; root build
+  passed again after the final link removal with the established large-chunk advisory;
+  authenticated desktop and 390×844 browser preview showed the compact current-plan card without
+  redundant links or copy. Targeted Prettier and `git diff --check` passed. The final removal of
+  static links and copy was not followed by another full test run.
+- **Known issue:** No provider is selected, and the M8-E draft is not a frozen Contract. No live
+  payment, payment sandbox, or remote CI evidence is claimed for this local correction.
+- **Next:** Obtain the named provider and other M8-C production decisions. Freeze M8-C before its
+  Sol gate; later freeze M8-E billing details against the selected provider before implementation.
+
+### 2026-10-05 — LOG-410 — Record Product Owner review of export usefulness
+
+- **Scope:** Capture feedback after inspection of synthetic Training, Growth, Calendar and Finance files in CSV, JSON and PDF.
+- **Outcome:** The Product Owner considers the current exports of limited practical use and wants a later review grounded in user purposes and usable recipient formats. The delivered M8-B-Export evidence remains valid; no export behavior, Contract or Roadmap sequence changed.
+- **Verification:** Documentation-only update; no runtime check required.
+- **Next:** Keep this product-review item for a later approved package. M8-C still awaits its existing Product Owner decisions.
+
+### 2026-10-05 — LOG-409 — Redesign Settings export hierarchy and Prime lock presentation
+
+- **Scope:** Remove the feedback action underline and Demo import disclosure; separate Export from device-data rows without an extra border; reuse the existing lock mark and upsell dialog for Prime-only export.
+- **Outcome:** Free/Pro retain an ordinary Settings field with the Prime mark and a separate `設定匯出` button; only the button opens the plan dialog containing the data-type/format explanation. Settings category selection now follows its URL so `查看方案` reliably opens `方案與帳單` after switching panels. Prime's download form is reorganized into data, format and range/filter steps with visible selected states. The export request and server policy remain unchanged.
+- **Verification:** An intermediate revision passed elevated root check (API 35 files/163 tests, Web 61 files/267 tests). After the final layout and URL-sync corrections, Web check passed 61 files/267 tests, root build and `git diff --check` passed. Authenticated desktop Chrome showed the ordinary locked field; a click through `設定匯出` → `查看方案` reached the `方案與帳單` heading and cards. The field appeared at 390×844 browser preview. Prime's unlocked layout has not been live browser-checked in this correction.
+- **Known issue:** This local correction has no remote CI evidence; unlocked Prime presentation lacks a live browser check.
+- **Next:** Await the Product Owner's M8-C deployment, domain, support/privacy contact, provider, purchase-scope and legal-text decisions before freezing its Contract.
 
 ### 2026-10-05 — LOG-408 — Deliver M8-B-Export through exact-SHA CI
 

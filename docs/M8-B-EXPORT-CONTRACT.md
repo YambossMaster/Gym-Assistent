@@ -11,9 +11,11 @@ data-rights requests. Growth Trajectory PNG remains an action in the trajectory 
 this package. The Demo's Settings backup button is not copied into the formal product because it
 exports the Demo's local-storage graph.
 
-The panel presents four data types, a format selector, the relevant filters, a short privacy notice
-and one `下載檔案` action to a Coach with current Prime (`advanced`) entitlement. Free and Pro see a
-locked explanation and a `方案與帳單` link, not an enabled download control. Only the selected type is
+Settings retains one ordinary `匯出設定` field as the entry for every plan. A Coach with current
+Prime (`advanced`) entitlement opens a contained settings interface with four data types, a format
+selector, the relevant filters, a short privacy notice and one `下載檔案` action. Free and Pro use
+the same entry and receive the locked explanation with a `方案與帳單` link instead of the export
+interface. The selection workflow is not embedded in the Settings page. Only the selected type is
 requested. Changing type resets type-specific filters and the private-note checkbox. The UI never
 suggests that it exports all Workspace data or can restore records.
 

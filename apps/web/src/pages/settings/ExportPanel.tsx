@@ -1,7 +1,16 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, LockKeyhole } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import {
+  ArrowRight,
+  CalendarDays,
+  ChartNoAxesCombined,
+  Download,
+  FileText,
+  WalletCards,
+  X
+} from 'lucide-react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ApiError,
   downloadExport,
@@ -14,16 +23,20 @@ import {
 } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
 import { SettingsPanelHeading } from '../../shared/primitives'
+import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { planAccessKey } from '../../beta-admission/usePlanAccess'
+import { PlanAccessMark } from '../../beta-admission/PlanAccessMark'
+import { PlanUpsellDialog } from '../../beta-admission/PlanLocked'
+import { SeriesDatePicker } from '../students/SeriesDatePicker'
 import type { VenueData } from '../students/finance-api'
 
 type Kind = ExportRequest['type']
 type Format = ExportRequest['format']
-const types: { value: Kind; label: string; hint: string }[] = [
-  { value: 'training', label: '訓練紀錄', hint: '課程中的動作與組數' },
-  { value: 'growth', label: '成長軌跡數值', hint: '訓練表現的數值紀錄' },
-  { value: 'calendar', label: '行事曆', hint: '排課與行事曆區塊' },
-  { value: 'finance', label: '收支明細', hint: '目前可見的收支列' }
+const types = [
+  { value: 'training', label: '訓練紀錄', hint: '課程中的動作與組數', Icon: FileText },
+  { value: 'growth', label: '成長軌跡數值', hint: '訓練表現的數值紀錄', Icon: ChartNoAxesCombined },
+  { value: 'calendar', label: '行事曆', hint: '排課與行事曆區塊', Icon: CalendarDays },
+  { value: 'finance', label: '收支明細', hint: '目前可見的收支列', Icon: WalletCards }
 ]
 
 function workspaceDate(timeZone: string): string {
@@ -44,6 +57,36 @@ function addDays(date: string, days: number): string {
 function dateCount(start: string, end: string): number {
   return (
     Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1
+  )
+}
+
+function ExportDialog({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, { focusDialog: true })
+
+  return createPortal(
+    <div className="settings-export-dialog-backdrop" onPointerDown={onBackdropPointerDown}>
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="settings-export-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-export-dialog-title"
+      >
+        <header>
+          <div>
+            <span className="eyebrow dark">資料與裝置</span>
+            <h2 id="settings-export-dialog-title">設定匯出</h2>
+            <p>選擇一種資料與格式，每次下載一個檔案。</p>
+          </div>
+          <button type="button" className="icon-button" aria-label="關閉匯出設定" onClick={onClose}>
+            <X aria-hidden="true" />
+          </button>
+        </header>
+        {children}
+      </section>
+    </div>,
+    document.body
   )
 }
 
@@ -77,8 +120,11 @@ export function ExportPanel({
   const [notice, setNotice] = useState('')
   const [downloaded, setDownloaded] = useState('')
   const [planDenied, setPlanDenied] = useState(false)
+  const [upsellOpen, setUpsellOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const queryClient = useQueryClient()
   const prime = plan?.tier === 'advanced' && !planDenied
+  const locked = !loadingError && Boolean(plan && timeZone) && !prime
 
   useEffect(() => {
     if (!timeZone) return
@@ -89,6 +135,8 @@ export function ExportPanel({
     setIncludePrivateNotes(false)
     setDownloaded('')
     setPlanDenied(false)
+    setExportOpen(false)
+    setUpsellOpen(false)
   }, [session.user.id])
   useEffect(() => {
     if (plan?.tier === 'advanced') setPlanDenied(false)
@@ -97,19 +145,19 @@ export function ExportPanel({
   const studentQuery = useQuery({
     queryKey: ['export-students', session.user.id],
     queryFn: () => listStudents(session.access_token),
-    enabled: prime && kind !== 'finance',
+    enabled: prime && exportOpen && kind !== 'finance',
     staleTime: 30_000
   })
   const definitionQuery = useQuery({
     queryKey: ['export-definitions', session.user.id],
     queryFn: () => getExerciseLibrary(session.access_token),
-    enabled: prime && kind === 'growth',
+    enabled: prime && exportOpen && kind === 'growth',
     staleTime: 30_000
   })
   const venueQuery = useQuery({
     queryKey: ['export-venues', session.user.id],
     queryFn: () => request<VenueData>('/api/v1/venues', session.access_token),
-    enabled: prime && kind === 'finance',
+    enabled: prime && exportOpen && kind === 'finance',
     staleTime: 30_000
   })
   const mutation = useMutation({
@@ -132,6 +180,8 @@ export function ExportPanel({
       const code = error instanceof ApiError ? error.details.error : ''
       if (code === 'plan_required') {
         setPlanDenied(true)
+        setExportOpen(false)
+        setUpsellOpen(true)
         void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       }
       setNotice(
@@ -198,7 +248,10 @@ export function ExportPanel({
 
   return (
     <section className="settings-panel settings-export-panel" aria-label="匯出資料">
-      <SettingsPanelHeading eyebrow="DATA EXPORT" title="匯出資料" />
+      <div className="settings-export-heading">
+        <SettingsPanelHeading eyebrow="DATA EXPORT" title="匯出資料" />
+        {locked && <PlanAccessMark tier="Prime" />}
+      </div>
       <p className="settings-export-intro">
         選擇一種資料與格式，每次下載一個檔案。匯出檔可供查閱與分析，無法用來還原工作台。
       </p>
@@ -211,196 +264,241 @@ export function ExportPanel({
         </div>
       ) : !plan || !timeZone ? (
         <p role="status">正在讀取方案與工作台時區…</p>
-      ) : !prime ? (
-        <div className="settings-export-locked">
-          <LockKeyhole aria-hidden="true" />
-          <div>
-            <strong>Prime 方案可匯出資料</strong>
-            <p>訓練、成長、行事曆與收支匯出都需要 Prime 權限。</p>
-          </div>
-          <a href="/settings?category=plans">查看方案與帳單</a>
-        </div>
       ) : (
-        <form className="settings-export-form" onSubmit={submit}>
-          <div className="settings-export-fields">
-            <FormSelect
-              label="資料類型"
-              value={kind}
-              onChange={(value) => changeKind(value as Kind)}
-              options={types.map((item) => ({
-                value: item.value,
-                label: item.label,
-                description: item.hint
-              }))}
-            />
-            <FormSelect
-              label="檔案格式"
-              value={format}
-              onChange={(value) => changeFormat(value as Format)}
-              options={[
-                { value: 'csv', label: 'CSV' },
-                { value: 'json', label: 'JSON' },
-                { value: 'pdf', label: 'PDF' }
-              ]}
-            />
-            <label>
-              開始日期
-              <input
-                type="date"
-                value={dates.start}
-                onChange={(event) => {
-                  setDates({ ...dates, start: event.target.value })
-                  setDownloaded('')
-                }}
-                required
-              />
-            </label>
-            <label>
-              結束日期
-              <input
-                type="date"
-                value={dates.end}
-                onChange={(event) => {
-                  setDates({ ...dates, end: event.target.value })
-                  setDownloaded('')
-                }}
-                required
-              />
-            </label>
+        <div className="settings-row settings-export-entry-row">
+          <div className="settings-row-copy">
+            <strong>匯出設定</strong>
+            <span>選擇資料類型、檔案格式與日期範圍。</span>
           </div>
-          <p className="settings-export-hint">
-            以 {timeZone} 的日期為準；
-            {format === 'pdf' ? 'PDF 最多 7 天、500 筆。' : 'CSV／JSON 最多 31 天、2,000 筆。'}
-          </p>
-          {!validDates && (
-            <p className="form-error" role="alert">
-              請選擇不超過 {maxDays} 天的有效日期範圍。
-            </p>
-          )}
-          {kind !== 'finance' && (
-            <FormSelect
-              label="學員"
-              value={studentId}
-              onChange={setStudentId}
-              options={[
-                { value: '', label: '全部學員' },
-                ...(studentQuery.data ?? []).map((student: Student) => ({
-                  value: student.id,
-                  label: student.name
-                }))
-              ]}
-              disabled={studentQuery.isPending || studentQuery.isError}
-            />
-          )}
-          {kind === 'growth' && (
-            <FormSelect
-              label="動作"
-              value={definitionId}
-              onChange={setDefinitionId}
-              options={[
-                { value: '', label: '全部動作' },
-                ...(definitionQuery.data?.definitions ?? []).map((definition) => ({
-                  value: definition.id,
-                  label: definition.name
-                }))
-              ]}
-              disabled={definitionQuery.isPending || definitionQuery.isError}
-            />
-          )}
-          {kind === 'finance' && (
-            <FormSelect
-              label="場地"
-              value={venueId}
-              onChange={setVenueId}
-              options={[
-                { value: '', label: '全部場地' },
-                ...(venueQuery.data?.venues ?? []).map((venue) => ({
-                  value: venue.id,
-                  label: venue.name
-                }))
-              ]}
-              disabled={venueQuery.isPending || venueQuery.isError}
-            />
-          )}
-          {((studentQuery.isError && kind !== 'finance') ||
-            (definitionQuery.isError && kind === 'growth') ||
-            (venueQuery.isError && kind === 'finance')) && (
-            <p className="form-error" role="alert">
-              篩選項目暫時無法讀取，請稍後再試。
-            </p>
-          )}
-          {kind === 'calendar' && (
-            <label className="settings-export-check">
-              <input
-                type="checkbox"
-                checked={includeBlocks}
-                onChange={(event) => setIncludeBlocks(event.target.checked)}
-              />
-              包含行事曆區塊
-            </label>
-          )}
-          {kind === 'finance' && (
-            <div className="settings-export-checks" aria-label="收支方向">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={income}
-                  onChange={(event) => setIncome(event.target.checked)}
-                />
-                收入
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={expense}
-                  onChange={(event) => setExpense(event.target.checked)}
-                />
-                支出
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={reference}
-                  onChange={(event) => setReference(event.target.checked)}
-                />
-                參考列
-              </label>
-            </div>
-          )}
-          {kind !== 'growth' && (
-            <label className="settings-export-check">
-              <input
-                type="checkbox"
-                checked={includePrivateNotes}
-                onChange={(event) => setIncludePrivateNotes(event.target.checked)}
-              />
-              包含私人備註（僅限本次下載）
-            </label>
-          )}
-          <p className="settings-export-privacy">檔案可能包含學員與財務資料，下載後請妥善保管。</p>
           <button
-            type="submit"
-            className="settings-export-download"
-            disabled={
-              !validDates ||
-              mutation.isPending ||
-              (kind !== 'finance' && (studentQuery.isPending || studentQuery.isError)) ||
-              (kind === 'growth' && (definitionQuery.isPending || definitionQuery.isError)) ||
-              (kind === 'finance' && (venueQuery.isPending || venueQuery.isError))
-            }
+            type="button"
+            className="settings-row-action"
+            onClick={() => (locked ? setUpsellOpen(true) : setExportOpen(true))}
+            aria-label={locked ? '設定匯出，需 Prime 方案' : '開啟匯出設定'}
           >
-            <Download aria-hidden="true" />
-            {mutation.isPending ? '正在產生檔案…' : '下載檔案'}
+            設定匯出 <ArrowRight aria-hidden="true" />
           </button>
-          {notice && (
-            <p
-              className={downloaded ? 'settings-export-success' : 'settings-export-message'}
-              role="status"
-            >
-              {notice}
-            </p>
-          )}
-        </form>
+        </div>
+      )}
+      {exportOpen && prime && (
+        <ExportDialog onClose={() => setExportOpen(false)}>
+          <form className="settings-export-form" onSubmit={submit}>
+            <div className="settings-export-form-body">
+              <div className="settings-export-step">
+                <div className="settings-export-step-heading">
+                  <span>01</span>
+                  <h3>選擇資料</h3>
+                </div>
+                <div className="settings-export-type-grid" role="group" aria-label="資料類型">
+                  {types.map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className="settings-export-type"
+                      aria-pressed={kind === item.value}
+                      onClick={() => changeKind(item.value as Kind)}
+                    >
+                      <item.Icon aria-hidden="true" />
+                      <strong className="ui-text-body-compact">{item.label}</strong>
+                      <span className="ui-text-secondary">{item.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-export-step">
+                <div className="settings-export-step-heading">
+                  <span>02</span>
+                  <h3>選擇格式</h3>
+                </div>
+                <div className="settings-export-format-options" role="group" aria-label="檔案格式">
+                  {(['csv', 'json', 'pdf'] as const).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      aria-pressed={format === item}
+                      onClick={() => changeFormat(item)}
+                    >
+                      {item.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-export-step">
+                <div className="settings-export-step-heading">
+                  <span>03</span>
+                  <h3>設定範圍</h3>
+                </div>
+                <div className="settings-export-fields">
+                  <SeriesDatePicker
+                    label="開始日期"
+                    calendarClassName="settings-export-calendar"
+                    value={dates.start}
+                    onChange={(start) => {
+                      setDates((current) => ({ ...current, start }))
+                      setDownloaded('')
+                    }}
+                  />
+                  <SeriesDatePicker
+                    label="結束日期"
+                    calendarClassName="settings-export-calendar"
+                    value={dates.end}
+                    onChange={(end) => {
+                      setDates((current) => ({ ...current, end }))
+                      setDownloaded('')
+                    }}
+                  />
+                </div>
+                <p className="settings-export-hint">
+                  以 {timeZone} 的日期為準；
+                  {format === 'pdf'
+                    ? 'PDF 最多 7 天、500 筆。'
+                    : 'CSV／JSON 最多 31 天、2,000 筆。'}
+                </p>
+                {!validDates && (
+                  <p className="form-error" role="alert">
+                    請選擇不超過 {maxDays} 天的有效日期範圍。
+                  </p>
+                )}
+                {kind !== 'finance' && (
+                  <FormSelect
+                    label="學員"
+                    value={studentId}
+                    onChange={setStudentId}
+                    options={[
+                      { value: '', label: '全部學員' },
+                      ...(studentQuery.data ?? []).map((student: Student) => ({
+                        value: student.id,
+                        label: student.name
+                      }))
+                    ]}
+                    disabled={studentQuery.isPending || studentQuery.isError}
+                  />
+                )}
+                {kind === 'growth' && (
+                  <FormSelect
+                    label="動作"
+                    value={definitionId}
+                    onChange={setDefinitionId}
+                    options={[
+                      { value: '', label: '全部動作' },
+                      ...(definitionQuery.data?.definitions ?? []).map((definition) => ({
+                        value: definition.id,
+                        label: definition.name
+                      }))
+                    ]}
+                    disabled={definitionQuery.isPending || definitionQuery.isError}
+                  />
+                )}
+                {kind === 'finance' && (
+                  <FormSelect
+                    label="場地"
+                    value={venueId}
+                    onChange={setVenueId}
+                    options={[
+                      { value: '', label: '全部場地' },
+                      ...(venueQuery.data?.venues ?? []).map((venue) => ({
+                        value: venue.id,
+                        label: venue.name
+                      }))
+                    ]}
+                    disabled={venueQuery.isPending || venueQuery.isError}
+                  />
+                )}
+                {((studentQuery.isError && kind !== 'finance') ||
+                  (definitionQuery.isError && kind === 'growth') ||
+                  (venueQuery.isError && kind === 'finance')) && (
+                  <p className="form-error" role="alert">
+                    篩選項目暫時無法讀取，請稍後再試。
+                  </p>
+                )}
+                {kind === 'calendar' && (
+                  <label className="settings-export-check">
+                    <input
+                      type="checkbox"
+                      checked={includeBlocks}
+                      onChange={(event) => setIncludeBlocks(event.target.checked)}
+                    />
+                    包含行事曆區塊
+                  </label>
+                )}
+                {kind === 'finance' && (
+                  <div className="settings-export-checks" aria-label="收支方向">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={income}
+                        onChange={(event) => setIncome(event.target.checked)}
+                      />
+                      收入
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={expense}
+                        onChange={(event) => setExpense(event.target.checked)}
+                      />
+                      支出
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={reference}
+                        onChange={(event) => setReference(event.target.checked)}
+                      />
+                      參考列
+                    </label>
+                  </div>
+                )}
+                {kind !== 'growth' && (
+                  <label className="settings-export-check">
+                    <input
+                      type="checkbox"
+                      checked={includePrivateNotes}
+                      onChange={(event) => setIncludePrivateNotes(event.target.checked)}
+                    />
+                    包含私人備註（僅限本次下載）
+                  </label>
+                )}
+              </div>
+            </div>
+            <footer className="settings-export-footer">
+              <div className="settings-export-footer-copy">
+                <p className="settings-export-privacy">
+                  檔案可能包含學員與財務資料，下載後請妥善保管。
+                </p>
+                {notice && (
+                  <p
+                    className={downloaded ? 'settings-export-success' : 'settings-export-message'}
+                    role="status"
+                  >
+                    {notice}
+                  </p>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="settings-export-download"
+                disabled={
+                  !validDates ||
+                  mutation.isPending ||
+                  (kind !== 'finance' && (studentQuery.isPending || studentQuery.isError)) ||
+                  (kind === 'growth' && (definitionQuery.isPending || definitionQuery.isError)) ||
+                  (kind === 'finance' && (venueQuery.isPending || venueQuery.isError))
+                }
+              >
+                <Download aria-hidden="true" />
+                {mutation.isPending ? '正在產生檔案…' : '下載檔案'}
+              </button>
+            </footer>
+          </form>
+        </ExportDialog>
+      )}
+      {upsellOpen && (
+        <PlanUpsellDialog
+          title="匯出資料"
+          requiredTier="Prime"
+          onClose={() => setUpsellOpen(false)}
+        />
       )}
     </section>
   )

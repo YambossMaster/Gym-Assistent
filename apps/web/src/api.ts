@@ -27,10 +27,32 @@ export interface PlanAccess {
   venueLimit: number | null
   overCapacity: boolean
   offerEndsAt?: string
+  version: number
+  subscription?: {
+    tier: 'basic' | 'advanced'
+    interval: 'month' | 'year'
+    periodEndsAt: string
+    pendingTier: 'free' | 'basic' | 'advanced' | null
+    pendingInterval: 'month' | 'year' | null
+  }
 }
 
 export async function readPlanAccess(accessToken: string): Promise<PlanAccess> {
   const response = await request<{ plan: PlanAccess }>('/api/v1/plan', accessToken)
+  return response.plan
+}
+
+export async function changePlanSubscription(
+  accessToken: string,
+  action:
+    | { kind: 'select'; tier: 'basic' | 'advanced'; interval: 'month' | 'year'; version: number }
+    | { kind: 'cancel'; version: number }
+): Promise<PlanAccess> {
+  const response = await request<{ plan: PlanAccess }>(
+    '/api/v1/plan/subscription',
+    accessToken,
+    json('POST', action)
+  )
   return response.plan
 }
 

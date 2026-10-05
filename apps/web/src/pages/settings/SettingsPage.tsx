@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
   CircleCheck,
@@ -9,6 +9,7 @@ import {
   KeyRound,
   LogOut,
   MessageSquare,
+  Sparkles,
   SlidersHorizontal,
   Shield,
   Trash2,
@@ -16,17 +17,14 @@ import {
   X
 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ApiError,
+  changePlanSubscription,
   deleteAccountImmediately,
-  readBetaGrant,
-  redeemBetaCode,
-  type BetaGrant,
   type PlanAccess,
   type WorkspaceSettings
 } from '../../api'
-import { betaGrantKey } from '../../beta-admission/BetaGate'
 import { planAccessKey, usePlanAccess } from '../../beta-admission/usePlanAccess'
 import {
   changePassword,
@@ -40,205 +38,269 @@ import { supabase } from '../../supabase'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
 import { useTrainingMutations, useTrainingPreference } from '../training/queries'
-import { DemoImportPanel } from './DemoImportPanel'
 import { ExportPanel } from './ExportPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 
-function planDate(instant: string): string {
-  return new Date(instant).toLocaleString('zh-TW', {
+function planName(plan: PlanAccess | undefined): string {
+  if (plan?.tier === 'advanced') return 'Prime 方案'
+  if (plan?.tier === 'basic') return 'Pro 方案'
+  return 'Free 方案'
+}
+
+function planPeriodDate(instant: string): string {
+  return new Date(instant).toLocaleDateString('zh-TW', {
     timeZone: 'Asia/Taipei',
     year: 'numeric',
     month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: 'numeric'
   })
 }
 
-function PlanPanel({
-  grant,
+function PlanSummary({
+  session,
   plan,
   loading,
   error,
-  onRetry,
-  offerCode,
-  onOfferCodeChange,
-  onRedeem,
-  redeeming,
-  offerError,
-  offerSuccess
+  onRetry
 }: {
-  grant: BetaGrant | undefined
+  session: Session
   plan: PlanAccess | undefined
   loading: boolean
   error: boolean
   onRetry: () => void
-  offerCode: string
-  onOfferCodeChange: (value: string) => void
-  onRedeem: (event: FormEvent<HTMLFormElement>) => void
-  redeeming: boolean
-  offerError: string
-  offerSuccess: string
 }) {
-  const promotional = plan?.source === 'promotional'
-  const permanent = plan?.source === 'permanent'
-  const previouslyRedeemed = grant?.state === 'free' && Boolean(grant.startedAt)
-  const canRedeem = grant?.state === 'free' && !grant.startedAt
-
+  const queryClient = useQueryClient()
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [confirmResume, setConfirmResume] = useState(false)
+  const [message, setMessage] = useState('')
+  const subscription = plan?.subscription
+  const pendingPlan = subscription?.pendingTier
+    ? `${subscription.pendingTier === 'free' ? 'Free' : subscription.pendingTier === 'basic' ? 'Pro' : 'Prime'} 方案${subscription.pendingInterval ? ` · ${subscription.pendingInterval === 'month' ? '月費' : '年費'}` : ''}`
+    : null
+  const periodLabel =
+    plan?.source === 'promotional'
+      ? '優惠體驗'
+      : plan?.source === 'permanent'
+        ? '永久資格'
+        : subscription
+          ? subscription.interval === 'month'
+            ? '月費方案'
+            : '年費方案'
+          : '—'
+  const periodEnd =
+    plan?.source === 'promotional' && plan.offerEndsAt
+      ? planPeriodDate(plan.offerEndsAt)
+      : plan?.source === 'permanent'
+        ? '無期限'
+        : subscription
+          ? planPeriodDate(subscription.periodEndsAt)
+          : '—'
+  const nextPlan = pendingPlan
+    ? pendingPlan
+    : plan?.source === 'promotional'
+      ? subscription
+        ? `${subscription.tier === 'basic' ? 'Pro' : 'Prime'} 方案 · ${subscription.interval === 'month' ? '月費' : '年費'}`
+        : 'Free 方案'
+      : subscription
+        ? `同方案續訂 · ${subscription.interval === 'month' ? '月費' : '年費'}`
+        : planName(plan)
+  const cancelMutation = useMutation({
+    mutationFn: () => {
+      if (!plan || !subscription) throw new Error('請重新讀取方案。')
+      return changePlanSubscription(session.access_token, { kind: 'cancel', version: plan.version })
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(planAccessKey(session.user.id), updated)
+      void queryClient.invalidateQueries()
+      setConfirmCancel(false)
+      setMessage('已安排於本期結束後轉為 Free 方案。')
+    },
+    onError: (reason) => {
+      setConfirmCancel(false)
+      setMessage(
+        reason instanceof ApiError && reason.status === 409
+          ? '方案已在其他裝置更新，請確認目前狀態後再試。'
+          : '目前無法變更方案，請稍後再試。'
+      )
+      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
+    }
+  })
+  const resumeMutation = useMutation({
+    mutationFn: () => {
+      if (!plan || !subscription) throw new Error('請重新讀取方案。')
+      return changePlanSubscription(session.access_token, {
+        kind: 'select',
+        tier: subscription.tier,
+        interval: subscription.interval,
+        version: plan.version
+      })
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(planAccessKey(session.user.id), updated)
+      void queryClient.invalidateQueries()
+      setConfirmResume(false)
+      setMessage(`已取消原定變更，將繼續使用 ${planName(updated)}。`)
+    },
+    onError: (reason) => {
+      setConfirmResume(false)
+      setMessage(
+        reason instanceof ApiError && reason.status === 409
+          ? '方案已在其他裝置更新，請確認目前狀態後再試。'
+          : '目前無法恢復續訂，請稍後再試。'
+      )
+      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
+    }
+  })
+  const hasPendingChange = Boolean(subscription?.pendingTier)
+  const pendingCancellation = subscription?.pendingTier === 'free'
   return (
-    <div className="settings-plan-page">
-      <section className="settings-plan-hero" aria-labelledby="current-plan-title">
-        <div>
-          <span className="settings-plan-kicker">目前方案</span>
-          <h3 id="current-plan-title">
-            {loading
-              ? '正在讀取…'
-              : error
-                ? '暫時無法取得方案'
-                : promotional
-                  ? 'Prime 方案・60 天優惠'
-                  : permanent
-                    ? 'Prime 方案・永久資格'
-                    : 'Free 方案'}
-          </h3>
-          <p>
-            {loading || error
-              ? '方案資料讀取後，會顯示目前資格與優惠期限。'
-              : plan?.overCapacity
-                ? '已超出 Free 方案額度。資料仍可查看；封存學員或場地至額度內，即可恢復儲存。'
-                : promotional
-                  ? `優惠至 ${planDate(plan!.offerEndsAt!)}（台灣時間）；到期後可主動訂閱，否則回到 Free 方案。`
-                  : permanent
-                    ? '你的帳號具有永久 Prime 方案權限。'
-                    : previouslyRedeemed
-                      ? '優惠已結束，現有資料仍會保留。超出 Free 方案額度時，請封存學員或場地後繼續記錄。'
-                      : 'Free 方案可管理最多 5 名學員與 1 個場地。'}
-          </p>
-          <div className="settings-plan-quicklinks">
-            <a href="#available-plans-title">查看方案</a>
-            <a href="#billing-title">帳單與付款</a>
-          </div>
-        </div>
-        {error ? (
-          <button type="button" className="settings-plan-link" onClick={onRetry}>
-            重新讀取
-          </button>
-        ) : (
-          <span className="settings-plan-status">
-            {loading ? '讀取中' : promotional ? '體驗中' : '使用中'}
-          </span>
-        )}
-      </section>
-
-      <section className="settings-plan-section" aria-labelledby="available-plans-title">
-        <div className="settings-plan-section-heading">
-          <h3 id="available-plans-title">查看與選擇方案</h3>
-          <p>可先使用 Free 方案；付費訂閱功能準備中。</p>
-        </div>
-        <div className="settings-plan-grid">
-          <article className="settings-plan-card">
-            <span className="settings-plan-card-tag">目前可用</span>
-            <h4>Free 方案</h4>
-            <p className="settings-plan-price">免費</p>
-            <p>最多 5 名學員、1 個場地；課程、排程與訓練紀錄可用。</p>
-            <span className="settings-plan-card-state">
-              <CircleCheck aria-hidden="true" />
-              {promotional ? '體驗結束後自動使用' : '目前使用中'}
-            </span>
-          </article>
-          <article className="settings-plan-card">
-            <span className="settings-plan-card-tag">尚未開放訂閱</span>
-            <h4>Pro 方案</h4>
-            <p className="settings-plan-price">NT$199／月</p>
-            <p>最多 15 名學員；場地不限，可查看收支與成長軌跡。</p>
-            <span className="settings-plan-card-state">目前無法選購或付款</span>
-          </article>
-          <article className="settings-plan-card">
-            <span className="settings-plan-card-tag">尚未開放訂閱</span>
-            <h4>Prime 方案</h4>
-            <p className="settings-plan-price">NT$259／月</p>
-            <p>學員與場地不限，可查看收支與成長軌跡。</p>
-            <span className="settings-plan-card-state">目前無法選購或付款</span>
-          </article>
-        </div>
-      </section>
-
-      <section className="settings-plan-section" aria-labelledby="offer-title">
-        <div className="settings-plan-section-heading">
-          <h3 id="offer-title">優惠體驗</h3>
-          <p>優惠碼提供 60 天 Prime 方案權限，套用時不需綁定付款方式。</p>
-        </div>
-        {canRedeem ? (
-          <form className="settings-offer-form" onSubmit={onRedeem}>
-            <label htmlFor="settings-offer-code">輸入優惠碼</label>
-            <div className="settings-offer-controls">
-              <input
-                id="settings-offer-code"
-                value={offerCode}
-                onChange={(event) => onOfferCodeChange(event.target.value)}
-                autoComplete="off"
-                required
-              />
-              <button type="submit" disabled={redeeming || !offerCode.trim()}>
-                {redeeming ? '套用中…' : '套用優惠碼'}
-              </button>
+    <div className="settings-plan-overview">
+      <section className="settings-current-plan-card" aria-labelledby="current-plan-title">
+        <header className="settings-current-plan-heading">
+          <div className="settings-current-plan-heading-copy">
+            <span className="settings-plan-kicker">目前方案</span>
+            <div className="settings-current-plan-title-row">
+              {!loading && !error && (
+                <span className="settings-current-plan-icon" aria-hidden="true">
+                  <Sparkles />
+                </span>
+              )}
+              <h3 id="current-plan-title">
+                {loading ? '正在讀取…' : error ? '暫時無法取得方案' : planName(plan)}
+              </h3>
+              {!loading && !error && (
+                <>
+                  <span className="settings-current-plan-period">{periodLabel}</span>
+                  <span className="settings-plan-status">使用中</span>
+                </>
+              )}
             </div>
-            {offerError && (
-              <p role="alert" className="form-error">
-                {offerError}
+            {!loading && !error && plan?.source === 'promotional' && <p>Prime 方案優惠體驗</p>}
+            {!loading && !error && plan?.source === 'permanent' && <p>永久 Prime 資格</p>}
+          </div>
+          {error && (
+            <button type="button" className="settings-plan-retry" onClick={onRetry}>
+              重新讀取
+            </button>
+          )}
+        </header>
+        {!loading && !error && (
+          <>
+            <dl className="settings-current-plan-facts">
+              <div>
+                <dt>本期結束</dt>
+                <dd>{periodEnd}</dd>
+              </div>
+              <div className="settings-current-plan-next">
+                <dt>接下來</dt>
+                <dd>
+                  <span>{planName(plan)}</span>
+                  <ArrowRight aria-hidden="true" />
+                  <strong>{nextPlan}</strong>
+                </dd>
+              </div>
+            </dl>
+            {plan?.overCapacity && (
+              <p className="settings-plan-capacity">
+                目前超出方案額度。資料仍可查看；封存學員或場地至額度內，即可恢復儲存。
               </p>
             )}
-          </form>
-        ) : (
-          <p className="settings-plan-note">
-            {promotional
-              ? `已套用優惠碼，優惠至 ${planDate(plan!.offerEndsAt!)}。不會自動扣款。`
-              : permanent
-                ? '你已具有永久 Prime 方案權限，不需套用優惠碼。'
-                : previouslyRedeemed
-                  ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
-                  : '方案資料讀取後可在此套用優惠碼。'}
-          </p>
+            {subscription && plan?.source !== 'permanent' && (
+              <footer className="settings-current-plan-actions">
+                <span>
+                  {pendingCancellation
+                    ? `已安排於 ${periodEnd} 轉為 Free 方案。`
+                    : hasPendingChange
+                      ? `已安排於 ${periodEnd} 改用 ${pendingPlan}。`
+                      : '本期結束後將按目前週期續訂。'}
+                </span>
+                <div>
+                  {hasPendingChange && (
+                    <button
+                      type="button"
+                      className="settings-plan-resume"
+                      onClick={() => setConfirmResume(true)}
+                    >
+                      {pendingCancellation ? '繼續訂閱' : '保留目前方案'}
+                    </button>
+                  )}
+                  {!pendingCancellation && (
+                    <button
+                      type="button"
+                      className="settings-plan-cancel"
+                      onClick={() => setConfirmCancel(true)}
+                    >
+                      取消訂閱
+                    </button>
+                  )}
+                </div>
+              </footer>
+            )}
+          </>
         )}
-        {offerSuccess && (
-          <p role="status" className="settings-plan-success">
-            {offerSuccess}
-          </p>
-        )}
       </section>
-
-      <section className="settings-plan-section" aria-labelledby="billing-title">
-        <div className="settings-plan-section-heading">
-          <h3 id="billing-title">帳單與付款</h3>
-          <p>這裡會集中管理日後的付款方式與帳單。</p>
-        </div>
-        <div className="settings-plan-facts">
+      <Link className="settings-plans-banner" to="/plans">
+        <span className="settings-plans-banner-copy">
+          <small>FREE · PRO · PRIME</small>
+          <strong>比較方案與價格</strong>
+          <span>查看完整功能與月費、年費方案。</span>
+        </span>
+        <span className="settings-plans-banner-action">
+          查看所有方案 <ArrowRight aria-hidden="true" />
+        </span>
+      </Link>
+      <section className="settings-billing-card" aria-labelledby="billing-title">
+        <header>
           <div>
-            <strong>帳單紀錄</strong>
-            <span>目前沒有帳單</span>
+            <h3 id="billing-title">帳單與付款</h3>
+            <p>管理付款方式並查看帳單紀錄。</p>
+          </div>
+        </header>
+        <div className="settings-billing-rows">
+          <div>
+            <span>付款方式</span>
+            <strong>尚未設定</strong>
           </div>
           <div>
-            <strong>付款方式</strong>
-            <span>目前不需提供付款方式</span>
-          </div>
-          <div>
-            <strong>續訂與扣款</strong>
-            <span>目前沒有付費訂閱，也不會自動扣款</span>
+            <span>帳單紀錄</span>
+            <strong>尚無帳單</strong>
           </div>
         </div>
       </section>
-
-      <section className="settings-plan-section" aria-labelledby="manage-plan-title">
-        <div className="settings-plan-section-heading">
-          <h3 id="manage-plan-title">更換或取消方案</h3>
-          <p>
-            付費訂閱尚未開放，因此目前沒有需要取消的訂閱。優惠到期後可主動訂閱，否則回到 Free 方案。
-          </p>
-        </div>
-      </section>
+      {message && (
+        <p role="status" className="settings-plan-note">
+          {message}
+        </p>
+      )}
+      {confirmCancel && subscription && (
+        <Confirmation
+          title="取消訂閱？"
+          text={`目前方案可使用至 ${planPeriodDate(subscription.periodEndsAt)}，之後轉為 Free。現有資料會保留。`}
+          onCancel={() => setConfirmCancel(false)}
+          onConfirm={() => cancelMutation.mutate()}
+          disabled={cancelMutation.isPending}
+          confirmLabel="確認取消訂閱"
+          tone="neutral"
+        />
+      )}
+      {confirmResume && subscription && (
+        <Confirmation
+          title={pendingCancellation ? '繼續訂閱？' : '保留目前方案？'}
+          text={
+            pendingCancellation
+              ? `原定於 ${planPeriodDate(subscription.periodEndsAt)} 轉為 Free。確認後將撤回取消，${planName(plan)}會按${subscription.interval === 'month' ? '月' : '年'}續訂。`
+              : `原定於 ${planPeriodDate(subscription.periodEndsAt)} 改用 ${pendingPlan}。確認後將撤回變更，繼續使用 ${planName(plan)}。`
+          }
+          onCancel={() => setConfirmResume(false)}
+          onConfirm={() => resumeMutation.mutate()}
+          disabled={resumeMutation.isPending}
+          confirmLabel={pendingCancellation ? '繼續訂閱' : '保留目前方案'}
+          tone="neutral"
+        />
+      )}
     </div>
   )
 }
@@ -299,7 +361,7 @@ const settingsCategories = [
     id: 'plans',
     label: '方案與帳單',
     icon: CreditCard,
-    description: '查看方案、優惠體驗與付款狀態。'
+    description: '查看目前方案與管理選項。'
   },
   { id: 'security', label: '帳號與安全', icon: Shield, description: '管理登入方式與帳號狀態。' },
   {
@@ -315,8 +377,6 @@ const settingsCategories = [
     description: '分享使用感受、問題與建議。'
   }
 ] as const
-type SettingsCategory = (typeof settingsCategories)[number]['id']
-
 const commonTimeZones = [
   ['Asia/Taipei', '台北'],
   ['Asia/Tokyo', '東京'],
@@ -356,17 +416,12 @@ function timeZoneOptions(current: string) {
 }
 
 export function SettingsPage({ session }: { session: Session }) {
-  const queryClient = useQueryClient()
   const location = useLocation()
-  const [category, setCategory] = useState<SettingsCategory>(
-    new URLSearchParams(location.search).get('category') === 'plans' ? 'plans' : 'profile'
-  )
-  useEffect(() => {
-    if (new URLSearchParams(location.search).get('category') === 'plans') setCategory('plans')
-  }, [location.search])
-  const [offerCode, setOfferCode] = useState('')
-  const [offerError, setOfferError] = useState('')
-  const [offerSuccess, setOfferSuccess] = useState('')
+  const navigate = useNavigate()
+  const category =
+    settingsCategories.find(
+      (item) => item.id === new URLSearchParams(location.search).get('category')
+    )?.id ?? 'profile'
   const [message, setMessage] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
@@ -379,39 +434,7 @@ export function SettingsPage({ session }: { session: Session }) {
   const [immediateDelete, setImmediateDelete] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const { settings: settingsQuery, lifecycle: lifecycleQuery } = useSettingsRouteQueries(session)
-  const grantQuery = useQuery({
-    queryKey: betaGrantKey(session.user.id),
-    queryFn: () => readBetaGrant(session.access_token)
-  })
   const planQuery = usePlanAccess(session)
-  const offerMutation = useMutation({
-    mutationFn: () => redeemBetaCode(session.access_token, offerCode.trim()),
-    onSuccess: (grant) => {
-      queryClient.setQueryData(betaGrantKey(session.user.id), grant)
-      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
-      setOfferCode('')
-      setOfferError('')
-      setOfferSuccess('優惠碼已套用。')
-    },
-    onError: (reason) => {
-      const messages: Record<string, string> = {
-        invalid_code: '優惠碼無效，請確認後再試。',
-        code_closed: '這組優惠碼已停止使用。',
-        code_exhausted: '這組優惠碼的名額已用完。',
-        already_used: '這組優惠碼已由此 Email 使用過。',
-        already_eligible: '這個帳號已有優惠資格。',
-        email_unverified: '請先完成電子信箱驗證。',
-        rate_limited: '嘗試次數過多，請稍後再試。'
-      }
-      if (reason instanceof ApiError) {
-        setOfferError(
-          reason.details.error === 'rate_limited' && reason.details.retryAfter
-            ? `嘗試次數過多，請於 ${reason.details.retryAfter} 秒後再試。`
-            : (messages[reason.details.error ?? ''] ?? '暫時無法套用，請稍後再試。')
-        )
-      } else setOfferError('暫時無法套用，請稍後再試。')
-    }
-  })
   const { settings: settingsMutation, lifecycle: lifecycleMutation } = useSettingsRouteMutations({
     session,
     onMessage: setMessage,
@@ -486,7 +509,7 @@ export function SettingsPage({ session }: { session: Session }) {
               className={category === item.id ? 'is-active' : ''}
               aria-current={category === item.id ? 'page' : undefined}
               onClick={() => {
-                setCategory(item.id)
+                navigate({ pathname: location.pathname, search: `?category=${item.id}` })
                 setMessage('')
                 window.scrollTo({ top: 0, behavior: 'instant' })
               }}
@@ -497,7 +520,7 @@ export function SettingsPage({ session }: { session: Session }) {
             </button>
           ))}
         </nav>
-        <div className="settings-detail">
+        <div className={`settings-detail${category === 'data' ? ' settings-detail-data' : ''}`}>
           <header className="settings-detail-heading">
             <span className="eyebrow dark">SETTINGS</span>
             <h2>{selectedCategory.label}</h2>
@@ -525,26 +548,12 @@ export function SettingsPage({ session }: { session: Session }) {
             />
           )}
           {category === 'plans' && (
-            <PlanPanel
-              grant={grantQuery.data}
+            <PlanSummary
+              session={session}
               plan={planQuery.data}
-              loading={grantQuery.isPending || planQuery.isPending}
-              error={grantQuery.isError || planQuery.isError}
-              onRetry={() => {
-                void grantQuery.refetch()
-                void planQuery.refetch()
-              }}
-              offerCode={offerCode}
-              onOfferCodeChange={setOfferCode}
-              onRedeem={(event) => {
-                event.preventDefault()
-                setOfferError('')
-                setOfferSuccess('')
-                offerMutation.mutate()
-              }}
-              redeeming={offerMutation.isPending}
-              offerError={offerError}
-              offerSuccess={offerSuccess}
+              loading={planQuery.isPending}
+              error={planQuery.isError}
+              onRetry={() => void planQuery.refetch()}
             />
           )}
           {category === 'security' && (
@@ -633,19 +642,6 @@ export function SettingsPage({ session }: { session: Session }) {
                 }}
               />
               <DeviceDataPanel session={session} />
-              {import.meta.env.DEV && settingsQuery.data && (
-                <details className="settings-dev-tools">
-                  <summary>開發工具：Demo 資料匯入</summary>
-                  <ImportPanelBoundary
-                    session={session}
-                    workspaceVersion={settingsQuery.data.version}
-                    onImported={() => {
-                      void settingsQuery.refetch()
-                      void lifecycleQuery.refetch()
-                    }}
-                  />
-                </details>
-              )}
             </>
           )}
           {category === 'feedback' && <FeedbackPanel />}
@@ -868,7 +864,8 @@ function FinancePreferencePanel({
 function DeviceDataPanel({ session }: { session: Session }) {
   const [open, setOpen] = useState(false)
   return (
-    <section className="settings-panel">
+    <section className="settings-panel settings-device-panel" aria-label="資料保存與裝置暫存">
+      <h3>資料保存與裝置暫存</h3>
       <div className="settings-row">
         <div className="settings-row-copy">
           <strong>資料保存提醒</strong>
@@ -980,37 +977,6 @@ function DeviceCacheDialog({ session, onClose }: { session: Session; onClose: ()
         </div>
       </section>
     </div>
-  )
-}
-
-function ImportPanelBoundary({
-  session,
-  workspaceVersion,
-  onImported
-}: {
-  session: Session
-  workspaceVersion: number
-  onImported: () => void
-}) {
-  const preference = useTrainingPreference(session)
-  if (preference.isLoading)
-    return (
-      <section className="settings-panel">
-        <span className="panel-loading">正在載入資料移轉工具</span>
-      </section>
-    )
-  if (preference.isError || !preference.data)
-    return <PanelError title="暫時無法開啟資料移轉工具" onRetry={() => void preference.refetch()} />
-  return (
-    <DemoImportPanel
-      session={session}
-      workspaceVersion={workspaceVersion}
-      preferenceVersion={preference.data.version}
-      onImported={() => {
-        void preference.refetch()
-        onImported()
-      }}
-    />
   )
 }
 

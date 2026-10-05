@@ -18,12 +18,14 @@ export function SeriesDatePicker({
   onChange,
   label = '起始日期',
   labelSuffix,
+  calendarClassName = '',
   disabled = false
 }: {
   value: string
   onChange: (value: string) => void
   label?: string
   labelSuffix?: ReactNode
+  calendarClassName?: string
   disabled?: boolean
 }) {
   const trigger = useRef<HTMLButtonElement>(null)
@@ -104,7 +106,7 @@ export function SeriesDatePicker({
         createPortal(
           <div
             ref={calendar}
-            className="series-date-calendar ui-choice-scroll"
+            className={`series-date-calendar ui-choice-scroll${calendarClassName ? ` ${calendarClassName}` : ''}`}
             role="dialog"
             aria-label={`選擇${label}`}
             style={position}

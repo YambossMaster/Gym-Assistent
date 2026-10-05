@@ -1,7 +1,21 @@
 # Formal Web control states
 
-Use these rules for Coach Web controls during M7.5 visual corrections. Preserve the owning route's
-business behavior and the established FORM typography and spacing.
+Use these rules for every new or changed Coach Web control. Preserve the owning route's business
+behavior and the established FORM typography and spacing.
+
+## New choice and date fields
+
+- Before building a route-specific choice, use the shared `FormSelect`, `OptionItem`, `RadioGroup`,
+  or `Checkbox` where its interaction fits. A custom choice must still use the shared
+  `ui-text-body-compact` primary text and `ui-text-secondary` description roles (both 14px with
+  distinct contrast) and the 4px spacing scale. Do not introduce an 11px description or an
+  unrelated selected color just because the choice is presented as a card.
+- Use the existing `SeriesDatePicker` for Coach date selection, including start/end ranges. Do not
+  add a browser-native `input type="date"` to a formal Coach route. Keep dates as `YYYY-MM-DD` in
+  state and apply the route's own range validation after selection.
+- Inspect every newly added choice and its open state at desktop and 390px. For entitlement-gated
+  controls, inspect the unlocked form as well as the locked state; a locked-only preview does not
+  validate the controls behind it.
 
 ## Checkbox
 
