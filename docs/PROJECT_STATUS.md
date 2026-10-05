@@ -76,6 +76,24 @@ confirmation discloses only that the current selection will not charge. The late
 browser checks are recorded in LOG-415, LOG-417 and LOG-418; no plan selection or cancellation was
 confirmed.
 
+**2026-10-05 mobile plan-page proportion correction:** Product Owner review narrowed the remaining
+work to the mobile `方案與帳單` flow. The current-plan title now keeps tier, interval and active state
+in that order in one compact row and removes the decorative icon. `接下來` is renamed `下一期`; both period facts use
+one label-above-value structure, and the transition uses neutral color. The normal footer no longer
+pre-announces what cancellation would do; that consequence remains in the confirmation flow, while an
+already scheduled change retains its explicit status. Cancellation is a full-width touch target. The
+desktop action group is pinned to the current-plan footer's right edge in both ordinary and pending
+states. The
+comparison banner hard-centers its copy and action as one group. At 390px, `/plans` uses a shorter
+subpage bar, a solid paper background, smaller title/segmented control, black-and-white selected
+interval, and a compact horizontal snap row rather than vertically stacking oversized cards. Annual
+saving is parenthesized, Pro remains the recommended pale card, and Prime receives a distinct dark
+premium treatment. Each card is 281px wide and about 334px high in the inspected monthly state,
+centered with a restrained preview of the next card. One keyboard arrow moves exactly one plan, and
+the document has zero horizontal overflow. Targeted formatting, Web typecheck and `git diff --check`
+passed; authenticated 390×844 Chrome preview covered the summary and every plan card. Full local CI,
+physical-device acceptance, commit, push and remote CI remain unverified pending Product Owner review.
+
 **2026-10-05 Product Owner export feedback:** After inspecting synthetic examples of all four data
 types in CSV, JSON and PDF, the Product Owner found the current downloads of limited practical use:
 the formats were designed around exporting available data without first defining what Coaches need
@@ -831,6 +849,28 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-05 — LOG-419 — Recalibrate mobile plan management and comparison
+
+- **Scope:** Apply the Product Owner's focused mobile corrections to Settings `方案與帳單` and the
+  standalone `/plans` comparison without changing desktop composition, plan authority or prices.
+- **Outcome:** Tier, interval and `使用中` share one compact title row in that order. Both period facts use
+  label-above-value structure and the next transition is neutral. The normal footer omits cancellation
+  coaching and shows the full-width touch action; cancellation consequences appear in confirmation,
+  while pending changes retain status. On desktop the action group stays anchored to the footer's
+  right edge regardless of whether the left-side status exists. The whole comparison banner content is hard-centered. At
+  390px, the selected interval is black-on-white inverse, annual saving is parenthesized, Pro remains
+  the recommended pale treatment, Prime has a distinct dark premium treatment, and the three compact
+  cards form a centered horizontally snapping, keyboard-scrollable row with the next card partially
+  visible.
+- **Verification:** Targeted Prettier, Web typecheck and `git diff --check` passed. Authenticated
+  390×844 Chrome preview showed the corrected Settings hierarchy, centered banner, and explicit
+  cancellation button. `/plans` measured 281×334px per card, one ArrowRight moved Free → Pro, and
+  the document reported zero horizontal overflow. No plan mutation was confirmed.
+- **Known gap:** Full local CI, physical-device touch acceptance, commit, push and remote CI remain
+  unverified until Product Owner approval.
+- **Next:** Product Owner reviews this mobile correction together with the existing Plan-Choice
+  package; after explicit approval, begin the full local CI gate.
 
 ### 2026-10-05 — LOG-416 — Move export workflow into a contained settings interface
 

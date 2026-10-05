@@ -16683,6 +16683,9 @@ button:disabled {
   gap: 9px;
   margin-top: 9px;
 }
+.settings-current-plan-title-break {
+  display: none;
+}
 .settings-current-plan-icon {
   display: inline-grid;
   width: 38px;
@@ -16709,6 +16712,7 @@ button:disabled {
   font-size: 13px;
 }
 .settings-current-plan-period {
+  order: 1;
   padding: 5px 9px;
   border-radius: 999px;
   border: 1px solid #495344;
@@ -16718,6 +16722,7 @@ button:disabled {
   font-weight: 750;
 }
 .settings-plan-status {
+  order: 2;
   padding: 5px 9px;
   border-radius: 999px;
   border: 1px solid rgba(217, 255, 67, 0.34);
@@ -16819,6 +16824,7 @@ button:disabled {
   justify-content: flex-end;
   gap: 8px;
   flex: 0 0 auto;
+  margin-left: auto;
 }
 .settings-plan-resume {
   min-height: 38px;
@@ -17649,6 +17655,44 @@ button:disabled {
   box-shadow: 0 16px 38px rgba(53, 76, 25, 0.13);
   transform: translateY(-5px);
 }
+.settings-plan-card.is-prime {
+  border-color: #4c6138;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(217, 255, 67, 0.16), transparent 31%),
+    linear-gradient(155deg, #242c20 0%, #171c15 66%, #121610 100%);
+  color: #f4f5ef;
+  box-shadow: 0 18px 42px rgba(18, 25, 14, 0.25);
+}
+.settings-plan-card.is-prime .settings-plan-card-tag {
+  color: var(--lime);
+}
+.settings-plan-card.is-prime .settings-plan-current-badge {
+  color: var(--lime);
+  background: rgba(217, 255, 67, 0.11);
+  box-shadow: inset 0 0 0 1px rgba(217, 255, 67, 0.25);
+}
+.settings-plan-card.is-prime h2,
+.settings-plan-card.is-prime .settings-plan-price {
+  color: #f7f8f3;
+}
+.settings-plan-card.is-prime .settings-plan-card-subtitle,
+.settings-plan-card.is-prime .settings-plan-price small,
+.settings-plan-card.is-prime .settings-plan-features li {
+  color: #c7cec0;
+}
+.settings-plan-card.is-prime .settings-plan-price em,
+.settings-plan-card.is-prime .settings-plan-features svg {
+  color: var(--lime);
+}
+.settings-plan-card.is-prime .settings-plan-select {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: #182010;
+}
+.settings-plan-card.is-prime .settings-plan-select:hover:not(:disabled) {
+  background: #c8ef39;
+  color: #182010;
+}
 .settings-plan-card-heading {
   display: flex;
   min-height: 25px;
@@ -17865,8 +17909,31 @@ button:disabled {
 }
 
 @media (max-width: 640px) {
+  .app-shell.plans-shell {
+    --mobile-header-top-inset: max(20px, env(safe-area-inset-top, 0px));
+  }
+  .plans-shell .mobile-header:has(.mobile-subpage-header) {
+    padding-top: calc(8px + var(--mobile-header-top-inset));
+    padding-bottom: 8px;
+  }
   .plans-page.page {
     padding-inline: 16px;
+    background: #f5f4ef;
+  }
+  .plans-page .page-header {
+    padding-bottom: 18px;
+  }
+  .plans-page .page-header h1 {
+    margin-top: 8px;
+    font-size: 29px;
+    line-height: 1.08;
+    letter-spacing: -0.055em;
+  }
+  .plans-page .page-header p {
+    max-width: 320px;
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.65;
   }
   .plans-page .plans-back-link {
     display: none;
@@ -17880,17 +17947,34 @@ button:disabled {
     padding: 21px 20px 18px;
   }
   .settings-current-plan-heading h3 {
-    font-size: 24px;
+    flex: 0 1 auto;
+    font-size: 22px;
+    letter-spacing: -0.035em;
+    white-space: nowrap;
   }
   .settings-current-plan-title-row {
+    flex-wrap: nowrap;
     gap: 8px;
   }
   .settings-current-plan-icon {
-    width: 34px;
-    height: 34px;
+    display: none;
+  }
+  .settings-current-plan-period,
+  .settings-plan-status {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .settings-current-plan-title-break {
+    display: none;
+  }
+  .settings-plan-status {
+    order: 2;
+  }
+  .settings-current-plan-period {
+    order: 1;
   }
   .settings-current-plan-heading p {
-    margin-left: 42px;
+    margin-left: 0;
   }
   .settings-current-plan-facts {
     grid-template-columns: minmax(0, 1fr);
@@ -17899,10 +17983,10 @@ button:disabled {
     padding: 0;
   }
   .settings-current-plan-facts > div {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 18px;
+    display: grid;
+    align-items: start;
+    justify-content: stretch;
+    gap: 8px;
     padding: 14px 0;
     border-top: 1px solid rgba(21, 23, 17, 0.08);
     border-left: 0;
@@ -17913,10 +17997,27 @@ button:disabled {
     white-space: nowrap;
   }
   .settings-current-plan-facts dd {
-    text-align: right;
+    text-align: left;
   }
   .settings-current-plan-next dd {
-    justify-content: flex-end;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    white-space: nowrap;
+  }
+  .settings-current-plan-facts > .settings-current-plan-next {
+    display: grid;
+    justify-content: stretch;
+    gap: 8px;
+  }
+  .settings-current-plan-next dd {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .settings-current-plan-next dd svg {
+    color: #929b8c;
+  }
+  .settings-current-plan-next dd strong {
+    color: #d6dacd;
   }
   .settings-plan-capacity {
     margin: 16px 20px;
@@ -17924,12 +18025,14 @@ button:disabled {
   .settings-current-plan-actions {
     display: grid;
     justify-content: stretch;
-    gap: 12px;
+    gap: 14px;
     padding: 15px 20px;
   }
   .settings-current-plan-actions > div {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-left: 0;
   }
   .settings-current-plan-actions > div > :only-child {
     grid-column: 1 / -1;
@@ -17938,12 +18041,28 @@ button:disabled {
   .settings-plan-resume {
     width: 100%;
   }
+  .settings-plan-cancel {
+    min-height: 44px;
+    border-color: rgba(240, 160, 146, 0.34);
+    background: rgba(130, 48, 34, 0.14);
+  }
   .settings-plans-banner {
-    display: grid;
-    gap: 18px;
-    padding: 21px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+  .settings-plans-banner-copy {
+    width: 100%;
+    justify-items: center;
+    text-align: center;
   }
   .settings-plans-banner-action {
+    width: fit-content;
+    margin-inline: auto;
     justify-content: center;
   }
   .settings-billing-card > header,
@@ -17952,13 +18071,82 @@ button:disabled {
   }
   .settings-plan-interval {
     width: 100%;
+    padding: 3px;
   }
   .settings-plan-interval button {
     flex: 1 1 0;
+    min-height: 34px;
+    padding-block: 6px;
     padding-inline: 9px;
   }
+  .settings-plan-interval button[aria-pressed='true'] {
+    background: #171c15;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(21, 23, 17, 0.2);
+  }
+  .settings-plan-interval button[aria-pressed='true'] .settings-plan-discount {
+    color: var(--lime);
+  }
+  .settings-plan-grid {
+    width: calc(100% + 16px);
+    max-width: none;
+    margin-right: -16px;
+    padding: 2px 28px 10px;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: calc(100% - 18px);
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scroll-padding-inline: 28px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .settings-plan-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .settings-plan-grid:focus-visible {
+    outline: 2px solid #526d28;
+    outline-offset: 3px;
+    border-radius: 18px;
+  }
   .settings-plan-card {
-    padding: 23px 21px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .settings-plan-card h2 {
+    margin: 11px 0 4px;
+    font-size: 25px;
+  }
+  .settings-plan-card-subtitle {
+    min-height: 0;
+    font-size: 12px;
+  }
+  .settings-plan-price {
+    min-height: 0;
+    margin: 17px 0 18px;
+  }
+  .settings-plan-price strong {
+    font-size: 34px;
+  }
+  .settings-plan-features {
+    gap: 10px;
+  }
+  .settings-plan-features li {
+    align-items: center;
+    font-size: 12px;
+  }
+  .settings-plan-features svg {
+    margin-top: 0;
+  }
+  .settings-plan-card-footer {
+    padding-top: 20px;
+  }
+  .settings-plan-select {
+    min-height: 42px;
   }
   .settings-offer-section {
     padding: 22px 20px;

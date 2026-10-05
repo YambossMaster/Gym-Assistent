@@ -41,9 +41,14 @@ existing write lock.
 
 ## Settings and plan-page interaction
 
-Settings `方案與帳單` is the management entry. Its green-black current-plan card combines the tier,
-interval and active state in one product heading, then shows only the period end and a visual
-current-to-next transition. A separated management footer contains the consequential actions.
+Settings `方案與帳單` is the management entry. Its green-black current-plan card keeps the tier,
+interval and active state in that order in one compact title row at 390px. Period end and next period use the same
+label-above-value reading pattern, and the next-period transition stays neutral so the active-state
+accent remains primary. A separated management footer contains the consequential actions with
+full-width touch targets on mobile. The ordinary active state does not pre-announce cancellation;
+the consequence is disclosed by the cancellation confirmation, while an already scheduled change
+retains its explicit status. On desktop, the action group remains anchored to the footer's bottom-right
+edge whether or not a pending-change status occupies the left side.
 `取消訂閱` schedules Free at period end. When cancellation is already scheduled, `繼續訂閱`
 selects the current tier and interval to withdraw it without reopening the comparison flow or
 checkout. The same withdrawal presents as `保留目前方案` for a scheduled downgrade. The page
@@ -51,19 +56,24 @@ retains the formal `帳單與付款` structure for future payment-method and bil
 separate `查看所有方案` banner opens the standalone `/plans` comparison page.
 
 The standalone page follows established SaaS pricing patterns: compare Free, Pro and Prime in one
-constrained, centered pricing grid; switch between `月費方案` and `年費方案`; show the approved list
-prices and the approximately 17% annual discount; align feature lists and actions; distinguish the
-recommended plan; and return explicitly to Settings. The temporary zero-price implementation is
-not presented as a plan benefit, price or payment-method message. A selection confirmation states
-the chosen tier and interval and discloses only the consequential fact that this selection will not
-charge the Coach. On success, refresh plan-dependent private queries and the current-plan summary.
-On failure or conflict, show a recoverable message. At desktop and 390px, the confirmation supports
-Escape, focus restoration, no horizontal overflow and keyboard interaction.
+constrained, centered pricing grid on desktop; at 390px, present the same cards as one compact
+horizontal snap row with one card in focus and part of the next card visible as a swipe cue. Switch
+between `月費方案` and `年費方案`; show the approved list prices and the annual saving in parentheses;
+align feature lists and actions; distinguish Pro as recommended and Prime with a richer dark premium
+treatment; and return explicitly to Settings. The temporary zero-price implementation is not
+presented as a plan benefit, price or payment-method message. A selection confirmation states the
+chosen tier and interval and discloses only the consequential fact that this selection will not charge
+the Coach. On success, refresh plan-dependent private queries and the current-plan summary. On failure
+or conflict, show a recoverable message. At desktop and 390px, the comparison and confirmation support
+keyboard interaction, Escape where applicable, focus restoration and no document-level horizontal
+overflow.
 
 Each non-current card uses the same selection action pattern, including `選擇 Free 方案`; choosing
 Free schedules the existing subscription to end and Free to begin at the period boundary. The
 current tier and interval are labeled explicitly. Its action is absent for the selected interval;
-switching the comparison to the other interval exposes the applicable interval-change action.
+switching the comparison to the other interval exposes the applicable interval-change action. At
+390px the focused card is centered with balanced side space and a restrained preview of the next
+card.
 
 ## Evidence
 

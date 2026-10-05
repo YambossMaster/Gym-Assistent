@@ -173,8 +173,9 @@ function PlanSummary({
               </h3>
               {!loading && !error && (
                 <>
-                  <span className="settings-current-plan-period">{periodLabel}</span>
                   <span className="settings-plan-status">使用中</span>
+                  <span className="settings-current-plan-title-break" aria-hidden="true" />
+                  <span className="settings-current-plan-period">{periodLabel}</span>
                 </>
               )}
             </div>
@@ -195,7 +196,7 @@ function PlanSummary({
                 <dd>{periodEnd}</dd>
               </div>
               <div className="settings-current-plan-next">
-                <dt>接下來</dt>
+                <dt>下一期</dt>
                 <dd>
                   <span>{planName(plan)}</span>
                   <ArrowRight aria-hidden="true" />
@@ -210,13 +211,13 @@ function PlanSummary({
             )}
             {subscription && plan?.source !== 'permanent' && (
               <footer className="settings-current-plan-actions">
-                <span>
-                  {pendingCancellation
-                    ? `已安排於 ${periodEnd} 轉為 Free 方案。`
-                    : hasPendingChange
-                      ? `已安排於 ${periodEnd} 改用 ${pendingPlan}。`
-                      : '本期結束後將按目前週期續訂。'}
-                </span>
+                {hasPendingChange && (
+                  <span>
+                    {pendingCancellation
+                      ? `已安排於 ${periodEnd} 轉為 Free 方案。`
+                      : `已安排於 ${periodEnd} 改用 ${pendingPlan}。`}
+                  </span>
+                )}
                 <div>
                   {hasPendingChange && (
                     <button

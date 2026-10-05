@@ -150,10 +150,41 @@ function PlanPanel({
             aria-pressed={selectedInterval === 'year'}
             onClick={() => setSelectedInterval('year')}
           >
-            年費方案 <span className="settings-plan-discount">省約 17%</span>
+            年費方案 <span className="settings-plan-discount">（省約 17%）</span>
           </button>
         </div>
-        <div className="settings-plan-grid">
+        <div
+          className="settings-plan-grid"
+          role="region"
+          aria-label="方案卡片，可左右滑動瀏覽"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+            event.preventDefault()
+            const row = event.currentTarget
+            const cards = Array.from(row.querySelectorAll<HTMLElement>('.settings-plan-card'))
+            const positions = cards.map(
+              (card) => card.offsetLeft - (row.clientWidth - card.offsetWidth) / 2
+            )
+            const currentIndex = positions.reduce(
+              (nearest, position, index) =>
+                Math.abs(position - row.scrollLeft) < Math.abs(positions[nearest]! - row.scrollLeft)
+                  ? index
+                  : nearest,
+              0
+            )
+            const nextIndex = Math.max(
+              0,
+              Math.min(cards.length - 1, currentIndex + (event.key === 'ArrowRight' ? 1 : -1))
+            )
+            row.scrollTo({
+              left: positions[nextIndex],
+              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 'auto'
+                : 'smooth'
+            })
+          }}
+        >
           <article className="settings-plan-card">
             <div className="settings-plan-card-heading">
               <span className="settings-plan-card-tag">入門</span>
@@ -227,7 +258,7 @@ function PlanPanel({
               </div>
             )}
           </article>
-          <article className="settings-plan-card">
+          <article className="settings-plan-card is-prime">
             <div className="settings-plan-card-heading">
               <span className="settings-plan-card-tag">完整功能</span>
               {currentBadge('advanced') && (
