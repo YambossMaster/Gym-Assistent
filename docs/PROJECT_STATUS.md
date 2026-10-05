@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-05. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-06. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
@@ -8,15 +8,33 @@
 | Field              | Current value                                                           |
 | ------------------ | ----------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
-| Current package    | **M8-B-Plan-Choice local implementation**                               |
-| Package state      | **Product review corrections implemented; focused checks passed**       |
-| Approved next      | **Product Owner review before full CI, then remote delivery approval**  |
+| Current package    | **M8-B-Plan-Choice CI delivery**                                        |
+| Package state      | **Full local gate passed; remote exact-SHA verification pending**       |
+| Approved next      | **Push authorized Main delivery, then confirm both Actions jobs**       |
 | Completed baseline | M0–M7.5, M8-A, M8-B and M8-B-Export Done                                |
 | Branch baseline    | Export `92f39dc` reached Main; CI run `37221850693` passed both jobs    |
 | Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved   |
 | Linked database    | Development only; plan-choice migration `20261005071050` applied        |
 | Production         | Not configured; no real customer data                                   |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants |
+
+**2026-10-06 M8-B-Plan-Choice local CI gate:** The Product Owner accepted the reviewed version and
+authorized full verification plus delivery to `main`. The reliable root check passed API 36 files /
+168 tests and Web 62 files / 272 tests in 210.378 seconds. An earlier full attempt spent 272.554
+seconds and timed out only the established Export Training PDF case at 31.844 seconds against its
+30-second limit; that file then passed 1 file / 5 tests in 44.395 seconds before the unchanged full
+rerun passed. Root build passed in 13.874 seconds with only the established over-500-kB chunk
+advisory. `/ready` returned 200 in 0.740 seconds. Isolated Plan-Choice live E2E passed selection,
+upgrade, scheduled downgrade/cancellation, withdrawal, reload, zero due/paid amounts and exact
+cleanup in 13.313 seconds. Linked migration dry-run was up to date in 8.777 seconds; `app_private`
+lint found no schema errors in 6.933 seconds. Supabase security/performance advisors completed in
+4.161 seconds with only the existing leaked-password warning and previously tracked performance
+advisories. Authenticated browser acceptance took 484.926 seconds and passed at desktop 1800x844
+and exact 390x844: Settings/plan hierarchy, monthly/annual prices, three-card mobile snap row,
+keyboard card navigation, zero document overflow, Settings chrome hide/reveal, pinned Today and
+Calendar chrome, Training note-to-document gesture handoff and zero browser warnings/errors. No
+plan mutation was submitted in the real Coach session. Physical-device touch acceptance remains an
+M8-C entry check. Remote commit and Actions evidence are pending.
 
 **2026-10-05 billing review and local plan-page correction:** The Product Owner approved launching
 both monthly and annual billing in M8-E: Pro NT$199/month or NT$1,990/year; Prime NT$259/month or
@@ -905,6 +923,28 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-06 — LOG-425 — Complete the Plan-Choice local CI gate
+
+- **Scope:** Run the Product Owner-authorized full verification matrix for M8-B-Plan-Choice and its
+  reviewed Settings, pricing and mobile-chrome corrections before delivery to `main`.
+- **Outcome:** Server-owned zero-price plan lifecycle, responsive plan management/comparison and
+  coordinated mobile document chrome are locally ready for remote exact-SHA verification. The real
+  Coach browser session was read-only; only the isolated live fixture exercised subscription writes
+  and exact cleanup.
+- **Verification:** Reliable root check passed API 36 files/168 tests and Web 62 files/272 tests in
+  210.378 seconds. Root build passed in 13.874 seconds with the established chunk-size advisory.
+  `/ready` returned 200 in 0.740 seconds. Plan-Choice live E2E passed in 13.313 seconds. Linked
+  migration dry-run was up to date in 8.777 seconds; private-schema lint found no errors in 6.933
+  seconds; advisors completed in 4.161 seconds with only existing warnings. Authenticated desktop
+  1800x844 and exact 390x844 browser acceptance passed in 484.926 seconds with zero page overflow
+  and no browser warnings/errors. `git diff --check` passed.
+- **Known issue:** The first root attempt timed out the existing Export Training PDF test at 31.844
+  seconds against its 30-second limit; the focused file passed 5/5 in 44.395 seconds and the unchanged
+  full rerun passed. The build still reports the established large-chunk advisory. Physical-device
+  touch acceptance remains M8-C evidence.
+- **Next:** Create and push the authorized cohesive `main` delivery, confirm exact-SHA GitHub Actions
+  `verify` and `migration-dry-run`, then record the remote result and return the active handoff to M8-C.
 
 ### 2026-10-05 — LOG-424 — Let Training notes hand vertical gestures to the document
 
