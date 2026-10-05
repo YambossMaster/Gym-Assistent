@@ -94,6 +94,62 @@ the document has zero horizontal overflow. Targeted formatting, Web typecheck an
 passed; authenticated 390×844 Chrome preview covered the summary and every plan card. Full local CI,
 physical-device acceptance, commit, push and remote CI remain unverified pending Product Owner review.
 
+**2026-10-05 mobile top-bar spacing correction:** The Product Owner selected the compact `/plans`
+top bar as the mobile reference for the rest of the authenticated Web. The shared App Shell now uses
+the same 20px minimum top inset and 8px vertical bar padding for primary routes and subpages; the
+Today brand mark is capped to the shared 44px control height so it does not enlarge that one bar.
+Authenticated 390×844 Chrome measured `/plans`, Settings and Today at the same approximately 80.82px
+top-bar height, with no horizontal overflow or browser warnings/errors. Targeted Prettier and
+`git diff --check` passed. Full local CI, physical-device acceptance, commit, push and remote CI
+remain unverified pending Product Owner review.
+
+**2026-10-05 mobile Settings category-density correction:** The Settings category directory now
+uses at most two rows on mobile and creates additional columns to the right. At 390×844, two full
+columns plus the icon and opening text of the next column communicate horizontal movement. The
+track retains a 12px leading inset and uses 8px of outer padding for a 20px left visual margin. Its
+trailing fade and final-column reserve now use the same 20px visual margin rather than hard-clipping the preview,
+snaps by column and hides the horizontal scrollbar. Selecting or directly opening a category outside
+the initial view brings its complete active button before the faded edge without changing URL-owned
+category state. Chrome verified the two-row layout, 53px next-column preview, rightward selection,
+hidden scrollbar and zero page-level horizontal overflow. Web typecheck, targeted Prettier and
+`git diff --check` passed. Full local CI, physical-device acceptance, commit, push and remote CI
+remain unverified pending Product Owner review.
+
+**2026-10-05 mobile scroll-aware chrome correction:** On mobile routes other than Today and
+Calendar, downward document scrolling now yields the viewport by moving the shared top bar and
+bottom navigation out together; a shorter upward reversal brings both back without requiring a
+return to the document top. The Student active/archive toolbar, Exercise Library category/filter
+controls and Settings category directory join the same transition. The listener is owned by
+`window`, so scrolling a bounded control or interface does not change the chrome state. Exact
+390×844 Chrome acceptance covered hide/reveal on Settings, Students and Exercises, pinned Today and
+Calendar chrome, and an export interface whose local body moved from `scrollTop 0` to about `430`
+while the App Shell stayed visible. The focused state-machine test passed 1 file/5 tests after the
+known sandboxed Windows `spawn EPERM` required an elevated rerun; Web typecheck, targeted Prettier
+and browser warning/error checks passed. Full local CI, physical-device touch acceptance, commit,
+push and remote CI remain unverified pending Product Owner review.
+
+**2026-10-05 Training scroll-chrome follow-up:** The Product Owner's recording showed the Training
+Record's own sticky student/action/tab header and fixed completion footer remaining after the shared
+mobile bars left the viewport. Both Training-owned surfaces now participate in the same mobile
+document-scroll transition as the App Shell. At 390×844, the shared header, Training header,
+Training footer and bottom navigation all moved fully beyond the viewport on downward scroll and
+returned together on upward scroll; measured hidden edges were `0`, about `-12`, and `844px` for
+the two bottom surfaces. The set-entry region's local horizontal interaction left all four visible.
+Focused mobile-chrome tests passed after the known sandboxed Windows `spawn EPERM` required an
+elevated rerun; Web typecheck, targeted Prettier and browser warning/error checks passed.
+Full local CI, physical-device touch acceptance, commit, push and remote CI remain unverified pending
+Product Owner review.
+
+**2026-10-05 Training note scroll handoff correction:** The mobile Coach-note canvas no longer traps
+vertical wheel or touchpad input when it has no local overflow. The gesture now chains to the
+document, so the shared and Training-owned chrome can hide and reveal while the note remains fully
+reachable. Exact 390×844 Chrome acceptance confirmed a downward gesture over the note moved the
+document from `scrollTop 0` to about `183` with chrome `hidden`, while the note canvas remained at
+`scrollTop 0`; an upward gesture restored both document position and chrome. Focused mobile-chrome
+tests passed 1 file/5 tests after the known sandboxed Windows `spawn EPERM` required an elevated
+rerun. Full local CI, physical-device touch acceptance, commit, push and remote CI remain unverified
+pending Product Owner review.
+
 **2026-10-05 Product Owner export feedback:** After inspecting synthetic examples of all four data
 types in CSV, JSON and PDF, the Product Owner found the current downloads of limited practical use:
 the formats were designed around exporting available data without first defining what Coaches need
@@ -849,6 +905,100 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-05 — LOG-424 — Let Training notes hand vertical gestures to the document
+
+- **Scope:** correct the mobile Training `教練筆記` surface without changing note persistence,
+  editing commands, desktop scrolling, API behavior, or the document-scroll-only chrome contract.
+- **Outcome:** replaced the note canvas's vertical overscroll containment with normal vertical
+  chaining. When the fixed-height canvas has no remaining local scroll range, wheel and touchpad
+  input now reaches the document and drives the existing synchronized chrome transition instead of
+  appearing inert.
+- **Verification:** authenticated exact-390×844 Chrome reproduced the original short note. A
+  downward gesture over the editor left canvas `scrollTop` at `0`, moved document `scrollTop` from
+  `0` to about `183`, and changed chrome from `visible` to `hidden`; the reverse gesture returned
+  document `scrollTop` to `0` and chrome to `visible`. Focused mobile-chrome tests passed 1 file/5
+  tests after the sandboxed first attempt hit the known Windows `spawn EPERM` and the elevated rerun
+  passed. Full local CI and physical-device touch acceptance are not claimed.
+- **Next:** Product Owner reviews this correction together with the current mobile scroll-aware
+  chrome package before authorizing full CI; no commit, push, or remote delivery is authorized.
+
+### 2026-10-05 — LOG-423 — Synchronize Training Record fixed surfaces with mobile chrome
+
+- **Scope:** Correct only the Training Record mobile scroll composition exposed by the Product
+  Owner's recording. Preserve desktop Training layout, save-status visibility, local set-row
+  scrolling and the existing document-scroll thresholds.
+- **Outcome:** `.session-topbar` now exits above the viewport with the shared mobile header, while
+  `.session-bottom` exits below with the App Shell navigation. Both use the existing 210ms transform,
+  pointer boundary and reduced-motion treatment, so no second scroll listener or competing state is
+  introduced.
+- **Verification:** Focused mobile-chrome tests passed 1 file/5 tests after the known sandboxed
+  Windows `spawn EPERM` required an elevated rerun; Web typecheck passed.
+  Authenticated 390×844 Chrome opened a completed 9/9-set Training Record and measured all four
+  fixed surfaces visible before scrolling. Downward document scroll changed the App Shell to
+  `hidden`; the mobile header ended at `0px`, Training header near `-12px`, and both bottom surfaces
+  began at about `844px`. Upward scroll restored the complete composition. Local set-row horizontal
+  interaction did not hide it, and browser logs contained no warnings or errors.
+- **Known gap:** Full local CI, installed-phone touch acceptance, commit, push and remote CI remain
+  unverified until Product Owner approval.
+- **Next:** Product Owner reviews this Training follow-up with the other mobile corrections; after
+  explicit approval, begin the full local CI gate.
+
+### 2026-10-05 — LOG-422 — Yield mobile chrome to document scrolling
+
+- **Scope:** Add direction-aware mobile top/bottom chrome behavior only for document scrolling.
+  Exclude Today and Calendar, include the Product Owner-named Student, Exercise Library and Settings
+  sticky control rows, and preserve all nested/local scroll regions.
+- **Outcome:** Downward document movement accumulates 24px before hiding the coordinated chrome;
+  12px of upward reversal reveals it promptly. Returning to the document top always reveals it.
+  Route changes and viewport breakpoint changes reset to visible. Today and Calendar remain pinned.
+  Motion uses one 210ms eased transform and respects reduced-motion preference. Because the handler
+  listens only to `window`, nested scroll containers never update this state.
+- **Verification:** Focused mobile-chrome test passed 1 file/5 tests; its first sandboxed attempt hit
+  the known Windows `spawn EPERM`, and the elevated rerun passed. Web typecheck and targeted Prettier
+  passed. Authenticated 390×844 Chrome showed synchronized hide/reveal for Settings, Students and
+  Exercises, retained visible chrome while Today and Calendar scrolled, and moved the export
+  interface's local body from `scrollTop 0` to about `430` without changing visible App Shell state.
+  Browser logs contained no warnings or errors.
+- **Known gap:** Full local CI, physical-device touch/touchpad acceptance, commit, push and remote CI
+  remain unverified until Product Owner approval.
+- **Next:** Product Owner reviews this motion with the existing mobile Plan-Choice corrections; after
+  explicit approval, begin the full local CI gate.
+
+### 2026-10-05 — LOG-421 — Convert mobile Settings categories to a two-row slider
+
+- **Scope:** Reduce only the mobile Settings category directory height; preserve desktop navigation,
+  category names, URL ownership and all setting-panel behavior.
+- **Outcome:** The directory fills two rows before adding columns to the right. Two columns and a
+  53px preview of the next are visible at 390px. The track combines its 12px leading inset with 8px
+  outer padding, and the trailing fade/reserve uses the same 20px visual margin instead of a hard
+  crop. It snaps by column and keeps its scrollbar hidden. A
+  category selected through the URL is automatically revealed before the faded edge when it is
+  outside the current horizontal viewport.
+- **Verification:** Web typecheck, targeted Prettier and `git diff --check` passed. Authenticated
+  390×844 Chrome measured exactly two category rows, a 12px content inset, 53px next-column preview
+  and a working horizontal range. It selected the complete `資料與裝置` button with matched 20px
+  left/right visual margins,
+  reported `scrollbar-width: none`, and retained `scrollWidth === clientWidth` for the page.
+- **Known gap:** Full local CI, physical-device touch acceptance, commit, push and remote CI remain
+  unverified until Product Owner approval.
+- **Next:** Product Owner reviews this Settings density correction with the other mobile Plan-Choice
+  corrections; after explicit approval, begin the full local CI gate.
+
+### 2026-10-05 — LOG-420 — Align all mobile top bars to the plan-page proportion
+
+- **Scope:** Reduce only the authenticated mobile App Shell top-bar reserve, using the accepted
+  `/plans` bar as the reference; preserve desktop layout, page content and route behavior.
+- **Outcome:** Primary route, route-title and subpage bars now share a 20px minimum top inset and 8px
+  top/bottom padding. The Today logo fits the same 44px content row, removing its last route-specific
+  height difference.
+- **Verification:** Targeted Prettier and `git diff --check` passed. Authenticated 390×844 Chrome
+  measured `/plans`, Settings and Today at approximately 80.82px each; Today reported
+  `scrollWidth === clientWidth`, and the browser log had no warnings or errors.
+- **Known gap:** Full local CI, physical-device touch acceptance, commit, push and remote CI remain
+  unverified until Product Owner approval.
+- **Next:** Product Owner reviews this top-bar correction with the existing mobile Plan-Choice
+  correction; after explicit approval, begin the full local CI gate.
 
 ### 2026-10-05 — LOG-419 — Recalibrate mobile plan management and comparison
 

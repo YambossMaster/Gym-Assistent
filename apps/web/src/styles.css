@@ -5748,7 +5748,7 @@ textarea:focus {
     background: var(--paper);
   }
   .app-shell {
-    --mobile-header-top-inset: max(40px, env(safe-area-inset-top, 0px));
+    --mobile-header-top-inset: max(20px, env(safe-area-inset-top, 0px));
     --mobile-header-height: calc(62px + var(--mobile-header-top-inset));
     display: block;
   }
@@ -5760,7 +5760,7 @@ textarea:focus {
     z-index: 19;
     top: 0;
     min-height: 58px;
-    padding: calc(9px + var(--mobile-header-top-inset)) 16px 9px;
+    padding: calc(8px + var(--mobile-header-top-inset)) 16px 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5774,7 +5774,8 @@ textarea:focus {
     color: var(--muted);
   }
   .mobile-header .brand-logo {
-    width: 142px;
+    width: auto;
+    height: 44px;
   }
   .mobile-header a {
     width: 44px;
@@ -14021,6 +14022,9 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 0.1em;
 }
+.settings-category-track {
+  display: contents;
+}
 .settings-category-nav button {
   min-height: 48px;
   padding: 10px 12px;
@@ -15008,8 +15012,8 @@ button:disabled {
 /* Mobile route app bars and compact Student search. */
 @media (max-width: 720px) {
   .mobile-header:has(.mobile-route-header-slot) {
-    padding-top: calc(14px + var(--mobile-header-top-inset));
-    padding-bottom: 14px;
+    padding-top: calc(8px + var(--mobile-header-top-inset));
+    padding-bottom: 8px;
     box-shadow: 0 4px 12px rgba(21, 23, 17, 0.12);
   }
   .mobile-route-header-slot {
@@ -15351,8 +15355,52 @@ button:disabled {
     position: sticky;
     top: calc(73px + var(--mobile-header-top-inset));
     z-index: 18;
+    display: block;
+    padding: 5px 0 5px 8px;
+    overflow: hidden;
     background: var(--white);
     box-shadow: 0 4px 12px rgba(21, 23, 17, 0.08);
+  }
+  .settings-page .settings-category-track {
+    display: grid;
+    grid-template-rows: repeat(2, minmax(52px, auto));
+    grid-auto-flow: column;
+    grid-auto-columns: 128px;
+    gap: 4px;
+    padding: 0 20px 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scroll-padding-inline: 12px 20px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 12px,
+      #000 calc(100% - 20px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 12px,
+      #000 calc(100% - 20px),
+      transparent 100%
+    );
+  }
+  .settings-page .settings-category-track::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .settings-page .settings-category-nav button {
+    min-height: 52px;
+    padding: 8px;
+    gap: 8px;
+    scroll-snap-align: start;
   }
 }
 @media (max-width: 720px) and (prefers-reduced-motion: reduce) {
@@ -15536,8 +15584,8 @@ button:disabled {
     display: none;
   }
   .mobile-header:has(.mobile-subpage-header) {
-    padding-top: calc(14px + var(--mobile-header-top-inset));
-    padding-bottom: 14px;
+    padding-top: calc(8px + var(--mobile-header-top-inset));
+    padding-bottom: 8px;
     box-shadow: 0 4px 12px rgba(21, 23, 17, 0.12);
   }
   .mobile-subpage-header {
@@ -15648,6 +15696,51 @@ button:disabled {
     justify-content: flex-end;
     white-space: normal;
     text-align: right;
+  }
+}
+
+/* Mobile document scrolling yields the viewport to content; nested scrollers do not affect this state. */
+@media (max-width: 720px) {
+  .app-shell[data-mobile-chrome] .mobile-header,
+  .app-shell[data-mobile-chrome] > .bottom-nav,
+  .app-shell[data-mobile-chrome] .students-page .toolbar,
+  .app-shell[data-mobile-chrome] .exercises-page .library-controls,
+  .app-shell[data-mobile-chrome] .settings-page .settings-category-nav,
+  .app-shell[data-mobile-chrome] .session-workspace .session-topbar,
+  .app-shell[data-mobile-chrome] .session-workspace .session-bottom {
+    will-change: transform;
+    transition: transform 210ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .app-shell[data-mobile-chrome='hidden'] .mobile-header {
+    transform: translate3d(0, -100%, 0);
+    pointer-events: none;
+  }
+  .app-shell[data-mobile-chrome='hidden'] > .bottom-nav {
+    transform: translate3d(0, 100%, 0);
+    pointer-events: none;
+  }
+  .app-shell[data-mobile-chrome='hidden'] .students-page .toolbar,
+  .app-shell[data-mobile-chrome='hidden'] .exercises-page .library-controls,
+  .app-shell[data-mobile-chrome='hidden'] .settings-page .settings-category-nav,
+  .app-shell[data-mobile-chrome='hidden'] .session-workspace .session-topbar {
+    transform: translate3d(0, calc(-100% - var(--mobile-header-height) - 12px), 0);
+    pointer-events: none;
+  }
+  .app-shell[data-mobile-chrome='hidden'] .session-workspace .session-bottom {
+    transform: translate3d(0, 100%, 0);
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 720px) and (prefers-reduced-motion: reduce) {
+  .app-shell[data-mobile-chrome] .mobile-header,
+  .app-shell[data-mobile-chrome] > .bottom-nav,
+  .app-shell[data-mobile-chrome] .students-page .toolbar,
+  .app-shell[data-mobile-chrome] .exercises-page .library-controls,
+  .app-shell[data-mobile-chrome] .settings-page .settings-category-nav,
+  .app-shell[data-mobile-chrome] .session-workspace .session-topbar,
+  .app-shell[data-mobile-chrome] .session-workspace .session-bottom {
+    transition: none;
   }
 }
 @media (max-width: 720px) {
@@ -16005,7 +16098,7 @@ button:disabled {
     padding: 15px 20px 80px;
     display: block;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    overscroll-behavior-y: auto;
   }
 
   .mobile-note-content {

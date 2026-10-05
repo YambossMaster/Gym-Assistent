@@ -16,7 +16,7 @@ import {
   UserRound,
   X
 } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ApiError,
@@ -419,10 +419,33 @@ function timeZoneOptions(current: string) {
 export function SettingsPage({ session }: { session: Session }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const categoryTrackRef = useRef<HTMLDivElement>(null)
   const category =
     settingsCategories.find(
       (item) => item.id === new URLSearchParams(location.search).get('category')
     )?.id ?? 'profile'
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 720px)').matches) return
+    const track = categoryTrackRef.current
+    const activeButton = track?.querySelector<HTMLButtonElement>('[aria-current="page"]')
+    if (!track || !activeButton) return
+
+    const leadingInset = 12
+    const fadedEdgeWidth = 20
+    const activeStart = activeButton.offsetLeft
+    const activeEnd = activeStart + activeButton.offsetWidth
+    const visibleStart = track.scrollLeft + leadingInset
+    const visibleEnd = visibleStart + track.clientWidth - fadedEdgeWidth
+    if (activeStart >= visibleStart && activeEnd <= visibleEnd) return
+
+    track.scrollTo({
+      left:
+        activeStart < visibleStart
+          ? Math.max(0, activeStart - leadingInset)
+          : activeEnd - track.clientWidth + fadedEdgeWidth,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    })
+  }, [category])
   const [message, setMessage] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
@@ -503,23 +526,25 @@ export function SettingsPage({ session }: { session: Session }) {
       <section className="settings-layout">
         <nav className="settings-category-nav" aria-label="設定分類">
           <span className="settings-category-nav-label">分類</span>
-          {settingsCategories.map((item) => (
-            <button
-              type="button"
-              key={item.id}
-              className={category === item.id ? 'is-active' : ''}
-              aria-current={category === item.id ? 'page' : undefined}
-              onClick={() => {
-                navigate({ pathname: location.pathname, search: `?category=${item.id}` })
-                setMessage('')
-                window.scrollTo({ top: 0, behavior: 'instant' })
-              }}
-            >
-              <item.icon aria-hidden="true" />
-              <span>{item.label}</span>
-              <ArrowRight aria-hidden="true" className="settings-category-arrow" />
-            </button>
-          ))}
+          <div ref={categoryTrackRef} className="settings-category-track">
+            {settingsCategories.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                className={category === item.id ? 'is-active' : ''}
+                aria-current={category === item.id ? 'page' : undefined}
+                onClick={() => {
+                  navigate({ pathname: location.pathname, search: `?category=${item.id}` })
+                  setMessage('')
+                  window.scrollTo({ top: 0, behavior: 'instant' })
+                }}
+              >
+                <item.icon aria-hidden="true" />
+                <span>{item.label}</span>
+                <ArrowRight aria-hidden="true" className="settings-category-arrow" />
+              </button>
+            ))}
+          </div>
         </nav>
         <div className={`settings-detail${category === 'data' ? ' settings-detail-data' : ''}`}>
           <header className="settings-detail-heading">

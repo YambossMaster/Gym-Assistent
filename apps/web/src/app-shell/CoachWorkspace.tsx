@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, CalendarDays, Dumbbell, LayoutGrid, Settings, UsersRound } from 'lucide-react'
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { getWorkspaceSettings } from '../api'
@@ -21,6 +21,11 @@ import { MobileSettingsLink } from '../shared/MobilePageAppBar'
 import { resolveCoachIdentity } from './coach-identity'
 import { ResilienceStatus } from './ResilienceStatus'
 import { prefetchPrimaryCoachRoutes } from '../route-prefetch'
+import {
+  createMobileChromeScrollState,
+  shouldAutoHideMobileChrome,
+  updateMobileChromeScrollState
+} from './mobile-chrome'
 
 const navigation = [
   { to: '/today', label: '今日', icon: LayoutGrid },
@@ -62,10 +67,40 @@ export function CoachWorkspace({ session }: { session: Session }) {
             ? '設定'
             : null
   const queryClient = useQueryClient()
+  const mobileChromeEnabled = shouldAutoHideMobileChrome(location.pathname)
+  const [mobileChromeHidden, setMobileChromeHidden] = useState(false)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
     mainRef.current?.focus({ preventScroll: true })
   }, [location.pathname])
+  useEffect(() => {
+    setMobileChromeHidden(false)
+    if (!mobileChromeEnabled) return
+
+    const mobileQuery = window.matchMedia('(max-width: 720px)')
+    let scrollState = createMobileChromeScrollState(window.scrollY)
+    const resetScrollState = () => {
+      scrollState = createMobileChromeScrollState(window.scrollY)
+      setMobileChromeHidden(false)
+    }
+    const onScroll = () => {
+      if (!mobileQuery.matches) {
+        resetScrollState()
+        return
+      }
+      scrollState = updateMobileChromeScrollState(scrollState, window.scrollY)
+      setMobileChromeHidden((hidden) =>
+        hidden === scrollState.hidden ? hidden : scrollState.hidden
+      )
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    mobileQuery.addEventListener('change', resetScrollState)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      mobileQuery.removeEventListener('change', resetScrollState)
+    }
+  }, [location.pathname, mobileChromeEnabled])
   const coachSettingsQuery = useQuery({
     queryKey: queryKeys.settings(session.user.id),
     queryFn: () => getWorkspaceSettings(session.access_token)
@@ -80,7 +115,12 @@ export function CoachWorkspace({ session }: { session: Session }) {
     void prefetchPrimaryCoachRoutes(queryClient, session, timeZone)
   }, [coachSettingsQuery.data, queryClient, session, timeZone])
   return (
-    <div className={`app-shell${isPlansPage ? ' plans-shell' : ''}`}>
+    <div
+      className={`app-shell${isPlansPage ? ' plans-shell' : ''}`}
+      data-mobile-chrome={
+        mobileChromeEnabled ? (mobileChromeHidden ? 'hidden' : 'visible') : 'pinned'
+      }
+    >
       {!isPlansPage && (
         <aside className="sidebar">
           <img
