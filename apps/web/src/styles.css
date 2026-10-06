@@ -3768,6 +3768,86 @@ textarea:focus {
   line-height: 1.6;
 }
 
+.legal-acceptance-card {
+  max-width: 34rem;
+}
+
+.legal-acceptance-card h2 {
+  color: #17231f;
+}
+
+.legal-check {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  line-height: 1.55;
+  color: #303832;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.legal-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.2rem;
+}
+
+.legal-check a,
+.legal-support a,
+.legal-page a {
+  color: var(--accent-strong, #176b5d);
+  font-weight: 700;
+}
+
+.legal-risk-check {
+  padding: 0.9rem;
+  border-radius: 0.9rem;
+  background: var(--surface-muted, #f2f6f4);
+}
+
+.legal-support {
+  text-align: center;
+}
+
+.legal-page {
+  min-height: 100vh;
+  background: #f6f8f7;
+  color: #17231f;
+  padding: 2rem max(1.25rem, calc((100vw - 54rem) / 2));
+}
+
+.legal-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.legal-page article {
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  border: 1px solid #dce6e1;
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: 0 1rem 3rem rgb(21 53 44 / 8%);
+}
+
+.legal-page h1 {
+  margin: 0.5rem 0 2rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.legal-page h2 {
+  margin: 2rem 0 0.55rem;
+  font-size: 1.15rem;
+}
+
+.legal-page p {
+  line-height: 1.8;
+}
+
 .auth-alternative {
   display: grid;
   gap: 18px;

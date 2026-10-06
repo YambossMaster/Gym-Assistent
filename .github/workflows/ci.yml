@@ -51,36 +51,92 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         run: npm run build
 
-  migration-dry-run:
+  browser-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: verify
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
     steps:
-      - name: Documentation-only commit needs no migration check
-        if: needs.verify.outputs.docs_only == 'true'
-        run: echo "No code or migration files changed."
-
       - name: Check out repository
-        if: needs.verify.outputs.docs_only != 'true'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select verification scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/ci-scope.mjs
+
+      - name: Changes without Web impact need no browser check
+        if: steps.scope.outputs.browser_needed != 'true'
+        run: echo "No Web or browser inputs changed."
 
       - name: Set up Node.js
-        if: needs.verify.outputs.docs_only != 'true'
+        if: steps.scope.outputs.browser_needed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
-        if: needs.verify.outputs.docs_only != 'true'
+        if: steps.scope.outputs.browser_needed == 'true'
+        run: npm ci
+
+      - name: Install Chromium
+        if: steps.scope.outputs.browser_needed == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify Plan Choice in desktop and mobile browser
+        if: steps.scope.outputs.browser_needed == 'true'
+        run: npm run test:browser
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-ui-failure
+          path: test-results/
+          if-no-files-found: ignore
+
+  migration-dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select verification scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/ci-scope.mjs
+
+      - name: Documentation-only commit needs no migration check
+        if: steps.scope.outputs.docs_only == 'true'
+        run: echo "No code or migration files changed."
+
+      - name: Set up Node.js
+        if: steps.scope.outputs.docs_only != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Require Supabase CI secrets
-        if: needs.verify.outputs.docs_only != 'true'
+        if: steps.scope.outputs.docs_only != 'true'
         shell: bash
         run: |
           test -n "$SUPABASE_ACCESS_TOKEN"
@@ -88,9 +144,9 @@ jobs:
           test -n "$SUPABASE_PROJECT_ID"
 
       - name: Link development project
-        if: needs.verify.outputs.docs_only != 'true'
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Verify remote migration plan
-        if: needs.verify.outputs.docs_only != 'true'
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm run db:push:dry

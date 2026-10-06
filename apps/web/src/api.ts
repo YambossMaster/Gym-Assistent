@@ -18,6 +18,33 @@ export type BetaGrant =
   | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
 
+export interface LegalAcceptanceStatus {
+  accepted: boolean
+  termsVersion: string
+  privacyVersion: string
+  acceptedAt: string | null
+}
+
+export async function readLegalAcceptance(accessToken: string): Promise<LegalAcceptanceStatus> {
+  const response = await request<{ legal: LegalAcceptanceStatus }>(
+    '/api/v1/legal/status',
+    accessToken
+  )
+  return response.legal
+}
+
+export async function acceptLegalTerms(
+  accessToken: string,
+  input: Pick<LegalAcceptanceStatus, 'termsVersion' | 'privacyVersion'>
+): Promise<LegalAcceptanceStatus> {
+  const response = await request<{ legal: LegalAcceptanceStatus }>(
+    '/api/v1/legal/accept',
+    accessToken,
+    json('POST', { ...input, accepted: true, noBackupAcknowledged: true })
+  )
+  return response.legal
+}
+
 export interface PlanAccess {
   tier: 'free' | 'basic' | 'advanced'
   source: 'free' | 'promotional' | 'permanent' | 'subscription'

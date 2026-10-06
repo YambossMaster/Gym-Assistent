@@ -15,6 +15,7 @@ const baseConfigSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),
   CAPABILITY_RATE_LIMIT_SECRET: z.string().min(32).optional(),
   BETA_ADMISSION_SECRET: z.string().min(32).optional(),
+  ALPHA_ALLOWED_COACH_IDS: z.string().optional(),
 })
 
 export type AppConfig = z.infer<typeof baseConfigSchema>

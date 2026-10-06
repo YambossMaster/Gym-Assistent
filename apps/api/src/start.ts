@@ -24,7 +24,7 @@ import { PostgresDemoImportRepository } from './adapters/postgres-demo-import-re
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { assertProductionBoundary } from './deployment-boundary.js'
+import { alphaAllowedCoachIds, assertProductionBoundary } from './deployment-boundary.js'
 import { createSiteServer } from './http/site-server.js'
 import { BetaAdmissionModule } from './beta-admission/beta-admission.js'
 import { PostgresBetaAdmissionRepository } from './beta-admission/postgres-beta-admission-repository.js'
@@ -32,6 +32,8 @@ import { SupabaseVerifiedCoachEmail } from './beta-admission/supabase-verified-c
 import { PlanAccessModule } from './plan-access/plan-access.js'
 import { PostgresPlanAccessRepository } from './plan-access/postgres-plan-access-repository.js'
 import { ExportModule } from './exports/export-module.js'
+import { LegalAcceptanceModule } from './legal-acceptance/legal-acceptance.js'
+import { PostgresLegalAcceptanceRepository } from './legal-acceptance/postgres-legal-acceptance-repository.js'
 
 const config = loadConfig()
 const pool = new Pool({
@@ -51,6 +53,9 @@ const identityVerifier = new OidcIdentityVerifier({
   jwksUrl: `${supabaseIssuer}/.well-known/jwks.json`,
 })
 const server = buildServer({
+  ...(config.DEPLOYMENT_TARGET === 'production'
+    ? { alphaAllowedCoachIds: alphaAllowedCoachIds(config.ALPHA_ALLOWED_COACH_IDS) }
+    : {}),
   finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
   identityVerifier,
   students: new StudentModule({ repository }),
@@ -94,6 +99,8 @@ const server = buildServer({
     training: new TrainingModule(new PostgresTrainingRepository(pool)),
     finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
   }),
+  legalAcceptance: new LegalAcceptanceModule(new PostgresLegalAcceptanceRepository(pool)),
+  requireLegalAcceptance: config.DEPLOYMENT_TARGET === 'production',
   ...(config.NODE_ENV === 'production'
     ? {}
     : { demoImport: new DemoImportModule(new PostgresDemoImportRepository(pool)) }),
@@ -126,8 +133,9 @@ if (config.NODE_ENV === 'production') {
     await readFile(join(webRoot, 'deployment-config.json'), 'utf8'),
   ) as {
     supabaseUrl: string
+    internalAlpha: boolean
   }
-  assertProductionBoundary(config, publicConfig.supabaseUrl)
+  assertProductionBoundary(config, publicConfig.supabaseUrl, publicConfig.internalAlpha)
   await server.listen({ host: '127.0.0.1', port: 0 })
   const address = server.server.address()
   if (!address || typeof address === 'string') throw new Error('Internal API did not start')

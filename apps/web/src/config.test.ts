@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadWebConfig } from './config'
+import { isInternalAlpha, loadWebConfig } from './config'
 
 describe('loadWebConfig', () => {
   it('requires both public Supabase settings', () => {
@@ -16,5 +16,12 @@ describe('loadWebConfig', () => {
       supabaseUrl: 'https://project.supabase.co',
       supabasePublishableKey: 'sb_publishable_example'
     })
+  })
+})
+
+describe('internal Alpha Web mode', () => {
+  it('is opt-in for production builds', () => {
+    expect(isInternalAlpha({})).toBe(false)
+    expect(isInternalAlpha({ VITE_INTERNAL_ALPHA: 'true' })).toBe(true)
   })
 })

@@ -1,4 +1,5 @@
 import { type RegistrationEmailLookup } from './registration-email-lookup.js'
+import { supabaseAdminHeaders } from '../supabase-admin-headers.js'
 
 interface SupabaseUserPage {
   users?: Array<{ email?: string | null }>
@@ -23,10 +24,7 @@ export class SupabaseRegistrationEmailLookup implements RegistrationEmailLookup 
 
     for (let page = 1; page <= 100; page += 1) {
       const response = await request(`${baseUrl}/auth/v1/admin/users?page=${page}&per_page=1000`, {
-        headers: {
-          apikey: this.options.secretKey,
-          authorization: `Bearer ${this.options.secretKey}`,
-        },
+        headers: supabaseAdminHeaders(this.options.secretKey),
       })
       if (!response.ok) throw new RegistrationLookupUnavailableError()
 

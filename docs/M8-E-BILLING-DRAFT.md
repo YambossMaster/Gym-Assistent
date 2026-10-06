@@ -1,6 +1,6 @@
 # M8-E billing decision draft
 
-> Product review draft, 2026-10-05. This is not a frozen Contract and does not activate checkout.
+> Product review draft, 2026-10-06. This is not a frozen Contract and does not activate checkout.
 > The approved interval and prices are recorded in [ROADMAP.md](ROADMAP.md).
 
 ## Approved for the first paid release
@@ -9,6 +9,21 @@
 - Keep the no-card 60-day Prime offer. Its expiry never starts a charge or subscription.
 - Keep billing and access authority behind the API. A zero-price subscription is activated by an
   authorized server operation; a charged subscription requires verified provider events.
+
+## Payment-provider direction — Lemon Squeezy candidate
+
+Lemon Squeezy is the **preferred candidate** for M8-E, not a selected, configured or approved
+payment provider. Its merchant-of-record model, hosted checkout, subscription variants, customer
+portal and signed webhooks fit the required monthly/annual Pro and Prime flow. The API remains the
+authority for Gym Assistant entitlement: return URLs and portal navigation never unlock a plan;
+only signature-verified, deduplicated provider events may do so.
+
+Before freezing M8-E, pass account review/KYC and W-8 requirements, confirm Taiwan payout for this
+specific merchant account, test the NT$ price presentation and customer payment methods in Test Mode,
+and determine the Taiwan income, receipt/invoice and public-identity obligations. Merchant of record
+does not by itself establish those local obligations. Platform cost belongs to each successful
+transaction, not a fixed monthly infrastructure charge. The detailed evidence, fees and outstanding
+risks are in [M8-E Lemon Squeezy 可行性研究](M8-E-LEMON-SQUEEZY-RESEARCH.md).
 
 ## Official zero-price subscription phase before payment integration
 
@@ -62,7 +77,8 @@ payment notice should offer the update action and state the retry deadline and a
 
 ## Decisions required before freezing M8-E
 
-1. Name the payment provider, merchant entity and supported Taiwan tax-invoice/receipt path.
+1. Subject to the documented account/Test Mode checks, freeze Lemon Squeezy or select another payment
+   provider; record the merchant entity and supported Taiwan tax-invoice/receipt path.
 2. Decide how to classify cross-interval changes such as annual Pro to monthly Prime, and whether
    a scheduled downgrade may be replaced or withdrawn.
 3. Freeze the renewal anchor, credit rounding, taxes, coupons, refund exceptions and zero-amount
@@ -74,9 +90,9 @@ payment notice should offer the update action and state the retry deadline and a
    and payment-method update in sandbox. Complete the required backup and restore gate before any
    live charge.
 
-Stripe documentation illustrates why these need explicit configuration: a same-interval price
-change can create prorations without an immediate invoice, while interval changes can reset the
-billing date. Its customer portal can schedule cancellation at period end, but exact behavior is
-provider-specific. See [subscription updates](https://docs.stripe.com/api/subscriptions/update),
-[customer portal configuration](https://docs.stripe.com/api/customer_portal/configurations/create)
-and [invoices](https://docs.stripe.com/api/invoices).
+Lemon Squeezy documents subscription plan changes with configurable proration and immediate-invoice
+behavior, but the exact paid product mapping, upgrade timing and customer-portal result must be
+validated in Test Mode before the Contract adopts these proposed rules. See its
+[subscription guide](https://docs.lemonsqueezy.com/help/products/subscriptions),
+[plan-change guide](https://docs.lemonsqueezy.com/guides/tutorials/change-subscriber-plan) and
+[webhook event reference](https://docs.lemonsqueezy.com/help/webhooks/event-types).

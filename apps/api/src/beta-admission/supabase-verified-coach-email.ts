@@ -1,4 +1,5 @@
 import type { VerifiedCoachEmail } from './beta-admission.js'
+import { supabaseAdminHeaders } from '../supabase-admin-headers.js'
 
 interface AdminUser {
   id?: string
@@ -17,10 +18,7 @@ export class SupabaseVerifiedCoachEmail implements VerifiedCoachEmail {
     const response = await this.request(
       `${this.url.replace(/\/$/, '')}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
       {
-        headers: {
-          apikey: this.secretKey,
-          authorization: `Bearer ${this.secretKey}`,
-        },
+        headers: supabaseAdminHeaders(this.secretKey),
       },
     )
     if (!response.ok) throw new Error('Could not verify Coach Email')

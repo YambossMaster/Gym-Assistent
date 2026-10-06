@@ -11,7 +11,9 @@
   },
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "check": "npm run format:check && node --test scripts/ci-scope.test.mjs && npm run check --workspaces --if-present",
+    "check:affected": "node scripts/affected-check.mjs",
+    "test:browser": "playwright test",
+    "check": "npm run format:check && node --test scripts/*.test.mjs && npm run check --workspaces --if-present",
     "dev:api": "npm run dev --workspace @gym-assistant/api",
     "dev:web": "npm run dev --workspace @gym-assistant/web",
     "db:push": "supabase db push --linked",
@@ -22,6 +24,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "prettier": "3.6.2",
     "supabase": "^2.116.0"
   }

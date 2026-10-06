@@ -27,8 +27,12 @@ import {
   supabase
 } from './supabase'
 import { CoachLocalStore } from './local-resilience'
+import { isInternalAlpha } from './config'
+import { LegalGate } from './legal/LegalGate'
+import { PrivacyPage, TermsPage } from './legal/LegalPages'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
+const internalAlpha = isInternalAlpha()
 
 export function App() {
   return (
@@ -36,6 +40,8 @@ export function App() {
       <Routes>
         <Route path="/t/:token" element={<PublicCapabilityApp purpose="training" />} />
         <Route path="/r/:token" element={<PublicCapabilityApp purpose="reschedule" />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </BrowserRouter>
@@ -131,9 +137,17 @@ function AuthenticatedApp() {
   if (!session) return <SignIn key="ordinary-sign-in" />
   return (
     <QueryClientProvider client={client}>
-      <BetaGate session={session}>
-        <CoachWorkspace key={session.user.id} session={session} />
-      </BetaGate>
+      {internalAlpha ? (
+        <LegalGate session={session}>
+          <BetaGate session={session}>
+            <CoachWorkspace key={session.user.id} session={session} />
+          </BetaGate>
+        </LegalGate>
+      ) : (
+        <BetaGate session={session}>
+          <CoachWorkspace key={session.user.id} session={session} />
+        </BetaGate>
+      )}
     </QueryClientProvider>
   )
 }
@@ -207,6 +221,7 @@ function SignIn({
           throw new Error('登入失敗，請確認 Email 與密碼。')
         }
       } else if (mode === 'signup') {
+        if (internalAlpha) throw new Error('目前僅開放內部測試帳號登入。')
         if (password !== confirm) throw new Error('兩次輸入的密碼不一致。')
         if (await isRegistrationEmailTaken(email)) throw new Error('此帳號已經註冊過。')
         await signUpCoach(supabase.auth, email, password, window.location.origin)
@@ -286,13 +301,15 @@ function SignIn({
         </div>
       </section>
       <section className="auth-mobile-entry" aria-label="開始使用">
-        <button
-          type="button"
-          className="auth-entry-signup"
-          onClick={() => openMobileForm('signup')}
-        >
-          建立帳號 <ArrowRight aria-hidden="true" />
-        </button>
+        {!internalAlpha && (
+          <button
+            type="button"
+            className="auth-entry-signup"
+            onClick={() => openMobileForm('signup')}
+          >
+            建立帳號 <ArrowRight aria-hidden="true" />
+          </button>
+        )}
         <button
           type="button"
           className="auth-entry-signin"
@@ -313,6 +330,9 @@ function SignIn({
                     ? '驗證 Email'
                     : '重設密碼'}
             </h2>
+            {internalAlpha && mode === 'signin' && (
+              <p className="auth-guidance">目前僅開放內部測試帳號登入。</p>
+            )}
           </div>
           <label>
             Email
@@ -411,7 +431,7 @@ function SignIn({
               重新寄送驗證碼
             </button>
           )}
-          {(mode === 'signin' || mode === 'signup') && (
+          {(mode === 'signin' || mode === 'signup') && !internalAlpha && (
             <div className="auth-alternative">
               <div className="auth-divider" aria-hidden="true">
                 或者
@@ -427,12 +447,14 @@ function SignIn({
           )}
           <div className={`auth-links${mode === 'signin' ? '' : ' auth-links-return'}`}>
             {mode === 'signin' ? (
-              <span>
-                第一次使用？{' '}
-                <button type="button" onClick={() => change('signup')}>
-                  建立帳號
-                </button>
-              </span>
+              !internalAlpha && (
+                <span>
+                  第一次使用？{' '}
+                  <button type="button" onClick={() => change('signup')}>
+                    建立帳號
+                  </button>
+                </span>
+              )
             ) : (
               <button type="button" onClick={() => (onReturn ? onReturn() : change('signin'))}>
                 返回

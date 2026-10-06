@@ -8,10 +8,11 @@ export default defineConfig(({ mode }) => ({
       name: 'deployment-public-config',
       generateBundle() {
         const publicUrl = loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL ?? ''
+        const internalAlpha = loadEnv(mode, process.cwd(), 'VITE_').VITE_INTERNAL_ALPHA === 'true'
         this.emitFile({
           type: 'asset',
           fileName: 'deployment-config.json',
-          source: JSON.stringify({ supabaseUrl: publicUrl })
+          source: JSON.stringify({ supabaseUrl: publicUrl, internalAlpha })
         })
       }
     }

@@ -76,12 +76,14 @@ Before implementation, confirm that the active Contract is frozen and that its p
 complete.
 
 Verification cadence: after each change, run only the smallest focused check needed for the changed
-behavior. Present the changed UI and behavior to the Product Owner for inspection and iterate on
-feedback. The full test suite, root check/build, live/browser acceptance, migration dry-run, and CI
-gate begin only after the Product Owner has inspected the current version and explicitly says it is
-ready for full verification. Until then, report focused results and mark the broader gate as
-unverified; do not claim package completion or remote readiness. A request to implement or a local
-focused-check pass does not authorize the full gate.
+behavior. Use the affected-check workflow in `docs/VERIFICATION_WORKFLOW.md` for local preflight;
+keep full check/build in exact-SHA remote CI unless an active Contract or Roadmap gate explicitly
+requires a local full run. Present the changed UI and behavior to the Product Owner for inspection
+and iterate on feedback. Live/browser acceptance, migration dry-run, and CI gate begin only after
+the Product Owner has inspected the current version and explicitly says it is ready for full
+verification. Until then, report focused results and mark the broader gate as unverified; do not
+claim package completion or remote readiness. A request to implement or a local focused-check pass
+does not authorize the full gate.
 
 - **Contract:** freeze product behaviour, data and authorization contracts, route states, wording
   intent, responsive acceptance, and required evidence so implementation needs no new product
@@ -177,8 +179,9 @@ Make the smallest complete change in the owning module. Keep unrelated user chan
 Complete the contracted implementation with focused checks after changes, then give the Product
 Owner a reviewable version: changed behaviour, relevant files, desktop/mobile preview where
 applicable, focused-check results, and known gaps. Apply their corrections and repeat focused checks.
-Wait for explicit Product Owner approval of that version before starting the full local CI gate.
-After that approval, run the applicable tests, build, live/browser checks, and migration dry-run.
+Wait for explicit Product Owner approval of that version before starting the package CI gate.
+After that approval, run the applicable focused tests, live/browser checks, migration dry-run and
+any Contract-required local build or full run.
 Before any remote push or merge, present the final check results, relevant commit, known gaps, and
 the exact remote delivery action proposed. Pause for explicit Product Owner authorization to push or
 merge to `main` or another shared remote branch. A request to implement or "finish" a package, a frozen

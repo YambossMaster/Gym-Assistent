@@ -50,6 +50,10 @@ import {
   isVenueArchiveOnly,
   routePolicy,
 } from '../plan-access/route-policy.js'
+import {
+  LegalAcceptanceError,
+  LegalAcceptanceModule,
+} from '../legal-acceptance/legal-acceptance.js'
 
 export interface ServerDependencies {
   identityVerifier: IdentityVerifier
@@ -66,6 +70,9 @@ export interface ServerDependencies {
   exports?: ExportModule
   demoImport?: DemoImportModule
   betaAdmission?: BetaAdmissionModule
+  alphaAllowedCoachIds?: ReadonlySet<string>
+  legalAcceptance?: LegalAcceptanceModule
+  requireLegalAcceptance?: boolean
   planAccess?: PlanAccessModule
   readiness?: () => Promise<void>
   logger?: boolean | Record<string, unknown>
@@ -199,6 +206,9 @@ export function buildServer({
   publicAccess,
   demoImport,
   betaAdmission,
+  alphaAllowedCoachIds,
+  legalAcceptance,
+  requireLegalAcceptance = false,
   planAccess,
   finances,
   exports,
@@ -222,6 +232,29 @@ export function buildServer({
           })),
         }
       : record
+
+  if (alphaAllowedCoachIds) {
+    server.addHook('preHandler', async (request, reply) => {
+      const route = request.routeOptions.url
+      if (!route?.startsWith('/v1/') || route.startsWith('/v1/public/')) return
+      if (route === '/v1/account-registration-check')
+        return reply.status(403).send({ error: 'alpha_closed' })
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      if (!alphaAllowedCoachIds.has(identity.userId.toLowerCase()))
+        return reply.status(403).send({ error: 'alpha_closed' })
+    })
+  }
+
+  if (legalAcceptance && requireLegalAcceptance) {
+    server.addHook('preHandler', async (request, reply) => {
+      const route = request.routeOptions.url
+      if (!route?.startsWith('/v1/') || route.startsWith('/v1/public/')) return
+      if (route === '/v1/legal/status' || route === '/v1/legal/accept') return
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      if (!(await legalAcceptance.status(identity)).accepted)
+        return reply.status(428).send({ error: 'legal_acceptance_required' })
+    })
+  }
 
   if (betaAdmission) {
     server.addHook('onRequest', async (request) => {
@@ -444,6 +477,11 @@ export function buildServer({
         .status(429)
         .send({ error: 'rate_limited' })
     }
+    if (error instanceof LegalAcceptanceError) {
+      return reply.status(error.reason === 'version_mismatch' ? 409 : 400).send({
+        error: error.reason,
+      })
+    }
     if (error instanceof ZodError) {
       return reply.status(400).send({ error: 'invalid_request', message: z.prettifyError(error) })
     }
@@ -517,6 +555,16 @@ export function buildServer({
   })
 
   server.get('/health', async () => ({ status: 'ok' }))
+  if (legalAcceptance) {
+    server.get('/v1/legal/status', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return { legal: await legalAcceptance.status(identity) }
+    })
+    server.post<{ Body: unknown }>('/v1/legal/accept', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return { legal: await legalAcceptance.accept(identity, request.body) }
+    })
+  }
   if (betaAdmission) {
     server.get('/v1/beta/status', async (request) => {
       const identity = await identityVerifier.verify(request.headers.authorization)
@@ -565,6 +613,7 @@ export function buildServer({
       request.routeOptions.url?.startsWith('/v1/public/') ||
       request.routeOptions.url?.startsWith('/v1/demo-imports') ||
       request.routeOptions.url?.startsWith('/v1/beta/') ||
+      request.routeOptions.url?.startsWith('/v1/legal/') ||
       request.routeOptions.url === '/v1/exports'
     ) {
       reply.header('Cache-Control', 'no-store, private')

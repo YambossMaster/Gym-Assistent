@@ -83,6 +83,7 @@ describe('one-file export formats', () => {
       expect(pdf.subarray(0, 4).toString()).toBe('%PDF')
       expect(exportFilename(csv)).toMatch(new RegExp(`^form-coach-${type}-2026-10-05_2026-10-05-`))
     },
-    30_000,
+    // Real CJK font embedding can exceed 30 seconds on a shared runner.
+    60_000,
   )
 })

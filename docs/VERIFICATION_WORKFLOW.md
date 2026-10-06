@@ -62,15 +62,45 @@ names and Workspace before deletion and confirms the Auth user, Workspace and co
 The manifest contains a generated test password and must stay in the temporary folder; do not
 copy it into the repository or share it in logs.
 
+## Local preflight versus remote regression
+
+Use `npm run check:affected -- <base-ref>` (default `origin/main`) for local preflight. It checks
+formatting of changed files, diff whitespace, the touched workspace's typecheck, and Vitest tests
+statically related to changed TypeScript/JavaScript files. Changed test files are included directly.
+Package/config/migration or unknown runtime inputs fail open to full workspace suites. A CSS-only
+change has no statically related test guarantee: it still needs focused visual evidence. Record
+the selected files and the command's final exit status; no selected test is **not** a pass for
+browser behavior. If an external command returns a running session ID, poll that session until it
+reports the final exit code; do not restart it merely because the first response lacks a code.
+Untracked Markdown drafts are excluded until staged, so a concurrent Contract draft cannot block
+an unrelated code preflight. Use `npm run check:affected -- --plan` to inspect the selected scope
+without executing checks.
+On restricted Windows hosts, run this Node/Vitest command through the approved elevated path if
+child-process creation returns `spawn EPERM`; that environment error is not a test failure.
+
+Once the Product Owner approves the reviewed version for full verification, run the package's
+required live, migration, security and changed-flow browser checks. Do not repeat the entire
+local unit suite solely to anticipate the identical remote `verify` job when the Contract does
+not explicitly require it. GitHub remains the full check/build regression gate for every code
+push. When Web or shared browser inputs change, the parallel `browser-ui` job runs a
+credential-free Playwright Plan Choice journey at
+1440px and 390px: selection, confirmation, reload and document overflow. Its mocked plan API
+checks browser behavior only; it does not prove server persistence, tenant isolation, real Auth,
+physical touch, or visual pixel parity. Keep the isolated API/database live case for those
+boundaries and inspect newly changed UI with the Product Owner. Wait for all required exact-SHA
+jobs before claiming delivery. A Contract or Roadmap requirement for a local root check/build
+remains binding until that package is explicitly amended. Record wall
+time by stage and separate active checks from queue/tool wait and retries.
+
 ## Choose checks from the changed files
 
-| Change                                        | Local checks                                           | Browser or live evidence                                                                                  |
-| --------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| Markdown only                                 | Root `npm run format:check`; `git diff --check`        | None unless the document itself needs visual review                                                       |
-| Web presentation                              | Affected tests, Web typecheck/build, root format check | Inspect affected desktop width, adjacent 901px/1040px widths, and 390×844; record overflow and wrap state |
-| Web behavior                                  | Affected tests, Web check/build                        | Exercise the changed interaction and save/reload if persistence is involved                               |
-| API or domain                                 | Focused API tests, API check/build                     | Isolated live case only when an API/database boundary changed                                             |
-| Schema, auth, entitlement or release boundary | Roadmap/Contract matrix, root check/build              | Linked migration/security checks and exact-SHA remote CI where required                                   |
+| Change                                        | Local checks                                       | Browser or live evidence                                                                                 |
+| --------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Markdown only                                 | Changed-file format; `git diff --check`            | None unless the document itself needs visual review                                                      |
+| Web presentation                              | Affected tests, Web typecheck, changed-file format | Inspect affected desktop width and 390×844; add adjacent breakpoints only when layout boundaries changed |
+| Web behavior                                  | Affected tests, Web typecheck                      | Exercise the changed interaction and save/reload if persistence is involved                              |
+| API or domain                                 | Affected API tests and typecheck                   | Isolated live case only when an API/database boundary changed                                            |
+| Schema, auth, entitlement or release boundary | Roadmap/Contract matrix; full local only if named  | Linked migration/security checks and exact-SHA remote CI where required                                  |
 
 A release gate may require more than this table. Do not run migration or security checks solely
 because a CSS or Markdown file changed. For visual changes, capture the affected desktop widths
@@ -82,11 +112,13 @@ pixel-baseline suite yet, so do not claim visual regression coverage from a DOM/
 `npm install` activates the repository's local Git pre-commit hook. The hook checks the **staged**
 version of changed text files with Prettier and blocks unformatted commits. It does not rewrite or
 stage files, which avoids accidentally including unstaged edits. Run `npm run prepare` to activate
-the hook in an existing checkout. At the Product Owner-authorized package gate, run the required root
-checks once before a push; the hook is a format guard, not a substitute for typecheck or tests.
+the hook in an existing checkout. At the Product Owner-authorized package gate, run the
+local checks required by the active Contract and Roadmap before a push; the hook is a format guard,
+not a substitute for typecheck or tests.
 
 On GitHub, every push and pull request still gets a `verify` result. Markdown-only changes run
-root formatting only; code or mixed changes run the full check/build. The migration job reports a
+root formatting only; code or mixed changes run the full check/build. The browser job reports a
+no-op when the change has no Web impact. The independent migration job reports a
 documentation-only no-op for Markdown-only commits and performs the linked dry-run for other
 commits. If Git cannot determine the diff, it defaults to the full gate. This avoids skipped
 required workflow checks while reducing documentation-only work.

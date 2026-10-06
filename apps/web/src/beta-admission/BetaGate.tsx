@@ -3,11 +3,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Pause, X } from 'lucide-react'
-import { readBetaGrant, type SessionTraining, type TodayProjection } from '../api'
+import { ApiError, readBetaGrant, type SessionTraining, type TodayProjection } from '../api'
+import { signOutCurrentDevice } from '../account-auth'
+import { supabase } from '../supabase'
+import { Brand } from '../shared/primitives'
+import { isInternalAlpha } from '../config'
 import { queryKeys } from '../query-keys'
 import { planAccessKey, usePlanAccess } from './usePlanAccess'
 
 export const betaGrantKey = (coachId: string) => ['coach', coachId, 'beta-grant'] as const
+const internalAlpha = isInternalAlpha()
 
 export function BetaGate({ session, children }: { session: Session; children: ReactNode }) {
   const client = useQueryClient()
@@ -21,6 +26,7 @@ export function BetaGate({ session, children }: { session: Session; children: Re
   const [now, setNow] = useState(() => Date.now())
   const [dismissedOffer, setDismissedOffer] = useState<string | null>(null)
   const [dismissedCapacity, setDismissedCapacity] = useState<string | null>(null)
+  const [exitError, setExitError] = useState('')
   const offerDaysLeft =
     grant?.state === 'promotional'
       ? Math.ceil((new Date(grant.endsAt).getTime() - now) / 86_400_000)
@@ -81,6 +87,63 @@ export function BetaGate({ session, children }: { session: Session; children: Re
     )
     return () => window.clearTimeout(timeout)
   }, [client, grant, session.user.id])
+
+  if (internalAlpha && query.isPending) {
+    return (
+      <main className="auth-layout" role="status">
+        正在確認測試資格…
+      </main>
+    )
+  }
+
+  if (
+    internalAlpha &&
+    query.error instanceof ApiError &&
+    query.error.details.error === 'alpha_closed'
+  ) {
+    return (
+      <main className="auth-layout auth-entry-form">
+        <section className="auth-story">
+          <Brand />
+        </section>
+        <section className="auth-panel">
+          <div className="auth-card">
+            <h2>目前僅開放內部測試</h2>
+            <p>此帳號尚未列入測試名單。</p>
+            {exitError && (
+              <p className="form-error" role="alert">
+                {exitError}
+              </p>
+            )}
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                void signOutCurrentDevice(supabase.auth).catch(() =>
+                  setExitError('登出未完成，請稍後再試。')
+                )
+              }}
+            >
+              登出
+            </button>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (internalAlpha && query.isError) {
+    return (
+      <main className="auth-layout" role="alert">
+        <div className="auth-card">
+          <h2>暫時無法確認測試資格</h2>
+          <button type="button" className="primary-button" onClick={() => void query.refetch()}>
+            重試
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <>

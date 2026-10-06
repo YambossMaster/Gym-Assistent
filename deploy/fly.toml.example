@@ -1,6 +1,6 @@
 # Copy to a private release configuration and replace the app name before deployment.
 app = "replace-with-your-fly-app"
-primary_region = "sin"
+primary_region = "nrt"
 
 [http_service]
 internal_port = 3000

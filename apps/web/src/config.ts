@@ -6,6 +6,11 @@ export interface WebConfig {
 export interface WebEnvironment {
   readonly VITE_SUPABASE_URL?: string
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string
+  readonly VITE_INTERNAL_ALPHA?: string
+}
+
+export function isInternalAlpha(environment: WebEnvironment = import.meta.env): boolean {
+  return environment.VITE_INTERNAL_ALPHA === 'true'
 }
 
 export function loadWebConfig(environment: WebEnvironment = import.meta.env): WebConfig {

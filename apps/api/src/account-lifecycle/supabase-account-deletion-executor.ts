@@ -1,4 +1,5 @@
 import type { AccountDeletionExecutor } from './account-lifecycle.js'
+import { supabaseAdminHeaders } from '../supabase-admin-headers.js'
 
 export class AccountDeletionUnavailableError extends Error {
   constructor() {
@@ -28,7 +29,7 @@ export class SupabaseAccountDeletionExecutor implements AccountDeletionExecutor 
   async deleteCoach(userId: string): Promise<void> {
     if (!this.#secretKey) throw new AccountDeletionUnavailableError()
     const url = `${this.#baseUrl}/${encodeURIComponent(userId)}`
-    const headers = { apikey: this.#secretKey, authorization: `Bearer ${this.#secretKey}` }
+    const headers = supabaseAdminHeaders(this.#secretKey)
     const revoke = await this.#fetch(`${url}/logout`, { method: 'POST', headers })
     if (!revoke.ok && revoke.status !== 404) throw new Error('Could not revoke account sessions')
     const deletion = await this.#fetch(url, { method: 'DELETE', headers })

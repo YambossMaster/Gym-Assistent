@@ -5,18 +5,29 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                           |
-| ------------------ | ----------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                         |
-| Current package    | **M8-C production deployment Contract**                                 |
-| Package state      | **M8-B-Plan-Choice Done; M8-C awaits Product Owner decisions**          |
-| Approved next      | **Resolve M8-C provider, domain, support/privacy and release facts**    |
-| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done              |
-| Branch baseline    | Plan Choice `83c30d5`; CI run `37338226966` passed both jobs            |
-| Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved   |
-| Linked database    | Development only; plan-choice migration `20261005071050` applied        |
-| Production         | Not configured; no real customer data                                   |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants |
+| Field              | Current value                                                                    |
+| ------------------ | -------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                  |
+| Current package    | **M8-C production deployment and internal Alpha**                                |
+| Package state      | **Contract and Sol complete; first-deploy CI gate authorized and in progress**   |
+| Approved next      | **Deploy the verified exact local commit and run live Alpha acceptance**         |
+| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                       |
+| Branch baseline    | Plan Choice `83c30d5`; CI run `37338226966` passed both jobs                     |
+| Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved            |
+| Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned |
+| Production         | Supabase/Fly/DNS/Auth foundation ready; no Machine or real customer data         |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants          |
+
+**2026-10-06 verification workflow correction (local, not delivered):** The Product Owner rejected
+the 39-minute Plan Choice verification path as inefficient. Local preflight now has an affected-test
+selector with conservative fallbacks; the proposed GitHub workflow keeps full check/build, adds a
+parallel credential-free Plan Choice browser journey, and runs migration dry-run in parallel. The
+browser fixture verifies 1440px/390px selection, confirmation, reload and overflow, not real Auth,
+server persistence or physical touch. The established Export PDF format test has a 60-second
+per-case limit while retaining real CJK PDF rendering. The previous purported missing CLI exit code
+was a running session ID awaiting its final process result, not proven executor data loss; the
+44.395-second Export figure described the full five-test file, not one PDF assertion. Focused local
+checks passed; this workflow change has not been committed, pushed or confirmed by GitHub Actions.
 
 **2026-10-06 M8-B-Plan-Choice local CI gate:** The Product Owner accepted the reviewed version and
 authorized full verification plus delivery to `main`. The reliable root check passed API 36 files /
@@ -309,11 +320,12 @@ rights/support contact remain Beta entry conditions.
 
 ## Next handoff
 
-**Current executable handoff (2026-10-06):** M8-B-Plan-Choice is delivered. Before freezing M8-C,
-the Product Owner must resolve the production domain, public support/privacy contact, Auth mail
-sender, deployment/payment-provider direction, purchase scope and publishable legal facts required
-by the Roadmap. Then freeze the M8-C Contract before implementation; do not create production
-resources or admit real Coaches from this handoff alone.
+**Current executable handoff (2026-10-06):** The Product Owner authorized the M8-C full gate and
+first Fly deployment using one always-on Tokyo `shared-cpu-1x` Machine with 512 MB, while explicitly
+withholding Git push. Root check/build, Plan Choice browser checks and the exact Production migration
+dry-run passed; freeze the local commit, deploy that exact revision to the already provisioned
+`formcoachdesk` app, and execute live Auth, legal acceptance, persistence, public-link, sign-out,
+responsive and operational acceptance. Do not admit real Coaches or push/merge the local commits.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -929,6 +941,146 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-06 — LOG-432 — Authorize and verify the M8-C first-deploy candidate
+
+- **Scope:** Execute the Product Owner-authorized M8-C full verification and first Fly deployment,
+  using one always-on Tokyo `shared-cpu-1x` Machine with 512 MB and keeping Git remote unchanged.
+- **Outcome:** Added the approved 512 MB Machine size to the ignored release config and validated
+  that configuration against the existing `formcoachdesk` app. The candidate is ready to freeze as
+  an exact local commit; no Fly release or Git push is claimed at this point.
+- **Verification:** Root `npm run check` passed selector 12/12, API 38 files / 176 tests and Web 65
+  files / 276 tests. Root `npm run build` passed after the ordinary Windows sandbox encountered its
+  known `spawn EPERM`; Vite emitted only its existing bundle-size advisory. Playwright passed the
+  Plan Choice journey at 1440px and 390px, 2/2. Production migration list matched all 44 versions
+  and the new dry-run returned `upToDate: true` with no migrations, seeds or roles pending. Fly
+  configuration validation and the repository secret scan passed.
+- **Next:** Freeze the exact local commit, deploy it to Fly, then record and execute the live M8-C
+  Alpha acceptance. Keep Git push and merge unauthorized.
+
+### 2026-10-06 — LOG-431 — Provision the M8-C production foundation
+
+- **Scope:** Use the Product Owner-authorized existing Supabase, Fly, Brevo and Cloudflare accounts
+  to provision the separate M8-C Production foundation without deploying the unapproved worktree or
+  admitting real Coaches.
+- **Outcome:** Created Supabase project `Form Coach Desk Production` in Tokyo
+  (`febunjhpruqlywjfvuaq`) and applied all 44 reviewed migrations through
+  `20261006145359`. Enabled the existing least-privilege `gym_assistant_api` login role with a
+  separate generated password, disabled the unused Data API and legacy JWT-based API keys, disabled
+  public signups, set the Production Site URL and two exact redirect URLs, and created one confirmed
+  synthetic Alpha Coach whose UUID exactly matches the production allowlist. Configured a separate
+  Brevo SMTP key with the existing verified Sender and the public `Form Coach Desk` sender name.
+  Updated the three runtime Supabase Auth-admin adapters to send modern `sb_secret_` keys only in
+  the `apikey` header, while retaining the bearer header for legacy service-role JWT development
+  compatibility; Supabase documents that modern keys are not JWTs. Internal Alpha sign-in now also
+  omits the unconfigured Google OAuth action, leaving only the controlled synthetic Email/password
+  path; the existing Google flow remains available in non-Alpha builds for its later provider gate.
+  Created Fly app `formcoachdesk`, staged the seven required runtime secrets, allocated shared IPv4
+  plus dedicated IPv6, and validated the private Tokyo release configuration. Cloudflare now keeps
+  Email Routing records intact, points apex A/AAAA directly to Fly, and serves an active query-string
+  preserving 301 from `www` to the apex. Fly issued active RSA and ECDSA Let's Encrypt certificates
+  for `formcoachdesk.com`. No Fly Machine or release exists yet, so no unapproved code was deployed.
+- **Verification:** Supabase migration dry-run was reviewed before application; the post-push local
+  and remote migration lists match all 44 versions. A live minimum-privilege pooler connection
+  returned `gym_assistant_api`, and a live publishable-key sign-in matched the synthetic Alpha Auth
+  UUID to `ALPHA_ALLOWED_COACH_IDS`; the first pooler attempt hit a transient auth-query cache
+  timeout and the unchanged retry passed. A live read-only Auth-admin request using only the modern
+  secret-key `apikey` header returned the confirmed Alpha user. API typecheck passed; the focused
+  compatibility test passed 1 file / 2 tests through the approved elevated path after the ordinary
+  Windows sandbox hit its known `spawn EPERM`. Web typecheck and the internal-Alpha entry test passed
+  1 file / 1 test with the Email/password action present and Google OAuth absent. Fly reports the
+  release config valid, seven staged secret names, zero Machines and no deployment. Fly reports the
+  apex certificate `Ready`/active. External curl returned 301 from the `www` test path to the
+  identical apex path and query. The apex HTTP/TLS application response remains intentionally
+  unavailable until the first Machine is deployed.
+- **Next:** Present this concrete foundation and the already reviewed local legal/Alpha behavior.
+  After explicit first-deploy and full-gate authorization, freeze an exact local commit, run the
+  contracted check/build, deploy that commit to the existing Fly app, then perform M8-C live Auth,
+  core persistence, public-link, sign-out, responsive and operational acceptance. Remote Git push
+  and merge remain separately unauthorized.
+
+### 2026-10-06 — LOG-430 — Freeze M8-C Contract and add server-owned legal acceptance
+
+- **Scope:** Record the Product Owner's confirmed Fly account, Cloudflare domain rental and tested
+  `support@formcoachdesk.com` forwarding; advance the next independent M8-C Sol slice.
+- **Outcome:** The internal-Alpha Contract is frozen. Public Alpha Terms and Privacy routes identify
+  the operating name, support address, synthetic-data boundary and no-scheduled-backup risk. A new
+  private `legal_acceptance` record binds the current document versions, source and acceptance time
+  directly to the verified Auth user before a Workspace is created. Production private API routes
+  return `legal_acceptance_required` until both explicit confirmations are stored; public capability,
+  legal, readiness and acceptance routes remain reachable as contracted.
+- **Verification:** API and Web typechecks passed. Focused API tests passed 2 files/19 tests; focused
+  Web tests passed 3 files/3 tests. The migration was created with Supabase CLI 2.116.0 after checking
+  current Supabase environment and migration guidance. The public Terms page was inspected on desktop
+  and at `390x844`; the exact mobile acceptance screen was rendered with mocked Auth/API data for
+  Product Owner review. No full check/build, migration application, production provisioning or
+  remote evidence is claimed.
+- **Next:** Present the desktop/mobile legal acceptance flow, apply Product Owner corrections, then
+  provision the separate production Supabase project and Fly app at the approved release checkpoint.
+
+### 2026-10-06 — LOG-429 — Prepare production-only internal Alpha admission locally
+
+- **Scope:** On the Product Owner's request, advance independent M8-C work while deferring provider,
+  DNS, mailbox and final legal values until the release checkpoint.
+- **Outcome:** Production startup now requires a nonempty allowlist of synthetic Supabase Auth Coach
+  UUIDs. A server-side hook rejects private API requests from other identities with `alpha_closed`;
+  public capability routes and readiness remain available. An Alpha Web build hides self-registration,
+  gives sign-in context and shows an excluded account a clear sign-out path. Production startup
+  checks that the Web artifact was built in Alpha mode. The Fly example uses the
+  proposed Tokyo region. The deployment handoff records the allowlist and separate Supabase Auth
+  signup restriction. Local development remains unchanged.
+- **Verification:** API typecheck passed; final focused API tests passed 2 files/21 tests. Web
+  typecheck passed; the existing Auth/config focused run passed 2 files/6 tests, and the final Alpha
+  entry, excluded-account, config and existing BetaGate set passed 4 files/7 tests. Browser previews
+  confirmed the Alpha-only sign-in entry with no registration action on desktop and at the exact
+  `390x844` mobile viewport. One excluded-account assertion initially outlasted its default one-second
+  wait because the query performs one contracted retry; the bounded three-second assertion passed.
+  Targeted formatting and `git diff --check` passed. No full check/build, physical-device,
+  production-project or remote-CI evidence is claimed.
+- **Next:** Product Owner reviews the open local Alpha entry behavior, then continue M8-C local
+  implementation and focused checks before the deferred release configuration.
+
+### 2026-10-06 — LOG-428 — Start M8-C Contract with confirmed domain rental
+
+- **Scope:** Begin M8-C Contract after M8-B-Plan-Choice delivery and record the Product Owner's
+  confirmation that `formcoachdesk.com` is rented through Cloudflare.
+- **Outcome:** The draft now distinguishes domain rental from DNS, canonical host, TLS, Auth callback,
+  support routing and production deployment. The Product Owner said support forwarding is unverified
+  and chose the existing Brevo Sender; the root-domain main URL with `www` redirect was adopted.
+  The same Supabase login will be used for a separate production project; Fly account creation is
+  still needed. Tokyo is the proposed shared API/database region, subject to actual availability.
+  Provider setup, legal and synthetic-Alpha decisions stay open; M8-C is not frozen. Current
+  official Personal Data Protection Act Article 8 names the collector's identity as a notice item;
+  the planned public English description has no confirmed official basis as a substitute for the
+  individual operator's name, so the real-Coach legal publication remains unresolved.
+- **Verification:** Reconciled the Roadmap, Status, M8-A Contract and existing M8-C draft with the
+  current worktree; targeted Prettier and `git diff --check` passed. Supabase's current URL guide
+  supports a production Site URL and exact redirect allowlist; its Google guide places the OAuth
+  provider callback at the Supabase project. No domain DNS, mailbox, production resource, browser
+  or live Alpha result is claimed.
+- **Next:** Confirm the remaining M8-C facts, review the complete Contract with the Product Owner,
+  then freeze it before implementation.
+
+### 2026-10-06 — LOG-427 — Isolate local checks and automate the Plan Choice browser path
+
+- **Scope:** Correct validation selection, redundant local/remote execution, browser repetition,
+  PDF timeout and CI job serialization without reopening the delivered M8-B-Plan-Choice baseline.
+- **Outcome:** Added `check:affected` with static related-test selection and fail-open broad inputs;
+  moved full regression to remote `verify` unless a package explicitly requires local full evidence;
+  added isolated, mocked Plan Choice Playwright checks at desktop and 390px; parallelized CI browser
+  and migration jobs, with the browser job skipping changes without Web impact. Preserved real PDF
+  format coverage with a 60-second case limit. Browser tests
+  use a dedicated port and reject unexpected Auth hosts.
+- **Verification:** selector tests 12/12, targeted Vitest related invocation 5/5, Export format tests
+  5/5 in 46.48 seconds, and both browser journeys 2/2 in 12.5 seconds. Full root check/build,
+  remote jobs, actual CI wall-time improvement, real Auth/database browser persistence and
+  physical-device touch were not run or claimed. A root formatting scan failed only on the
+  unrelated, concurrently edited untracked M8-C Contract draft; changed implementation files
+  passed targeted Prettier and `git diff --check`.
+- **Known issue:** `browser-ui` is a mock-boundary regression; it does not replace isolated live
+  API/database verification or Product Owner inspection of changed UI. The new CI job is unverified
+  on GitHub until the next authorized push.
+- **Next:** Review this process correction; keep the current M8-C Contract decision handoff intact.
 
 ### 2026-10-06 — LOG-426 — Deliver Plan Choice to Main with exact-SHA CI
 

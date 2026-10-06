@@ -8,6 +8,12 @@ import { AccountLifecycleModule } from '../account-lifecycle/account-lifecycle-m
 import { buildServer } from './server.js'
 import { BetaAdmissionModule, codeDigest, newBetaCode } from '../beta-admission/beta-admission.js'
 import { MemoryBetaAdmissionRepository } from '../beta-admission/memory-beta-admission-repository.js'
+import {
+  CURRENT_PRIVACY_VERSION,
+  CURRENT_TERMS_VERSION,
+  LegalAcceptanceModule,
+  type LegalAcceptanceRepository,
+} from '../legal-acceptance/legal-acceptance.js'
 
 const openServers: ReturnType<typeof buildServer>[] = []
 
@@ -51,6 +57,110 @@ describe('readiness', () => {
     const response = await server.inject('/ready')
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({ status: 'ready' })
+  })
+})
+
+describe('production Alpha admission boundary', () => {
+  it('allows only named Coaches into private API routes while preserving readiness', async () => {
+    const repository = new MemoryStudentRepository()
+    const server = buildServer({
+      identityVerifier: new DevelopmentIdentityVerifier(),
+      students: new StudentModule({ repository }),
+      today: new TodayModule(repository),
+      workspace: new WorkspaceModule({ repository }),
+      accountLifecycle: new AccountLifecycleModule({
+        repository,
+        deletionExecutor: { deleteCoach: async () => undefined },
+      }),
+      registrationEmails: { isRegistered: async () => false },
+      alphaAllowedCoachIds: new Set(['00000000-0000-4000-8000-000000000001']),
+      readiness: async () => undefined,
+    })
+    openServers.push(server)
+    const admitted = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+    const excluded = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000002' }
+    expect((await server.inject('/ready')).statusCode).toBe(200)
+    expect((await server.inject('/v1/students')).statusCode).toBe(401)
+    expect((await server.inject('/v1/public/training-result')).statusCode).not.toBe(403)
+    expect((await server.inject({ url: '/v1/students', headers: admitted })).statusCode).toBe(200)
+    expect((await server.inject({ url: '/v1/students', headers: excluded })).json()).toEqual({
+      error: 'alpha_closed',
+    })
+    const deniedWrite = await server.inject({
+      method: 'POST',
+      url: '/v1/students',
+      headers: excluded,
+      payload: { name: 'Must not exist' },
+    })
+    expect(deniedWrite.statusCode).toBe(403)
+    expect(
+      (await server.inject({ url: '/v1/students', headers: admitted })).json().students,
+    ).toEqual([])
+    expect(
+      (
+        await server.inject({
+          method: 'POST',
+          url: '/v1/account-registration-check',
+          payload: { email: 'coach@example.com' },
+        })
+      ).statusCode,
+    ).toBe(403)
+  })
+})
+
+describe('legal acceptance HTTP boundary', () => {
+  it('allows reading and accepting the current documents before any Workspace write', async () => {
+    const repository = new MemoryStudentRepository()
+    const accepted = new Map<string, string>()
+    const legalRepository: LegalAcceptanceRepository = {
+      status: async (userId) => accepted.get(userId) ?? null,
+      accept: async ({ userId, acceptedAt }) => {
+        const timestamp = accepted.get(userId) ?? acceptedAt.toISOString()
+        accepted.set(userId, timestamp)
+        return timestamp
+      },
+    }
+    const server = buildServer({
+      identityVerifier: new DevelopmentIdentityVerifier(),
+      students: new StudentModule({ repository }),
+      today: new TodayModule(repository),
+      workspace: new WorkspaceModule({ repository }),
+      accountLifecycle: new AccountLifecycleModule({
+        repository,
+        deletionExecutor: { deleteCoach: async () => undefined },
+      }),
+      registrationEmails: { isRegistered: async () => false },
+      legalAcceptance: new LegalAcceptanceModule(
+        legalRepository,
+        () => new Date('2026-10-06T15:00:00Z'),
+      ),
+      requireLegalAcceptance: true,
+    })
+    openServers.push(server)
+    const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+
+    expect((await server.inject({ url: '/v1/legal/status', headers })).json()).toMatchObject({
+      legal: { accepted: false, acceptedAt: null },
+    })
+    expect((await server.inject({ url: '/v1/students', headers })).json()).toEqual({
+      error: 'legal_acceptance_required',
+    })
+    const response = await server.inject({
+      method: 'POST',
+      url: '/v1/legal/accept',
+      headers,
+      payload: {
+        termsVersion: CURRENT_TERMS_VERSION,
+        privacyVersion: CURRENT_PRIVACY_VERSION,
+        accepted: true,
+        noBackupAcknowledged: true,
+      },
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      legal: { accepted: true, acceptedAt: '2026-10-06T15:00:00.000Z' },
+    })
+    expect((await server.inject({ url: '/v1/students', headers })).statusCode).toBe(200)
   })
 })
 
