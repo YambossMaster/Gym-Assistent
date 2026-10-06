@@ -1,22 +1,22 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-06. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-07. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                    |
-| ------------------ | -------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                  |
-| Current package    | **M8-C production deployment and internal Alpha**                                |
-| Package state      | **Contract and Sol complete; first-deploy CI gate authorized and in progress**   |
-| Approved next      | **Deploy the verified exact local commit and run live Alpha acceptance**         |
-| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                       |
-| Branch baseline    | Plan Choice `83c30d5`; CI run `37338226966` passed both jobs                     |
-| Worktree           | Existing `D:` checkout on `main`; Export integration branch preserved            |
-| Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned |
-| Production         | Supabase/Fly/DNS/Auth foundation ready; no Machine or real customer data         |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants          |
+| Field              | Current value                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
+| Current package    | **M8-C production deployment and internal Alpha**                                  |
+| Package state      | **Production live; automated Alpha passed; device/mail and remote evidence open**  |
+| Approved next      | **Confirm Auth mail and physical PWA, then authorize exact-commit Git push**       |
+| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
+| Branch baseline    | Production deploy `ad41c81`; remote `main` remains at Plan Choice `40b303e`        |
+| Worktree           | Existing `D:` `main`, tracked-clean and five local commits ahead; no Git push      |
+| Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
+| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
 
 **2026-10-06 verification workflow correction (local, not delivered):** The Product Owner rejected
 the 39-minute Plan Choice verification path as inefficient. Local preflight now has an affected-test
@@ -320,12 +320,14 @@ rights/support contact remain Beta entry conditions.
 
 ## Next handoff
 
-**Current executable handoff (2026-10-06):** The Product Owner authorized the M8-C full gate and
-first Fly deployment using one always-on Tokyo `shared-cpu-1x` Machine with 512 MB, while explicitly
-withholding Git push. Root check/build, Plan Choice browser checks and the exact Production migration
-dry-run passed; freeze the local commit, deploy that exact revision to the already provisioned
-`formcoachdesk` app, and execute live Auth, legal acceptance, persistence, public-link, sign-out,
-responsive and operational acceptance. Do not admit real Coaches or push/merge the local commits.
+**Current executable handoff (2026-10-07):** Production deploy `ad41c81` is live on one healthy
+Tokyo 512 MB Fly Machine. Automated M8-C acceptance passed for two allowlisted synthetic Coaches,
+legal acceptance, two-way tenant isolation, core persistence, public-link privacy, sign-out/relogin,
+desktop and 390×844 browser behavior. Exact fixture IDs are retained in the ignored local inventory;
+the Production database is 14,235,315 bytes. The Product Owner must now confirm receipt of one
+Production Auth message and run the physical-phone PWA/touch/keyboard/safe-area path. Keep real
+Coaches closed. After those results, present deploy commit `ad41c81` plus the final Status commit and
+request separate authorization before pushing Git; remote CI remains unverified until that push.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -941,6 +943,40 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-433 — Deploy M8-C and pass automated Production Alpha acceptance
+
+- **Scope:** Complete the Product Owner-authorized first Fly deployment and all M8-C Production
+  checks that do not require the Product Owner's mailbox or physical phone; keep Git remote unchanged.
+- **Outcome:** Deployed exact local commit `ad41c81` to one always-on Tokyo `shared-cpu-1x` Machine
+  with 512 MB. The Machine remains healthy on `/api/ready`; apex HTTPS serves the SPA and API while
+  Cloudflare preserves the exact-path/query `www` redirect. Added a second confirmed synthetic Alpha
+  Coach to the server allowlist and completed both Coaches' legal acceptance. The first remote image
+  attempt stopped before release because the Docker context omitted the root prepare script; the
+  corrected image deployed. Live acceptance then exposed duplicate-case proxy security headers;
+  focused test commit `94af9e9` canonicalized them and `ad41c81` also stopped public build args from
+  appearing in later image logs. No real Coach or customer data exists.
+- **Verification:** Root check passed selectors 12/12, API 38 files / 176 tests and Web 65 files /
+  276 tests; root build and local Playwright 2/2 passed. All 44 Production migrations match and the
+  exact dry-run is empty. Live Auth and API acceptance created isolated synthetic students in both
+  Workspaces, verified cross-Workspace reads return 404 in both directions, and completed a zero-price
+  purchase, Course Session, persisted Training Record and Training Result capability link. The public
+  projection returned no private value. Header checks passed for private no-store caching,
+  no-referrer and noindex/nofollow. Sign-out, re-login, reload persistence, desktop
+  1440px and exact 390×844 browser paths passed; the mobile document has no horizontal overflow.
+  Root/Terms/Privacy browser GETs return 200, unknown API returns JSON 404, and `www` returns the
+  expected 301. The least-privilege runtime inventory found two Workspaces and four synthetic
+  Students across the successful run and the earlier header-stopped run, including exact purchase,
+  Session, Training Record and capability-link IDs for later cleanup. Database size is 14,235,315
+  bytes. Supabase Security Advisor shows zero errors and one leaked-password-protection warning;
+  Performance Advisor shows zero errors and zero warnings.
+- **Open evidence:** Production Auth SMTP receipt still needs a mailbox-visible message, and physical
+  PWA installation/touch/keyboard/safe-area acceptance requires the Product Owner's phone. Git remote
+  remains unchanged, so exact-commit GitHub Actions evidence is also pending. These three items keep
+  M8-C open; the deployed internal Alpha itself is operational.
+- **Next:** Ask the Product Owner to confirm one Production Auth email and complete the physical-phone
+  checklist. Record those results, then present the exact local commits and request authorization to
+  push; confirm GitHub Actions before marking M8-C Done.
 
 ### 2026-10-06 — LOG-432 — Authorize and verify the M8-C first-deploy candidate
 
