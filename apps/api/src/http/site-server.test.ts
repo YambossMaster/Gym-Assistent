@@ -27,6 +27,11 @@ async function fixture() {
   const api = createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json')
     if (request.url === '/health') return response.end('{"status":"ok"}')
+    if (request.url === '/v1/public/training-result') {
+      response.setHeader('Cache-Control', 'no-store, private')
+      response.setHeader('Referrer-Policy', 'no-referrer')
+      return response.end('{"trainingResult":{}}')
+    }
     if (request.url === '/v1/ip')
       return response.end(JSON.stringify({ clientIp: request.headers['x-site-client-ip'] }))
     if (request.url === '/v1/write' && request.method === 'POST') {
@@ -75,6 +80,14 @@ describe('same-origin site server', () => {
     })
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ clientIp: '127.0.0.1' })
+  })
+
+  it('keeps one canonical security header value on public API responses', async () => {
+    const origin = await fixture()
+    const response = await fetch(origin + '/api/v1/public/training-result')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('no-store, private')
+    expect(response.headers.get('referrer-policy')).toBe('no-referrer')
   })
 
   it('serves SPA links but not missing or hidden files', async () => {

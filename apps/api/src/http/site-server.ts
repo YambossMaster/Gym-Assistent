@@ -52,13 +52,13 @@ async function handleApi(
       duplex: 'half',
       redirect: 'manual',
     } as RequestInit & { duplex: 'half' })
-    const headers: Record<string, string> = { 'Cache-Control': 'no-store' }
+    const headers: Record<string, string> = { 'cache-control': 'no-store' }
     for (const [name, value] of upstream.headers) {
       if (['connection', 'content-encoding', 'content-length', 'transfer-encoding'].includes(name))
         continue
       headers[name] = value
     }
-    if (path.startsWith('/api/v1/public/')) headers['Referrer-Policy'] = 'no-referrer'
+    if (path.startsWith('/api/v1/public/')) headers['referrer-policy'] = 'no-referrer'
     send(response, upstream.status, headers, Buffer.from(await upstream.arrayBuffer()))
   } catch {
     send(
