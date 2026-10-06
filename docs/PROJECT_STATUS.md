@@ -947,16 +947,19 @@ local pass or successful push is not a remote CI completion claim.
 - **Scope:** Execute the Product Owner-authorized M8-C full verification and first Fly deployment,
   using one always-on Tokyo `shared-cpu-1x` Machine with 512 MB and keeping Git remote unchanged.
 - **Outcome:** Added the approved 512 MB Machine size to the ignored release config and validated
-  that configuration against the existing `formcoachdesk` app. The candidate is ready to freeze as
-  an exact local commit; no Fly release or Git push is claimed at this point.
+  that configuration against the existing `formcoachdesk` app. Candidate `a5cc5b0` passed the local
+  gate, but its first remote image build stopped before any release or Machine because the
+  Dockerfile ran the root `prepare` script before copying `scripts/install-hooks.mjs`. The release
+  image now copies that required script before both dependency installs. Git remains local only.
 - **Verification:** Root `npm run check` passed selector 12/12, API 38 files / 176 tests and Web 65
   files / 276 tests. Root `npm run build` passed after the ordinary Windows sandbox encountered its
   known `spawn EPERM`; Vite emitted only its existing bundle-size advisory. Playwright passed the
   Plan Choice journey at 1440px and 390px, 2/2. Production migration list matched all 44 versions
   and the new dry-run returned `upToDate: true` with no migrations, seeds or roles pending. Fly
-  configuration validation and the repository secret scan passed.
-- **Next:** Freeze the exact local commit, deploy it to Fly, then record and execute the live M8-C
-  Alpha acceptance. Keep Git push and merge unauthorized.
+  configuration validation and the repository secret scan passed. A post-failure Fly status check
+  confirmed version 0, zero Machines and no deployment.
+- **Next:** Commit the Docker context correction, deploy the new exact local revision to Fly, then
+  record and execute the live M8-C Alpha acceptance. Keep Git push and merge unauthorized.
 
 ### 2026-10-06 — LOG-431 — Provision the M8-C production foundation
 

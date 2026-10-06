@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY scripts/install-hooks.mjs scripts/install-hooks.mjs
 RUN npm ci
 COPY apps/api apps/api
 COPY apps/web apps/web
@@ -21,6 +22,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY scripts/install-hooks.mjs scripts/install-hooks.mjs
 RUN npm ci --omit=dev
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/web/dist apps/web/dist
