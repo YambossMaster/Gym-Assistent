@@ -139,6 +139,13 @@ describe('legal acceptance HTTP boundary', () => {
     openServers.push(server)
     const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
 
+    const registration = await server.inject({
+      method: 'POST',
+      url: '/v1/account-registration-check',
+      payload: { email: 'new-coach@example.test' },
+    })
+    expect(registration.statusCode).toBe(200)
+    expect(registration.json()).toEqual({ exists: false })
     expect((await server.inject({ url: '/v1/legal/status', headers })).json()).toMatchObject({
       legal: { accepted: false, acceptedAt: null },
     })

@@ -744,7 +744,9 @@ and exact-SHA remote CI after the Product Owner's delivery approval.
 accounts and realistic monthly cost; approve any purchase/deployment. Finish and publish accurate
 Terms/Privacy text with the current no-backup disclosure and an integrated acceptance flow before
 real Coaches are invited. Select the initial synthetic Alpha accounts and a short pass/fail
-checklist.
+checklist. The 2026-10-07 Product Owner amendment opens the final public Auth entry during
+Alpha: Email signup/verification/recovery and Google sign-in, without a synthetic-account allowlist.
+First-use legal acceptance and tenant isolation remain mandatory; M8-D recruitment is separate.
 
 **Sol gate:** provision the separate production Supabase Free project and Fly app, configure
 separate secrets, apply reviewed migrations, deploy the exact release build and configure available

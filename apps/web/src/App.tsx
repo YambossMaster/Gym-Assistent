@@ -32,7 +32,6 @@ import { LegalGate } from './legal/LegalGate'
 import { PrivacyPage, TermsPage } from './legal/LegalPages'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
-const internalAlpha = isInternalAlpha()
 
 export function App() {
   return (
@@ -49,6 +48,7 @@ export function App() {
 }
 
 function AuthenticatedApp() {
+  const internalAlpha = isInternalAlpha()
   const location = useLocation()
   const navigate = useNavigate()
   const [client] = useState(createAppQueryClient),
@@ -137,7 +137,7 @@ function AuthenticatedApp() {
   if (!session) return <SignIn key="ordinary-sign-in" />
   return (
     <QueryClientProvider client={client}>
-      {internalAlpha ? (
+      {internalAlpha || import.meta.env.PROD ? (
         <LegalGate session={session}>
           <BetaGate session={session}>
             <CoachWorkspace key={session.user.id} session={session} />
@@ -163,6 +163,7 @@ function SignIn({
   externalError?: string
   onReturn?: () => void
 }) {
+  const internalAlpha = isInternalAlpha()
   const [mode, setMode] = useState<Mode>(initialMode),
     [mobileView, setMobileView] = useState<'welcome' | 'form'>(
       initialMode === 'signin' ? 'welcome' : 'form'

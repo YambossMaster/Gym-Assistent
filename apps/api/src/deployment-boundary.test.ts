@@ -10,7 +10,6 @@ function production(databaseUrl: string) {
     NODE_ENV: 'production',
     DEPLOYMENT_TARGET: 'production',
     EXPECTED_SUPABASE_PROJECT_REF: ref,
-    ALPHA_ALLOWED_COACH_IDS: '00000000-0000-4000-8000-000000000001',
     SUPABASE_URL: supabaseUrl,
     DATABASE_URL: databaseUrl,
   })
@@ -19,16 +18,16 @@ function production(databaseUrl: string) {
 describe('production project boundary', () => {
   it('accepts one matching direct database, API and built Web project', () => {
     const config = production(`postgresql://app:password@db.${ref}.supabase.co:5432/postgres`)
-    expect(() => assertProductionBoundary(config, supabaseUrl, true)).not.toThrow()
+    expect(() => assertProductionBoundary(config, supabaseUrl, false)).not.toThrow()
   })
 
   it('rejects a Web build or database from another project without exposing credentials', () => {
     const config = production(`postgresql://app:password@db.${ref}.supabase.co:5432/postgres`)
     expect(() =>
-      assertProductionBoundary(config, 'https://otherproject.supabase.co', true),
+      assertProductionBoundary(config, 'https://otherproject.supabase.co', false),
     ).toThrow('Production Web project mismatch')
     const wrongDatabase = production('postgresql://app:secret@db.otherproject.supabase.co/postgres')
-    expect(() => assertProductionBoundary(wrongDatabase, supabaseUrl, true)).toThrow(
+    expect(() => assertProductionBoundary(wrongDatabase, supabaseUrl, false)).toThrow(
       'Production database project mismatch',
     )
   })
@@ -42,29 +41,15 @@ describe('production project boundary', () => {
     expect(() => assertProductionBoundary(local, '', false)).not.toThrow()
   })
 
-  it('fails closed when the production Alpha allowlist is absent or malformed', () => {
-    const databaseUrl = `postgresql://app:password@db.${ref}.supabase.co:5432/postgres`
-    const config = production(databaseUrl)
-    expect(() =>
-      assertProductionBoundary(
-        { ...config, ALPHA_ALLOWED_COACH_IDS: undefined },
-        supabaseUrl,
-        true,
-      ),
-    ).toThrow('Production Alpha Coach allowlist is missing or invalid')
-    expect(() =>
-      assertProductionBoundary(
-        { ...config, ALPHA_ALLOWED_COACH_IDS: 'not-a-user-id' },
-        supabaseUrl,
-        true,
-      ),
-    ).toThrow('Production Alpha Coach allowlist is missing or invalid')
+  it('allows public Auth entry without a synthetic Coach allowlist', () => {
+    const config = production(`postgresql://app:password@db.${ref}.supabase.co:5432/postgres`)
+    expect(() => assertProductionBoundary(config, supabaseUrl, false)).not.toThrow()
   })
 
-  it('rejects a production Web build that still exposes self-registration', () => {
+  it('rejects a production Web build that hides public Auth entry', () => {
     const config = production(`postgresql://app:password@db.${ref}.supabase.co:5432/postgres`)
-    expect(() => assertProductionBoundary(config, supabaseUrl, false)).toThrow(
-      'Production Web Alpha mode is missing',
+    expect(() => assertProductionBoundary(config, supabaseUrl, true)).toThrow(
+      'Production Web must expose public Auth entry',
     )
   })
 })

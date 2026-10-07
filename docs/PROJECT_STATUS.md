@@ -9,8 +9,8 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **Production live; automated Alpha passed; device/mail and remote evidence open**  |
-| Approved next      | **Confirm Auth mail and physical PWA, then authorize exact-commit Git push**       |
+| Package state      | **Public Auth entry amendment implemented; deployment verification in progress**   |
+| Approved next      | **Deploy open entry, then confirm real signup/mail/Google and device acceptance**  |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
 | Branch baseline    | Production deploy `ad41c81`; remote `main` remains at Plan Choice `40b303e`        |
 | Worktree           | Existing `D:` `main`, tracked-clean and five local commits ahead; no Git push      |
@@ -320,14 +320,15 @@ rights/support contact remain Beta entry conditions.
 
 ## Next handoff
 
-**Current executable handoff (2026-10-07):** Production deploy `ad41c81` is live on one healthy
-Tokyo 512 MB Fly Machine. Automated M8-C acceptance passed for two allowlisted synthetic Coaches,
-legal acceptance, two-way tenant isolation, core persistence, public-link privacy, sign-out/relogin,
-desktop and 390×844 browser behavior. Exact fixture IDs are retained in the ignored local inventory;
-the Production database is 14,235,315 bytes. The Product Owner must now confirm receipt of one
-Production Auth message and run the physical-phone PWA/touch/keyboard/safe-area path. Keep real
-Coaches closed. After those results, present deploy commit `ad41c81` plus the final Status commit and
-request separate authorization before pushing Git; remote CI remains unverified until that push.
+**Current executable handoff (2026-10-07):** The Product Owner approved using the final public Auth
+entry during Alpha, including Email signup/OTP/recovery and Google login, and approved extending
+the existing OAuth client to Production. Deploy the amended entry without a synthetic-account
+allowlist; retain mandatory first-use legal acceptance and tenant isolation. Production signup and
+Google provider are enabled; OTP is six digits and minimum password length is 12. Complete live
+entry verification, then let the Product Owner register their own account and confirm mail receipt
+and OAuth return. They report deployment/PWA looks good; the full physical touch/keyboard/safe-area
+path remains unconfirmed. Prior core Alpha evidence remains valid for unchanged workflows.
+Do not reset Production now that self-registration is enabled. Do not push Git; remote CI is open.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -943,6 +944,25 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-434 — Open the final Auth entry during Alpha
+
+- **Scope:** Product Owner explicitly removed the closed Alpha admission requirement; existing
+  OAuth client extension to Production received action-time confirmation. No Git push authorized.
+- **Outcome:** Production API no longer supplies an Alpha allowlist. Production builds must expose
+  public Auth entry. The production Web retains LegalGate independently of Alpha mode; registration
+  lookup remains anonymous while private workspace operations require legal acceptance. Terms and
+  privacy version `2026-10-07-alpha` permit genuine account identity and synthetic student tests;
+  no-backup disclosure remains. Entire-environment fixture reset is no longer appropriate.
+- **Verification:** Typecheck passed; deployment boundary/HTTP tests 22 passed; public entry/legal
+  tests 6 passed; unchanged recovery/Auth helper tests passed in the first focused run. Production
+  Email signup and Google provider are enabled; Google callback read back after save, OTP length
+  six read back. Signup email switched from link to OTP. Build/deployment/live entry checks ongoing.
+- **Known issue:** Actual recipient OTP/recovery receipt and completed Google login need the
+  Product Owner's own account interaction. Google branding remains unverified; the current basic
+  identity scopes qualify for Google's testing-audience exception. M8-D recruitment is separate.
+- **Next:** deploy this correction and verify the public entry; then confirm account/mail/device
+  acceptance. Keep Git local pending separate push authorization.
 
 ### 2026-10-07 — LOG-433 — Deploy M8-C and pass automated Production Alpha acceptance
 

@@ -59,8 +59,8 @@ export function LegalGate({ session, children }: { session: Session; children: R
           }}
         >
           <div>
-            <span className="eyebrow">內部測試</span>
-            <h2>開始前，請確認測試規則</h2>
+            <span className="eyebrow">開始使用</span>
+            <h2>請確認使用條款與隱私聲明</h2>
             <p>這個環境目前只使用合成測試資料。</p>
           </div>
           <label className="legal-check">

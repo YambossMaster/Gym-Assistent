@@ -24,7 +24,7 @@ import { PostgresDemoImportRepository } from './adapters/postgres-demo-import-re
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { alphaAllowedCoachIds, assertProductionBoundary } from './deployment-boundary.js'
+import { assertProductionBoundary } from './deployment-boundary.js'
 import { createSiteServer } from './http/site-server.js'
 import { BetaAdmissionModule } from './beta-admission/beta-admission.js'
 import { PostgresBetaAdmissionRepository } from './beta-admission/postgres-beta-admission-repository.js'
@@ -53,9 +53,6 @@ const identityVerifier = new OidcIdentityVerifier({
   jwksUrl: `${supabaseIssuer}/.well-known/jwks.json`,
 })
 const server = buildServer({
-  ...(config.DEPLOYMENT_TARGET === 'production'
-    ? { alphaAllowedCoachIds: alphaAllowedCoachIds(config.ALPHA_ALLOWED_COACH_IDS) }
-    : {}),
   finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
   identityVerifier,
   students: new StudentModule({ repository }),

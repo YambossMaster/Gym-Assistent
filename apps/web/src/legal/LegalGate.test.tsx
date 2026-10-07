@@ -55,7 +55,7 @@ it('keeps the Workspace closed until both explicit confirmations are stored', as
       )
     })
     await act(async () => {
-      await vi.waitFor(() => expect(host.textContent).toContain('開始前，請確認測試規則'))
+      await vi.waitFor(() => expect(host.textContent).toContain('請確認使用條款與隱私聲明'))
     })
     expect(host.textContent).not.toContain('private workspace')
     const submit = host.querySelector('button[type="submit"]') as HTMLButtonElement

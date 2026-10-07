@@ -26,14 +26,10 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    `EXPECTED_SUPABASE_PROJECT_REF` only in the host's secret
    store. Set `NODE_ENV=production` and `DEPLOYMENT_TARGET=production`. The production startup
    compares the runtime URL, database connection target and Web build's public URL against the
-   expected project ref before it listens publicly. It also requires the Web build's internal Alpha
-   flag while the production allowlist is active.
-   During M8-C, set `ALPHA_ALLOWED_COACH_IDS` to the comma-separated Supabase Auth user UUIDs of
-   the named synthetic Coaches. Production refuses to start without a valid nonempty list, and
-   the API denies all private routes to other identities. Keep public capability routes available.
-   Disable [new-user signups](https://supabase.com/docs/guides/auth/general-configuration) in the
-   production Supabase Auth configuration; create the synthetic
-   Alpha users through a controlled admin flow. Do not put this list in the Web build.
+   expected project ref before it listens publicly. Production requires the public Auth entry
+   (`VITE_INTERNAL_ALPHA=false`), Email signup and confirmation, and Google OAuth configured
+   for the production Supabase callback. No synthetic-account allowlist limits admission.
+   First-use legal acceptance remains enforced by the API before workspace operations.
    Keep `BETA_ADMISSION_SECRET` stable: it keys the deletion-surviving same-Email redemption
    ledger. Rotating it requires a planned ledger migration before accepting new redemptions.
 3. From an isolated release checkout, use the installed Supabase CLI's `migration list
@@ -44,8 +40,8 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    These are serial release operations, not part of Fly app startup.
 4. Build the Docker image using the **public** `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_PUBLISHABLE_KEY` build arguments. Set the public `VITE_SUPPORT_EMAIL` to the
-   dedicated rights/support address selected in M8-C and set `VITE_INTERNAL_ALPHA=true` so the
-   sign-in page does not offer self-registration. Check the resulting build's public URL matches
+   dedicated rights/support address selected in M8-C and set `VITE_INTERNAL_ALPHA=false` to expose
+   registration and Google sign-in. Check the resulting build's public URL matches
    the intended production project. Deploy the exact approved commit with host auto-deploy off.
 5. Manually check `/api/ready`, sign-in, one Student/Session/Training save and reload, a public
    capability link, and sign-out. Inspect Fly usage/errors and Supabase database size. If a write

@@ -249,7 +249,12 @@ export function buildServer({
     server.addHook('preHandler', async (request, reply) => {
       const route = request.routeOptions.url
       if (!route?.startsWith('/v1/') || route.startsWith('/v1/public/')) return
-      if (route === '/v1/legal/status' || route === '/v1/legal/accept') return
+      if (
+        route === '/v1/legal/status' ||
+        route === '/v1/legal/accept' ||
+        route === '/v1/account-registration-check'
+      )
+        return
       const identity = await identityVerifier.verify(request.headers.authorization)
       if (!(await legalAcceptance.status(identity)).accepted)
         return reply.status(428).send({ error: 'legal_acceptance_required' })

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { Brand } from '../shared/primitives'
 
-const VERSION = '2026-10-06-alpha'
+const VERSION = '2026-10-07-alpha'
 
 function LegalLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -12,7 +12,7 @@ function LegalLayout({ title, children }: { title: string; children: ReactNode }
         <Link to="/">返回登入</Link>
       </header>
       <article>
-        <span className="eyebrow">內部 Alpha · 版本 {VERSION}</span>
+        <span className="eyebrow">Alpha · 版本 {VERSION}</span>
         <h1>{title}</h1>
         {children}
         <p>
@@ -28,8 +28,9 @@ export function TermsPage() {
     <LegalLayout title="使用條款">
       <h2>服務範圍</h2>
       <p>
-        Form Coach Desk 是私人教練管理學員、課堂、訓練紀錄與營運資料的
-        Web/PWA。此版本僅供列名帳號進行內部 Alpha 測試，請勿輸入真實教練、學員或其他自然人的資料。
+        Form Coach Desk 是私人教練管理學員、課堂、訓練紀錄與營運資料的 Web/PWA。目前為 Alpha
+        測試版本，可使用自己的 Email 或 Google
+        帳號註冊。工作台測試請使用合成學員資料，勿輸入真實學員或其他人的個人資料。
       </p>
       <h2>測試資料與公開連結</h2>
       <p>
@@ -37,11 +38,11 @@ export function TermsPage() {
       </p>
       <h2>資料風險</h2>
       <p>
-        目前沒有定期資料庫備份。測試資料若損毀或遺失，可能無法還原。為維護安全或修復錯誤，服務可能暫停寫入、重建僅含合成資料的測試環境，或提前結束測試。
+        目前沒有定期資料庫備份。測試資料若損毀或遺失，可能無法還原。為維護安全或修復錯誤，服務可能暫停寫入或提前結束測試；不會把自助註冊帳號視為可任意清除的合成資料。
       </p>
       <h2>費用與變更</h2>
       <p>
-        內部 Alpha
+        Alpha
         不收費、不要求付款資料，也不會自動開始付費續訂。條款如有重大變更，系統會要求測試者閱讀並重新接受新版後再繼續寫入。
       </p>
       <h2>營運者</h2>
@@ -55,7 +56,7 @@ export function PrivacyPage() {
     <LegalLayout title="隱私聲明">
       <h2>目前可使用的資料</h2>
       <p>
-        內部 Alpha 僅允許合成測試資料。服務仍會處理測試帳號的
+        Alpha 的工作台測試使用合成學員資料。服務會處理註冊帳號的
         Email、登入識別、接受紀錄、工作台設定、合成業務資料，以及維持安全與排錯所需的服務紀錄。
       </p>
       <h2>處理目的與服務商</h2>
