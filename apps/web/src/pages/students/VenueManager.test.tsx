@@ -9,7 +9,7 @@ import { VenueManager } from './VenueManager'
 import { FinanceCurrencyProvider } from '../settings/finance-currency'
 
 const mutate = vi.hoisted(() => vi.fn())
-const venueFixtureState = vi.hoisted(() => ({ restored: false }))
+const venueFixtureState = vi.hoisted(() => ({ restored: false, empty: false }))
 const creditFixtures = vi.hoisted(
   () =>
     [] as Array<{
@@ -30,46 +30,48 @@ vi.mock('./finance-api', async (importOriginal) => ({
     data: {
       today: '2026-09-25',
       timeZone: 'Asia/Taipei',
-      venues: [
-        {
-          id: 'venue-1',
-          name: '舊場地',
-          active: venueFixtureState.restored,
-          canDelete: true,
-          version: 3,
-          currentRule: null,
-          remaining: 0
-        },
-        {
-          id: 'venue-2',
-          name: '本月場地',
-          active: true,
-          canDelete: false,
-          version: 1,
-          currentRule: null,
-          remaining: 0
-        },
-        {
-          id: 'venue-3',
-          name: '尚未使用',
-          address: '台北市測試路',
-          active: true,
-          canDelete: true,
-          version: 1,
-          currentRule: null,
-          remaining: 0
-        },
-        {
-          id: 'venue-4',
-          name: '預購場地',
-          active: true,
-          canDelete: false,
-          version: 1,
-          currentRule: { id: 'rule-4', kind: 'prepaid' },
-          remaining: 32,
-          pendingLessons: 2
-        }
-      ],
+      venues: venueFixtureState.empty
+        ? []
+        : [
+            {
+              id: 'venue-1',
+              name: '舊場地',
+              active: venueFixtureState.restored,
+              canDelete: true,
+              version: 3,
+              currentRule: null,
+              remaining: 0
+            },
+            {
+              id: 'venue-2',
+              name: '本月場地',
+              active: true,
+              canDelete: false,
+              version: 1,
+              currentRule: null,
+              remaining: 0
+            },
+            {
+              id: 'venue-3',
+              name: '尚未使用',
+              address: '台北市測試路',
+              active: true,
+              canDelete: true,
+              version: 1,
+              currentRule: null,
+              remaining: 0
+            },
+            {
+              id: 'venue-4',
+              name: '預購場地',
+              active: true,
+              canDelete: false,
+              version: 1,
+              currentRule: { id: 'rule-4', kind: 'prepaid' },
+              remaining: 32,
+              pendingLessons: 2
+            }
+          ],
       rules: [],
       credits: creditFixtures,
       payouts: [],
@@ -82,6 +84,38 @@ vi.mock('./finance-api', async (importOriginal) => ({
   }),
   useFinanceMutation: () => ({ isPending: false, error: null, mutate, reset: vi.fn() })
 }))
+
+it('guides a Coach with no Venues directly into creating the first one', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  venueFixtureState.empty = true
+  const client = new QueryClient()
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter>
+            <VenueManager session={{ user: { id: 'coach' } } as Session} />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    )
+    const emptyState = host.querySelector('.venue-empty-state')
+    expect(emptyState?.textContent).toContain('建立第一個場地')
+    const create = emptyState?.querySelector<HTMLButtonElement>('button')
+    expect(create?.textContent).toContain('新增場地')
+    await act(async () => create!.click())
+    expect(host.querySelector('#scheduling-dialog-title')?.textContent).toBe('新增場地')
+  } finally {
+    venueFixtureState.empty = false
+    await act(async () => root.unmount())
+    client.clear()
+    host.remove()
+    vi.unstubAllGlobals()
+  }
+})
 
 it('keeps both venue status choices after the last archived venue is restored', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)

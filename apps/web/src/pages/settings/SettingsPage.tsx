@@ -43,6 +43,7 @@ import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
+import { resolveCoachDisplayName } from '../../app-shell/coach-identity'
 
 function planName(plan: PlanAccess | undefined): string {
   if (plan?.tier === 'advanced') return 'Prime 方案'
@@ -561,6 +562,7 @@ export function SettingsPage({ session }: { session: Session }) {
             <WorkspaceProfile
               state={profileState}
               settings={settingsQuery.data}
+              fallbackEmail={session.user.email}
               refreshFailed={Boolean(settingsQuery.data && settingsQuery.isError)}
               onRetry={() => void settingsQuery.refetch()}
               onNameChange={(displayName) => {
@@ -1084,6 +1086,7 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
 function WorkspaceProfile({
   state,
   settings,
+  fallbackEmail,
   refreshFailed,
   onRetry,
   onNameChange,
@@ -1091,6 +1094,7 @@ function WorkspaceProfile({
 }: {
   state: SettingsPanelState
   settings: WorkspaceSettings | undefined
+  fallbackEmail?: string
   refreshFailed: boolean
   onRetry: () => void
   onNameChange: (value: string) => void
@@ -1104,6 +1108,7 @@ function WorkspaceProfile({
     )
   if (state === 'error' || !settings)
     return <PanelError title="暫時無法讀取教練資料" onRetry={onRetry} />
+  const displayName = resolveCoachDisplayName(settings.displayName, fallbackEmail)
   return (
     <section className="settings-panel workspace-settings-panel">
       {refreshFailed && <RefreshError onRetry={onRetry} />}
@@ -1115,16 +1120,16 @@ function WorkspaceProfile({
         <input
           name="displayName"
           aria-label="教練顯示名稱"
-          defaultValue={settings.displayName}
+          defaultValue={displayName}
           maxLength={120}
           required
           onBlur={(event) => {
             const value = event.currentTarget.value.trim()
             if (!value) {
-              event.currentTarget.value = settings.displayName
+              event.currentTarget.value = displayName
               return
             }
-            if (value !== settings.displayName) onNameChange(value)
+            if (value !== displayName) onNameChange(value)
           }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') event.currentTarget.blur()

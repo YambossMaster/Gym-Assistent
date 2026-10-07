@@ -22,7 +22,7 @@ import {
   type WorkspaceSettingsRepository,
   WorkspaceVersionConflictError,
 } from '../workspace/workspace-repository.js'
-import type { WorkspaceSettings } from '../workspace/workspace.js'
+import { defaultWorkspaceDisplayName, type WorkspaceSettings } from '../workspace/workspace.js'
 import type { AccountLifecycleRepository } from '../account-lifecycle/account-lifecycle-repository.js'
 import type { AccountLifecycleStatus } from '../account-lifecycle/account-lifecycle.js'
 
@@ -47,7 +47,7 @@ export class MemoryStudentRepository
     this.#purchasesByWorkspace.set(workspaceId, new Map())
     this.#completedSessionsByWorkspace.set(workspaceId, new Map())
     this.#settingsByWorkspace.set(workspaceId, {
-      displayName: '我的工作台',
+      displayName: defaultWorkspaceDisplayName(identity.email),
       timeZone: 'Asia/Taipei',
       defaultCurrency: 'TWD',
       calendarStartHour: 6,

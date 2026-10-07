@@ -24,7 +24,7 @@ import {
   type WorkspaceSettingsRepository,
   WorkspaceVersionConflictError,
 } from '../workspace/workspace-repository.js'
-import type { WorkspaceSettings } from '../workspace/workspace.js'
+import { defaultWorkspaceDisplayName, type WorkspaceSettings } from '../workspace/workspace.js'
 import type { AccountLifecycleRepository } from '../account-lifecycle/account-lifecycle-repository.js'
 import type { AccountLifecycleStatus } from '../account-lifecycle/account-lifecycle.js'
 
@@ -100,10 +100,10 @@ export class PostgresStudentRepository
       const candidateWorkspaceId = randomUUID()
 
       await client.query(
-        `INSERT INTO app_private.workspace (id, owner_user_id)
-         VALUES ($1, $2)
+        `INSERT INTO app_private.workspace (id, owner_user_id, display_name)
+         VALUES ($1, $2, $3)
          ON CONFLICT (owner_user_id) DO NOTHING`,
-        [candidateWorkspaceId, identity.userId],
+        [candidateWorkspaceId, identity.userId, defaultWorkspaceDisplayName(identity.email)],
       )
 
       const workspaceResult = await client.query<{ id: string }>(

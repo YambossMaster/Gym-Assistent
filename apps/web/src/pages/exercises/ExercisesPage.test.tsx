@@ -3,7 +3,21 @@ import { StrictMode, act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { ExerciseDefinition } from '../../api'
-import { DefinitionEditor } from './ExercisesPage'
+import { DefinitionEditor, ExercisesPage } from './ExercisesPage'
+import type { Session } from '@supabase/supabase-js'
+
+vi.mock('../training/queries', () => ({
+  useExerciseLibrary: () => ({
+    data: {
+      definitions: [],
+      totals: { all: 1, favorite: 0, custom: 0 },
+      filters: { equipment: ['槓鈴'], movementTypes: ['系統動作'], bodyParts: ['腿', '背'] }
+    },
+    isLoading: false,
+    isError: false
+  }),
+  useTrainingMutations: () => ({})
+}))
 
 const definition: ExerciseDefinition = {
   id: 'squat',
@@ -21,6 +35,47 @@ const definition: ExerciseDefinition = {
 afterEach(() => {
   document.body.innerHTML = ''
   vi.unstubAllGlobals()
+})
+
+it('keeps the mobile filter shelf open when selecting a tag shifts the document scroll', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubGlobal('matchMedia', () => ({ matches: true }))
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    }
+  )
+  Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () => root.render(<ExercisesPage session={{} as Session} />))
+    const shelf = host.querySelector<HTMLElement>('#exercise-filter-shelf')!
+    expect(shelf.dataset.mobileOpen).toBe('true')
+    const tag = [...shelf.querySelectorAll<HTMLButtonElement>('.body-part-filters button')].find(
+      (button) => button.textContent === '腿'
+    )!
+    await act(async () => tag.click())
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 120 })
+    await act(async () => window.dispatchEvent(new Event('scroll')))
+    expect(shelf.dataset.mobileOpen).toBe('true')
+    await act(async () => document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })))
+    expect(shelf.dataset.mobileOpen).toBe('false')
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 })
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.library-mobile-filter-toggle')!.click()
+    )
+    expect(shelf.dataset.mobileOpen).toBe('true')
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.library-mobile-filter-toggle')!.click()
+    )
+    expect(shelf.dataset.mobileOpen).toBe('false')
+  } finally {
+    await act(async () => root.unmount())
+  }
 })
 
 it('dismisses equipment choices on outside pointer action without opening them on focus', async () => {

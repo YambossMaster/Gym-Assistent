@@ -12,6 +12,11 @@ export interface WorkspaceSettings {
   updatedAt: string
 }
 
+export function defaultWorkspaceDisplayName(email?: string): string {
+  const accountName = email?.trim().split('@')[0]?.trim()
+  return accountName ? Array.from(accountName).slice(0, 120).join('') : '訪客'
+}
+
 export const updateWorkspaceSettingsSchema = z
   .object({
     displayName: z.string().trim().min(1).max(120),

@@ -17,9 +17,15 @@ describe('resolveCoachIdentity', () => {
       name: 'form.coach',
       initials: 'FO'
     })
+    expect(
+      resolveCoachIdentity({ displayName: '我的工作台', email: 'alpha.coach@example.com' })
+    ).toMatchObject({
+      name: 'alpha.coach',
+      initials: 'AL'
+    })
     expect(resolveCoachIdentity({ displayName: null, email: null })).toMatchObject({
-      name: '教練',
-      initials: '教練'
+      name: '訪客',
+      initials: '訪客'
     })
   })
 })

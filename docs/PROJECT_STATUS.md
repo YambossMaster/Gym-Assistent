@@ -9,12 +9,12 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C Alpha CI/CD automation delivered; exact-SHA deployment is healthy**         |
+| Package state      | **M8-C physical-PWA correction authorized; Main delivery in progress**             |
 | Approved next      | **Use automatic deploys for Alpha; hold migration changes for explicit release**   |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
 | Branch baseline    | Production deploy `28cc472`; GitHub Actions run `37605703495` is green             |
-| Worktree           | Existing `D:` `main`; deployment delivered and status evidence being recorded      |
-| Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
+| Worktree           | Existing `D:` `main`; physical-PWA correction ready for authorized delivery        |
+| Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned       |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
 
@@ -34,6 +34,60 @@ only the settings/API-key reads required by the CLI. Both were issued with 90-da
 be rotated before 2027-01-05; 90 days is a chosen safety window, not a Supabase maximum. Delivery
 SHA `28cc472415b50f1dd385b138acd3d2beac98738f` completed GitHub Actions run `37605703495` and
 created healthy Fly release v5 without applying a Production migration.
+
+**2026-10-07 Alpha physical-PWA delivery gate (authorized):** The Product Owner explicitly
+authorized pushing the current local corrections to `main`, running exact-SHA CI and deploying so
+they can recheck the installed phone. The reliable local root check passed API 38 files / 179 tests
+and Web 66 files / 285 tests after the established Windows sandbox `spawn EPERM` required the
+approved non-sandbox rerun. Root production build passed with only the existing over-500-kB chunk
+advisory, and `git diff --check` passed. The linked development migration dry-run completed without
+applying changes but reported the existing `20261006145359_m8_legal_acceptance.sql` as pending; this
+release has no migration change and does not authorize applying that development migration. Commit,
+push, remote CI, automatic Fly deployment and the installed-phone recheck remain pending.
+
+**2026-10-07 Alpha physical-PWA correction (local review version):** The Product Owner's first
+installed-phone pass found four native-app experience gaps. A Venue list with no records now shows
+an actionable first-Venue state whose button opens the existing create interface. New Workspaces
+derive their display name from the authenticated Email account name, or use `訪客` when Email is
+unavailable; the Web also treats the legacy `我的工作台` value as a placeholder so existing Alpha
+accounts no longer render it as a Coach name. At mobile width the authenticated shell disables
+static text selection while retaining editable-field selection, uses `touch-action: manipulation`,
+and the viewport prevents page scaling. The Today route alone hides its document scrollbar while
+preserving scrolling; Exercise Library and other routes retain their existing scrollbars. Focused
+Web regressions passed 3 files/22 tests, the Workspace regression passed 1 file/5 tests, and both
+Web and API typechecks passed. A reusable authenticated Chrome tab at exact 390x844 measured
+`user-select: none`, `touch-action: manipulation`, and `scrollbar-width: none` on Today; Exercise
+Library retained `scrollbar-width: auto` with a document range of 17,488px. The development account
+has five Venues, so the no-Venue presentation is covered by its focused component test rather than
+a live empty-data screenshot. Full CI/build, installed-PWA re-acceptance, commit, push and remote CI
+remain unverified pending Product Owner review.
+
+**2026-10-07 Alpha physical-PWA follow-up (local review version):** A second phone pass identified
+an intermittent blue line at page-content boundaries, an Exercise Library filter shelf that closed
+after result-count changes, and extra document scrolling on the installed-PWA Calendar. The focused
+filter regression reproduced the closure: a post-filter document `scroll` event was interpreted as
+an explicit close gesture. The shelf now stays open through result/layout changes and closes only
+from its toggle, an upward touch gesture on the shelf, or an outside pointer action. The screenshots
+align with the focused `<main>` box's lower edge, making its native iOS focus outline the likely
+blue line. The first candidate hid that outline but left the focus trigger; after Product Owner
+feedback, mobile route changes no longer focus `<main>` and mobile `<main>` has no `tabindex`.
+Desktop route focus remains. Mobile Calendar no
+longer subtracts guessed header pixels: the main column takes the dynamic viewport minus the safe-
+area-aware bottom navigation, and its actual header and flexible planner divide that space. Focused
+Web regressions passed 2 files/10 tests and Web typecheck passed. In authenticated Chrome 390x844,
+Calendar week view had zero document/main scroll range and its planner bottom met the nav top;
+Exercise Library stayed expanded when filtering 109 → 26 → 2 items and closed on an outside tap.
+This does not establish installed-iOS PWA acceptance or a remote delivery.
+
+**2026-10-07 Alpha route-focus correction (local review version):** The Product Owner rejected
+the initial outline-only blue-line fix because mobile route focus could still create browser-native
+selection/focus artifacts. The shared mobile shell now only resets scroll on route changes; it
+neither programmatically focuses `<main>` nor makes it focusable. The masking CSS was removed.
+Input and dialog focus needed for interaction remains untouched; desktop route focus remains.
+The mobile-focus regression first failed on the old behavior, then passed 1 file/5 tests. Exact
+390x844 authenticated Chrome inspection after navigating to Calendar found `activeElement=BODY`,
+`<main>` without `tabindex`, and no main focus; desktop 1440px still showed focused `<main>` with
+`tabindex=-1`. Installed-iOS PWA recheck, full CI/build, commit, push and remote CI remain open.
 
 **2026-10-06 verification workflow correction (local, not delivered):** The Product Owner rejected
 the 39-minute Plan Choice verification path as inefficient. Local preflight now has an affected-test
@@ -344,8 +398,11 @@ allowlist; mandatory first-use legal acceptance and tenant isolation remain. Pro
 Google provider are enabled; OTP is six digits and minimum password length is 12. Live entry checks
 passed; the Product Owner can now register their own account and confirm mail receipt
 and OAuth return. They report deployment/PWA looks good; the full physical touch/keyboard/safe-area
-path remains unconfirmed. Prior core Alpha evidence remains valid for unchanged workflows.
-Do not reset Production now that self-registration is enabled. Do not push Git; remote CI is open.
+path has the first reported corrections locally verified. The Product Owner authorized this exact
+version for `main`, exact-SHA CI and automatic deployment. After the deploy becomes healthy, recheck
+the no-Venue action, default Coach name, text-selection/zoom behavior, Today-only hidden scrollbar,
+blue line, Exercise filter and Calendar viewport on the installed phone. Prior core Alpha evidence
+remains valid for unchanged workflows. Do not reset Production now that self-registration is enabled.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -961,6 +1018,81 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-442 — Authorize physical-PWA correction delivery
+
+- **Scope:** Run the local release gate for LOG-439–441 after the Product Owner explicitly
+  authorized a `main` push, exact-SHA CI and deployment for installed-phone review.
+- **Outcome:** The reviewed no-Venue, Coach-name, mobile selection/zoom, Today scrollbar, Exercise
+  filter, route-focus and Calendar viewport corrections form one migration-free release candidate.
+- **Verification:** Root check passed API 38 files/179 tests and Web 66 files/285 tests after the
+  established sandbox `spawn EPERM` required an approved non-sandbox rerun. Root production build
+  passed with only the existing chunk-size advisory; `git diff --check` passed. The linked
+  development migration dry-run made no change and reported the existing legal-acceptance migration
+  as pending.
+- **Known gap:** The pending development migration is not part of this release and was not applied.
+  Remote CI, automatic Fly deployment and installed-iOS PWA re-acceptance remain open.
+- **Next:** Commit and push this exact candidate to `main`; confirm verify, browser,
+  development-dry-run and deploy jobs for the same SHA, then hand the deployed version back for
+  installed-phone review.
+
+### 2026-10-07 — LOG-441 — Remove mobile route-wide focus trigger
+
+- **Scope:** Correct the Product Owner-identified flaw in LOG-440's outline-only blue-line fix,
+  without changing input/dialog focus or desktop route navigation.
+- **Outcome:** Mobile route changes still reset document scroll but do not focus the whole main
+  landmark; mobile main omits `tabindex`. Removed the broad focus-outline masking rule. Desktop
+  route focus remains enabled for keyboard and assistive navigation.
+- **Verification:** A focused mobile-route test failed before the change and passed afterward
+  (1 file/5 tests). Authenticated Chrome at 390x844 confirmed Calendar route main was not focused
+  and lacked `tabindex`; 1440px desktop main remained focused with `tabindex=-1`.
+- **Known gap:** Browser preview does not prove the original blue line is gone in installed iOS.
+  Full CI/build, commit, push and exact-SHA remote CI remain unrun.
+- **Next:** Product Owner reviews this revised local Alpha candidate; recheck the installed phone
+  after authorized delivery before closing the physical-PWA defect.
+
+### 2026-10-07 — LOG-440 — Correct follow-up installed-PWA interaction defects
+
+- **Scope:** Resolve the Product Owner's reported blue line, Exercise Library filter auto-close,
+  and installed-PWA Calendar page scroll within the existing Alpha local review package.
+- **Outcome:** Removed the document-scroll heuristic that mistook filter-result reflow for an
+  intentional shelf dismissal; kept toggle, upward shelf swipe, and outside-tap close paths. Removed
+  the native focus outline from the programmatically focused, non-interactive main landmark while
+  preserving focus transfer. Replaced Calendar's fixed header-height subtraction with a flex
+  layout based on dynamic viewport height, safe-area-aware bottom nav and actual header height.
+- **Verification:** Red-capable Exercise Library test first reproduced the false close, then the
+  focused Web tests passed 2 files/10 tests; Web typecheck passed. Authenticated 390x844 Chrome
+  preview measured Calendar week document and main scroll ranges of zero, with planner bottom at
+  the bottom-nav top. Exercise Library remained expanded as filtering reduced 109 items to 26 and
+  then 2, and an outside pointer action closed it. Source-format check and diff check passed.
+- **Known gap:** The blue-line attribution is supported by screenshot/content-boundary alignment
+  and the route-focus mechanism, but its disappearance and viewport behavior require an updated
+  installed-iOS PWA check. Full CI/build, commit, push and exact-SHA remote CI have not run.
+- **Next:** Product Owner rechecks the three interactions on the installed phone alongside LOG-439's
+  corrections; apply any feedback locally before requesting broader verification or remote action.
+
+### 2026-10-07 — LOG-439 — Correct first installed-PWA Alpha findings
+
+- **Scope:** Apply the Product Owner's first physical-phone Alpha feedback without changing
+  Exercise Library scroll affordances, official Venue rules, Production data or deployment state.
+- **Outcome:** Added a first-Venue empty state with a direct create action. Replaced the new
+  Workspace placeholder with Email account name or `訪客`, while mapping the legacy
+  `我的工作台` value to the same UI fallback for existing accounts. Added mobile static-text
+  selection suppression with editable-control exceptions, double-tap/page-scale prevention, and a
+  route marker that hides only the Today document scrollbar.
+- **Verification:** The red-capable focused checks first failed on all reported seams, then passed:
+  Web 3 files/22 tests and API 1 file/5 tests. Web and API typechecks passed. Exact 390x844
+  authenticated Chrome inspection measured Today `user-select: none`, root
+  `touch-action: manipulation`, and HTML/body `scrollbar-width: none`; Exercise Library retained
+  `scrollbar-width: auto` and a document scroll range. Changed-source formatting and
+  `git diff --check` passed. The no-Venue UI is covered by the component regression because the
+  available development account has five active Venues.
+- **Known gap:** Desktop Chrome responsive mode cannot prove iOS installed-PWA long-press,
+  double-tap or browser-chrome behavior. Full CI/build, physical-phone re-acceptance, commit, push
+  and exact-SHA remote CI have not run.
+- **Next:** Product Owner reviews this local version on the installed phone. Apply feedback with
+  focused checks; run the broader gate and propose the exact remote action only after explicit
+  readiness.
 
 ### 2026-10-07 — LOG-438 — Implement Alpha automatic deployment with a migration hold
 

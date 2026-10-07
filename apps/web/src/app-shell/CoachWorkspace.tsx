@@ -71,7 +71,8 @@ export function CoachWorkspace({ session }: { session: Session }) {
   const [mobileChromeHidden, setMobileChromeHidden] = useState(false)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
-    mainRef.current?.focus({ preventScroll: true })
+    if (!window.matchMedia('(max-width: 720px)').matches)
+      mainRef.current?.focus({ preventScroll: true })
   }, [location.pathname])
   useEffect(() => {
     setMobileChromeHidden(false)
@@ -117,6 +118,7 @@ export function CoachWorkspace({ session }: { session: Session }) {
   return (
     <div
       className={`app-shell${isPlansPage ? ' plans-shell' : ''}`}
+      data-route={location.pathname}
       data-mobile-chrome={
         mobileChromeEnabled ? (mobileChromeHidden ? 'hidden' : 'visible') : 'pinned'
       }
@@ -147,7 +149,11 @@ export function CoachWorkspace({ session }: { session: Session }) {
           </div>
         </aside>
       )}
-      <main className="main-content" ref={mainRef} tabIndex={-1}>
+      <main
+        className="main-content"
+        ref={mainRef}
+        tabIndex={window.matchMedia('(max-width: 720px)').matches ? undefined : -1}
+      >
         <header className="mobile-header">
           {isMobileSubpage ? (
             <div className="mobile-subpage-header">

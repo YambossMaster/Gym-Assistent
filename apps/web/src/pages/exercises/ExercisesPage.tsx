@@ -39,27 +39,21 @@ export function ExercisesPage({ session }: { session: Session }) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(true)
   const [filterShelfHeight, setFilterShelfHeight] = useState(0)
   const filterShelfRef = useRef<HTMLElement>(null)
-  const lastScrollY = useRef(0)
-  const filterOpenedAt = useRef(0)
+  const libraryControlsRef = useRef<HTMLDivElement>(null)
   const filterTouchStartY = useRef<number | null>(null)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
-    const onScroll = () => {
-      const scrollY = window.scrollY
-      if (
-        window.matchMedia('(max-width: 720px)').matches &&
-        scrollY > 80 &&
-        scrollY - lastScrollY.current > 8 &&
-        Date.now() - filterOpenedAt.current > 500
-      ) {
+    if (!mobileFiltersOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!window.matchMedia('(max-width: 720px)').matches) return
+      if (!libraryControlsRef.current?.contains(event.target as Node)) {
         setMobileFiltersOpen(false)
       }
-      lastScrollY.current = scrollY
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [mobileFiltersOpen])
   const [q, setQ] = useState(''),
     [view, setView] = useState<'all' | 'favorite' | 'custom'>('all'),
     [equipment, setEquipment] = useState(''),
@@ -125,7 +119,7 @@ export function ExercisesPage({ session }: { session: Session }) {
         </button>
       }
     >
-      <div className="library-controls">
+      <div className="library-controls" ref={libraryControlsRef}>
         <section className="library-toolbar" data-search-open={mobileSearchOpen}>
           <label className="library-search">
             <Search aria-hidden="true" />
@@ -190,7 +184,6 @@ export function ExercisesPage({ session }: { session: Session }) {
             data-active={Boolean(equipment || movementType || bodyParts.length)}
             onClick={() => {
               if (!mobileFiltersOpen) {
-                filterOpenedAt.current = Date.now()
                 if (window.scrollY > 80)
                   window.scrollBy({ top: -filterShelfHeight, behavior: 'instant' })
               }
@@ -214,9 +207,6 @@ export function ExercisesPage({ session }: { session: Session }) {
               className="filter-shelf"
               data-mobile-open={mobileFiltersOpen}
               aria-label="篩選動作"
-              onWheel={(event) => {
-                if (mobileFiltersOpen && event.deltaY > 0) setMobileFiltersOpen(false)
-              }}
               onTouchStart={(event) => {
                 filterTouchStartY.current = event.touches[0]?.clientY ?? null
               }}

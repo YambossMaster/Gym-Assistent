@@ -7,6 +7,20 @@ import { WorkspaceModule } from './workspace-module.js'
 const coach: AuthenticatedIdentity = { userId: '00000000-0000-4000-8000-000000000001' }
 
 describe('WorkspaceModule', () => {
+  it('uses the authenticated email account name for a new Workspace display name', async () => {
+    const workspace = new WorkspaceModule({ repository: new MemoryStudentRepository() })
+
+    await expect(
+      workspace.getSettings({ ...coach, email: 'alpha.coach@example.com' }),
+    ).resolves.toMatchObject({ displayName: 'alpha.coach' })
+  })
+
+  it('uses a neutral guest name when a new identity has no email', async () => {
+    const workspace = new WorkspaceModule({ repository: new MemoryStudentRepository() })
+
+    await expect(workspace.getSettings(coach)).resolves.toMatchObject({ displayName: '訪客' })
+  })
+
   it('updates only the authenticated coach workspace and rejects stale writes', async () => {
     const workspace = new WorkspaceModule({
       repository: new MemoryStudentRepository(),

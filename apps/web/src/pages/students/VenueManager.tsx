@@ -304,15 +304,25 @@ export function VenueManager({ session }: { session: Session }) {
               </article>
             ))}
           </div>
-          {visibleVenues.length === 0 && (
-            <p className="finance-context">
-              {venues.length === 0
-                ? '新增常用場地，也可以先只記錄名稱。'
-                : search.trim()
-                  ? '找不到符合搜尋的場地。'
-                  : '這個分類尚無場地。'}
-            </p>
-          )}
+          {visibleVenues.length === 0 &&
+            (venues.length === 0 ? (
+              <div className="venue-empty-state">
+                <MapPin aria-hidden="true" />
+                <h3>建立第一個場地</h3>
+                <p>先留下常用場地名稱，支出方式可以之後再設定。</p>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => setEditor({ kind: 'create' })}
+                >
+                  新增場地 <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <p className="finance-context">
+                {search.trim() ? '找不到符合搜尋的場地。' : '這個分類尚無場地。'}
+              </p>
+            ))}
         </>
       )}
       {editor && (
