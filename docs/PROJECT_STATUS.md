@@ -9,11 +9,11 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **Public Auth entry amendment implemented; deployment verification in progress**   |
-| Approved next      | **Deploy open entry, then confirm real signup/mail/Google and device acceptance**  |
+| Package state      | **Public Auth entry live; recipient mail/OAuth completion and remote CI open**     |
+| Approved next      | **Product Owner registers/signs in and confirms mail plus device acceptance**      |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `ad41c81`; remote `main` remains at Plan Choice `40b303e`        |
-| Worktree           | Existing `D:` `main`, tracked-clean and five local commits ahead; no Git push      |
+| Branch baseline    | Production deploy `e7131ff`; remote `main` remains at Plan Choice `40b303e`        |
+| Worktree           | Existing `D:` `main`; local entry/evidence commits only; no Git push               |
 | Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
@@ -322,10 +322,10 @@ rights/support contact remain Beta entry conditions.
 
 **Current executable handoff (2026-10-07):** The Product Owner approved using the final public Auth
 entry during Alpha, including Email signup/OTP/recovery and Google login, and approved extending
-the existing OAuth client to Production. Deploy the amended entry without a synthetic-account
-allowlist; retain mandatory first-use legal acceptance and tenant isolation. Production signup and
-Google provider are enabled; OTP is six digits and minimum password length is 12. Complete live
-entry verification, then let the Product Owner register their own account and confirm mail receipt
+the existing OAuth client to Production. Commit `e7131ff` is deployed without a synthetic-account
+allowlist; mandatory first-use legal acceptance and tenant isolation remain. Production signup and
+Google provider are enabled; OTP is six digits and minimum password length is 12. Live entry checks
+passed; the Product Owner can now register their own account and confirm mail receipt
 and OAuth return. They report deployment/PWA looks good; the full physical touch/keyboard/safe-area
 path remains unconfirmed. Prior core Alpha evidence remains valid for unchanged workflows.
 Do not reset Production now that self-registration is enabled. Do not push Git; remote CI is open.
@@ -957,12 +957,20 @@ local pass or successful push is not a remote CI completion claim.
 - **Verification:** Typecheck passed; deployment boundary/HTTP tests 22 passed; public entry/legal
   tests 6 passed; unchanged recovery/Auth helper tests passed in the first focused run. Production
   Email signup and Google provider are enabled; Google callback read back after save, OTP length
-  six read back. Signup email switched from link to OTP. Build/deployment/live entry checks ongoing.
+  six read back. Signup email switched from link to OTP and read back after reload. Root build and
+  Fly remote image build passed (existing large-chunk advisory only); deploy `e7131ff` is healthy on
+  the same Machine `874ddec06064d8`, image `deployment-01M4A3H6FPDADQXQE414ZVQR1J`, digest
+  `sha256:2a627b3f0b581d678099c56602e17719abf73c3e80b7ca4ba8ae75985fb73619`.
+  Live readiness and anonymous registration check return 200. Public Auth settings report signup
+  and Google enabled, confirmation required. Google authorize redirects 302 to accounts.google.com,
+  with only email/profile scopes and the Production callback; actual browser reaches account
+  selection. Desktop entry and 390×844 signup form passed, with no horizontal overflow. Screenshots
+  remain in ignored `test-results/m8c-public-auth*.jpg`. No new account or email was created by these checks.
 - **Known issue:** Actual recipient OTP/recovery receipt and completed Google login need the
   Product Owner's own account interaction. Google branding remains unverified; the current basic
   identity scopes qualify for Google's testing-audience exception. M8-D recruitment is separate.
-- **Next:** deploy this correction and verify the public entry; then confirm account/mail/device
-  acceptance. Keep Git local pending separate push authorization.
+- **Next:** Product Owner completes their account/mail/device acceptance. Keep Git local pending
+  separate push authorization; remote CI remains unverified.
 
 ### 2026-10-07 — LOG-433 — Deploy M8-C and pass automated Production Alpha acceptance
 

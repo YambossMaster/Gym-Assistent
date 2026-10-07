@@ -48,6 +48,5 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    or migration fails, stop new admissions and fix the cause before continuing; do not claim that
    redeploying an app restores lost database rows.
 
-Docker and Fly CLI were unavailable on the M8-A development host, so the image/config has not
-been built or deployed. The local production-mode server and focused route tests are the current
-evidence.
+M8-C deployed the image through the Fly remote builder. Production now uses public Auth entry;
+see `docs/PROJECT_STATUS.md` for the exact deployed commit, image, checks and remaining acceptance.

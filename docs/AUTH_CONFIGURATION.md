@@ -5,6 +5,19 @@ Supabase secret key、Google client secret 或任何可登入的帳號資料；�
 
 ## Scope and invariants
 
+### Production entry update — 2026-10-07
+
+Production project `febunjhpruqlywjfvuaq` uses `https://formcoachdesk.com` as Site URL and allowed
+return origin, plus `/account/recover`. Email signup and confirmation are enabled; OTP length is
+six and minimum password length is 12. The signup template contains `{{ .Token }}` and no
+confirmation link. Brevo custom SMTP uses the existing verified sender. Google provider uses the
+existing OAuth client with the production Supabase callback added, while preserving development.
+Live settings and the Google account-selection redirect were verified. Actual recipient OTP and
+recovery receipt, Google completion and same-email linking in Production remain user acceptance.
+Google's audience is still Testing with unverified branding; only basic identity scopes are used,
+which [Google exempts from test-user allowlisting](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview).
+No OAuth secrets are stored in this document or Git.
+
 - Coach 可公開以 Email 與至少 12 字元的自訂密碼建立帳號。
 - Email 必須以六位 OTP 驗證後才能使用。
 - Google OAuth 是同等登入方式；同一個已驗證 Email 的 identity 必須連結到同一個 `auth.users` subject。
