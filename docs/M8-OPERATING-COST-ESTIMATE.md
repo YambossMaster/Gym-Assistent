@@ -1,12 +1,13 @@
 # 上線後營運成本估算備忘
 
 > 2026-10-01 由 Product Owner 提供，供日後預算規劃參考。Product Owner 於 2026-10-06
-> 確認已租用 `formcoachdesk.com`；下列其他價格與額度尚未逐項向供應商重新查核，也不代表
-> 正式環境已採購、部署或核准。其他服務實際採購前須重新確認價格、稅費、匯率、使用量及服務條款。
+> 確認已租用 `formcoachdesk.com`。2026-10-07 已重新查核 Supabase Pro 的資料庫磁碟與備份
+> 額度；其他服務實際採購前仍須重新確認價格、稅費、匯率、使用量及服務條款。
 
 目前 M8 MVP 已選擇 **Local + Production、Supabase Free + Fly.io**，以約 USD 30／月為
 規劃目標，採平台提供的用量／帳單提醒與每月人工檢查。下表的 Cloudflare Pages、
-Supabase Pro、Render／Railway 組合是**日後比較情境**，不是這次 Beta 的部署清單，
+Supabase Pro、Render／Railway 組合原為**日後比較情境**。正式 Alpha 目前仍使用 Supabase
+Free；M8-D 的 Beta 備份需求把 Supabase Pro 列為首選升級路徑，但尚未授權採購，
 也不表示任何平台已設定硬性刷卡上限。
 
 ## 已選 M8 Beta 部署組合（尚未採購或部署）
@@ -36,6 +37,15 @@ Fly 不需為本產品另購資料庫或固定 IPv4；其資料庫是 Supabase�
 
 產品負責人於 2026-10-06 確認已租用 Cloudflare 網域，先前所見價格為 **US$10.36／年**；尚未獨立核對實際帳單或續約價格。以先前報價估算，年費折算為 $10.36 ÷ 12 ≈ $0.86；每月基礎合計為 $0.86 + $25 + $10 = **約 $35.86**。這是規劃情境，不代表目前實際帳單；升級合計也只是原始粗估，採購前須按當時方案重新加總。
 
+Supabase Pro 目前每個專案包含 8 GB 資料庫磁碟及每日自動備份，日備份可取用 7 天。
+官方說明的備份儲存獨立於專案資源，因此內建備份不會把 8 GB 對半占成 4 GB；若另做
+邏輯匯出，才需另計外部儲存與保存份數。Beta 的營運門檻是最新可還原點不超過 48 小時，
+並在專案磁碟使用量達 70%（5.6 GB）、80%（6.4 GB）與 90%（7.2 GB）時分級檢視。
+90% 是 Supabase 文件所述的自動擴充觸發點，不能等同硬性費用上限。參考：
+[Supabase Pricing](https://supabase.com/pricing)、
+[Database Backups](https://supabase.com/docs/guides/platform/backups)、
+[Database Size](https://supabase.com/docs/guides/platform/database-size)。
+
 ## 如果日後決定上架原生 App
 
 | 平台                    | Product Owner 提供的費用 |         預算換算 |
@@ -47,7 +57,7 @@ Fly 不需為本產品另購資料庫或固定 IPv4；其資料庫是 Supabase�
 
 ## 與目前發布計畫的關係
 
-現行 [Roadmap](ROADMAP.md) 先推出台灣 Web/PWA；原生 App 與商店上架屬 M10 的另行決策。[M8-A Contract 草案](M8-A-CONTRACT.md)以 **約 $30／月作為 Beta 規劃目標，並非硬上限**；Beta 以 Supabase Free 為主。Product Owner 先前表示約 **$35.87／月** 的 Supabase Pro 情境可負擔；更新網域報價後，本表估算為約 **$35.86／月**，仍只作為日後升級評估。確認有實際使用需求後再考慮升級 Pro；若 Free 容量已接近影響現有寫入，須提前提出容量與成本決策，不自動升級。未來若使用者與負載顯著成長，可另行評估 AWS；目前沒有遷移承諾。如將來採用本情境或原生 App，須在相應 Contract 中重新核價、評估總成本，並取得所需的採購與發布決定。
+現行 [Roadmap](ROADMAP.md) 先推出台灣 Web/PWA；原生 App 與商店上架屬 M10 的另行決策。[M8-A Contract 草案](M8-A-CONTRACT.md)以 **約 $30／月作為 Beta 規劃目標，並非硬上限**；正式 Alpha 以 Supabase Free 為主。Product Owner 先前表示約 **$35.87／月** 的 Supabase Pro 情境可負擔；更新網域報價後，本表估算為約 **$35.86／月**。M8-D 在首位真實 Coach 加入前須取得採購授權並啟用能滿足 48 小時復原點的備份路徑；目前首選是 Pro 的每日內建備份。若 Free 容量已接近影響現有寫入，須提前提出容量與成本決策，不自動升級。未來若使用者與負載顯著成長，可另行評估 AWS；目前沒有遷移承諾。如將來採用本情境或原生 App，須在相應 Contract 中重新核價、評估總成本，並取得所需的採購與發布決定。
 
 Fly 官方目前採 Pay As You Go，無每月平台費；新帳戶沒有常設免費額度，試用結束後需要付款卡。
 Machine 依秒計費，官方所列最低價區域的 1GB shared Machine 為約 US$6.70／30 天，亞太區會依區域

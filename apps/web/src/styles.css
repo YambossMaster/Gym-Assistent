@@ -3776,6 +3776,23 @@ textarea:focus {
   color: #17231f;
 }
 
+.legal-acceptance-card > .primary-button {
+  position: relative;
+  justify-content: center;
+}
+
+.legal-acceptance-card > .primary-button svg {
+  position: absolute;
+  right: 1.25rem;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.legal-eyebrow {
+  color: #4b5f08;
+  font-weight: 700;
+}
+
 .legal-check {
   display: grid;
   grid-template-columns: 1.25rem 1fr;
@@ -3801,12 +3818,6 @@ textarea:focus {
   font-weight: 700;
 }
 
-.legal-risk-check {
-  padding: 0.9rem;
-  border-radius: 0.9rem;
-  background: var(--surface-muted, #f2f6f4);
-}
-
 .legal-support {
   text-align: center;
 }
@@ -3815,7 +3826,7 @@ textarea:focus {
   min-height: 100vh;
   background: #f6f8f7;
   color: #17231f;
-  padding: 2rem max(1.25rem, calc((100vw - 54rem) / 2));
+  padding: 0 0 2rem;
 }
 
 .legal-page-header {
@@ -3823,10 +3834,48 @@ textarea:focus {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  min-height: 7.5rem;
   margin-bottom: 2rem;
+  padding: 1.5rem max(1.25rem, calc((100vw - 54rem) / 2));
+  background: var(--ink);
+  box-shadow: 0 0.75rem 2rem rgb(21 53 44 / 12%);
+}
+
+.legal-brand-panel {
+  display: inline-flex;
+  align-items: center;
+}
+
+.legal-brand-panel .brand-logo {
+  width: clamp(9.5rem, 20vw, 11.5rem);
+}
+
+.legal-page .legal-back-link {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+  color: #f7f8f3;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.legal-page .legal-back-link:hover,
+.legal-page .legal-back-link:focus-visible {
+  color: var(--lime);
+}
+
+.legal-page .legal-back-link svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke-width: 2.4;
 }
 
 .legal-page article {
+  width: min(54rem, calc(100% - 2.5rem));
+  margin: 0 auto;
   padding: clamp(1.5rem, 4vw, 3.5rem);
   border: 1px solid #dce6e1;
   border-radius: 1.5rem;
@@ -3846,6 +3895,32 @@ textarea:focus {
 
 .legal-page p {
   line-height: 1.8;
+}
+
+@media (max-width: 480px) {
+  .legal-page {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .legal-page-header {
+    min-height: calc(5.75rem + env(safe-area-inset-top));
+    margin-bottom: 1rem;
+    padding-top: calc(1rem + env(safe-area-inset-top));
+    padding-bottom: 1rem;
+  }
+
+  .legal-brand-panel {
+    min-height: 3.25rem;
+  }
+
+  .legal-brand-panel .brand-logo {
+    width: 8.75rem;
+  }
+
+  .legal-page .legal-back-link {
+    min-height: 3.25rem;
+    padding-inline: 0.25rem;
+  }
 }
 
 .auth-alternative {

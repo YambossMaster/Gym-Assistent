@@ -1,9 +1,12 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { signOutCurrentDevice } from '../account-auth'
 import { acceptLegalTerms, readLegalAcceptance } from '../api'
 import { Brand } from '../shared/primitives'
+import { supabase } from '../supabase'
 
 export const legalAcceptanceKey = (coachId: string) =>
   ['coach', coachId, 'legal-acceptance'] as const
@@ -11,7 +14,7 @@ export const legalAcceptanceKey = (coachId: string) =>
 export function LegalGate({ session, children }: { session: Session; children: ReactNode }) {
   const client = useQueryClient()
   const [acceptedDocuments, setAcceptedDocuments] = useState(false)
-  const [acceptedRisk, setAcceptedRisk] = useState(false)
+  const [exitError, setExitError] = useState('')
   const query = useQuery({
     queryKey: legalAcceptanceKey(session.user.id),
     queryFn: () => readLegalAcceptance(session.access_token),
@@ -49,17 +52,26 @@ export function LegalGate({ session, children }: { session: Session; children: R
     <main className="auth-layout auth-entry-form">
       <section className="auth-story">
         <Brand />
+        <div className="auth-copy">
+          <span className="eyebrow">FORM COACH DESK</span>
+          <h1>
+            專業，
+            <br />
+            始於<span>有跡可循。</span>
+          </h1>
+          <p>告別凌亂的備忘錄。系統化保留學員的完整軌跡，讓每一堂課都無縫接軌。</p>
+        </div>
       </section>
       <section className="auth-panel">
         <form
           className="auth-card legal-acceptance-card"
           onSubmit={(event) => {
             event.preventDefault()
-            if (acceptedDocuments && acceptedRisk) mutation.mutate()
+            if (acceptedDocuments) mutation.mutate()
           }}
         >
           <div>
-            <span className="eyebrow">開始使用</span>
+            <span className="eyebrow legal-eyebrow">開始使用</span>
             <h2>請確認使用條款與隱私聲明</h2>
             <p>這個環境目前只使用合成測試資料。</p>
           </div>
@@ -74,26 +86,37 @@ export function LegalGate({ session, children }: { session: Session; children: R
               <Link to="/privacy">隱私聲明</Link>。
             </span>
           </label>
-          <label className="legal-check legal-risk-check">
-            <input
-              type="checkbox"
-              checked={acceptedRisk}
-              onChange={(event) => setAcceptedRisk(event.target.checked)}
-            />
-            <span>我知道目前沒有定期資料庫備份，測試資料損毀或遺失時可能無法還原。</span>
-          </label>
           {mutation.isError && (
             <p className="form-error" role="alert">
               接受狀態未儲存，請稍後再試。
             </p>
           )}
+          {exitError && (
+            <p className="form-error" role="alert">
+              {exitError}
+            </p>
+          )}
           <button
             type="submit"
             className="primary-button"
-            disabled={!acceptedDocuments || !acceptedRisk || mutation.isPending}
+            disabled={!acceptedDocuments || mutation.isPending}
           >
-            {mutation.isPending ? '儲存中…' : '同意並進入工作台'}
+            <span>{mutation.isPending ? '儲存中…' : '同意並進入工作台'}</span>
+            <ArrowRight aria-hidden="true" />
           </button>
+          <div className="auth-links legal-gate-return">
+            <button
+              type="button"
+              onClick={() => {
+                setExitError('')
+                void signOutCurrentDevice(supabase.auth).catch(() =>
+                  setExitError('返回登入未完成，請稍後再試。')
+                )
+              }}
+            >
+              返回登入
+            </button>
+          </div>
           <p className="legal-support">
             有疑問請聯絡 <a href="mailto:support@formcoachdesk.com">support@formcoachdesk.com</a>
           </p>

@@ -160,7 +160,6 @@ describe('legal acceptance HTTP boundary', () => {
         termsVersion: CURRENT_TERMS_VERSION,
         privacyVersion: CURRENT_PRIVACY_VERSION,
         accepted: true,
-        noBackupAcknowledged: true,
       },
     })
     expect(response.statusCode).toBe(200)

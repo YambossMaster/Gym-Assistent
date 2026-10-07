@@ -40,7 +40,7 @@ export async function acceptLegalTerms(
   const response = await request<{ legal: LegalAcceptanceStatus }>(
     '/api/v1/legal/accept',
     accessToken,
-    json('POST', { ...input, accepted: true, noBackupAcknowledged: true })
+    json('POST', { ...input, accepted: true })
   )
   return response.legal
 }

@@ -23,14 +23,13 @@ class MemoryLegalAcceptanceRepository implements LegalAcceptanceRepository {
 const identity = { userId: '00000000-0000-4000-8000-000000000001' }
 
 describe('legal acceptance', () => {
-  it('requires the current documents and an explicit no-backup acknowledgement', async () => {
+  it('requires explicit acceptance of the current documents', async () => {
     const module = new LegalAcceptanceModule(new MemoryLegalAcceptanceRepository())
     await expect(
       module.accept(identity, {
         termsVersion: CURRENT_TERMS_VERSION,
         privacyVersion: CURRENT_PRIVACY_VERSION,
-        accepted: true,
-        noBackupAcknowledged: false,
+        accepted: false,
       }),
     ).rejects.toEqual(new LegalAcceptanceError('explicit_acceptance_required'))
   })
@@ -42,7 +41,6 @@ describe('legal acceptance', () => {
       termsVersion: CURRENT_TERMS_VERSION,
       privacyVersion: CURRENT_PRIVACY_VERSION,
       accepted: true,
-      noBackupAcknowledged: true,
     }
     expect(await module.status(identity)).toMatchObject({ accepted: false, acceptedAt: null })
     expect(await module.accept(identity, input)).toMatchObject({

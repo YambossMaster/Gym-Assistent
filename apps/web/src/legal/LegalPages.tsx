@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Brand } from '../shared/primitives'
 
@@ -8,11 +9,16 @@ function LegalLayout({ title, children }: { title: string; children: ReactNode }
   return (
     <main className="legal-page">
       <header className="legal-page-header">
-        <Brand />
-        <Link to="/">返回登入</Link>
+        <div className="legal-brand-panel">
+          <Brand />
+        </div>
+        <Link className="legal-back-link" to="/">
+          <ArrowLeft aria-hidden="true" />
+          <span>返回</span>
+        </Link>
       </header>
       <article>
-        <span className="eyebrow">Alpha · 版本 {VERSION}</span>
+        <span className="eyebrow legal-eyebrow">Alpha · 版本 {VERSION}</span>
         <h1>{title}</h1>
         {children}
         <p>

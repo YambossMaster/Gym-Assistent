@@ -32,7 +32,6 @@ const acceptanceSchema = z.object({
   termsVersion: z.literal(CURRENT_TERMS_VERSION),
   privacyVersion: z.literal(CURRENT_PRIVACY_VERSION),
   accepted: z.literal(true),
-  noBackupAcknowledged: z.literal(true),
 })
 
 export class LegalAcceptanceModule {

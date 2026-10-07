@@ -598,12 +598,15 @@ usage alerts and any available caps before enabling billing. Do not claim a hard
 provider does not offer one.
 
 The earlier Product Owner acceptance of **no scheduled database backup** and possible permanent
-Coach/Student data loss applied to a free Beta. The Product Owner now requires a verifiable backup
-and restore process before charging real Coaches. The initial no-charge Beta must disclose its
-actual recovery limits. M8-E freezes and proves a concrete backup cadence, retention, secure
-storage and isolated restore path before checkout goes live. The published Terms must state the
-actual backup and restoration policy; Settings carries an accessible data notice during
-development. Terms and privacy text must identify the actual operator, contact,
+Coach/Student data loss now applies only to the synthetic-data Alpha. Before M8-D admits real
+Coaches, Production must have a verifiable backup and restore process whose latest recoverable point
+is never more than 48 hours old. Supabase Pro's managed daily backups are the preferred path and
+exceed that cadence, but the upgrade remains a separate M8-D purchase action. Managed backup storage
+is independent of the project's database disk; it does not turn the included 8 GB project disk into
+4 GB. Any separate logical exports use their own protected storage and retention budget. M8-D
+freezes retention, alerting and an isolated restore check; M8-E reconfirms them before checkout goes
+live. The published Terms must state the actual backup and restoration policy; Settings carries an
+accessible data notice during development. Terms and privacy text must identify the actual operator, contact,
 providers, data practices and a manual route for applicable rights requests before real Coaches
 join. A template may start the drafting; a paid lawyer review is not an M8 gate. Disclosure does
 not waive statutory rights or replace reasonable security measures. Supabase Free may pause for
@@ -614,8 +617,10 @@ if needed. No daily login/write bot is required.
 The Product Owner performs manual operational review in Fly.io and Supabase dashboards. There is
 no custom `/ops` page, `/api/v1/ops/summary`, telemetry warehouse or alert-acknowledgment SLA.
 Before Beta, verify billing/usage notifications, view the Supabase database size and Fly usage,
-and keep a simple monthly expense review. Free's 500 MB **database-size** read-only threshold is
-a reason to consider Pro before writes fail; no upgrade or purchase occurs automatically. Keep
+and keep a simple monthly expense review. For the 8 GB Pro disk, use internal review marks at 70%
+(5.6 GB), 80% (6.4 GB) and 90% (7.2 GB); the 90% mark precedes Supabase's documented automatic disk
+expansion trigger. Alert if the latest recoverable backup becomes older than 48 hours. No upgrade,
+disk expansion or purchase is treated as automatically authorized. Keep
 tenant isolation, secret separation, public-link allowlists and tested migrations as baseline
 engineering protections.
 
@@ -767,18 +772,22 @@ alerts, database-size view, and no known release-blocking defect.
 **Contract gate:** approve an open real-Coach Beta, optional code distribution, published
 terms/privacy, external feedback channel and criteria to pause new signups. State the 60-day
 Advanced offer, continuing Free limits, checkout launch timing and limited permanent Advanced
-grants clearly. Identify the earliest offer expiry and start M8-E checkout work at Beta launch.
+grants clearly. Freeze a backup retention period, a recoverable-point check no older than 48 hours,
+the 70%/80%/90% disk review marks and an isolated restore check. Identify the earliest offer expiry
+and start M8-E checkout work at Beta launch.
 
 **Sol gate:** admit verified Coaches with or without an offer code, keep existing Coach data behind verified identity,
 make expiry/grant state visible, and collect product feedback through the selected external channel.
-The Product Owner reviews Fly usage and Supabase size/billing notices manually at a practical
-cadence and adjusts admissions if service quality or capacity deteriorates. M8-E payment work
+Activate the authorized backup path before the first real Coach is admitted. The Product Owner
+reviews Fly usage, latest recoverable point and Supabase size/billing notices manually at a practical
+cadence and adjusts admissions if recovery, service quality or capacity deteriorates. M8-E payment work
 begins at Beta launch; no Coach is charged before its own release gate.
 
 **CI gate:** spot-check a real Coach's onboarding, Session and Training save, public-link scope,
 grant state, and support route without using real records as fixtures. Check the production health,
 cost and database-size dashboards and resolve release-blocking defects. A Beta invite is not M8
-completion by itself; the first offer expiry sets the M8-E deadline.
+completion by itself. Prove one isolated restore before admission and confirm the latest recoverable
+point is no older than 48 hours; the first offer expiry sets the M8-E deadline.
 
 #### M8-E — Paid checkout before first offer expiry
 

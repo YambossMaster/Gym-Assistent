@@ -9,11 +9,11 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **Public Auth entry live; recipient mail/OAuth completion and remote CI open**     |
-| Approved next      | **Product Owner registers/signs in and confirms mail plus device acceptance**      |
+| Package state      | **Legal-entry UI correction accepted; remote delivery and CI confirmation active** |
+| Approved next      | **Push the accepted local M8-C commits to `main` and confirm exact-SHA Actions**   |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
 | Branch baseline    | Production deploy `e7131ff`; remote `main` remains at Plan Choice `40b303e`        |
-| Worktree           | Existing `D:` `main`; local entry/evidence commits only; no Git push               |
+| Worktree           | Existing `D:` `main`; Product Owner authorized this local batch for `main`         |
 | Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
@@ -944,6 +944,58 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-436 — Legal-entry correction accepted for remote delivery
+
+- **Scope:** The Product Owner accepted the just-reviewed local correction and explicitly
+  authorized pushing the current local `main` batch to `origin/main` as quickly as possible.
+- **Verification:** Reused the still-applicable focused evidence from LOG-435 and reran
+  `git diff --check`, which passed. Per the approved affected-evidence workflow, the unchanged full
+  local check/build and browser paths were not repeated solely for this push.
+- **Next:** Commit the correction, push local `main`, and confirm the exact pushed commit's GitHub
+  Actions. Production redeployment remains a separate operation.
+
+### 2026-10-07 — LOG-435 — Correct legal-entry readability and freeze the Beta backup threshold
+
+- **Scope:** Address the Product Owner's LegalGate and Terms/Privacy screenshots without revising
+  the Alpha legal copy; record the new Beta requirement for a recoverable database point at least
+  every two days. No full CI, deployment or Git push was authorized by this correction.
+- **Outcome:** LegalGate now asks for one explicit Terms/Privacy acceptance and no longer renders or
+  submits the redundant separate no-backup acknowledgement. Its eyebrow uses a readable dark olive,
+  its primary action ends with the same right arrow as Auth, and its new `返回登入` action signs out
+  the current local session so the Coach can choose another Email or Google identity. Product Owner
+  review replaced the visually dominant return pill with the established understated, underlined
+  Auth return below the primary action. LegalGate's dark story panel now carries the same eyebrow,
+  `專業，始於有跡可循。` headline and supporting copy as the Auth flow. Terms/Privacy retain their
+  approved Alpha content while their entire header is now dark, the version eyebrow uses
+  the same readable color, and the final legal-page return is a transparent white `← 返回` control
+  with a 44px-plus target, matching the established mobile detail-header pattern without a pill,
+  border or shadow. The Roadmap now requires a recoverable
+  point no older than 48 hours before M8-D admits real Coaches. Supabase Pro daily managed backups
+  are the preferred path pending separate purchase authorization; managed backups do not consume
+  half of the included 8 GB project disk. Internal disk review marks are 70%/80%/90%, and an overdue
+  backup alert begins after 48 hours.
+- **Verification:** Web and API typechecks passed. Focused LegalGate test passed 1/1; focused legal
+  acceptance and HTTP tests passed 19/19 after the known Windows sandbox `spawn EPERM` required the
+  approved elevated path. Playwright inspected the live local Terms route at desktop and 390x844:
+  logo, version label and arrow return control were clear, horizontal overflow was zero, and the
+  browser reported zero warnings/errors. After the Product Owner follow-up, Web typecheck and the
+  focused LegalGate test passed again; the test covers the right icon and local-session sign-out.
+  Playwright rechecked the full-width dark header at desktop and 390x844 and measured zero horizontal
+  overflow. The final LegalGate layout was additionally inspected with equivalent component markup
+  against the live local stylesheet at desktop and 390x844; its restored story hierarchy, subdued
+  return and right-edge action icon were visible. The legal-page return was rechecked after its final
+  simplification at desktop and 390x844. Both flows had zero browser warnings/errors. `git diff --check`
+  passed. Official Supabase pricing, backup and database-size docs
+  support 8 GB Pro disk, daily backups retained seven days, independent managed backup storage and
+  the documented 90% disk expansion trigger.
+- **Known issue:** Production still shows the earlier UI until this reviewed correction is deployed.
+  The formal Alpha Terms/Privacy continue to state the current Free-project no-backup fact; they must
+  be updated to the activated backup policy at M8-D. Full CI, authenticated browser acceptance,
+  production deploy, commit, Git push and remote CI are unverified.
+- **Next:** Product Owner reviews the corrected screenshots/behavior. After explicit readiness for
+  the verification gate, run the affected deployment checks, deploy the correction without pushing
+  unless separately authorized, and resume remaining M8-C mail/device evidence.
 
 ### 2026-10-07 — LOG-434 — Open the final Auth entry during Alpha
 
