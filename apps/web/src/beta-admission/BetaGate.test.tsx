@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../api', () => ({ getToday: mocks.getToday, readBetaGrant: mocks.readBetaGrant }))
+vi.mock('../supabase', () => ({ supabase: { auth: {} } }))
 vi.mock('./usePlanAccess', () => ({
   planAccessKey: (coachId: string) => ['coach', coachId, 'plan-access'],
   usePlanAccess: () => ({ data: { tier: 'free', overCapacity: false } })

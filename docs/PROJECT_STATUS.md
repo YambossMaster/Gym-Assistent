@@ -9,11 +9,11 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **Legal-entry UI correction accepted; remote delivery and CI confirmation active** |
-| Approved next      | **Push the accepted local M8-C commits to `main` and confirm exact-SHA Actions**   |
+| Package state      | **M8-C batch is on `main`; CI-only Web test isolation fix locally verified**       |
+| Approved next      | **Push the focused CI correction and confirm the new exact-SHA Actions**           |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
 | Branch baseline    | Production deploy `e7131ff`; remote `main` remains at Plan Choice `40b303e`        |
-| Worktree           | Existing `D:` `main`; Product Owner authorized this local batch for `main`         |
+| Worktree           | Existing `D:` `main`; remote `88675d5`; CI-only follow-up correction in progress   |
 | Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
@@ -944,6 +944,24 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-437 — Deliver M8-C batch and isolate BetaGate's unit test from live config
+
+- **Scope:** The Product Owner explicitly authorized all nine accumulated local commits for
+  `origin/main`. The push advanced remote `main` from `40b303e` to `88675d5`. No production deploy
+  operation was performed.
+- **Remote evidence:** GitHub Actions CI #98 / run `37593520563` targeted exact commit `88675d5`.
+  `browser-ui` passed 2/2 in 52 seconds, `migration-dry-run` passed in 33 seconds, and API passed 38
+  files / 177 tests. The `verify` job failed after 2 minutes 11 seconds because
+  `BetaGate.test.tsx` imported the production Supabase client without a test double; CI correctly
+  had no `VITE_SUPABASE_URL` or publishable key. Web still reported 276 passing assertions across
+  64 passing files, with this one file failing during module setup rather than a product assertion.
+- **Correction:** The focused BetaGate unit test now supplies an inert Supabase module test double.
+  This keeps the test independent from developer `.env` files and CI secrets without changing
+  runtime Auth behavior. The focused file passed 1 file / 2 tests in 4.46 seconds after the known
+  Windows sandbox `spawn EPERM` required the approved elevated path. Web typecheck and
+  `git diff --check` passed.
+- **Next:** Push the CI-only correction and confirm its exact-SHA Actions result.
 
 ### 2026-10-07 — LOG-436 — Legal-entry correction accepted for remote delivery
 
