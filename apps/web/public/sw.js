@@ -1,5 +1,5 @@
-const CACHE_NAME = 'form-coach-shell-v1'
-const SHELL = ['/', '/manifest.webmanifest', '/icon.svg']
+const CACHE_NAME = 'form-coach-shell-v2'
+const SHELL = ['/', '/today', '/manifest.webmanifest', '/brand/form-icon.png?v=20260922']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)))

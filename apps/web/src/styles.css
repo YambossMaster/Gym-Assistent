@@ -3884,17 +3884,73 @@ textarea:focus {
 }
 
 .legal-page h1 {
-  margin: 0.5rem 0 2rem;
+  margin: 0.5rem 0 0.25rem;
   font-size: clamp(2rem, 5vw, 3rem);
 }
 
 .legal-page h2 {
-  margin: 2rem 0 0.55rem;
-  font-size: 1.15rem;
+  margin: 2.4rem 0 1.25rem;
+  color: #52625d;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legal-page h3 {
+  margin: 1.8rem 0 0.5rem;
+  font-size: 1.08rem;
 }
 
 .legal-page p {
+  margin: 0.5rem 0;
   line-height: 1.8;
+}
+
+.legal-page ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  line-height: 1.7;
+}
+
+.legal-english-title {
+  margin: 0;
+  color: #63736e;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+.legal-language-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 3.5rem 0 0;
+  color: #6d7d77;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.legal-language-divider::before,
+.legal-language-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: #dce6e1;
+}
+
+.legal-contact {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #dce6e1;
+  color: #52625d;
+  font-size: 0.9rem;
+}
+
+.legal-contact a {
+  margin-left: 0.35rem;
 }
 
 @media (max-width: 480px) {

@@ -26,12 +26,21 @@ vi.mock('./legal/LegalGate', () => ({
 
 import { App } from './App'
 
+async function renderApp() {
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  await act(async () => root.render(<App />))
+  return { host, root }
+}
+
 afterEach(() => {
   entry.alpha = true
   vi.unstubAllEnvs()
   auth.getSession.mockReset()
   auth.onAuthStateChange.mockReset()
   document.body.innerHTML = ''
+  window.history.replaceState(null, '', '/')
 })
 
 it('exposes registration, Google and recovery in the public production entry', async () => {
@@ -42,6 +51,7 @@ it('exposes registration, Google and recovery in the public production entry', a
   auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } }
   })
+  window.history.replaceState(null, '', '/login')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -56,12 +66,46 @@ it('exposes registration, Google and recovery in the public production entry', a
   }
 })
 
+it('renders the public landing page at the root for a signed-out visitor', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubEnv('PROD', true)
+  entry.alpha = false
+  auth.getSession.mockResolvedValue({ data: { session: null } })
+  const { host, root } = await renderApp()
+  try {
+    expect(host.textContent).toContain('給私人教練的日常工作台')
+    expect(host.querySelector('a[href="/login"]')).not.toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
+it('redirects a signed-out protected route to login and preserves its return path', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubEnv('PROD', true)
+  entry.alpha = false
+  window.history.replaceState(null, '', '/today')
+  auth.getSession.mockResolvedValue({ data: { session: null } })
+  auth.onAuthStateChange.mockReturnValue({
+    data: { subscription: { unsubscribe: vi.fn() } }
+  })
+  const { host, root } = await renderApp()
+  try {
+    expect(window.location.pathname).toBe('/login')
+    expect(new URLSearchParams(window.location.search).get('returnTo')).toBe('/today')
+    expect(host.textContent).toContain('回到工作台')
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
+
 it('presents sign-in only while the production build is in internal Alpha', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   auth.getSession.mockResolvedValue({ data: { session: null } })
   auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } }
   })
+  window.history.replaceState(null, '', '/login')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
@@ -90,6 +134,7 @@ it('keeps legal confirmation in the public production entry after sign-in', asyn
   auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } }
   })
+  window.history.replaceState(null, '', '/today')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)

@@ -34,6 +34,7 @@ afterEach(() => {
 
 it('opens the selected mobile entry form and returns to the welcome view', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  window.history.replaceState(null, '', '/login')
   auth.getSession.mockResolvedValue({ data: { session: null } })
   auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } }

@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 
-export const CURRENT_TERMS_VERSION = '2026-10-07-alpha'
-export const CURRENT_PRIVACY_VERSION = '2026-10-07-alpha'
+export const CURRENT_TERMS_VERSION = '2026-10-08'
+export const CURRENT_PRIVACY_VERSION = '2026-10-08'
 
 export interface LegalAcceptanceStatus {
   accepted: boolean

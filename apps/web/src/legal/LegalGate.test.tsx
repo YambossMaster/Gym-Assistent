@@ -25,8 +25,8 @@ import { LegalGate } from './LegalGate'
 const session = { user: { id: 'alpha-coach' }, access_token: 'test-token' } as Session
 const pending = {
   accepted: false,
-  termsVersion: '2026-10-07-alpha',
-  privacyVersion: '2026-10-07-alpha',
+  termsVersion: '2026-10-08',
+  privacyVersion: '2026-10-08',
   acceptedAt: null
 }
 
@@ -61,10 +61,11 @@ it('keeps the Workspace closed until the document acceptance is stored', async (
       )
     })
     await act(async () => {
-      await vi.waitFor(() => expect(host.textContent).toContain('請確認使用條款與隱私聲明'))
+      await vi.waitFor(() => expect(host.textContent).toContain('請確認使用條款與隱私權政策'))
     })
     expect(host.textContent).not.toContain('private workspace')
     expect(host.textContent).toContain('始於有跡可循。')
+    expect(host.textContent).toContain('請閱讀以下文件後再繼續使用 Form Coach Desk。')
     const back = host.querySelector('.legal-gate-return button') as HTMLButtonElement
     expect(back.textContent).toContain('返回登入')
     await act(async () => back.click())
@@ -82,8 +83,8 @@ it('keeps the Workspace closed until the document acceptance is stored', async (
       await vi.waitFor(() => expect(host.textContent).toContain('private workspace'))
     })
     expect(mocks.accept).toHaveBeenCalledWith('test-token', {
-      termsVersion: '2026-10-07-alpha',
-      privacyVersion: '2026-10-07-alpha'
+      termsVersion: '2026-10-08',
+      privacyVersion: '2026-10-08'
     })
   } finally {
     await act(async () => root.unmount())

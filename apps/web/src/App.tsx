@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ArrowRight, KeyRound } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { isRegistrationEmailTaken } from './api'
 import {
   requestPasswordReset,
@@ -30,6 +30,7 @@ import { CoachLocalStore } from './local-resilience'
 import { isInternalAlpha } from './config'
 import { LegalGate } from './legal/LegalGate'
 import { PrivacyPage, TermsPage } from './legal/LegalPages'
+import { LandingPage } from './landing/LandingPage'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
 
@@ -37,6 +38,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<RootEntry />} />
         <Route path="/t/:token" element={<PublicCapabilityApp purpose="training" />} />
         <Route path="/r/:token" element={<PublicCapabilityApp purpose="reschedule" />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -45,6 +47,15 @@ export function App() {
       </Routes>
     </BrowserRouter>
   )
+}
+
+function RootEntry() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined)
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => setSession(data.session))
+  }, [])
+  if (session === undefined) return <Loading />
+  return session ? <Navigate to="/today" replace /> : <LandingPage />
 }
 
 function AuthenticatedApp() {
@@ -134,7 +145,25 @@ function AuthenticatedApp() {
       />
     )
   }
-  if (!session) return <SignIn key="ordinary-sign-in" />
+  if (!session) {
+    if (location.pathname !== '/login') {
+      const returnTo = `${location.pathname}${location.search}`
+      return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />
+    }
+    const requestedMode = new URLSearchParams(location.search).get('mode')
+    return (
+      <SignIn
+        key={`ordinary-sign-in-${requestedMode ?? 'signin'}`}
+        initialMode={requestedMode === 'signup' ? 'signup' : 'signin'}
+      />
+    )
+  }
+  if (location.pathname === '/login') {
+    const returnTo = new URLSearchParams(location.search).get('returnTo')
+    const safeReturnTo =
+      returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/today'
+    return <Navigate to={safeReturnTo} replace />
+  }
   return (
     <QueryClientProvider client={client}>
       {internalAlpha || import.meta.env.PROD ? (

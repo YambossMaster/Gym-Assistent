@@ -1,22 +1,60 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-07. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-08. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                      |
-| ------------------ | ---------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
-| Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C physical-PWA correction deployed; installed-phone recheck is open**         |
-| Approved next      | **Recheck the installed phone; hold migration changes for explicit release**       |
-| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `b3b37cb`; GitHub Actions run `37641070465` is green             |
-| Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                              |
-| Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned       |
-| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
+| Field              | Current value                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                     |
+| Current package    | **M8-C production deployment and internal Alpha**                                   |
+| Package state      | **M8-C physical-PWA correction deployed; installed-phone recheck is open**          |
+| Approved next      | **Review the public Landing and bilingual legal pages; phone recheck remains open** |
+| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                          |
+| Branch baseline    | Production deploy `b3b37cb`; GitHub Actions run `37641070465` is green              |
+| Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                               |
+| Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned        |
+| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data  |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants             |
+
+**2026-10-08 public Landing Page (local review version):** `/` now gives signed-out visitors a
+public Form Coach Desk product page with product purpose, three concrete capability groups, Free,
+Pro and Prime pricing, login/registration entry, support email, and public Terms/Privacy links.
+Signed-in root visits continue to `/today`; `/login` owns authentication, signed-out protected
+routes preserve their return path, and the PWA manifest starts at `/today` while retaining stable
+`id` and root scope. Internal Alpha hides public registration without hiding the product page.
+Focused Web typecheck passed, focused Landing/Auth routing tests passed 2 files / 7 tests, and local
+Playwright verified the public page plus login/registration navigation at desktop 1440x1000 and
+mobile 390x844. Both widths had zero horizontal document overflow and zero console warnings/errors.
+Product Owner visual feedback then drove a focused polish pass: the pricing area now uses distinct
+layered plan cards, stronger price hierarchy, plan descriptions, annual-price treatments, premium
+Pro/Prime contrast and mobile snap scrolling; the hero, navigation, feature transition and final CTA
+received matching depth and interaction refinements without changing the approved content structure.
+A follow-up correction removed the full-card neon fill from Pro: its taller recommended tier now
+uses a warm light surface with lime limited to the top edge, recommendation, annual price and check
+marks, preserving the staircase composition without overwhelming the paid offer.
+Full build/CI, installed-PWA update behavior, remote delivery and Production deployment remain
+unverified pending Product Owner review.
+
+**2026-10-08 bilingual legal pages (local review version):** The public `/terms` and `/privacy`
+pages now present concise Traditional Chinese first and matching English second. Terms includes
+account and data responsibilities, acceptable use, service-availability wording, and the future paid
+plan cancellation/refund policy; no separate `/refund-policy` route was added. Privacy identifies
+the Coach/Student, public-link, technical and future payment data the product may process and names
+the current Cloudflare, Fly.io, Supabase and Brevo service roles. The public operating name and
+contact are `Form Coach Desk Studio`, `Taipei, Taiwan`, and `support@formcoachdesk.com`; an unnamed
+future Merchant of Record is described conditionally and must be added after selection. The legal
+acceptance version is `2026-10-08`, so a delivered version will require fresh acceptance. The
+documents are environment-neutral and are intended to remain the public baseline through Beta and
+formal operation; environment labels, synthetic-test instructions and current backup limitations
+are deliberately excluded.
+Focused Web legal tests passed 2 files / 3 tests, the focused API legal-acceptance test passed 1 file
+/ 2 tests, and Web/API typechecks passed. Local Chrome showed the bilingual Terms at desktop and
+measured zero horizontal overflow for both pages at 390px; Privacy also exposed all four current
+providers. Full CI/build, Production deployment and installed-phone acceptance remain unverified
+pending Product Owner review. The existing legal-acceptance migration remains unapplied to
+Production and was not changed or applied here.
 
 **2026-10-07 Alpha deployment automation decision (delivered):** The Product Owner
 approved automatic Fly deployment after green `main` verification while keeping Production
@@ -1022,6 +1060,59 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-08 — LOG-445 — Add the public Form Coach Desk entry and PWA app start
+
+- **Scope:** Replace the signed-out root login with a one-page public product introduction for MoR
+  review, move Auth entry to `/login`, preserve authenticated and recovery flows, and let installed
+  PWA launches enter the Coach workspace directly.
+- **Outcome:** `/` now exposes product purpose, capabilities, monthly/annual prices, honest payment
+  availability, support and legal links without registration. Signed-in root visits continue to
+  `/today`; signed-out private URLs reach `/login` with a return path; registration can open directly
+  through `?mode=signup`. The manifest uses stable `id: /`, root scope and `/today` as `start_url`,
+  and the service-worker shell version was advanced for the changed entry resources.
+- **Verification:** Web typecheck passed. Focused Landing/Auth tests passed 2 files / 7 tests.
+  Playwright verified desktop 1440x1000 and mobile 390x844 public rendering, `/login`, signup-mode
+  navigation, zero horizontal overflow and zero console warnings/errors. After the visual polish,
+  Playwright rechecked the full desktop pricing composition and the mobile hero/pricing states; the
+  mobile plan row had a 372px viewport with 882px of intentional nested horizontal scroll while the
+  document itself remained exactly 390px wide. The corrected warm-light Pro card was rechecked at
+  both widths with the same zero-overflow and zero-console-error result.
+- **Known gap:** Full build/CI, Production delivery and existing-installed-PWA update behavior remain
+  unverified. Paid checkout remains unavailable and the page says so; M8-E still owns provider and
+  paid activation.
+- **Next:** Product Owner reviews the Landing Page together with the pending bilingual legal pages.
+  Apply presentation/copy corrections with focused checks, then wait for explicit approval before
+  the broader CI gate or remote delivery.
+
+### 2026-10-08 — LOG-444 — Prepare bilingual Terms and Privacy review version
+
+- **Scope:** Replace the temporary legal copy with concise, product-specific Traditional Chinese
+  and English documents at `/terms` and `/privacy`; keep cancellation and refund policy inside
+  Terms and do not add `/refund-policy`.
+- **Outcome:** Both pages now place Chinese above English, use the public Form Coach Desk identity
+  and support address, disclose actual Coach/Student and public-link data, name current hosting,
+  Auth and mail providers, and reserve payment wording for the Merchant of Record named at future
+  checkout. Acceptance versions advanced to `2026-10-08` and the gate now says
+  `隱私權政策` consistently.
+- **Privacy retention:** Free accounts may be deleted after twelve consecutive months without a
+  login. If this cleanup is used, the registered Email must receive advance notice so the account
+  holder can sign in to retain the account or make their own backup. This is policy authority for a
+  future cleanup process, not a claim that an automated cleanup job currently exists.
+- **Correction:** The first local draft incorrectly embedded Alpha-only synthetic-data and backup
+  wording in the public documents. The Product Owner rejected that scope. The reviewed candidate
+  removes environment-specific language and uses a durable public Terms/Privacy baseline that does
+  not need rewriting merely because the service advances from Beta to formal operation.
+- **Verification:** Focused Web legal tests passed 2 files / 3 tests; the API legal-acceptance test
+  passed 1 file / 2 tests; Web and API typechecks passed. Chrome confirmed the expected bilingual
+  headings/refund section on desktop and zero horizontal overflow at 390px for Terms and Privacy.
+- **Known gap:** The Merchant of Record and paid checkout are not selected or enabled; after the
+  provider is selected, its identity and actual checkout behavior must be reflected if they differ
+  from this baseline. Full CI/build, remote delivery and installed-phone acceptance are unverified.
+  The existing pending legal-acceptance migration was not applied.
+- **Next:** Product Owner reviews the local `/terms` and `/privacy` wording and desktop/mobile
+  presentation. Apply requested copy corrections with focused checks; only after explicit approval
+  run the applicable CI gate and separately authorize any remote delivery or Production migration.
 
 ### 2026-10-07 — LOG-443 — Deploy physical-PWA corrections for phone recheck
 
