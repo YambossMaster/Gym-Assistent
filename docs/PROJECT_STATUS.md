@@ -5,18 +5,31 @@
 
 ## Current snapshot
 
-| Field              | Current value                                                                       |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                     |
-| Current package    | **M8-C production deployment and internal Alpha**                                   |
-| Package state      | **M8-C physical-PWA correction deployed; installed-phone recheck is open**          |
-| Approved next      | **Review the public Landing and bilingual legal pages; phone recheck remains open** |
-| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                          |
-| Branch baseline    | Production deploy `b3b37cb`; GitHub Actions run `37641070465` is green              |
-| Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                               |
-| Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned        |
-| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data  |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants             |
+| Field              | Current value                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
+| Current package    | **M8-C production deployment and internal Alpha**                                  |
+| Package state      | **M8-C public Landing and bilingual legal baseline deployed**                      |
+| Approved next      | **Review Production Landing/legal pages; installed-phone recheck remains open**    |
+| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
+| Branch baseline    | Production deploy `ed92d57`; GitHub Actions run `37672700409` is green             |
+| Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                              |
+| Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned       |
+| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
+| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
+
+**2026-10-08 public Landing and bilingual legal delivery:** Product Owner approved the reviewed
+Landing, Terms and Privacy package for `main`, exact-SHA CI and Production deployment. Commit
+`ed92d57fcf2d6891a33c9ad6511d48b471a7dbdd` reached `origin/main`; GitHub Actions run
+`37672700409` completed successfully in 4 minutes 6 seconds. Verify passed API 38 files / 179 tests
+and Web 68 files / 291 tests, browser UI passed 2 tests, the development migration dry-run passed,
+and the exact-SHA Fly deployment plus workflow readiness check passed. The Production migration
+preview was correctly skipped because the package contains no migration change; the existing legal-
+acceptance migration remains unapplied to Production. Independent post-deploy reads returned
+`{"status":"ready"}`, HTTP 200 for `/`, `/terms` and `/privacy` with browser navigation headers,
+and a live asset containing the new Landing, bilingual legal copy and `2026-10-08` acceptance
+version. The live manifest starts at `/today` with stable root id/scope, and the service worker is
+`form-coach-shell-v2`. Paid checkout remains unavailable; installed-phone acceptance remains open.
 
 **2026-10-08 public Landing Page (local review version):** `/` now gives signed-out visitors a
 public Form Coach Desk product page with product purpose, three concrete capability groups, Free,
@@ -1060,6 +1073,29 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-08 — LOG-446 — Deploy public Landing and bilingual legal baseline
+
+- **Scope:** Deliver the Product Owner-approved public Landing, Auth route split, PWA entry update,
+  bilingual Terms/Privacy and `2026-10-08` legal acceptance version through the migration-free
+  automatic Production release path.
+- **Outcome:** Commit `ed92d57fcf2d6891a33c9ad6511d48b471a7dbdd` reached `origin/main` and the
+  same exact SHA was deployed to the canonical Production origin. No Production migration was
+  previewed or applied. Paid checkout remains unavailable.
+- **Verification:** Local affected preflight passed API 5 files / 28 tests and Web 68 files / 291
+  tests after updating the Auth-recovery test to enter the moved `/login` route. Local production
+  build passed with only the existing over-500-kB advisory. GitHub Actions run `37672700409`
+  completed successfully in 4 minutes 6 seconds: verify passed API 38 files / 179 tests and Web 68
+  files / 291 tests, browser UI passed 2 tests, development migration dry-run passed, and exact-SHA
+  Fly deployment/readiness passed. Independent post-deploy checks confirmed `{"status":"ready"}`;
+  HTTP 200 for `/`, `/terms` and `/privacy` with browser navigation headers; the new Landing/legal
+  copy and acceptance version in the live asset; manifest `/today` start with root id/scope; and
+  `form-coach-shell-v2`.
+- **Known gap:** The existing legal-acceptance migration remains unapplied to Production, as before
+  this migration-free release. Existing installed phones still need a physical update/relaunch
+  recheck. GitHub retains only the tracked Node action and future Ubuntu runner notices.
+- **Next:** Product Owner reviews the deployed Landing and legal pages and rechecks the installed
+  phone. Keep M8-D admission and M8-E payment activation behind their separate approved gates.
 
 ### 2026-10-08 — LOG-445 — Add the public Form Coach Desk entry and PWA app start
 
