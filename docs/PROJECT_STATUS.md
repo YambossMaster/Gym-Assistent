@@ -9,11 +9,11 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C physical-PWA correction authorized; Main delivery in progress**             |
-| Approved next      | **Use automatic deploys for Alpha; hold migration changes for explicit release**   |
+| Package state      | **M8-C physical-PWA correction deployed; installed-phone recheck is open**         |
+| Approved next      | **Recheck the installed phone; hold migration changes for explicit release**       |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `28cc472`; GitHub Actions run `37605703495` is green             |
-| Worktree           | Existing `D:` `main`; physical-PWA correction ready for authorized delivery        |
+| Branch baseline    | Production deploy `b3b37cb`; GitHub Actions run `37641070465` is green             |
+| Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                              |
 | Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned       |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
@@ -42,8 +42,12 @@ and Web 66 files / 285 tests after the established Windows sandbox `spawn EPERM`
 approved non-sandbox rerun. Root production build passed with only the existing over-500-kB chunk
 advisory, and `git diff --check` passed. The linked development migration dry-run completed without
 applying changes but reported the existing `20261006145359_m8_legal_acceptance.sql` as pending; this
-release has no migration change and does not authorize applying that development migration. Commit,
-push, remote CI, automatic Fly deployment and the installed-phone recheck remain pending.
+release has no migration change and does not authorize applying that development migration. Commit
+`b3b37cb987247b2093ede47680f18901f73db4db` reached `origin/main`; GitHub Actions run
+`37641070465` completed successfully with verify, browser UI, development migration dry-run, exact-
+SHA Fly deploy and production readiness green. An independent read after the workflow returned
+`{"status":"ready"}` from `https://formcoachdesk.com/api/ready`. Installed-phone recheck remains
+open.
 
 **2026-10-07 Alpha physical-PWA correction (local review version):** The Product Owner's first
 installed-phone pass found four native-app experience gaps. A Venue list with no records now shows
@@ -398,11 +402,11 @@ allowlist; mandatory first-use legal acceptance and tenant isolation remain. Pro
 Google provider are enabled; OTP is six digits and minimum password length is 12. Live entry checks
 passed; the Product Owner can now register their own account and confirm mail receipt
 and OAuth return. They report deployment/PWA looks good; the full physical touch/keyboard/safe-area
-path has the first reported corrections locally verified. The Product Owner authorized this exact
-version for `main`, exact-SHA CI and automatic deployment. After the deploy becomes healthy, recheck
-the no-Venue action, default Coach name, text-selection/zoom behavior, Today-only hidden scrollbar,
-blue line, Exercise filter and Calendar viewport on the installed phone. Prior core Alpha evidence
-remains valid for unchanged workflows. Do not reset Production now that self-registration is enabled.
+path has the first reported corrections deployed from exact SHA `b3b37cb`; CI run `37641070465` and
+the public readiness check are green. The Product Owner should now recheck the no-Venue action,
+default Coach name, text-selection/zoom behavior, Today-only hidden scrollbar, blue line, Exercise
+filter and Calendar viewport on the installed phone. Prior core Alpha evidence remains valid for
+unchanged workflows. Do not reset Production now that self-registration is enabled.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -1018,6 +1022,22 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-443 — Deploy physical-PWA corrections for phone recheck
+
+- **Scope:** Deliver the authorized LOG-439–442 correction candidate through the automatic
+  migration-free Alpha release path and verify the exact deployed commit.
+- **Outcome:** Commit `b3b37cb987247b2093ede47680f18901f73db4db` reached `origin/main` and was
+  deployed to the canonical Production origin. No Production migration was previewed or applied.
+- **Verification:** GitHub Actions run `37641070465` completed successfully: verify, browser UI,
+  development migration dry-run, exact-SHA Fly deploy and production readiness all passed. A
+  separate request after the workflow returned `{"status":"ready"}` from
+  `https://formcoachdesk.com/api/ready`.
+- **Known gap:** Installed-iOS PWA behavior cannot be closed from desktop or CI; the linked
+  development project still reports the existing legal-acceptance migration as pending.
+- **Next:** Product Owner rechecks the listed physical-PWA interactions on the installed phone and
+  reports any remaining device-only behavior. Do not apply the pending development migration or
+  reset Production as part of that review.
 
 ### 2026-10-07 — LOG-442 — Authorize physical-PWA correction delivery
 
