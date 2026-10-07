@@ -9,16 +9,16 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C CI/CD automation and GitHub production settings ready; delivery pending**   |
-| Approved next      | **Commit, push `main`, then confirm exact-SHA CI, Fly release and `/api/ready`**   |
+| Package state      | **M8-C Alpha CI/CD automation delivered; exact-SHA deployment is healthy**         |
+| Approved next      | **Use automatic deploys for Alpha; hold migration changes for explicit release**   |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `e7131ff`; remote `main` is `00617f9`                            |
-| Worktree           | Existing `D:` `main`; authorized CI/CD delivery is being prepared                  |
+| Branch baseline    | Production deploy `28cc472`; GitHub Actions run `37605703495` is green             |
+| Worktree           | Existing `D:` `main`; deployment delivered and status evidence being recorded      |
 | Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
 
-**2026-10-07 Alpha deployment automation decision (configured, not delivered):** The Product Owner
+**2026-10-07 Alpha deployment automation decision (delivered):** The Product Owner
 approved automatic Fly deployment after green `main` verification while keeping Production
 migrations out of unconditional deployment. The local workflow now deploys non-documentation,
 non-migration pushes only after verify, browser and development migration jobs pass. A change under
@@ -31,9 +31,9 @@ The tracked Fly config contains no secrets. GitHub now has the `production` Envi
 reviewer gate for Alpha, the required repository secrets and the public build variables. The Fly
 deploy token is app-scoped, and the Supabase access token is scoped to the Production project and
 only the settings/API-key reads required by the CLI. Both were issued with 90-day expiries and must
-be rotated before 2027-01-05; 90 days is a chosen safety window, not a Supabase maximum. No
-production migration or Fly deploy ran during setup, and no remote push is yet claimed for this
-worktree.
+be rotated before 2027-01-05; 90 days is a chosen safety window, not a Supabase maximum. Delivery
+SHA `28cc472415b50f1dd385b138acd3d2beac98738f` completed GitHub Actions run `37605703495` and
+created healthy Fly release v5 without applying a Production migration.
 
 **2026-10-06 verification workflow correction (local, not delivered):** The Product Owner rejected
 the 39-minute Plan Choice verification path as inefficient. Local preflight now has an affected-test
@@ -982,9 +982,17 @@ local pass or successful push is not a remote CI completion claim.
   reviewers remain disabled for Alpha. The first sandboxed test and Bash syntax
   attempts hit the established
   Windows `spawn EPERM`/signal-pipe restriction; the approved elevated reruns passed. No full local
-  check/build, remote Actions, migration apply, deployment or production smoke is claimed.
-- **Next:** Commit and push the explicitly authorized delivery to `main`, then confirm the exact-SHA
-  Actions jobs, resulting Fly release and `/api/ready`. This delivery contains no migration change.
+  check/build or migration apply is claimed. Exact-SHA GitHub Actions run `37605703495` then passed
+  `verify`, `browser-ui`, development `migration-dry-run`, and `deploy-production`;
+  `production-migration-preview` was skipped because this delivery contains no migration change.
+  Fly release v5 is complete with image digest
+  `sha256:c9f5bb2413ede17a0936bc54c38fa967b754b3a5c614e9eddef19508f8b7dafa`; the running Tokyo
+  Machine reports the exact GitHub SHA in its image labels, its `/api/ready` service check is
+  passing, and the public endpoint returned `{"status":"ready"}`.
+- **Next:** Continue Alpha work with normal green `main` pushes deploying automatically. Any
+  `supabase/migrations/**` change must stop at the Production preview and use the explicit
+  exact-SHA migration-release workflow; enable and permanently retain required reviewers before
+  M8-D Beta. Rotate both 90-day access tokens before 2027-01-05.
 
 ### 2026-10-07 — LOG-437 — Deliver M8-C batch and isolate BetaGate's unit test from live config
 
