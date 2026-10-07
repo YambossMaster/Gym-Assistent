@@ -752,20 +752,32 @@ real Coaches are invited. Select the initial synthetic Alpha accounts and a shor
 checklist. The 2026-10-07 Product Owner amendment opens the final public Auth entry during
 Alpha: Email signup/verification/recovery and Google sign-in, without a synthetic-account allowlist.
 First-use legal acceptance and tenant isolation remain mandatory; M8-D recruitment is separate.
+The 2026-10-07 delivery amendment automatically deploys a non-documentation, non-migration
+`main` commit only after its verify, browser and development-migration jobs pass. A commit that
+changes `supabase/migrations/**` instead runs an independent Production dry-run and holds app
+deployment. Applying that migration requires the explicit exact-commit Production migration
+release workflow, a second dry-run, and the literal `APPLY` confirmation before the same commit is
+deployed. Both paths use the GitHub `production` Environment: Alpha has no reviewer gate; M8-D
+enables required reviewers before Beta so migration and deployment pause for approval. Required
+reviewers remain mandatory after Beta and throughout general availability; a formal launch never
+returns Production migration or deployment to unapproved execution.
 
 **Sol gate:** provision the separate production Supabase Free project and Fly app, configure
 separate secrets, apply reviewed migrations, deploy the exact release build and configure available
 billing/usage notifications. Use Fly and Supabase dashboards for manual health/capacity review.
 Agents and the Product Owner exercise synthetic Alpha accounts. Fix forward when an app defect is
 found; stop unsafe writes or admissions if a migration or data failure makes continued use unsafe.
-No automated rollback or database-loss rehearsal is required.
+No automated rollback or database-loss rehearsal is required. Keep Fly runtime secrets in Fly;
+GitHub receives only an app-scoped Fly deploy token, Production-scoped Supabase migration
+credentials, and the public Web build values required for the release image.
 
 **CI gate:** confirm exact-SHA jobs and production migration evidence; manually smoke Auth,
 Session/Training persistence,
 a public capability link and sign-out. On an available installed
 phone, check the core save path, touch, keyboard and safe-area behavior; record any untested
 platform as a limitation without claiming it passed. Confirm support contact, disclosure, provider
-alerts, database-size view, and no known release-blocking defect.
+alerts, database-size view, and no known release-blocking defect. A successful automatic Fly job or
+explicit migration-release job is the exact-SHA deployment evidence; a Git push alone is not.
 
 #### M8-D — Open real-Coach Beta
 

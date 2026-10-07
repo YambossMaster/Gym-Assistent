@@ -1,0 +1,121 @@
+name: Production migration release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Exact green main commit to migrate and deploy
+        required: true
+        type: string
+      confirmation:
+        description: Type APPLY to authorize production migration and deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+jobs:
+  migrate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: production-release
+      cancel-in-progress: false
+    env:
+      RELEASE_SHA: ${{ inputs.commit_sha }}
+      RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+      GH_TOKEN: ${{ github.token }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PRODUCTION_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PRODUCTION_PROJECT_ID }}
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      VITE_SUPABASE_URL: ${{ vars.PRODUCTION_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPPORT_EMAIL: ${{ vars.PRODUCTION_SUPPORT_EMAIL }}
+    steps:
+      - name: Require explicit apply confirmation
+        shell: bash
+        run: test "$RELEASE_CONFIRMATION" = 'APPLY'
+
+      - name: Check out requested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
+
+      - name: Require exact commit from main
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          git fetch origin main
+          git merge-base --is-ancestor "$RELEASE_SHA" origin/main
+
+      - name: Require green CI jobs for exact commit
+        shell: bash
+        run: |
+          checks="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs")"
+          for required in verify browser-ui migration-dry-run production-migration-preview; do
+            echo "$checks" | jq -e \
+              --arg name "$required" \
+              '.check_runs | any(.name == $name and .status == "completed" and .conclusion == "success")' \
+              >/dev/null
+          done
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require production release configuration
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          test -n "$SUPABASE_PROJECT_ID"
+          test -n "$FLY_API_TOKEN"
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
+          test -n "$VITE_SUPPORT_EMAIL"
+
+      - name: Link production project
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Preview production migrations again
+        run: npm run db:push:dry
+
+      - name: Apply production migrations
+        run: npm run db:push
+
+      - name: Set up Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy the same exact commit
+        run: >-
+          flyctl deploy
+          --remote-only
+          --ha=false
+          --config deploy/fly.production.toml
+          --dockerfile Dockerfile
+          --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL"
+          --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY"
+          --build-arg VITE_SUPPORT_EMAIL="$VITE_SUPPORT_EMAIL"
+          --build-arg VITE_INTERNAL_ALPHA=false
+
+      - name: Verify production readiness
+        shell: bash
+        run: >-
+          curl
+          --fail
+          --silent
+          --show-error
+          --retry 12
+          --retry-all-errors
+          --retry-delay 5
+          https://formcoachdesk.com/api/ready

@@ -255,7 +255,12 @@ function-specific credential.
 - Web and API are served under one site; `/api` is same-origin in production and Vite-proxied
   locally.
 - The API is stateless and uses a PostgreSQL connection pool.
-- Database migrations are serialized and run as an explicit release step.
+- Database migrations are serialized and run as an explicit release step. During synthetic-data
+  Alpha, a migration-changing `main` push previews Production and holds the app deployment; an
+  exact green commit may be applied only through the explicit migration-release workflow, which
+  previews again before applying and deploying. Before Beta, GitHub `production` Environment
+  approval gates both migration and app deployment; that approval gate remains in force after Beta
+  and for every general-availability Production release.
 - M8 MVP uses Local and Production only, with separate Supabase projects, Auth configuration,
   database logins, and secrets. No persistent staging environment is part of the current release.
 - Persistent deployments use the supported direct/session-pool connection for their network shape.

@@ -17,6 +17,9 @@ export const needsBrowser = (paths) =>
       file === 'scripts/ci-scope.mjs',
   )
 
+export const hasProductionMigration = (paths) =>
+  paths.some((file) => file.startsWith('supabase/migrations/'))
+
 export function changedPaths(base, head) {
   const output = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', base, head])
   return output.toString('utf8').split('\0').filter(Boolean)
@@ -26,18 +29,24 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const { BASE_SHA, HEAD_SHA, EVENT_NAME, GITHUB_OUTPUT } = process.env
   let docsOnly = false
   let browserNeeded = true
+  let productionMigration = false
   if (EVENT_NAME !== 'workflow_dispatch' && BASE_SHA && HEAD_SHA && !/^0+$/.test(BASE_SHA)) {
     try {
       const paths = changedPaths(BASE_SHA, HEAD_SHA)
       docsOnly = isDocsOnly(paths)
       browserNeeded = needsBrowser(paths)
+      productionMigration = hasProductionMigration(paths)
     } catch {
       // Unknown history must run the full gate.
+      productionMigration = true
     }
   }
   if (GITHUB_OUTPUT)
-    appendFileSync(GITHUB_OUTPUT, `docs_only=${docsOnly}\nbrowser_needed=${browserNeeded}\n`)
+    appendFileSync(
+      GITHUB_OUTPUT,
+      `docs_only=${docsOnly}\nbrowser_needed=${browserNeeded}\nproduction_migration=${productionMigration}\n`,
+    )
   console.log(
-    `Verification scope: ${docsOnly ? 'docs format only' : 'full'}; browser ${browserNeeded ? 'needed' : 'not needed'}`,
+    `Verification scope: ${docsOnly ? 'docs format only' : 'full'}; browser ${browserNeeded ? 'needed' : 'not needed'}; production migration ${productionMigration ? 'changed' : 'unchanged'}`,
   )
 }

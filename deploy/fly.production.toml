@@ -1,6 +1,11 @@
-# Copy this template for another Fly app. The production app uses fly.production.toml.
-app = "replace-with-your-fly-app"
+app = "formcoachdesk"
 primary_region = "nrt"
+
+[env]
+NODE_ENV = "production"
+DEPLOYMENT_TARGET = "production"
+HOST = "0.0.0.0"
+PORT = "3000"
 
 [http_service]
 internal_port = 3000
@@ -14,3 +19,8 @@ interval = "30s"
 method = "GET"
 timeout = "10s"
 path = "/api/ready"
+
+[[vm]]
+cpu_kind = "shared"
+cpus = 1
+memory = "512mb"

@@ -20,6 +20,3 @@ playwright-report/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Private release configuration
-deploy/fly.production.toml

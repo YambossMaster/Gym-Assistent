@@ -18,8 +18,9 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
 ## Production preparation, when M8-C is authorized
 
 1. Confirm actual Fly and Supabase pricing and billing notifications; choose the smallest Machine
-   that passes a measured core journey. Copy `deploy/fly.toml.example` to a private release config,
-   set the real app name, and keep one Machine running. Do not call a usage alert a hard cap.
+   that passes a measured core journey. The tracked `deploy/fly.production.toml` contains only the
+   non-secret production app shape; keep one Machine running. Use `deploy/fly.toml.example` for a
+   different app. Do not call a usage alert a hard cap.
 2. Create a separate production Supabase project. Configure Auth URLs, custom SMTP and a runtime
    database role. Store `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
    `CAPABILITY_RATE_LIMIT_SECRET`, `BETA_ADMISSION_SECRET`, and
@@ -32,17 +33,21 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    First-use legal acceptance remains enforced by the API before workspace operations.
    Keep `BETA_ADMISSION_SECRET` stable: it keys the deletion-surviving same-Email redemption
    ledger. Rotating it requires a planned ledger migration before accepting new redemptions.
-3. From an isolated release checkout, use the installed Supabase CLI's `migration list
---project-ref <production-ref>` and `db push --dry-run --project-ref <production-ref>` against
-   the production target. Review the exact migration list and stop on unexpected history. Apply
-   `db push --project-ref <production-ref>` only after that review, with credentials supplied
-   through the CLI's protected prompt or secret environment, never inline in a saved command.
-   These are serial release operations, not part of Fly app startup.
-4. Build the Docker image using the **public** `VITE_SUPABASE_URL` and
+3. A `main` push that changes `supabase/migrations/**` runs the independent
+   `production-migration-preview` job against Production and intentionally does not deploy the app.
+   Review that exact commit's green `verify`, `browser-ui`, `migration-dry-run`, and Production
+   preview jobs. Then manually run **Production migration release** with that full commit SHA and
+   confirmation `APPLY`. The workflow proves the SHA is on `main`, requires those exact green jobs,
+   previews Production again, applies pending migrations, and deploys the same SHA. Never include
+   seed data. These are serialized release operations, not part of Fly app startup.
+4. A non-documentation `main` push without migration changes automatically deploys only after the
+   repository verification, browser and development migration jobs pass. The Fly remote builder
+   builds the Docker image using the **public** `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_PUBLISHABLE_KEY` build arguments. Set the public `VITE_SUPPORT_EMAIL` to the
    dedicated rights/support address selected in M8-C and set `VITE_INTERNAL_ALPHA=false` to expose
-   registration and Google sign-in. Check the resulting build's public URL matches
-   the intended production project. Deploy the exact approved commit with host auto-deploy off.
+   registration and Google sign-in. Check the resulting build's public URL matches the intended
+   production project. Fly's repository auto-deploy remains off; GitHub Actions owns exact-SHA
+   release sequencing.
 5. Manually check `/api/ready`, sign-in, one Student/Session/Training save and reload, a public
    capability link, and sign-out. Inspect Fly usage/errors and Supabase database size. If a write
    or migration fails, stop new admissions and fix the cause before continuing; do not claim that
@@ -50,3 +55,17 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
 
 M8-C deployed the image through the Fly remote builder. Production now uses public Auth entry;
 see `docs/PROJECT_STATUS.md` for the exact deployed commit, image, checks and remaining acceptance.
+
+## One-time GitHub setup
+
+Run `bash scripts/setup-production-cd.sh` from Git Bash or WSL. The guided setup creates no local
+secret file. It writes the app-scoped Fly token and Production Supabase credentials to GitHub
+Actions secrets, writes only browser-public build values to GitHub repository variables, and walks
+through creating the `production` Environment. GitHub CLI must be installed and authenticated for
+the writes; the wizard reports any value that still needs manual setup.
+
+During Alpha, `production` has no required reviewer, so ordinary green `main` commits deploy
+automatically. Before M8-D admits real Coaches, enable required reviewers on that same Environment.
+Both ordinary deployment and the explicit migration release will then pause for approval without a
+workflow rewrite. Keep this approval enabled after Beta and for all general-availability Production
+releases.

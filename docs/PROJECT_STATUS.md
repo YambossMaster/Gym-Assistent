@@ -9,14 +9,31 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C batch is on `main` with green exact-SHA CI; production redeploy open**      |
-| Approved next      | **Authorize and run the focused production redeploy when ready**                   |
+| Package state      | **M8-C CI/CD automation and GitHub production settings ready; delivery pending**   |
+| Approved next      | **Commit, push `main`, then confirm exact-SHA CI, Fly release and `/api/ready`**   |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
 | Branch baseline    | Production deploy `e7131ff`; remote `main` is `00617f9`                            |
-| Worktree           | Existing `D:` `main`; synchronized with remote after the authorized delivery       |
+| Worktree           | Existing `D:` `main`; authorized CI/CD delivery is being prepared                  |
 | Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
+
+**2026-10-07 Alpha deployment automation decision (configured, not delivered):** The Product Owner
+approved automatic Fly deployment after green `main` verification while keeping Production
+migrations out of unconditional deployment. The local workflow now deploys non-documentation,
+non-migration pushes only after verify, browser and development migration jobs pass. A change under
+`supabase/migrations/**` runs a separate Production dry-run and holds deployment; the exact green
+commit can be applied only through a manually dispatched workflow that previews again, requires
+literal `APPLY`, applies, and deploys that same SHA. Both paths target GitHub Environment
+`production`; Alpha has no reviewer gate, while M8-D must enable required reviewers before Beta and
+retain that approval permanently after Beta and throughout general availability.
+The tracked Fly config contains no secrets. GitHub now has the `production` Environment without a
+reviewer gate for Alpha, the required repository secrets and the public build variables. The Fly
+deploy token is app-scoped, and the Supabase access token is scoped to the Production project and
+only the settings/API-key reads required by the CLI. Both were issued with 90-day expiries and must
+be rotated before 2027-01-05; 90 days is a chosen safety window, not a Supabase maximum. No
+production migration or Fly deploy ran during setup, and no remote push is yet claimed for this
+worktree.
 
 **2026-10-06 verification workflow correction (local, not delivered):** The Product Owner rejected
 the 39-minute Plan Choice verification path as inefficient. Local preflight now has an affected-test
@@ -944,6 +961,30 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-07 — LOG-438 — Implement Alpha automatic deployment with a migration hold
+
+- **Scope:** Implement and configure the Product Owner-approved delivery rule without changing
+  Production data or the currently deployed Fly release.
+- **Outcome:** CI scope detection now identifies `supabase/migrations/**`. Green non-documentation,
+  non-migration `main` pushes deploy their exact SHA through Fly's remote builder and verify
+  `/api/ready`. Migration-changing pushes instead run an independent Production dry-run and hold
+  deployment. The manual Production migration-release workflow requires an exact `main` SHA, four
+  successful CI checks, a second dry-run and literal `APPLY` before applying and deploying. Both
+  release paths use the GitHub `production` Environment so M8-D can add required reviewers without
+  rewriting the workflows; the Product Owner explicitly requires that approval to remain after Beta
+  and throughout general availability. The production Fly shape is now a tracked, non-secret config,
+  and the repeatable setup wizard writes only the necessary GitHub secrets and public variables.
+- **Verification:** Focused CI-scope tests passed 4/4. Targeted Prettier, wizard Bash syntax,
+  Fly production-config validation and `git diff --check` passed. Static review confirmed every new
+  workflow secret/variable has a matching wizard write. GitHub visibly confirmed all four required
+  production secrets, all three public variables and the `production` Environment; required
+  reviewers remain disabled for Alpha. The first sandboxed test and Bash syntax
+  attempts hit the established
+  Windows `spawn EPERM`/signal-pipe restriction; the approved elevated reruns passed. No full local
+  check/build, remote Actions, migration apply, deployment or production smoke is claimed.
+- **Next:** Commit and push the explicitly authorized delivery to `main`, then confirm the exact-SHA
+  Actions jobs, resulting Fly release and `/api/ready`. This delivery contains no migration change.
 
 ### 2026-10-07 — LOG-437 — Deliver M8-C batch and isolate BetaGate's unit test from live config
 

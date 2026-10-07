@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
+      production_migration: ${{ steps.scope.outputs.production_migration }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -150,3 +151,110 @@ jobs:
       - name: Verify remote migration plan
         if: steps.scope.outputs.docs_only != 'true'
         run: npm run db:push:dry
+
+  production-migration-preview:
+    needs: verify
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.verify.outputs.production_migration == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PRODUCTION_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PRODUCTION_PROJECT_ID }}
+    steps:
+      - name: Check out exact release commit
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require production Supabase secrets
+        shell: bash
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          test -n "$SUPABASE_PROJECT_ID"
+
+      - name: Link production project
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Preview production migrations
+        run: npm run db:push:dry
+
+      - name: Hold deployment for explicit migration release
+        run: |
+          echo "Production dry-run passed. Automatic deploy is intentionally held."
+          echo "Run the Production migration release workflow for this exact commit."
+
+  deploy-production:
+    needs:
+      - verify
+      - browser-ui
+      - migration-dry-run
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.verify.result == 'success' &&
+      needs.browser-ui.result == 'success' &&
+      needs.migration-dry-run.result == 'success' &&
+      needs.verify.outputs.docs_only != 'true' &&
+      needs.verify.outputs.production_migration != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: production-release
+      cancel-in-progress: false
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      VITE_SUPABASE_URL: ${{ vars.PRODUCTION_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPPORT_EMAIL: ${{ vars.PRODUCTION_SUPPORT_EMAIL }}
+    steps:
+      - name: Check out exact release commit
+        uses: actions/checkout@v4
+
+      - name: Require production deployment configuration
+        shell: bash
+        run: |
+          test -n "$FLY_API_TOKEN"
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
+          test -n "$VITE_SUPPORT_EMAIL"
+
+      - name: Set up Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy exact commit to Fly
+        run: >-
+          flyctl deploy
+          --remote-only
+          --ha=false
+          --config deploy/fly.production.toml
+          --dockerfile Dockerfile
+          --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL"
+          --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY"
+          --build-arg VITE_SUPPORT_EMAIL="$VITE_SUPPORT_EMAIL"
+          --build-arg VITE_INTERNAL_ALPHA=false
+
+      - name: Verify production readiness
+        shell: bash
+        run: >-
+          curl
+          --fail
+          --silent
+          --show-error
+          --retry 12
+          --retry-all-errors
+          --retry-delay 5
+          https://formcoachdesk.com/api/ready
