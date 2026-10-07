@@ -2,8 +2,10 @@
 import { act, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { PrivacyPage, TermsPage } from './LegalPages'
+
+let scrollTo: ReturnType<typeof vi.spyOn>
 
 function renderPage(page: ReactNode) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
@@ -16,8 +18,25 @@ function renderPage(page: ReactNode) {
   return { host, root }
 }
 
+beforeEach(() => {
+  scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+})
+
 afterEach(() => {
   document.body.innerHTML = ''
+  vi.restoreAllMocks()
+})
+
+it.each([
+  ['Terms', <TermsPage />],
+  ['Privacy', <PrivacyPage />]
+])('opens the %s page at the top of the document', async (_label, page) => {
+  const { root } = renderPage(page)
+  try {
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' })
+  } finally {
+    await act(async () => root.unmount())
+  }
 })
 
 it('renders Chinese Terms before the English version and keeps refunds in Terms', async () => {
@@ -61,6 +80,8 @@ it('renders bilingual Privacy details for product data and current providers', a
     }
     expect(host.textContent).toContain('連續十二個月未登入的免費帳號')
     expect(host.textContent).toContain('after twelve consecutive months without a login')
+    expect(host.textContent).toContain('但不保證另行通知')
+    expect(host.textContent).toContain('we do not guarantee separate notice')
     expect(host.textContent).toContain('Form Coach Desk Studio · Taipei, Taiwan')
     expect(host.textContent).not.toMatch(/Alpha|合成資料/)
   } finally {

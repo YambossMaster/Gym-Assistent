@@ -10,10 +10,10 @@
   "theme_color": "#151711",
   "icons": [
     {
-      "src": "/brand/form-icon.png?v=20260922",
+      "src": "/brand/form-pwa-icon.png?v=20261008",
       "sizes": "1254x1254",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

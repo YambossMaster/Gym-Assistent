@@ -18,6 +18,28 @@
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
 
+**2026-10-08 PWA and browser icon correction (local review version):** The manifest, iOS
+home-screen metadata and browser favicon now use the Product Owner-supplied dark tile with neon FORM
+geometry, while existing in-page brand variants remain unchanged. The supplied 1254x1254 RGBA PNG
+is stored intact as dedicated application artwork with `purpose: any`; the service-worker shell cache
+advances to `form-coach-shell-v3` and precaches the new asset so an updated installation can retrieve
+it offline. Static manifest/image validation and the focused Web production build passed; the first
+sandboxed Vite attempt hit the known Windows `spawn EPERM`, then the approved non-sandbox rerun
+passed with only the existing over-500-kB chunk advisory. Installed Windows/iOS/Android icon refresh
+behavior, full CI, remote delivery and Production deployment are unverified pending Product Owner
+review.
+
+**2026-10-08 public legal-page scroll correction (local review version):** Opening Terms or
+Privacy through an in-app link previously retained the source page's document scroll position, so
+the legal document could appear partway down instead of at its beginning. The shared legal layout
+now resets the document to the top before paint; the correction covers both public pages without
+changing their text or return behavior. The focused regression test first failed for both pages,
+then passed 1 file / 4 tests after the correction; Web typecheck, targeted Prettier and
+`git diff --check` passed. Browser journeys from the Landing footer confirmed `scrollY=0` for both
+pages at a normal desktop viewport and exact 390x844; both mobile pages retained zero horizontal
+overflow. Full CI/build, remote delivery and Production deployment remain unverified pending
+Product Owner review.
+
 **2026-10-08 public Landing and bilingual legal delivery:** Product Owner approved the reviewed
 Landing, Terms and Privacy package for `main`, exact-SHA CI and Production deployment. Commit
 `ed92d57fcf2d6891a33c9ad6511d48b471a7dbdd` reached `origin/main`; GitHub Actions run
@@ -1074,6 +1096,39 @@ local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
 
+### 2026-10-08 — LOG-448 — Use the dark neon application icon
+
+- **Scope:** Replace the installed PWA/home-screen icon and browser favicon with the Product
+  Owner-supplied dark transparent-canvas artwork; preserve existing in-page logo variants.
+- **Outcome:** The Web manifest, Apple touch metadata and favicon reference a dedicated 1254x1254
+  RGBA application asset. Its manifest purpose is `any`, avoiding a false claim that the supplied
+  rounded tile is a separately authored maskable icon. The service-worker cache key and shell asset
+  list are updated.
+- **Verification:** The source and repository asset SHA-256 hashes match; static validation confirmed
+  the 1254x1254 RGBA file and manifest contract. Targeted Prettier and `git diff --check` passed. The
+  focused Web production build passed and retained the exact icon bytes in `dist`; its first sandboxed
+  attempt hit the known Windows Vite `spawn EPERM`, then the approved non-sandbox rerun passed with
+  only the existing over-500-kB chunk advisory.
+- **Known gap:** Installed Windows/iOS/Android icon refresh behavior, full CI, remote delivery and
+  Production deployment have not run.
+- **Next:** Product Owner reviews the local icon candidate before any broader gate or remote delivery.
+
+### 2026-10-08 — LOG-447 — Reset public legal pages to the document top
+
+- **Scope:** Correct the Product Owner-reported Terms/Privacy navigation defect without changing
+  the concurrent legal-copy edits or any Auth, acceptance-version, API or schema behavior.
+- **Outcome:** The shared legal layout resets document scroll before paint, so both public legal
+  routes open at their beginning even when their source link was reached from a scrolled page. A
+  focused regression covers Terms and Privacy.
+- **Verification:** The regression test failed on both routes before the implementation and then
+  passed 1 file / 4 tests. Web typecheck, targeted Prettier and `git diff --check` passed. Local
+  browser journeys from the Landing footer measured `scrollY=0` for both routes at desktop and
+  exact 390x844; mobile horizontal overflow was zero.
+- **Known gap:** Full CI/build, remote delivery and Production deployment have not run; the live
+  site retains the defect until an authorized delivery.
+- **Next:** Product Owner reviews the local Terms/Privacy entry behavior together with the pending
+  legal-copy changes before authorizing the broader gate or remote delivery.
+
 ### 2026-10-08 — LOG-446 — Deploy public Landing and bilingual legal baseline
 
 - **Scope:** Deliver the Product Owner-approved public Landing, Auth route split, PWA entry update,
@@ -1132,9 +1187,11 @@ local pass or successful push is not a remote CI completion claim.
   checkout. Acceptance versions advanced to `2026-10-08` and the gate now says
   `隱私權政策` consistently.
 - **Privacy retention:** Free accounts may be deleted after twelve consecutive months without a
-  login. If this cleanup is used, the registered Email must receive advance notice so the account
-  holder can sign in to retain the account or make their own backup. This is policy authority for a
-  future cleanup process, not a claim that an automated cleanup job currently exists.
+  login. The service may send an advance reminder to the registered Email but does not guarantee
+  separate notice; account holders are told to sign in periodically and keep their own backup of
+  important data. This is policy authority for a future cleanup process, not a claim that an
+  automated cleanup or mass-mail process currently exists. Material legal changes are announced in
+  the service or on the website; Email is optional rather than promised.
 - **Correction:** The first local draft incorrectly embedded Alpha-only synthetic-data and backup
   wording in the public documents. The Product Owner rejected that scope. The reviewed candidate
   removes environment-specific language and uses a durable public Terms/Privacy baseline that does

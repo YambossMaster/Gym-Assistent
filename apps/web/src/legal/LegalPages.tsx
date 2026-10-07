@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useLayoutEffect, type ReactNode } from 'react'
 import { Brand } from '../shared/primitives'
 
 const LAST_UPDATED = '2026-10-08'
@@ -14,6 +14,10 @@ function LegalLayout({
   englishTitle: string
   children: ReactNode
 }) {
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [])
+
   return (
     <main className="legal-page">
       <header className="legal-page-header">
@@ -97,8 +101,8 @@ export function TermsPage() {
 
         <h3>6. 服務變更與可用性</h3>
         <p>
-          我們可能改善、新增、修改或移除功能，也可能為安全、維護或法律要求暫停部分服務。網路服務可能發生中斷、延遲或資料錯誤；對您特別重要的紀錄，請自行保留必要副本。重大條款變更會透過服務、Email
-          或網站公告通知，並更新本頁日期。
+          我們可能改善、新增、修改或移除功能，也可能為安全、維護或法律要求暫停部分服務。網路服務可能發生中斷、延遲或資料錯誤；對您特別重要的紀錄，請自行保留必要副本。重大條款變更會在服務內或網站公告，並更新本頁日期；必要時也可能透過
+          Email 通知。
         </p>
 
         <h3>7. 智慧財產與責任限制</h3>
@@ -168,8 +172,8 @@ export function TermsPage() {
           We may improve, add, change, or remove features and may suspend part of the service for
           security, maintenance, or legal reasons. Online services may experience interruptions,
           delays, or data errors. Please keep any necessary copies of records that are especially
-          important to you. Material changes will be announced through the service, by email, or on
-          the website, and the date on this page will be updated.
+          important to you. Material changes will be announced in the service or on the website, and
+          the date on this page will be updated. We may also provide notice by email when necessary.
         </p>
 
         <h3>7. Intellectual Property and Liability</h3>
@@ -230,8 +234,8 @@ export function PrivacyPage() {
           帳號與工作台資料會在提供服務所需期間保存。帳號設定提供十四天後刪除（期間可取消）與立即刪除；刪除完成後，資料會從活躍系統移除。安全、客服或帳務紀錄可能在防詐、爭議處理或法律要求所需期間內保留。
         </p>
         <p>
-          為維護服務與系統資源，我們可能刪除連續十二個月未登入的免費帳號及其相關資料。若決定執行此類刪除，我們會事先寄送通知至帳號登記的
-          Email，讓您有機會登入保留帳號或自行備份資料。
+          為維護服務與系統資源，我們可能刪除連續十二個月未登入的免費帳號及其相關資料。刪除前，我們可能透過帳號登記的
+          Email 發出提醒，但不保證另行通知；請定期登入並自行備份重要資料。
         </p>
 
         <h3>6. 資料安全</h3>
@@ -246,7 +250,10 @@ export function PrivacyPage() {
         </p>
 
         <h3>8. 政策變更</h3>
-        <p>本政策如有重大變更，我們會透過服務、Email 或網站公告通知，並更新頁面版本。</p>
+        <p>
+          本政策如有重大變更，我們會在服務內或網站公告，並更新頁面日期；必要時也可能透過 Email
+          通知。
+        </p>
       </section>
 
       <LanguageDivider label="English" />
@@ -316,8 +323,9 @@ export function PrivacyPage() {
         <p>
           To maintain the service and system resources, we may delete free accounts and their
           associated data after twelve consecutive months without a login. If we decide to carry out
-          such deletion, we will notify the account's registered email in advance so that you have
-          an opportunity to sign in and keep the account or make your own backup.
+          such deletion, we may send a reminder to the account's registered email, but we do not
+          guarantee separate notice. Please sign in periodically and maintain your own backup of
+          important data.
         </p>
 
         <h3>6. Security</h3>
@@ -336,8 +344,9 @@ export function PrivacyPage() {
 
         <h3>8. Changes</h3>
         <p>
-          If this Policy changes materially, we will provide notice through the service, by email,
-          or on the website and update the version shown on this page.
+          If this Policy changes materially, we will post an announcement in the service or on the
+          website and update the date shown on this page. We may also provide notice by email when
+          necessary.
         </p>
       </section>
     </LegalLayout>
