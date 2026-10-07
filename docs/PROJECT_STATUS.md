@@ -9,11 +9,11 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C batch is on `main`; CI-only Web test isolation fix locally verified**       |
-| Approved next      | **Push the focused CI correction and confirm the new exact-SHA Actions**           |
+| Package state      | **M8-C batch is on `main` with green exact-SHA CI; production redeploy open**      |
+| Approved next      | **Authorize and run the focused production redeploy when ready**                   |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `e7131ff`; remote `main` remains at Plan Choice `40b303e`        |
-| Worktree           | Existing `D:` `main`; remote `88675d5`; CI-only follow-up correction in progress   |
+| Branch baseline    | Production deploy `e7131ff`; remote `main` is `00617f9`                            |
+| Worktree           | Existing `D:` `main`; synchronized with remote after the authorized delivery       |
 | Linked database    | Dev retained; Production Tokyo ref `febunjhpruqlywjfvuaq`, 44 migrations aligned   |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
@@ -961,7 +961,13 @@ local pass or successful push is not a remote CI completion claim.
   runtime Auth behavior. The focused file passed 1 file / 2 tests in 4.46 seconds after the known
   Windows sandbox `spawn EPERM` required the approved elevated path. Web typecheck and
   `git diff --check` passed.
-- **Next:** Push the CI-only correction and confirm its exact-SHA Actions result.
+- **Delivery:** Product Owner authorization pushed correction commit `00617f9` to `origin/main`.
+  GitHub Actions CI #99 / run `37594419349` completed successfully in 2 minutes 21 seconds. `verify`
+  passed in 2 minutes 16 seconds with API 38 files / 177 tests and Web 65 files / 278 tests;
+  `browser-ui` passed 2/2 in 43 seconds, and `migration-dry-run` passed in 22 seconds. Annotations are
+  limited to the existing Node 20 action deprecation and upcoming `ubuntu-latest` image notices.
+- **Next:** The accepted legal-entry correction is delivered to `main`; production still serves the
+  earlier `e7131ff` UI until a separately authorized focused redeploy.
 
 ### 2026-10-07 — LOG-436 — Legal-entry correction accepted for remote delivery
 
