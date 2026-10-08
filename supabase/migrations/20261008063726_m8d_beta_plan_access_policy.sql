@@ -25,6 +25,9 @@ create unique index beta_code_single_special_kind_idx
   on app_private.beta_code (code_kind)
   where code_kind in ('permanent', 'tester') and revoked_at is null;
 
+comment on index app_private.beta_code_single_special_kind_idx is
+  'Allows only one active permanent code and one active plan-tester code';
+
 comment on column app_private.beta_code.code_kind is
   'promotional grants 60-day Prime, permanent grants ongoing Prime, tester permits self plan switching';
 comment on column app_private.beta_code.redemption_limit is
