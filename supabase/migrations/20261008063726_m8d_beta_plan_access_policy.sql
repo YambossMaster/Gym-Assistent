@@ -80,3 +80,6 @@ begin
   return new;
 end;
 $$;
+
+comment on function app_private.enforce_plan_active_capacity() is
+  'Enforces Free, Pro, Prime and plan-tester active Student and Venue capacity at the database boundary';
