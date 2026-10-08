@@ -36,7 +36,7 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Exact code release candidate on Main: `fb75b7d878d8d50731e15fbcf1d771a451dbee30`.
+- Exact code release candidate on Main: `0632e044507c2e3b584b7e3f90192464c9c457a8`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
   together. Reconcile any subsequent work with `git status --short`.
 - Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
@@ -51,16 +51,20 @@ The detailed behavior and migration contract live in
   applied `20261008063726`, deployed exact SHA `fb75b7d878d8d50731e15fbcf1d771a451dbee30`,
   and returned `{"status":"ready"}` from `/api/ready` on 2026-10-09. The authenticated Web
   workspace loaded afterward. This is implementation delivery, not real-Coach admission.
+- [CI #121](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37830139443) passed verify,
+  browser UI, development migration dry-run and Production preview for `0632e04`, then automatically
+  deployed the non-migration Coach-note correction. Public `/api/ready` and deployed JS/CSS marker
+  checks passed afterward.
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                             | Remaining evidence                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed   | Continue monitoring future releases; no current release blocker |
-| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                       | Live redemption and real-Coach admission checks                 |
-| Mobile Training         | New local Coach-note top bar and Visual Viewport anchoring passed 39 focused tests, typecheck and 390×844 browser review | Product review, CI/delivery authorization and installed recheck |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests  | Authenticated/installed-phone rendering                         |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                | Combined browser/product review                                 |
+| Area                    | Current fact                                                                                                            | Remaining evidence                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
+| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                      | Live redemption and real-Coach admission checks                 |
+| Mobile Training         | Coach-note top bar and Visual Viewport anchoring deployed at `0632e04`; CI #121 and public asset checks green           | Installed iOS/Android keyboard recheck                          |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -88,8 +92,7 @@ matching Demo route/components.
 
 ## Next handoff
 
-Product Owner reviews the local Coach-note focus correction before any full CI or remote delivery.
-After delivery, recheck its installed-iOS/Android keyboard behavior, then finish the remaining M8-D
-recovery, reviewer-control and admission gates before inviting real Coaches. Investigate legal
-migration provenance and arrange separately authorized old PAT revocation without reopening the
-successful `fb75b7d` deployment.
+Recheck the deployed Coach-note focus correction on installed iOS/Android keyboards, then finish the
+remaining M8-D recovery, reviewer-control and admission gates before inviting real Coaches.
+Investigate legal migration provenance and arrange separately authorized old PAT revocation without
+reopening the successful `0632e04` deployment.
