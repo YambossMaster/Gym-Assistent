@@ -1,22 +1,33 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-08. This file records live engineering state; scope and completion rules
+> Last verified: 2026-10-09. This file records live engineering state; scope and completion rules
 > live in [`ROADMAP.md`](ROADMAP.md).
 
 ## Current snapshot
 
-| Field              | Current value                                                                      |
-| ------------------ | ---------------------------------------------------------------------------------- |
-| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
-| Current package    | **M8-D Beta plan-access correction before real-Coach admission**                   |
-| Package state      | **Contract frozen; local Sol implementation ready for Product Owner review**       |
-| Approved next      | **Review ordinary Free and plan-tester UI; migration/live/CI remain gated**        |
-| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `4b314f4`; GitHub Actions run `37736240939` is green             |
-| Worktree           | Existing `D:` `main`; local Beta plan-access correction is uncommitted             |
-| Linked database    | New plan-access migration plus prior legal migration remain unapplied              |
-| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
-| Approved M8 scope  | Free-first Beta; tester/permanent/60-day codes; paid choice begins in M8-E         |
+| Field              | Current value                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                     |
+| Current package    | **M8-D Beta plan-access correction before real-Coach admission**                    |
+| Package state      | **Implementation on Main; Production migration preview blocked by PAT scope**       |
+| Approved next      | **Add Connection Pooling Read to the Production PAT, rerun CI, migrate and deploy** |
+| Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                          |
+| Branch baseline    | Remote `main` `92519d0`; current complete CI run `37809356021` is blocked           |
+| Worktree           | Existing `D:` `main`; pushed through `92519d0`; Status update remains local         |
+| Linked database    | New plan-access migration plus prior legal migration remain unapplied               |
+| Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data  |
+| Approved M8 scope  | Free-first Beta; tester/permanent/60-day codes; paid choice begins in M8-E          |
+
+**2026-10-09 authorized Main delivery and Production hold:** All implementation, migration,
+responsive correction and release-workflow changes through `92519d0402ec87ded6a05aa438334775462909ea`
+have reached `origin/main`. CI run `37809356021` passed verify (API 38 files / 183 tests; Web 73
+files / 315 tests), browser UI (2/2) and the linked development migration dry-run. The Production
+migration preview now resolves the required IPv4 pooler path but stops with HTTP 403 because the
+scoped `SUPABASE_PRODUCTION_ACCESS_TOKEN` lacks the Supabase `Connection Pooling: Read` permission.
+No Production migration or deployment is claimed for this SHA. The safe resume point is to replace
+that GitHub secret with a new Production-project-scoped PAT retaining the existing CLI reads plus
+`Connection Pooling: Read`, rerun exact-SHA CI, then dispatch the literal-`APPLY` Production
+migration workflow for the resulting green Main SHA.
 
 **2026-10-08 Venue rule-preview comprehension correction (local review version):** The previous
 `變更場地支出` preview exposed backend month/currency projection groups and three unchanged finance
@@ -579,22 +590,16 @@ rights/support contact remain Beta entry conditions.
 
 ## Next handoff
 
-**Current executable handoff (2026-10-07):** The Product Owner approved using the final public Auth
-entry during Alpha, including Email signup/OTP/recovery and Google login, and approved extending
-the existing OAuth client to Production. Commit `e7131ff` is deployed without a synthetic-account
-allowlist; mandatory first-use legal acceptance and tenant isolation remain. Production signup and
-Google provider are enabled; OTP is six digits and minimum password length is 12. Live entry checks
-passed; the Product Owner can now register their own account and confirm mail receipt
-and OAuth return. They report deployment/PWA looks good; the full physical touch/keyboard/safe-area
-path has the first reported corrections deployed from exact SHA `b3b37cb`; CI run `37641070465` and
-the public readiness check are green. The Product Owner should now recheck the no-Venue action,
-default Coach name, text-selection/zoom behavior, Today-only hidden scrollbar, blue line, Exercise
-filter and Calendar viewport on the installed phone. The current local review also needs both
-capability-link sheets, Coach-note keyboard focus mode and set-input `下一格／完成輸入` dock checked
-on installed iOS and Android PWAs before its broader gate. The Student detail fixed-schedule empty
-copy and new-schedule one-week default also require Product Owner review at desktop and phone width.
-Prior core Alpha evidence remains valid for unchanged workflows. Do not reset Production now that
-self-registration is enabled.
+**Current executable handoff (2026-10-09):** Production release is paused at one least-privilege
+credential boundary. Create a replacement Production-project-scoped Supabase PAT with the existing
+Project Settings, API Keys and API Key Secrets read permissions plus `Connection Pooling: Read`;
+replace only GitHub secret `SUPABASE_PRODUCTION_ACCESS_TOKEN`, then revoke the superseded PAT after
+the new token passes the pooler metadata read. Rerun exact-SHA CI for current Main, require verify,
+browser UI, development migration dry-run and Production migration preview green, then dispatch the
+Production migration release with that exact SHA and literal `APPLY`. Confirm both pending
+migrations, the same-SHA Fly deployment and `/api/ready` before recording completion. Do not bypass
+the migration workflow with Dashboard SQL or deploy a different SHA. Installed iOS/Android review
+of the delivered mobile corrections remains a separate M8-D acceptance item.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -1210,6 +1215,28 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-09 — LOG-459 — Push Beta corrections and isolate the Production credential blocker
+
+- **Scope:** deliver every current M8-D plan-access and mobile interaction correction to `main`, run
+  the governed exact-SHA checks, and prepare the two pending Production migrations without applying
+  them outside the release workflow.
+- **Outcome:** implementation and release corrections reached remote Main through
+  `92519d0402ec87ded6a05aa438334775462909ea`. The browser contract now verifies Free-first access,
+  plan tests no longer depend on runtime Supabase configuration, the CLI is pinned, Production
+  workflow changes themselves require a migration preview, and CI caches the password-free IPv4
+  Supavisor endpoint before invoking the official linked `db push` path. No raw Beta code is in Git.
+- **Verification:** local affected checks passed API 38 files / 183 tests and Web 73 files / 315
+  tests; root build passed with the existing Vite chunk advisory; the linked development dry-run
+  lists `20261006145359_m8_legal_acceptance.sql` and
+  `20261008063726_m8d_beta_plan_access_policy.sql`. CI run `37809356021` passed verify, browser UI
+  2/2 and development migration dry-run, then the Production metadata request returned HTTP 403.
+- **Known issue:** the current Production PAT lacks only the newly required Supabase
+  `Connection Pooling: Read` permission. Therefore Production migration preview, migration apply and
+  deployment of the complete Main SHA remain unverified and intentionally blocked.
+- **Next:** with explicit credential authorization, replace the scoped PAT, revoke the superseded
+  token after verification, rerun exact-SHA CI and execute the literal-`APPLY` Production migration
+  release. Then confirm the same SHA and public readiness before updating this log.
 
 ### 2026-10-08 — LOG-458 — Replace raw Venue projections with a decision preview
 
