@@ -89,6 +89,27 @@ export function keepNoteBlockVisible(canvas: HTMLElement, block: HTMLElement) {
   else if (blockRect.bottom > safeBottom) canvas.scrollTop += blockRect.bottom - safeBottom
 }
 
+export function shouldContainNoteTouch({
+  clientHeight,
+  scrollHeight,
+  scrollTop,
+  deltaX,
+  deltaY
+}: {
+  clientHeight: number
+  scrollHeight: number
+  scrollTop: number
+  deltaX: number
+  deltaY: number
+}) {
+  if (Math.abs(deltaX) > Math.abs(deltaY)) return true
+  const maxScrollTop = Math.max(0, scrollHeight - clientHeight)
+  if (maxScrollTop <= 1) return true
+  if (deltaY > 0 && scrollTop <= 0) return true
+  if (deltaY < 0 && scrollTop >= maxScrollTop - 1) return true
+  return false
+}
+
 export function MobileNoteEditor({
   value,
   onChange,
@@ -103,6 +124,7 @@ export function MobileNoteEditor({
   importItems: NoteImportItem[]
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null)
+  const canvasRef = useRef<HTMLDivElement | null>(null)
   const renderedValue = useRef<string | null>(null)
   const acceptedValue = useRef(value)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -144,6 +166,40 @@ export function MobileNoteEditor({
     acceptedValue.current = value
     renderBlocks(parseNote(value))
   }, [value])
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    let startX = 0
+    let startY = 0
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch) return
+      startX = touch.clientX
+      startY = touch.clientY
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (
+        !touch ||
+        !shouldContainNoteTouch({
+          clientHeight: canvas.clientHeight,
+          scrollHeight: canvas.scrollHeight,
+          scrollTop: canvas.scrollTop,
+          deltaX: touch.clientX - startX,
+          deltaY: touch.clientY - startY
+        })
+      )
+        return
+      event.preventDefault()
+    }
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true })
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart)
+      canvas.removeEventListener('touchmove', onTouchMove)
+    }
+  }, [])
 
   const saveBlocks = (blocks: NoteBlock[]) => {
     const next = serializeNote(blocks)
@@ -360,6 +416,7 @@ export function MobileNoteEditor({
   return (
     <>
       <div
+        ref={canvasRef}
         className="mobile-note-canvas"
         aria-label="教練筆記編輯器"
         onClick={(event) => {
@@ -394,11 +451,7 @@ export function MobileNoteEditor({
           onMouseUp={updateActive}
           onFocus={() => onFocusChange(true)}
           onBlur={(event) => {
-            if (
-              !event.relatedTarget?.closest(
-                '.mobile-note-canvas, .session-note-tools, .session-note-focus-actions'
-              )
-            ) {
+            if (!event.relatedTarget?.closest('.mobile-note-canvas, .session-note-tools')) {
               // iOS can blur a contenteditable while the keyboard or Visual Viewport is
               // settling. Mobile focus mode is explicit: only its confirm action exits.
               if (!window.matchMedia('(max-width: 720px)').matches) onFocusChange(false)

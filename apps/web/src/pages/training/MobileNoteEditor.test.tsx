@@ -2,12 +2,51 @@
 import { act, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { keepNoteBlockVisible, MobileNoteEditor } from './MobileNoteEditor'
+import { keepNoteBlockVisible, MobileNoteEditor, shouldContainNoteTouch } from './MobileNoteEditor'
 
 describe('mobile note editor', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     localStorage.removeItem('gym-assistant.note-import-selection')
+  })
+
+  it('contains empty and boundary drags while preserving real note scrolling', () => {
+    expect(
+      shouldContainNoteTouch({
+        clientHeight: 500,
+        scrollHeight: 500,
+        scrollTop: 0,
+        deltaX: 0,
+        deltaY: 36
+      })
+    ).toBe(true)
+    expect(
+      shouldContainNoteTouch({
+        clientHeight: 500,
+        scrollHeight: 900,
+        scrollTop: 0,
+        deltaX: 0,
+        deltaY: 36
+      })
+    ).toBe(true)
+    expect(
+      shouldContainNoteTouch({
+        clientHeight: 500,
+        scrollHeight: 900,
+        scrollTop: 180,
+        deltaX: 0,
+        deltaY: -36
+      })
+    ).toBe(false)
+    expect(
+      shouldContainNoteTouch({
+        clientHeight: 500,
+        scrollHeight: 900,
+        scrollTop: 180,
+        deltaX: 30,
+        deltaY: 4
+      })
+    ).toBe(true)
   })
 
   it('scrolls the note canvas instead of the document when the caret block leaves view', () => {

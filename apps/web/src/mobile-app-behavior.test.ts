@@ -55,9 +55,9 @@ describe('mobile app shell behavior', () => {
 
   it('turns the focused Coach note into one internally scrolling writing surface', () => {
     expect(styles).toMatch(
-      /html\.is-session-note-focused\s+\.app-shell\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*top:\s*var\(--session-note-viewport-top,\s*0px\);[^}]*height:\s*var\(--session-note-viewport-height,\s*100dvh\);[^}]*overflow:\s*hidden/s
+      /html\.is-session-note-focused\s+\.app-shell\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*top:\s*0;[^}]*height:\s*var\(--session-note-viewport-height,\s*100dvh\);[^}]*overflow:\s*hidden/s
     )
-    expect(styles).toMatch(
+    expect(styles).not.toMatch(
       /html\.is-session-note-focused\s+\.app-shell\s+\.mobile-header[^}]*\{[^}]*display:\s*none/s
     )
     expect(styles).not.toMatch(
@@ -66,10 +66,15 @@ describe('mobile app shell behavior', () => {
     expect(trainingWorkspace).toMatch(
       /root\.classList\.toggle\('is-session-note-focused', noteFocused\)/
     )
-    expect(trainingWorkspace).toContain('返回課堂頁面並結束教練筆記專注模式')
+    expect(trainingWorkspace).toContain("window.addEventListener('session-note-focus-exit'")
     expect(trainingWorkspace).toContain('const keyboardFocused = activeSetInput !== null')
+    expect(trainingWorkspace).not.toContain('session-note-focus-actions')
+    expect(workspace).toContain("window.dispatchEvent(new Event('session-note-focus-exit'))")
     expect(styles).toMatch(
-      /\.session-workspace\.is-note-focused\s+\.session-note-focus-actions\s*\{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*justify-content:\s*flex-start;[^}]*background:\s*#1b2017/s
+      /html\.is-session-note-focused\s+\.mobile-subpage-actions\s*\{[^}]*display:\s*none/s
+    )
+    expect(styles).toMatch(
+      /html\.is-session-note-focused\s+\.app-shell\[data-mobile-chrome\]\s+\.mobile-header\s*\{[^}]*transform:\s*none;[^}]*transition:\s*none;[^}]*pointer-events:\s*auto/s
     )
     expect(styles).toMatch(
       /\.session-workspace\.is-note-focused\s+\.session-note-tools\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*0;[^}]*display:\s*flex/s

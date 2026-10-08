@@ -257,12 +257,7 @@ it('leaves note focus mode immediately while saving in the background', async ()
   block.textContent = '今天動作品質穩定'
   await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
 
-  const done = host.querySelector<HTMLButtonElement>(
-    '[aria-label="返回課堂頁面並結束教練筆記專注模式"]'
-  )!
-  await act(async () => done.focus())
-  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
-  await act(async () => done.click())
+  await act(async () => window.dispatchEvent(new Event('session-note-focus-exit')))
 
   expect(calls.save).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -286,7 +281,7 @@ it('keeps mobile note focus mode active through iOS blur until the Coach confirm
 
   expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
   expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
-  expect(host.querySelector('[aria-label="返回課堂頁面並結束教練筆記專注模式"]')).not.toBeNull()
+  expect(document.querySelector('.session-note-focus-actions')).toBeNull()
 })
 
 it('shows the existing background-sync status if saving fails after focus mode closes', async () => {
@@ -297,11 +292,8 @@ it('shows the existing background-sync status if saving fails after focus mode c
   block.textContent = '尚未同步的內容'
   await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
 
-  const done = host.querySelector<HTMLButtonElement>(
-    '[aria-label="返回課堂頁面並結束教練筆記專注模式"]'
-  )!
   await act(async () => {
-    done.click()
+    window.dispatchEvent(new Event('session-note-focus-exit'))
     await Promise.resolve()
     await Promise.resolve()
   })

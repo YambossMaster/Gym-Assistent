@@ -38,17 +38,17 @@ describe('mobile note viewport', () => {
     ).toBe(0)
   })
 
-  it('keeps the focused writing surface aligned to the visible viewport while iOS pans it', () => {
+  it('keeps the focused writing surface at the layout origin while iOS pans it', () => {
     expect(
       getNoteFocusViewport({
         layoutHeight: 844,
         visualHeight: 480,
         visualOffsetTop: 96
       })
-    ).toEqual({ height: 480, top: 96 })
+    ).toEqual({ height: 480 })
   })
 
   it('falls back to the layout viewport when the Visual Viewport API is unavailable', () => {
-    expect(getNoteFocusViewport({ layoutHeight: 844 })).toEqual({ height: 844, top: 0 })
+    expect(getNoteFocusViewport({ layoutHeight: 844 })).toEqual({ height: 844 })
   })
 })

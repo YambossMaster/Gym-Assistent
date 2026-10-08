@@ -322,7 +322,6 @@ function TrainingEditor({
     const root = document.documentElement
     root.classList.toggle('is-session-note-focused', noteFocused)
     if (!noteFocused) {
-      root.style.removeProperty('--session-note-viewport-top')
       root.style.removeProperty('--session-note-viewport-height')
       return
     }
@@ -333,22 +332,15 @@ function TrainingEditor({
         visualHeight: viewport?.height,
         visualOffsetTop: viewport?.offsetTop
       })
-      // iOS pans the Visual Viewport to protect the caret. Move the entire focus
-      // surface by the same amount so its header and dock remain still on screen.
-      // This is a direct CSS update: ordinary viewport panning never rerenders the editor.
-      root.style.setProperty('--session-note-viewport-top', `${geometry.top}px`)
       root.style.setProperty('--session-note-viewport-height', `${geometry.height}px`)
     }
     alignFocusSurface()
     viewport?.addEventListener('resize', alignFocusSurface)
-    viewport?.addEventListener('scroll', alignFocusSurface)
     window.addEventListener('resize', alignFocusSurface)
     return () => {
       root.classList.remove('is-session-note-focused')
-      root.style.removeProperty('--session-note-viewport-top')
       root.style.removeProperty('--session-note-viewport-height')
       viewport?.removeEventListener('resize', alignFocusSurface)
-      viewport?.removeEventListener('scroll', alignFocusSurface)
       window.removeEventListener('resize', alignFocusSurface)
     }
   }, [noteFocused])
@@ -617,12 +609,17 @@ function TrainingEditor({
     setRevision(revisionRef.current)
     setSaveState('pending')
   }
-  const finishNote = () => {
-    if (!offline) void coordinator.flush().catch(() => undefined)
-    const active = document.activeElement
-    if (active instanceof HTMLElement && active.closest('.mobile-note-canvas')) active.blur()
-    setNoteFocused(false)
-  }
+  useEffect(() => {
+    if (!noteFocused) return
+    const exitFocus = () => {
+      if (!offline) void coordinator.flush().catch(() => undefined)
+      const active = document.activeElement
+      if (active instanceof HTMLElement && active.closest('.mobile-note-canvas')) active.blur()
+      setNoteFocused(false)
+    }
+    window.addEventListener('session-note-focus-exit', exitFocus)
+    return () => window.removeEventListener('session-note-focus-exit', exitFocus)
+  }, [coordinator, noteFocused, offline])
   const clearDragTimer = () => {
     if (dragTimer.current) clearTimeout(dragTimer.current)
     dragTimer.current = null
@@ -1260,19 +1257,6 @@ function TrainingEditor({
           </button>
         </div>
       </header>
-      {noteFocused ? (
-        <div className="session-note-focus-actions">
-          <button
-            type="button"
-            aria-label="返回課堂頁面並結束教練筆記專注模式"
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={finishNote}
-          >
-            <ChevronLeft aria-hidden="true" />
-            返回
-          </button>
-        </div>
-      ) : null}
       {sessionNotice ? (
         <p className="session-feedback" role="status">
           {sessionNotice}

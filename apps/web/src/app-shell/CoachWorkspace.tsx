@@ -158,7 +158,17 @@ export function CoachWorkspace({ session }: { session: Session }) {
           {isMobileSubpage ? (
             <div className="mobile-subpage-header">
               {location.pathname.startsWith('/sessions/') ? (
-                <button type="button" className="mobile-subpage-back" onClick={() => navigate(-1)}>
+                <button
+                  type="button"
+                  className="mobile-subpage-back"
+                  onClick={() => {
+                    if (document.documentElement.classList.contains('is-session-note-focused')) {
+                      window.dispatchEvent(new Event('session-note-focus-exit'))
+                      return
+                    }
+                    navigate(-1)
+                  }}
+                >
                   <ArrowLeft aria-hidden="true" />
                   <span>返回</span>
                 </button>
