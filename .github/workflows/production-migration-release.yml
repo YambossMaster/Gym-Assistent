@@ -87,16 +87,14 @@ jobs:
       - name: Link production project
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
+      - name: Cache production IPv4 pooler endpoint
+        run: node scripts/cache-supabase-pooler.mjs
+
       - name: Preview production migrations again
-        run: >-
-          npx supabase db push
-          --project-ref "$SUPABASE_PROJECT_ID"
-          --dry-run
+        run: npm run db:push:dry
 
       - name: Apply production migrations
-        run: >-
-          npx supabase db push
-          --project-ref "$SUPABASE_PROJECT_ID"
+        run: npm run db:push
 
       - name: Set up Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master

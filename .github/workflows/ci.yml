@@ -187,11 +187,11 @@ jobs:
       - name: Link production project
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
+      - name: Cache production IPv4 pooler endpoint
+        run: node scripts/cache-supabase-pooler.mjs
+
       - name: Preview production migrations
-        run: >-
-          npx supabase db push
-          --project-ref "$SUPABASE_PROJECT_ID"
-          --dry-run
+        run: npm run db:push:dry
 
       - name: Hold deployment for explicit migration release
         run: |
