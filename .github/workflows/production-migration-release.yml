@@ -88,10 +88,15 @@ jobs:
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Preview production migrations again
-        run: npm run db:push:dry
+        run: >-
+          npx supabase db push
+          --project-ref "$SUPABASE_PROJECT_ID"
+          --dry-run
 
       - name: Apply production migrations
-        run: npm run db:push
+        run: >-
+          npx supabase db push
+          --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Set up Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master

@@ -188,7 +188,10 @@ jobs:
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Preview production migrations
-        run: npm run db:push:dry
+        run: >-
+          npx supabase db push
+          --project-ref "$SUPABASE_PROJECT_ID"
+          --dry-run
 
       - name: Hold deployment for explicit migration release
         run: |
