@@ -15,7 +15,7 @@
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                               |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                  |
 | Release candidate             | `0632e044507c2e3b584b7e3f90192464c9c457a8` on Main; [CI #121](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37830139443) |
-| Worktree                      | Product change committed and deployed; this Status evidence update remains to be committed                                             |
+| Worktree                      | Product correction and deployment evidence committed; inspect `git status --short` for subsequent work                                 |
 | Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                  |
 | Production release            | [CI #121](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37830139443) automatically deployed Web correction `0632e04`     |
 | Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                |
