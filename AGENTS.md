@@ -10,16 +10,18 @@ route structure, visual language, and responsive experience.
 
 Before planning, changing, or reporting formal-product work:
 
-1. Read `README.md`, `docs/ROADMAP.md`, and `docs/PROJECT_STATUS.md`.
+1. Read `README.md` and the short router `docs/PROJECT_STATUS.md`.
 2. Run `git status --short`; reconcile the worktree with Status and preserve unrelated changes.
-3. Take the active package and exact next action from `docs/PROJECT_STATUS.md`. Do not cache a
-   current milestone or gate in this file.
+3. Follow the router's Required context: read the active package Status and named `ROADMAP.md`
+   sections. Load a predecessor or older milestone only when the router/package declares it or the
+   task needs its delivered baseline, decision, migration, regression, or exact evidence. Do not
+   cache a current milestone or gate in this file.
 4. Read `CONTEXT.md`, `docs/ARCHITECTURE.md`, and applicable `docs/adr/` files before changing domain
    language, Module interfaces, authorization, data ownership, or deployment shape.
 5. Inspect the matching `demo/src/pages/` route and reusable Demo components before defining or
    implementing a formal Web route.
-6. For direct Demo maintenance, also read `demo/README.md`, `demo/docs/ARCHITECTURE.md`,
-   `demo/docs/DATA_MODEL.md`, and `demo/docs/TESTING.md`.
+6. For direct Demo maintenance, follow `docs/status/DEMO.md`, which routes to the Demo's required
+   README, Architecture, Data Model and Testing documents.
 
 ## Working approach
 
@@ -41,7 +43,9 @@ Before planning, changing, or reporting formal-product work:
 ## Sources of truth
 
 - `docs/ROADMAP.md`: approved scope, sequence, dependencies, gate contracts, and completion.
-- `docs/PROJECT_STATUS.md`: current progress, evidence, risks, and one executable Next handoff.
+- `docs/PROJECT_STATUS.md`: short current-state router, blockers and one executable Next handoff.
+- `docs/status/<package>.md`: active or frozen Roadmap-package state and carried evidence.
+- `docs/status/log/`: chronological evidence, searched on demand rather than loaded at startup.
 - `docs/ARCHITECTURE.md`: authority, runtime, frontend, Module, projection, and deployment boundaries.
 - `CONTEXT.md`: canonical product language.
 - `docs/adr/`: durable decisions that need alternatives and consequences recorded.
@@ -201,6 +205,7 @@ when an unexpected problem, missing authority, external dependency, or required 
 continuation unsafe; record the exact handoff and blocking condition in Status.
 
 After code, schema, config, architecture, product behaviour, or blocker changes, follow the Status
-update protocol in `docs/PROJECT_STATUS.md`. A formal package is complete only when its required
-gates and remote evidence are complete. A Demo-only change is complete when its affected flow is
-locally testable and the Demo typecheck, tests, and release-facing build pass.
+update protocol in `docs/status/README.md`: update the active package, change the dashboard only when
+its current facts changed, and append the monthly engineering log. A formal package is complete only
+when its required gates and remote evidence are complete. A Demo-only change is complete when its
+affected flow is locally testable and the Demo typecheck, tests, and release-facing build pass.

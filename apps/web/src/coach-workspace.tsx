@@ -592,61 +592,63 @@ export function StudentDetailPage({
             onClose={() => setProfileEditing(false)}
           >
             <form className="student-detail-profile-form" onSubmit={save} autoComplete="off">
-              <label>
-                <RequiredFieldLabel>姓名</RequiredFieldLabel>
-                <input
-                  name="name"
-                  defaultValue={detail.student.name}
-                  required
-                  maxLength={120}
-                  autoComplete="off"
-                />
-              </label>
-              <div className="field-row">
+              <div className="student-detail-profile-fields" data-dialog-scroll-region>
                 <label>
-                  電話
+                  <RequiredFieldLabel>姓名</RequiredFieldLabel>
                   <input
-                    name="phone"
-                    defaultValue={detail.student.phone}
-                    maxLength={40}
+                    name="name"
+                    defaultValue={detail.student.name}
+                    required
+                    maxLength={120}
                     autoComplete="off"
                   />
                 </label>
+                <div className="field-row">
+                  <label>
+                    電話
+                    <input
+                      name="phone"
+                      defaultValue={detail.student.phone}
+                      maxLength={40}
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label>
+                    年齡區間
+                    <FormSelect
+                      label="年齡區間"
+                      name="ageRange"
+                      options={studentAgeRangeOptions}
+                      defaultValue={detail.student.ageRange ?? ''}
+                    />
+                  </label>
+                </div>
                 <label>
-                  年齡區間
-                  <FormSelect
-                    label="年齡區間"
-                    name="ageRange"
-                    options={studentAgeRangeOptions}
-                    defaultValue={detail.student.ageRange ?? ''}
+                  學生簡介
+                  <input
+                    name="goal"
+                    defaultValue={detail.student.goal}
+                    maxLength={1000}
+                    autoComplete="off"
+                    placeholder="例如：設計師、晨型人、喜歡跑步"
                   />
                 </label>
+                <label>
+                  備註
+                  <textarea
+                    name="privateNote"
+                    defaultValue={detail.student.privateNote}
+                    maxLength={4000}
+                  />
+                </label>
+                {saveMutation.isError && (
+                  <p className="form-error" role="alert">
+                    {saveMutation.error instanceof Error
+                      ? saveMutation.error.message
+                      : '暫時無法儲存，請重試。'}
+                  </p>
+                )}
               </div>
-              <label>
-                學生簡介
-                <input
-                  name="goal"
-                  defaultValue={detail.student.goal}
-                  maxLength={1000}
-                  autoComplete="off"
-                  placeholder="例如：設計師、晨型人、喜歡跑步"
-                />
-              </label>
-              <label>
-                備註
-                <textarea
-                  name="privateNote"
-                  defaultValue={detail.student.privateNote}
-                  maxLength={4000}
-                />
-              </label>
-              {saveMutation.isError && (
-                <p className="form-error" role="alert">
-                  {saveMutation.error instanceof Error
-                    ? saveMutation.error.message
-                    : '暫時無法儲存，請重試。'}
-                </p>
-              )}
               <footer>
                 <button
                   type="button"
@@ -2028,34 +2030,36 @@ function CreateStudentDialog({
   return (
     <SchedulingDialog title="新增學生" variant="profile" onClose={onClose}>
       <form className="student-detail-profile-form" onSubmit={submit} autoComplete="off">
-        <label>
-          <RequiredFieldLabel>姓名</RequiredFieldLabel>
-          <input name="name" required maxLength={120} autoComplete="off" />
-        </label>
-        <div className="field-row">
+        <div className="student-detail-profile-fields" data-dialog-scroll-region>
           <label>
-            電話
-            <input name="phone" maxLength={40} autoComplete="off" />
+            <RequiredFieldLabel>姓名</RequiredFieldLabel>
+            <input name="name" required maxLength={120} autoComplete="off" />
+          </label>
+          <div className="field-row">
+            <label>
+              電話
+              <input name="phone" maxLength={40} autoComplete="off" />
+            </label>
+            <label>
+              年齡區間
+              <FormSelect label="年齡區間" name="ageRange" options={studentAgeRangeOptions} />
+            </label>
+          </div>
+          <label>
+            學生簡介
+            <input
+              name="goal"
+              maxLength={1000}
+              autoComplete="off"
+              placeholder="例如：設計師、晨型人、喜歡跑步"
+            />
           </label>
           <label>
-            年齡區間
-            <FormSelect label="年齡區間" name="ageRange" options={studentAgeRangeOptions} />
+            備註
+            <textarea name="privateNote" maxLength={4000} />
           </label>
+          {error && <p className="form-error">{error}</p>}
         </div>
-        <label>
-          學生簡介
-          <input
-            name="goal"
-            maxLength={1000}
-            autoComplete="off"
-            placeholder="例如：設計師、晨型人、喜歡跑步"
-          />
-        </label>
-        <label>
-          備註
-          <textarea name="privateNote" maxLength={4000} />
-        </label>
-        {error && <p className="form-error">{error}</p>}
         <footer>
           <button className="secondary-button ui-action-cancel" type="button" onClick={onClose}>
             取消

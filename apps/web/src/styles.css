@@ -11035,6 +11035,10 @@ body.is-reordering-exercise * {
   gap: 15px;
   margin-top: 22px;
 }
+.student-detail-profile-fields {
+  display: grid;
+  gap: 15px;
+}
 .student-detail-profile-form label {
   display: grid;
   gap: 7px;
@@ -14947,6 +14951,32 @@ button:disabled {
     flex-direction: column;
     overflow: hidden;
   }
+  .scheduling-dialog > .ui-settings-dialog-content:has(> .student-detail-profile-form) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .scheduling-dialog .student-detail-profile-form {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+    overflow: hidden;
+  }
+  .scheduling-dialog .student-detail-profile-form .student-detail-profile-fields {
+    min-height: 0;
+    flex: 1 1 auto;
+    align-content: start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 20px 8px 0 0;
+    overscroll-behavior: contain;
+  }
+  .scheduling-dialog .student-detail-profile-form > footer {
+    position: static;
+    flex: 0 0 auto;
+  }
   .scheduling-dialog > .ui-settings-dialog-content > .scheduling-form {
     flex: 1 1 auto;
     min-height: 0;
@@ -17046,11 +17076,17 @@ button:disabled {
     overflow: hidden;
   }
 
-  .app-shell:has(.session-workspace.is-note-focused) > .mobile-header {
+  html.is-session-note-focused,
+  html.is-session-note-focused body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html.is-session-note-focused .app-shell .mobile-header {
     display: none;
   }
 
-  .app-shell:has(.session-workspace.is-note-focused) > .main-content {
+  html.is-session-note-focused .app-shell > .main-content {
     position: fixed;
     z-index: 30;
     inset: 0;

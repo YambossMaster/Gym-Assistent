@@ -55,10 +55,16 @@ describe('mobile app shell behavior', () => {
 
   it('turns the focused Coach note into one internally scrolling writing surface', () => {
     expect(styles).toMatch(
-      /\.app-shell:has\(\.session-workspace\.is-note-focused\)\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*overflow:\s*hidden/s
+      /html\.is-session-note-focused\s+\.app-shell\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*overflow:\s*hidden/s
     )
     expect(styles).toMatch(
-      /\.app-shell:has\(\.session-workspace\.is-note-focused\)\s*>\s*\.mobile-header[^}]*\{[^}]*display:\s*none/s
+      /html\.is-session-note-focused\s+\.app-shell\s+\.mobile-header[^}]*\{[^}]*display:\s*none/s
+    )
+    expect(styles).not.toMatch(
+      /\.app-shell:has\(\.session-workspace\.is-note-focused\)\s*>\s*\.mobile-header/
+    )
+    expect(trainingWorkspace).toMatch(
+      /document\.documentElement\.classList\.toggle\('is-session-note-focused', noteFocused\)/
     )
     expect(styles).toMatch(
       /\.session-workspace\.is-note-focused\s+\.mobile-note-canvas\s*\{[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-y:\s*contain/s

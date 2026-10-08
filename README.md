@@ -7,7 +7,8 @@
 ## 正式應用
 
 正式產品位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)。M0–M7 已完成；
-M7.5 Stage 2 已交付；M8-A 已採 Local + Production 的精簡發布契約，本機發布工程與遠端 CI 已完成。正式部署與商業 Beta 尚未開始。產品目前包含：
+M7.5 Stage 2、M8-A、M8-B、M8-B-Export 與 M8-B-Plan-Choice 已交付；Production internal Alpha
+已建立，目前正進行 M8-D 的 Beta 權限與正式開放準備，尚未接納真實教練。產品目前包含：
 
 - 可替換 Managed Auth 供應商的 OIDC/JWKS 驗證；
 - 一位教練對應一個私有 Workspace；
@@ -56,13 +57,17 @@ API 視窗的錯誤。使用期間請保留服務視窗開啟。
 
 ## 工程接手
 
-每個新工程對話都先讀：
+每個新工程對話先：
 
-1. [`docs/ROADMAP.md`](docs/ROADMAP.md)：里程碑、依賴、工程順序與完成門檻。
-2. [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)：目前進度、已知問題、驗證證據與下一接手點。
+1. 讀 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)：精簡的目前進度、阻擋、必讀路由與下一接手點。
+2. 執行 `git status --short`，保留既有未提交變更。
+3. 按 Status 的 `Required context` 讀取當前工作包與 [`docs/ROADMAP.md`](docs/ROADMAP.md)
+   指定章節；只有在依賴、回歸或歷史證據需要時才讀較早的 Milestone Status。
 
-完成 code、schema、config 或架構變更後，必須更新 Project Status 並追加 Engineering log。
-因此不同對話可以從 repository 接手，不需要依賴某一段聊天記憶。
+完成 code、schema、config 或架構變更後，依
+[`docs/status/README.md`](docs/status/README.md) 更新當前工作包，必要時更新 Dashboard，並追加
+當月 Engineering log。完整舊 Status 已封存但不再是每次啟動的必讀內容，因此不同對話仍可從
+repository 接手，不需要依賴某一段聊天記憶。
 
 ## 現有展示版
 

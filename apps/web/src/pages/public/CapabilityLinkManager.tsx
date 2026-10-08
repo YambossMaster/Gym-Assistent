@@ -293,7 +293,7 @@ function CapabilityLinkDialog({
           </button>
         </header>
         <div className="ui-settings-dialog-content">
-          <div className="ui-settings-dialog-fields">
+          <div className="ui-settings-dialog-fields" data-dialog-scroll-region>
             <p className="capability-intro">
               連結會在 24 小時後失效。只有持有連結的人能查看這項內容。
             </p>

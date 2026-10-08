@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 
 export const isDocsOnly = (paths) => paths.length > 0 && paths.every((file) => file.endsWith('.md'))
 
+export const isReleaseCandidate = (paths) => paths.length > 0 && !isDocsOnly(paths)
+
 export const needsBrowser = (paths) =>
   paths.length === 0 ||
   paths.some(
@@ -24,7 +26,10 @@ export const hasProductionMigration = (paths) =>
       file === '.github/workflows/ci.yml' ||
       file === '.github/workflows/production-migration-release.yml' ||
       file === 'scripts/cache-supabase-pooler.mjs' ||
-      file === 'scripts/ci-scope.mjs',
+      file === 'scripts/ci-scope.mjs' ||
+      file === 'scripts/production-migration-state.mjs' ||
+      file === 'scripts/require-release-candidate.mjs' ||
+      file === 'scripts/require-current-release.mjs',
   )
 
 export function changedPaths(base, head) {

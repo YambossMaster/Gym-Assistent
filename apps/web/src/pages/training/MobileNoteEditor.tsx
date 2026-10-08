@@ -399,7 +399,9 @@ export function MobileNoteEditor({
                 '.mobile-note-canvas, .session-note-tools, .session-note-focus-actions'
               )
             ) {
-              onFocusChange(false)
+              // iOS can blur a contenteditable while the keyboard or Visual Viewport is
+              // settling. Mobile focus mode is explicit: only its confirm action exits.
+              if (!window.matchMedia('(max-width: 720px)').matches) onFocusChange(false)
               setMenu(null)
             }
           }}

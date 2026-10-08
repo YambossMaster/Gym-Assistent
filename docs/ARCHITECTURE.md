@@ -263,9 +263,12 @@ function-specific credential.
   locally.
 - The API is stateless and uses a PostgreSQL connection pool.
 - Database migrations are serialized and run as an explicit release step. During synthetic-data
-  Alpha, a migration-changing `main` push previews Production and holds the app deployment; an
-  exact green commit may be applied only through the explicit migration-release workflow, which
-  previews again before applying and deploying. Before Beta, GitHub `production` Environment
+  Alpha, every non-documentation `main` push first compares the checked-out migration versions with
+  Production's applied migration history. Pending or unverified versions hold app deployment even
+  when the current commit changes only application code; a migration or release-workflow change also
+  runs a Production dry-run and holds deployment. An exact green commit may be applied only through
+  the explicit migration-release workflow, which previews again before applying and deploying.
+  Before Beta, GitHub `production` Environment
   approval gates both migration and app deployment; that approval gate remains in force after Beta
   and for every general-availability Production release.
 - M8 MVP uses Local and Production only, with separate Supabase projects, Auth configuration,

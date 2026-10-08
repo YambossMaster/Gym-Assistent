@@ -275,6 +275,18 @@ it('leaves note focus mode immediately while saving in the background', async ()
   await act(async () => resolveSave(training))
 })
 
+it('keeps mobile note focus mode active through iOS blur until the Coach confirms', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.focus())
+
+  expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
+  await act(async () => editor.blur())
+
+  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
+  expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
+  expect(host.querySelector('[aria-label="儲存教練筆記並結束專注模式"]')).not.toBeNull()
+})
+
 it('shows the existing background-sync status if saving fails after focus mode closes', async () => {
   calls.save.mockRejectedValueOnce(new Error('network'))
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!

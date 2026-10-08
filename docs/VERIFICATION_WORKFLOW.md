@@ -123,6 +123,15 @@ documentation-only no-op for Markdown-only commits and performs the linked dry-r
 commits. If Git cannot determine the diff, it defaults to the full gate. This avoids skipped
 required workflow checks while reducing documentation-only work.
 
+On each non-documentation `main` push, the independent Production preview job checks credentials
+and pooler access before dependency installation, compares local migration versions with the
+Production migration history, and fails closed on an unreadable or divergent history. It runs the
+Production dry-run when versions are pending or migration/release-gate files changed. Automatic Fly
+deployment requires this job to pass with no pending versions as well as the existing verify,
+browser, and development dry-run jobs. A migration-release target must be a commit that actually
+ran the full CI gate; documentation-only check results are not release evidence. A release is
+rejected if a newer non-documentation Main change superseded its SHA.
+
 When a remote test fails intermittently, record the failing assertion, reproduce it at the
 narrowest seam, and fix its synchronization before accepting a rerun as evidence. Use a bounded
 wait for a specific state change; do not add an arbitrary sleep. Update `PROJECT_STATUS.md` with

@@ -44,5 +44,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   await cachePooler({
     accessToken: process.env.SUPABASE_ACCESS_TOKEN,
     projectRef: process.env.SUPABASE_PROJECT_ID,
+    root: process.env.SUPABASE_POOLER_CACHE_ROOT || process.cwd(),
   })
 }

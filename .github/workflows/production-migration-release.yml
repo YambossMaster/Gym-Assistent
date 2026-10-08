@@ -53,6 +53,9 @@ jobs:
           git fetch origin main
           git merge-base --is-ancestor "$RELEASE_SHA" origin/main
 
+      - name: Require a commit that ran the full CI gate
+        run: node scripts/require-release-candidate.mjs
+
       - name: Require green CI jobs for exact commit
         shell: bash
         run: |
@@ -70,9 +73,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Require production release configuration
         shell: bash
         run: |
@@ -84,14 +84,28 @@ jobs:
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
           test -n "$VITE_SUPPORT_EMAIL"
 
+      - name: Verify Production pooler access before installing dependencies
+        env:
+          SUPABASE_POOLER_CACHE_ROOT: ${{ runner.temp }}
+        run: node scripts/cache-supabase-pooler.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Link production project
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
-      - name: Cache production IPv4 pooler endpoint
-        run: node scripts/cache-supabase-pooler.mjs
+      - name: Restore verified IPv4 pooler endpoint after linking
+        run: cp "$RUNNER_TEMP/supabase/.temp/pooler-url" supabase/.temp/pooler-url
 
       - name: Preview production migrations again
         run: npm run db:push:dry
+
+      - name: Reject migration release superseded by a newer Main change
+        shell: bash
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          node scripts/require-current-release.mjs
 
       - name: Apply production migrations
         run: npm run db:push

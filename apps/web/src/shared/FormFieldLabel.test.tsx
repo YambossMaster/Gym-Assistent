@@ -54,9 +54,32 @@ it('shows the shared mobile continuation cue only while the declared region has 
     scrollHeight: { configurable: true, value: 500 },
     scrollTop: { configurable: true, get: () => scrollTop }
   })
+  vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    right: 320,
+    top: 0,
+    bottom: 600,
+    width: 320,
+    height: 600,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
+  vi.spyOn(region, 'getBoundingClientRect').mockReturnValue({
+    left: 16,
+    right: 304,
+    top: 100,
+    bottom: 500,
+    width: 288,
+    height: 400,
+    x: 16,
+    y: 100,
+    toJSON: () => ({})
+  })
 
   await act(async () => window.dispatchEvent(new Event('resize')))
   expect(dialog.classList.contains('ui-dialog-has-more')).toBe(true)
+  expect(dialog.style.getPropertyValue('--ui-scroll-cue-bottom')).toBe('100px')
 
   scrollTop = 300
   await act(async () => region.dispatchEvent(new Event('scroll', { bubbles: true })))

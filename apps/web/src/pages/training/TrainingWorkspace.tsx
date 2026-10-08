@@ -315,22 +315,30 @@ function TrainingEditor({
     if (plan.data?.tier === 'free') setTrendId(null)
   }, [plan.data?.tier])
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
+  const workspaceRef = useRef<HTMLElement | null>(null)
   const touchStartY = useRef<number | null>(null)
   const keyboardFocused = noteFocused || activeSetInput !== null
   useEffect(() => {
+    document.documentElement.classList.toggle('is-session-note-focused', noteFocused)
+    return () => document.documentElement.classList.remove('is-session-note-focused')
+  }, [noteFocused])
+  useEffect(() => {
     if (!keyboardFocused) {
+      workspaceRef.current?.style.setProperty('--session-keyboard-inset', '0px')
       setKeyboardInset(0)
       return
     }
     const viewport = window.visualViewport
     const updateInset = () => {
-      setKeyboardInset(
-        getNoteKeyboardInset({
-          layoutHeight: window.innerHeight,
-          visualHeight: viewport?.height ?? window.innerHeight,
-          visualOffsetTop: viewport?.offsetTop ?? 0
-        })
-      )
+      const nextInset = getNoteKeyboardInset({
+        layoutHeight: window.innerHeight,
+        visualHeight: viewport?.height ?? window.innerHeight,
+        visualOffsetTop: viewport?.offsetTop ?? 0
+      })
+      // Apply the keyboard geometry synchronously during the native animation.
+      // React state follows for declarative consistency, but the dock does not wait for a render.
+      workspaceRef.current?.style.setProperty('--session-keyboard-inset', `${nextInset}px`)
+      setKeyboardInset(nextInset)
     }
     updateInset()
     viewport?.addEventListener('resize', updateInset)
@@ -1120,6 +1128,7 @@ function TrainingEditor({
   }
   return (
     <section
+      ref={workspaceRef}
       className={`session-workspace is-${mobileTab}-tab ${classInfoExpanded ? 'is-context-expanded' : 'is-context-collapsed'}${noteFocused ? ' is-note-focused' : ''}${activeSetInput ? ' is-set-input-focused' : ''}`}
       style={{ '--session-keyboard-inset': `${keyboardInset}px` } as CSSProperties}
       onTouchStartCapture={(event) => {
@@ -1304,7 +1313,7 @@ function TrainingEditor({
                 change({ ...draft, privateNote, operationId: crypto.randomUUID() })
               }
               onFocusChange={(focused) => {
-                setNoteFocused(focused)
+                if (window.matchMedia('(max-width: 720px)').matches) setNoteFocused(focused)
                 if (focused) setClassInfoExpanded(false)
               }}
               onLimit={() => setNotice('筆記已達 5000 字，請先刪減內容。')}
