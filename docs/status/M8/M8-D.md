@@ -5,12 +5,12 @@
 
 ## Package position
 
-| Gate      | State                                                                                                       |
-| --------- | ----------------------------------------------------------------------------------------------------------- |
-| Contract  | Beta plan-access correction is frozen; broader admission, backup and restore gates remain binding           |
-| Sol       | Plan-access implementation reached Main; accumulated mobile and release safeguards remain local review work |
-| CI        | Combined exact-SHA gate authorized on 2026-10-09; Production preview remains unverified                     |
-| Admission | No real Coach admitted; Production contains two synthetic Coaches                                           |
+| Gate      | State                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| Contract  | Beta plan-access correction is frozen; broader admission, backup and restore gates remain binding      |
+| Sol       | Accumulated plan-access, mobile and release safeguards reached Main at `fb75b7d`                       |
+| CI        | #120: verify, browser and development dry-run green; Production preview failed 403; deployment skipped |
+| Admission | No real Coach admitted; Production contains two synthetic Coaches                                      |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
 created the Production internal-Alpha foundation but retains the carry-over listed in
@@ -36,12 +36,9 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Local branch and `origin/main`: `ce57f826d83bd28f374854c660c083be6d2c2635`.
-- M8-D implementation and earlier release corrections reached Main through
-  `92519d0402ec87ded6a05aa438334775462909ea`.
-- The worktree contains Product Owner-retained, uncommitted M8-D product corrections, CI release
-  safeguards and documentation changes. Reconcile with `git status --short`; do not overwrite or
-  detach them.
+- Exact code release candidate on Main: `fb75b7d878d8d50731e15fbcf1d771a451dbee30`.
+- Product Owner-retained M8-D corrections, release safeguards and Status split were committed
+  together. Reconcile any subsequent work with `git status --short`.
 - Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
   data.
 - Production has not applied legal acceptance migration `20261006145359` or plan-access migration
@@ -52,13 +49,13 @@ The detailed behavior and migration contract live in
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                                        | Remaining evidence                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Release safeguards      | Production migration history now governs automatic deployment; docs-only, superseded and unverifiable releases are rejected locally | First remote CI execution; valid Production pooler/history read          |
-| Plan access             | Free-first tester/permanent/promotional policy implemented and focused-tested                                                       | Production preview/apply, live redemption and complete exact-SHA release |
-| Mobile Training         | Coach-note focus, keyboard inset, numeric progression and picker-space corrections have focused regression evidence                 | Corrected installed-iOS/Android acceptance and combined CI               |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues were corrected in shared boundaries              | Authenticated/installed-phone rendering and combined CI                  |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview have focused evidence                                                        | Combined browser/product review and CI                                   |
+| Area                    | Current fact                                                                                                            | Remaining evidence                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Release safeguards      | CI #120 proved the independent fail-fast 403 gate and skipped deploy; docs-only and superseded guards have local tests  | Valid Production pooler/history read and migration dry-run               |
+| Plan access             | Free-first tester/permanent/promotional policy implemented and focused-tested                                           | Production preview/apply, live redemption and complete exact-SHA release |
+| Mobile Training         | Coach-note focus, keyboard inset, numeric progression and picker-space corrections passed focused and combined CI tests | Corrected installed-iOS/Android acceptance                               |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                                  |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                          |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -80,8 +77,8 @@ matching Demo route/components.
 
 1. Replace the scoped Production Supabase PAT with one that also has `Connection Pooling: Read`;
    verify the replacement before revoking the old token.
-2. Run the now-authorized combined exact-SHA CI. Require verify, browser UI, development dry-run and
-   Production preview green before any release apply.
+2. Re-run exact-SHA CI #120 after the Production PAT has the needed permission. Require verify,
+   browser UI, development dry-run and Production preview green before any release apply.
 3. Apply both pending Production migrations only through the exact-SHA workflow with literal
    `APPLY`, then confirm same-SHA Fly deployment and `/api/ready`.
 4. Complete the Roadmap's backup/restore, Production reviewer, support/admission and real-Coach Beta
@@ -90,7 +87,7 @@ matching Demo route/components.
 
 ## Next handoff
 
-Complete local preflight, commit and push the accumulated product and release-safeguard changes under
-the Product Owner's 2026-10-09 authorization. Observe the exact-SHA gate. If Production PAT permission
-still fails, retain the safe release hold and request separately authorized credential replacement;
-otherwise review the preview and run the literal-`APPLY` exact-SHA migration release.
+The Production PAT still returns 403. Keep the release held until a separately authorized PAT/secret
+replacement succeeds, then re-run CI #120 for `fb75b7d878d8d50731e15fbcf1d771a451dbee30`.
+After the Production preview succeeds, obtain the literal `APPLY` release confirmation for the same
+SHA and verify migration apply, Fly deployment and readiness.

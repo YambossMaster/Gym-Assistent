@@ -31,7 +31,8 @@
 - Production foundation, exact-SHA Fly deployment automation, public landing/legal pages, PWA icon
   and multiple mobile corrections reached Main through observed GitHub Actions runs recorded in the
   legacy Status.
-- The current remote Main is `ce57f826d83bd28f374854c660c083be6d2c2635`.
+- The latest M8-D code release candidate and CI outcome are tracked in `M8-D.md`; do not infer
+  Production deployment from a Main push.
 - M8-D implementation reached Main through `92519d0402ec87ded6a05aa438334775462909ea`, but its
   Production gate did not complete.
 - `/api/ready` and the public routes were observed healthy after earlier exact-SHA deployments.
