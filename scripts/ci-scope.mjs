@@ -23,6 +23,7 @@ export const hasProductionMigration = (paths) =>
       file.startsWith('supabase/migrations/') ||
       file === '.github/workflows/ci.yml' ||
       file === '.github/workflows/production-migration-release.yml' ||
+      file === 'scripts/cache-supabase-pooler.mjs' ||
       file === 'scripts/ci-scope.mjs',
   )
 
