@@ -12,7 +12,7 @@ import {
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
 import { MobileNoteEditor } from './MobileNoteEditor'
-import { getNoteKeyboardInset } from './note-viewport'
+import { getNoteFocusViewport, getNoteKeyboardInset } from './note-viewport'
 import { SetInputAdvanceDock } from './SetInputAdvanceDock'
 import { adoptTrainingDraft } from './conflict-recovery'
 import {
@@ -317,10 +317,40 @@ function TrainingEditor({
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const workspaceRef = useRef<HTMLElement | null>(null)
   const touchStartY = useRef<number | null>(null)
-  const keyboardFocused = noteFocused || activeSetInput !== null
+  const keyboardFocused = activeSetInput !== null
   useEffect(() => {
-    document.documentElement.classList.toggle('is-session-note-focused', noteFocused)
-    return () => document.documentElement.classList.remove('is-session-note-focused')
+    const root = document.documentElement
+    root.classList.toggle('is-session-note-focused', noteFocused)
+    if (!noteFocused) {
+      root.style.removeProperty('--session-note-viewport-top')
+      root.style.removeProperty('--session-note-viewport-height')
+      return
+    }
+    const viewport = window.visualViewport
+    const alignFocusSurface = () => {
+      const geometry = getNoteFocusViewport({
+        layoutHeight: window.innerHeight,
+        visualHeight: viewport?.height,
+        visualOffsetTop: viewport?.offsetTop
+      })
+      // iOS pans the Visual Viewport to protect the caret. Move the entire focus
+      // surface by the same amount so its header and dock remain still on screen.
+      // This is a direct CSS update: ordinary viewport panning never rerenders the editor.
+      root.style.setProperty('--session-note-viewport-top', `${geometry.top}px`)
+      root.style.setProperty('--session-note-viewport-height', `${geometry.height}px`)
+    }
+    alignFocusSurface()
+    viewport?.addEventListener('resize', alignFocusSurface)
+    viewport?.addEventListener('scroll', alignFocusSurface)
+    window.addEventListener('resize', alignFocusSurface)
+    return () => {
+      root.classList.remove('is-session-note-focused')
+      root.style.removeProperty('--session-note-viewport-top')
+      root.style.removeProperty('--session-note-viewport-height')
+      viewport?.removeEventListener('resize', alignFocusSurface)
+      viewport?.removeEventListener('scroll', alignFocusSurface)
+      window.removeEventListener('resize', alignFocusSurface)
+    }
   }, [noteFocused])
   useEffect(() => {
     if (!keyboardFocused) {
@@ -1234,11 +1264,12 @@ function TrainingEditor({
         <div className="session-note-focus-actions">
           <button
             type="button"
-            aria-label="儲存教練筆記並結束專注模式"
+            aria-label="返回課堂頁面並結束教練筆記專注模式"
             onPointerDown={(event) => event.preventDefault()}
             onClick={finishNote}
           >
-            <Check />
+            <ChevronLeft aria-hidden="true" />
+            返回
           </button>
         </div>
       ) : null}

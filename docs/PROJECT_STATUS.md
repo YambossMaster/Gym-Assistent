@@ -10,12 +10,12 @@
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                         |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                           |
-| Current gate                  | **Exact-SHA Production release #2 green; M8-D acceptance gates remain open**                                                            |
+| Current gate                  | **Local Mobile Training correction under Product Owner review; M8-D acceptance gates remain open**                                      |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                   |
 | Release candidate             | `fb75b7d878d8d50731e15fbcf1d771a451dbee30` on Main; [CI #120](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37819308629)  |
-| Worktree                      | Product and release-safeguard changes committed; inspect `git status --short` for new work                                              |
+| Worktree                      | Uncommitted Mobile Training focus correction on top of `fb75b7d`; focused local checks green                                            |
 | Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                   |
 | Production release            | [Migration release #2](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37823400258) applied M8-D SQL and deployed `fb75b7d` |
 | Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                 |
@@ -52,15 +52,20 @@ startup context.
   admission acceptance.
 - Installed iOS/Android review of the current mobile corrections remains separate M8-D acceptance
   evidence.
+- A newer local Coach-note correction replaces the floating check with a fixed top bar and
+  focus-only `返回`, and anchors the focus surface to Visual Viewport geometry without React
+  rerenders during viewport panning. It passed focused tests, typecheck and a 390×844 mocked-browser
+  review, but is not committed, deployed or installed-device verified.
 - Real-Coach admission, backup/restore evidence and required Production reviewer controls remain
   governed by the M8-D Contract and Roadmap gate.
 
 ## Next handoff
 
-Complete the remaining M8-D installed-device review, backup/isolated-restore proof, Production
-reviewer controls and real-Coach admission checks before inviting real Coaches. Investigate the
-legal acceptance migration's application provenance without reapplying it. Ask separately before
-revoking the previous Production PAT; the verified replacement expires 2027-01-07.
+Product Owner reviews the local Coach-note focus correction, then explicitly authorizes any full
+CI/remote delivery. After delivery, recheck the installed iOS/Android keyboard path and continue the
+remaining M8-D backup/isolated-restore, Production reviewer, legal-migration provenance and
+real-Coach admission gates. Ask separately before revoking the previous Production PAT; the verified
+replacement expires 2027-01-07.
 
 ## Status system
 

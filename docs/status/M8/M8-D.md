@@ -54,13 +54,13 @@ The detailed behavior and migration contract live in
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                            | Remaining evidence                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
-| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                      | Live redemption and real-Coach admission checks                 |
-| Mobile Training         | Coach-note focus, keyboard inset, numeric progression and picker-space corrections passed focused and combined CI tests | Corrected installed-iOS/Android acceptance                      |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
+| Area                    | Current fact                                                                                                             | Remaining evidence                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed   | Continue monitoring future releases; no current release blocker |
+| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                       | Live redemption and real-Coach admission checks                 |
+| Mobile Training         | New local Coach-note top bar and Visual Viewport anchoring passed 39 focused tests, typecheck and 390×844 browser review | Product review, CI/delivery authorization and installed recheck |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests  | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -88,6 +88,8 @@ matching Demo route/components.
 
 ## Next handoff
 
-Finish the remaining M8-D installed-device, recovery, reviewer-control and admission gates before
-inviting real Coaches. Investigate legal migration provenance and arrange separately authorized old
-PAT revocation without reopening the successful `fb75b7d` deployment.
+Product Owner reviews the local Coach-note focus correction before any full CI or remote delivery.
+After delivery, recheck its installed-iOS/Android keyboard behavior, then finish the remaining M8-D
+recovery, reviewer-control and admission gates before inviting real Coaches. Investigate legal
+migration provenance and arrange separately authorized old PAT revocation without reopening the
+successful `fb75b7d` deployment.

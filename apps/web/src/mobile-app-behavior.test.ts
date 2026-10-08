@@ -55,7 +55,7 @@ describe('mobile app shell behavior', () => {
 
   it('turns the focused Coach note into one internally scrolling writing surface', () => {
     expect(styles).toMatch(
-      /html\.is-session-note-focused\s+\.app-shell\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*overflow:\s*hidden/s
+      /html\.is-session-note-focused\s+\.app-shell\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*top:\s*var\(--session-note-viewport-top,\s*0px\);[^}]*height:\s*var\(--session-note-viewport-height,\s*100dvh\);[^}]*overflow:\s*hidden/s
     )
     expect(styles).toMatch(
       /html\.is-session-note-focused\s+\.app-shell\s+\.mobile-header[^}]*\{[^}]*display:\s*none/s
@@ -64,7 +64,15 @@ describe('mobile app shell behavior', () => {
       /\.app-shell:has\(\.session-workspace\.is-note-focused\)\s*>\s*\.mobile-header/
     )
     expect(trainingWorkspace).toMatch(
-      /document\.documentElement\.classList\.toggle\('is-session-note-focused', noteFocused\)/
+      /root\.classList\.toggle\('is-session-note-focused', noteFocused\)/
+    )
+    expect(trainingWorkspace).toContain('返回課堂頁面並結束教練筆記專注模式')
+    expect(trainingWorkspace).toContain('const keyboardFocused = activeSetInput !== null')
+    expect(styles).toMatch(
+      /\.session-workspace\.is-note-focused\s+\.session-note-focus-actions\s*\{[^}]*position:\s*absolute;[^}]*top:\s*0;[^}]*justify-content:\s*flex-start;[^}]*background:\s*#1b2017/s
+    )
+    expect(styles).toMatch(
+      /\.session-workspace\.is-note-focused\s+\.session-note-tools\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*0;[^}]*display:\s*flex/s
     )
     expect(styles).toMatch(
       /\.session-workspace\.is-note-focused\s+\.mobile-note-canvas\s*\{[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-y:\s*contain/s

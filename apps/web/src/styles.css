@@ -17070,6 +17070,7 @@ button:disabled {
 
   .session-workspace.is-note-focused {
     --session-note-dock-height: 64px;
+    position: relative;
     height: 100%;
     min-height: 0;
     padding-bottom: 0;
@@ -17089,8 +17090,11 @@ button:disabled {
   html.is-session-note-focused .app-shell > .main-content {
     position: fixed;
     z-index: 30;
-    inset: 0;
-    height: 100dvh;
+    top: var(--session-note-viewport-top, 0px);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: var(--session-note-viewport-height, 100dvh);
     overflow: hidden;
     background: #faf9f4;
   }
@@ -17105,38 +17109,53 @@ button:disabled {
   }
 
   .session-workspace.is-note-focused .session-note-focus-actions {
-    position: fixed;
+    position: absolute;
     z-index: 32;
-    top: calc(var(--mobile-header-top-inset) + 8px);
-    right: 16px;
-    left: 16px;
+    top: 0;
+    right: 0;
+    left: 0;
+    min-height: var(--mobile-header-height);
+    box-sizing: border-box;
+    padding: var(--mobile-header-top-inset) 16px 8px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 10px;
+    border-bottom: 1px solid #31362d;
+    background: #1b2017;
     pointer-events: none;
   }
 
   .session-note-focus-actions > button {
-    width: 44px;
+    width: auto;
+    min-width: 72px;
     height: 44px;
-    flex: 0 0 44px;
+    padding: 0 8px 0 2px;
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 14px;
-    color: #fff;
-    background: var(--ink);
-    box-shadow: 0 8px 20px rgba(24, 29, 20, 0.16);
+    gap: 3px;
+    border: 0;
+    border-radius: 10px;
+    color: #f2f0e9;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 750;
     cursor: pointer;
     pointer-events: auto;
   }
 
+  .session-note-focus-actions > button:focus-visible {
+    outline: 2px solid var(--lime);
+    outline-offset: 2px;
+  }
+
   .session-note-focus-actions > button svg {
-    width: 20px;
-    height: 20px;
-    stroke-width: 2.4;
+    width: 17px;
+    height: 17px;
+    stroke-width: 2.2;
   }
 
   .session-workspace.is-note-focused .session-body,
@@ -17147,17 +17166,21 @@ button:disabled {
   }
 
   .session-workspace.is-note-focused .mobile-note-canvas {
-    height: calc(
-      100% - max(var(--session-keyboard-inset), env(safe-area-inset-bottom)) -
-        var(--session-note-dock-height)
-    );
-    padding-top: calc(var(--mobile-header-top-inset) + 66px);
+    height: calc(100% - var(--session-note-dock-height));
+    padding-top: calc(var(--mobile-header-height) + 18px);
     overflow-y: auto;
     overscroll-behavior-y: contain;
   }
 
   .session-workspace.is-note-focused .session-note-tools {
+    position: absolute;
+    bottom: 0;
     display: flex;
+  }
+
+  .session-workspace.is-note-focused .session-note-popover {
+    position: absolute;
+    bottom: calc(var(--session-note-dock-height) + 6px);
   }
 
   .session-workspace.is-training-tab .session-bottom {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getNoteKeyboardInset } from './note-viewport'
+import { getNoteFocusViewport, getNoteKeyboardInset } from './note-viewport'
 
 describe('mobile note viewport', () => {
   it('keeps the keyboard inset stable when a browser pans the visual viewport', () => {
@@ -36,5 +36,19 @@ describe('mobile note viewport', () => {
         visualOffsetTop: 0
       })
     ).toBe(0)
+  })
+
+  it('keeps the focused writing surface aligned to the visible viewport while iOS pans it', () => {
+    expect(
+      getNoteFocusViewport({
+        layoutHeight: 844,
+        visualHeight: 480,
+        visualOffsetTop: 96
+      })
+    ).toEqual({ height: 480, top: 96 })
+  })
+
+  it('falls back to the layout viewport when the Visual Viewport API is unavailable', () => {
+    expect(getNoteFocusViewport({ layoutHeight: 844 })).toEqual({ height: 844, top: 0 })
   })
 })
