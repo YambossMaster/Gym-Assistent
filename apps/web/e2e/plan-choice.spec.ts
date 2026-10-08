@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const coachId = '00000000-0000-4000-8000-000000000001'
 
-async function mockPlanJourney(page: Page) {
+async function mockFreePlanJourney(page: Page) {
   const now = Math.floor(Date.now() / 1000)
   const encoded = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
   const session = {
@@ -31,7 +31,7 @@ async function mockPlanJourney(page: Page) {
     else if (pathname === '/auth/v1/user') await route.fulfill({ json: session.user })
     else await route.fulfill({ status: 501, json: { error: 'unhandled_auth_fixture_route' } })
   })
-  let plan = {
+  const plan = {
     tier: 'free' as 'free' | 'basic',
     source: 'free' as 'free' | 'subscription',
     activeStudents: 0,
@@ -39,50 +39,16 @@ async function mockPlanJourney(page: Page) {
     studentLimit: 5 as number | null,
     venueLimit: 1 as number | null,
     overCapacity: false,
-    version: 0,
-    subscription: undefined as
-      | undefined
-      | {
-          tier: 'basic'
-          interval: 'month' | 'year'
-          periodEndsAt: string
-          pendingTier: null
-          pendingInterval: null
-        }
+    version: 0
   }
+  let planMutationCount = 0
   await page.route('**/api/v1/**', async (route) => {
     const { pathname } = new URL(route.request().url())
     if (pathname === '/api/v1/plan' && route.request().method() === 'GET') {
       await route.fulfill({ json: { plan } })
     } else if (pathname === '/api/v1/plan/subscription') {
-      const action = route.request().postDataJSON() as {
-        kind: string
-        tier: string
-        interval: 'month' | 'year'
-        version: number
-      }
-      if (action.version !== plan.version) {
-        await route.fulfill({ status: 409, json: { error: 'version_conflict' } })
-      } else if (action.kind === 'select' && action.tier === 'basic') {
-        plan = {
-          ...plan,
-          tier: 'basic',
-          source: 'subscription',
-          studentLimit: 15,
-          venueLimit: null,
-          version: plan.version + 1,
-          subscription: {
-            tier: 'basic',
-            interval: action.interval,
-            periodEndsAt: '2026-11-06T00:00:00Z',
-            pendingTier: null,
-            pendingInterval: null
-          }
-        }
-        await route.fulfill({ json: { plan } })
-      } else {
-        await route.fulfill({ status: 400, json: { error: 'unsupported_fixture_action' } })
-      }
+      planMutationCount += 1
+      await route.fulfill({ status: 403, json: { error: 'plan_tester_required' } })
     } else if (pathname === '/api/v1/beta/status') {
       await route.fulfill({ json: { grant: { state: 'free' } } })
     } else if (pathname === '/api/v1/workspace-settings') {
@@ -95,30 +61,34 @@ async function mockPlanJourney(page: Page) {
   await page.route('**/health', async (route) => {
     await route.fulfill({ json: { status: 'ok' } })
   })
+  return { getPlanMutationCount: () => planMutationCount }
 }
 
 for (const viewport of [
   { width: 1440, height: 900 },
   { width: 390, height: 844 }
 ]) {
-  test(`Plan Choice selection and reload at ${viewport.width}px`, async ({ page }) => {
+  test(`Free-first plan visibility and reload at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport)
-    await mockPlanJourney(page)
+    const fixture = await mockFreePlanJourney(page)
     await page.goto('/plans')
     if (viewport.width <= 720) await page.getByRole('button', { name: '登入', exact: true }).click()
     await page.getByRole('textbox', { name: 'Email' }).fill('browser-fixture@example.test')
     await page.getByLabel('密碼').fill('fixture-password')
     await page.getByRole('button', { name: '繼續', exact: true }).click()
-    await expect(page.getByRole('heading', { name: '選擇適合你的方案' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '比較方案與 Beta 權益' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Free' })).toBeVisible()
+    await expect(page.getByText('目前方案', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: '年費方案' })).toBeVisible()
     await page.getByRole('button', { name: '年費方案' }).click()
     await expect(page.getByText('1,990', { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: '選擇 Pro 方案' }).click()
-    await expect(page.getByRole('alertdialog').getByText('確認方案變更')).toBeVisible()
-    await page.getByRole('button', { name: '確認選擇' }).click()
-    await expect(page.getByText('目前方案 · 年費')).toBeVisible()
+    await expect(page.getByText('支付功能上線後開放', { exact: true })).toHaveCount(2)
+    await expect(page.getByRole('button', { name: /切換至 (Pro|Prime) 方案/ })).toHaveCount(0)
+    expect(fixture.getPlanMutationCount()).toBe(0)
     await page.reload()
-    await expect(page.getByText('目前方案 · 年費')).toBeVisible()
+    await expect(page.getByText('目前方案', { exact: true })).toBeVisible()
+    await expect(page.getByText('支付功能上線後開放', { exact: true })).toHaveCount(2)
+    expect(fixture.getPlanMutationCount()).toBe(0)
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(documentWidth).toBeLessThanOrEqual(viewport.width)
   })
