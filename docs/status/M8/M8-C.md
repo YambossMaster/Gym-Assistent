@@ -42,9 +42,10 @@ commit, run, asset-hash or route-check evidence is required.
 
 ## Carry-over into M8-D
 
-- Production migrations `20261006145359` and `20261008063726` are unapplied.
-- The scoped Production PAT lacks `Connection Pooling: Read`, blocking authoritative pooler/history
-  validation.
+- At the M8-C handoff, migrations `20261006145359` and `20261008063726` were recorded as unapplied;
+  see the active M8-D status for current linked migration-history evidence.
+- At the M8-C handoff, the scoped Production PAT lacked `Connection Pooling: Read`. The active M8-D
+  status tracks the replacement and current release result.
 - Installed iOS/Android acceptance remains incomplete for the current accumulated mobile version.
 - Production reviewer controls, backup/restore evidence and real-Coach admission belong to M8-D.
 - Credentials issued with the Alpha setup use the recorded 90-day rotation window ending before

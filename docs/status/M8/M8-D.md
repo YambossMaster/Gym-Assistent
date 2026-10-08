@@ -5,12 +5,12 @@
 
 ## Package position
 
-| Gate      | State                                                                                                  |
-| --------- | ------------------------------------------------------------------------------------------------------ |
-| Contract  | Beta plan-access correction is frozen; broader admission, backup and restore gates remain binding      |
-| Sol       | Accumulated plan-access, mobile and release safeguards reached Main at `fb75b7d`                       |
-| CI        | #120: verify, browser and development dry-run green; Production preview failed 403; deployment skipped |
-| Admission | No real Coach admitted; Production contains two synthetic Coaches                                      |
+| Gate      | State                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------- |
+| Contract  | Beta plan-access correction is frozen; broader admission, backup and restore gates remain binding |
+| Sol       | Accumulated plan-access, mobile and release safeguards reached Main at `fb75b7d`                  |
+| CI        | #120 attempt 2 and exact-SHA Production migration release #2 green; admission checks remain open  |
+| Admission | No real Coach admitted; Production contains two synthetic Coaches                                 |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
 created the Production internal-Alpha foundation but retains the carry-over listed in
@@ -41,21 +41,26 @@ The detailed behavior and migration contract live in
   together. Reconcile any subsequent work with `git status --short`.
 - Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
   data.
-- Production has not applied legal acceptance migration `20261006145359` or plan-access migration
-  `20261008063726`.
-- The latest complete implementation release is not established: later green runs skipped a
-  required Production preview, and the current scoped PAT returns HTTP 403 for Connection Pooling
-  metadata.
+- Production preview on CI #120 attempt 2 lists only plan-access migration `20261008063726` as
+  pending. Legal acceptance `20261006145359` is no longer pending according to linked history and
+  dry-run; its application provenance remains to be established.
+- The new Production-scoped PAT has the four required Read scopes and passed the pooler/history
+  pre-flight. It replaced only GitHub's Production access-token secret; the previous PAT remains
+  valid pending separately authorized revocation.
+- [Manual Production release #2](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37823400258)
+  applied `20261008063726`, deployed exact SHA `fb75b7d878d8d50731e15fbcf1d771a451dbee30`,
+  and returned `{"status":"ready"}` from `/api/ready` on 2026-10-09. The authenticated Web
+  workspace loaded afterward. This is implementation delivery, not real-Coach admission.
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                            | Remaining evidence                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Release safeguards      | CI #120 proved the independent fail-fast 403 gate and skipped deploy; docs-only and superseded guards have local tests  | Valid Production pooler/history read and migration dry-run               |
-| Plan access             | Free-first tester/permanent/promotional policy implemented and focused-tested                                           | Production preview/apply, live redemption and complete exact-SHA release |
-| Mobile Training         | Coach-note focus, keyboard inset, numeric progression and picker-space corrections passed focused and combined CI tests | Corrected installed-iOS/Android acceptance                               |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                                  |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                          |
+| Area                    | Current fact                                                                                                            | Remaining evidence                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
+| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                      | Live redemption and real-Coach admission checks                 |
+| Mobile Training         | Coach-note focus, keyboard inset, numeric progression and picker-space corrections passed focused and combined CI tests | Corrected installed-iOS/Android acceptance                      |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -75,19 +80,14 @@ matching Demo route/components.
 
 ## Blockers and open gates
 
-1. Replace the scoped Production Supabase PAT with one that also has `Connection Pooling: Read`;
-   verify the replacement before revoking the old token.
-2. Re-run exact-SHA CI #120 after the Production PAT has the needed permission. Require verify,
-   browser UI, development dry-run and Production preview green before any release apply.
-3. Apply both pending Production migrations only through the exact-SHA workflow with literal
-   `APPLY`, then confirm same-SHA Fly deployment and `/api/ready`.
-4. Complete the Roadmap's backup/restore, Production reviewer, support/admission and real-Coach Beta
+1. Establish the legal acceptance migration's apply provenance; do not reapply an already-recorded
+   migration. Revoke the old PAT only after separate authorization; the new PAT expires 2027-01-07.
+2. Complete the Roadmap's backup/restore, Production reviewer, support/admission and real-Coach Beta
    gates before admitting the first real Coach.
-5. Record installed-device coverage honestly; browser 390×844 evidence is not installed-PWA proof.
+3. Record installed-device coverage honestly; browser 390×844 evidence is not installed-PWA proof.
 
 ## Next handoff
 
-The Production PAT still returns 403. Keep the release held until a separately authorized PAT/secret
-replacement succeeds, then re-run CI #120 for `fb75b7d878d8d50731e15fbcf1d771a451dbee30`.
-After the Production preview succeeds, obtain the literal `APPLY` release confirmation for the same
-SHA and verify migration apply, Fly deployment and readiness.
+Finish the remaining M8-D installed-device, recovery, reviewer-control and admission gates before
+inviting real Coaches. Investigate legal migration provenance and arrange separately authorized old
+PAT revocation without reopening the successful `fb75b7d` deployment.
