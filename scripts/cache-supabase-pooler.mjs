@@ -10,6 +10,13 @@ export function buildPoolerUrl(projectRef, poolerHost) {
   return `postgresql://postgres.${projectRef}@${poolerHost}:5432/postgres`
 }
 
+export function selectPrimaryPoolerHost(configs) {
+  if (!Array.isArray(configs)) throw new Error('Supabase returned an invalid pooler response')
+  const primary = configs.find((config) => config?.database_type === 'PRIMARY')
+  if (!primary) throw new Error('Supabase did not return a primary pooler')
+  return primary.db_host
+}
+
 export async function cachePooler({
   accessToken,
   projectRef,
@@ -20,13 +27,13 @@ export async function cachePooler({
   if (!projectRef) throw new Error('SUPABASE_PROJECT_ID is required')
 
   const response = await fetchImpl(
-    `https://api.supabase.com/v1/projects/${encodeURIComponent(projectRef)}/config/database`,
+    `https://api.supabase.com/v1/projects/${encodeURIComponent(projectRef)}/config/database/pooler`,
     { headers: { Authorization: `Bearer ${accessToken}` } },
   )
   if (!response.ok) throw new Error(`Unable to read Supabase database config (${response.status})`)
 
-  const config = await response.json()
-  const poolerUrl = buildPoolerUrl(projectRef, config.db_host)
+  const configs = await response.json()
+  const poolerUrl = buildPoolerUrl(projectRef, selectPrimaryPoolerHost(configs))
   const tempDirectory = resolve(root, 'supabase', '.temp')
   mkdirSync(tempDirectory, { recursive: true })
   writeFileSync(resolve(tempDirectory, 'pooler-url'), `${poolerUrl}\n`, 'utf8')
