@@ -9,36 +9,34 @@
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
 | Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C public Landing and bilingual legal baseline deployed**                      |
+| Package state      | **M8-C public Landing, legal and PWA icon refinements deployed**                   |
 | Approved next      | **Review Production Landing/legal pages; installed-phone recheck remains open**    |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
-| Branch baseline    | Production deploy `ed92d57`; GitHub Actions run `37672700409` is green             |
+| Branch baseline    | Production deploy `4b314f4`; GitHub Actions run `37736240939` is green             |
 | Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                              |
 | Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned       |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
 | Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
 
-**2026-10-08 PWA and browser icon correction (local review version):** The manifest, iOS
+**2026-10-08 PWA and browser icon correction (deployed):** The manifest, iOS
 home-screen metadata and browser favicon now use the Product Owner-supplied dark tile with neon FORM
 geometry, while existing in-page brand variants remain unchanged. The supplied 1254x1254 RGBA PNG
 is stored intact as dedicated application artwork with `purpose: any`; the service-worker shell cache
 advances to `form-coach-shell-v3` and precaches the new asset so an updated installation can retrieve
-it offline. Static manifest/image validation and the focused Web production build passed; the first
-sandboxed Vite attempt hit the known Windows `spawn EPERM`, then the approved non-sandbox rerun
-passed with only the existing over-500-kB chunk advisory. Installed Windows/iOS/Android icon refresh
-behavior, full CI, remote delivery and Production deployment are unverified pending Product Owner
-review.
+it offline. Commit `4b314f48e2dae50c4adaf940aab91aaa7c5b203b` reached `origin/main`; GitHub
+Actions run `37736240939` passed and deployed the exact SHA. The live manifest and service worker
+reference the new asset, and its 855,727-byte SHA-256 matches the repository file. Installed
+Windows/iOS/Android icon refresh behavior remains open for physical-device recheck.
 
-**2026-10-08 public legal-page scroll correction (local review version):** Opening Terms or
+**2026-10-08 public legal-page scroll correction (deployed):** Opening Terms or
 Privacy through an in-app link previously retained the source page's document scroll position, so
 the legal document could appear partway down instead of at its beginning. The shared legal layout
 now resets the document to the top before paint; the correction covers both public pages without
-changing their text or return behavior. The focused regression test first failed for both pages,
-then passed 1 file / 4 tests after the correction; Web typecheck, targeted Prettier and
-`git diff --check` passed. Browser journeys from the Landing footer confirmed `scrollY=0` for both
-pages at a normal desktop viewport and exact 390x844; both mobile pages retained zero horizontal
-overflow. Full CI/build, remote delivery and Production deployment remain unverified pending
-Product Owner review.
+changing their return behavior. The same delivery also makes optional Email notice wording match the
+actual operating capability. CI passed API 38 files / 179 tests, Web 68 files / 293 tests, browser UI
+2 tests and the development migration dry-run; Production migration preview correctly skipped. Live
+navigation returned HTTP 200 for both routes, and the deployed bundle contains the bilingual policy
+wording and scroll-reset code.
 
 **2026-10-08 public Landing and bilingual legal delivery:** Product Owner approved the reviewed
 Landing, Terms and Privacy package for `main`, exact-SHA CI and Production deployment. Commit
@@ -1095,6 +1093,27 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-08 — LOG-449 — Deliver PWA icon and legal-page refinements
+
+- **Scope:** Deliver the reviewed PWA/browser icon, legal-page top reset and bilingual legal-notice
+  wording to `main` and Production without changing schema, Auth, entitlements or API behavior.
+- **Outcome:** The installed-app and browser metadata use the dedicated dark neon icon; the service
+  worker advances to shell cache v3; Terms and Privacy open at the document top and no longer promise
+  Email notices the current operation cannot guarantee.
+- **Verification:** Local affected preflight passed Web typecheck and 68 files / 293 tests. Exact SHA
+  `4b314f48e2dae50c4adaf940aab91aaa7c5b203b` passed GitHub Actions run `37736240939` in
+  3 minutes 32 seconds: verify passed API 38 files / 179 tests and Web 68 files / 293 tests,
+  browser UI passed 2 tests, development migration dry-run passed, Production migration preview
+  correctly skipped, and `deploy-production` completed in 1 minute 4 seconds.
+- **Production evidence:** `/api/ready` returned HTTP 200 with `{"status":"ready"}`. The live
+  manifest and `form-coach-shell-v3` service worker reference the new icon; its 855,727-byte SHA-256
+  matches the repository file. Browser-navigation requests to `/terms` and `/privacy` returned HTTP
+  200, and the deployed bundle contains both bilingual retention wording and the scroll-reset code.
+- **Known gap:** Installed Windows/iOS/Android icon refresh behavior still requires Product Owner
+  physical-device recheck; no Production migration was changed or applied.
+- **Next:** Continue the installed-phone checks already listed in the current handoff; preserve prior
+  core Alpha evidence for unchanged workflows.
 
 ### 2026-10-08 — LOG-448 — Use the dark neon application icon
 
