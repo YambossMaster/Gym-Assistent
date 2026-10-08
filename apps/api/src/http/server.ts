@@ -427,9 +427,17 @@ export function buildServer({
       return reply.status(error.statusCode).send({ error: error.code })
     if (error instanceof PlanAccessError) return reply.status(403).send({ error: error.reason })
     if (error instanceof PlanSelectionError)
-      return reply.status(error.reason === 'version_conflict' ? 409 : 400).send({
-        error: error.reason,
-      })
+      return reply
+        .status(
+          error.reason === 'version_conflict'
+            ? 409
+            : error.reason === 'plan_test_required'
+              ? 403
+              : 400,
+        )
+        .send({
+          error: error.reason,
+        })
     if (
       (error as { code?: string; message?: string }).code === 'P0003' &&
       (error as { message?: string }).message === 'active_capacity_limit'

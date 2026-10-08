@@ -30,6 +30,7 @@ it('shows product purpose, public prices, support and legal links without authen
     expect(host.textContent).toContain('給私人教練的日常工作台')
     expect(host.textContent).toContain('NT$199')
     expect(host.textContent).toContain('NT$259')
+    expect(host.textContent).toContain('Beta 期間先開放 Free 方案')
     expect(host.querySelector('a[href="mailto:support@formcoachdesk.com"]')).not.toBeNull()
     expect(host.querySelector('a[href="/terms"]')).not.toBeNull()
     expect(host.querySelector('a[href="/privacy"]')).not.toBeNull()

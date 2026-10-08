@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useDialogBehavior } from './useDialogBehavior'
+import { RequiredFieldLabel } from './FormFieldLabel'
 
 export function Page({
   title,
@@ -86,7 +87,7 @@ export function Confirmation({
         <p>{text}</p>
         {requiresText && (
           <label>
-            輸入 {requiredWord} 以確認
+            <RequiredFieldLabel>輸入 {requiredWord} 以確認</RequiredFieldLabel>
             <input
               value={confirmation}
               onChange={(event) => onConfirmationChange(event.target.value)}

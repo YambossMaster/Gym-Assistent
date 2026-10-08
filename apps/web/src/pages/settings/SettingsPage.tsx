@@ -44,6 +44,7 @@ import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 import { resolveCoachDisplayName } from '../../app-shell/coach-identity'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 function planName(plan: PlanAccess | undefined): string {
   if (plan?.tier === 'advanced') return 'Prime 方案'
@@ -86,28 +87,34 @@ function PlanSummary({
       ? '優惠體驗'
       : plan?.source === 'permanent'
         ? '永久資格'
-        : subscription
-          ? subscription.interval === 'month'
-            ? '月費方案'
-            : '年費方案'
-          : '—'
+        : plan?.source === 'tester'
+          ? '方案測試'
+          : subscription
+            ? subscription.interval === 'month'
+              ? '月費方案'
+              : '年費方案'
+            : '—'
   const periodEnd =
     plan?.source === 'promotional' && plan.offerEndsAt
       ? planPeriodDate(plan.offerEndsAt)
       : plan?.source === 'permanent'
         ? '無期限'
-        : subscription
-          ? planPeriodDate(subscription.periodEndsAt)
-          : '—'
+        : plan?.source === 'tester'
+          ? '隨時切換'
+          : subscription
+            ? planPeriodDate(subscription.periodEndsAt)
+            : '—'
   const nextPlan = pendingPlan
     ? pendingPlan
-    : plan?.source === 'promotional'
-      ? subscription
-        ? `${subscription.tier === 'basic' ? 'Pro' : 'Prime'} 方案 · ${subscription.interval === 'month' ? '月費' : '年費'}`
-        : 'Free 方案'
-      : subscription
-        ? `同方案續訂 · ${subscription.interval === 'month' ? '月費' : '年費'}`
-        : planName(plan)
+    : plan?.source === 'tester'
+      ? '可隨時切換方案'
+      : plan?.source === 'promotional'
+        ? subscription
+          ? `${subscription.tier === 'basic' ? 'Pro' : 'Prime'} 方案 · ${subscription.interval === 'month' ? '月費' : '年費'}`
+          : 'Free 方案'
+        : subscription
+          ? `同方案續訂 · ${subscription.interval === 'month' ? '月費' : '年費'}`
+          : planName(plan)
   const cancelMutation = useMutation({
     mutationFn: () => {
       if (!plan || !subscription) throw new Error('請重新讀取方案。')
@@ -182,6 +189,7 @@ function PlanSummary({
             </div>
             {!loading && !error && plan?.source === 'promotional' && <p>Prime 方案優惠體驗</p>}
             {!loading && !error && plan?.source === 'permanent' && <p>永久 Prime 資格</p>}
+            {!loading && !error && plan?.canChangePlan && <p>方案測試帳號</p>}
           </div>
           {error && (
             <button type="button" className="settings-plan-retry" onClick={onRetry}>
@@ -210,7 +218,7 @@ function PlanSummary({
                 目前超出方案額度。資料仍可查看；封存學員或場地至額度內，即可恢復儲存。
               </p>
             )}
-            {subscription && plan?.source !== 'permanent' && (
+            {subscription && plan?.canChangePlan && (
               <footer className="settings-current-plan-actions">
                 {hasPendingChange && (
                   <span>
@@ -235,7 +243,7 @@ function PlanSummary({
                       className="settings-plan-cancel"
                       onClick={() => setConfirmCancel(true)}
                     >
-                      取消訂閱
+                      切換至 Free
                     </button>
                   )}
                 </div>
@@ -248,7 +256,7 @@ function PlanSummary({
         <span className="settings-plans-banner-copy">
           <small>FREE · PRO · PRIME</small>
           <strong>比較方案與價格</strong>
-          <span>查看完整功能與月費、年費方案。</span>
+          <span>Beta 期間先使用 Free；支付上線後開放選購。</span>
         </span>
         <span className="settings-plans-banner-action">
           查看所有方案 <ArrowRight aria-hidden="true" />
@@ -258,7 +266,7 @@ function PlanSummary({
         <header>
           <div>
             <h3 id="billing-title">帳單與付款</h3>
-            <p>管理付款方式並查看帳單紀錄。</p>
+            <p>支付功能上線後，可在這裡管理付款方式與帳單紀錄。</p>
           </div>
         </header>
         <div className="settings-billing-rows">
@@ -279,8 +287,8 @@ function PlanSummary({
       )}
       {confirmCancel && subscription && (
         <Confirmation
-          title="取消訂閱？"
-          text={`目前方案可使用至 ${planPeriodDate(subscription.periodEndsAt)}，之後轉為 Free。現有資料會保留。`}
+          title="切換至 Free 方案？"
+          text="測試方案會立即切換為 Free；現有資料會保留。"
           onCancel={() => setConfirmCancel(false)}
           onConfirm={() => cancelMutation.mutate()}
           disabled={cancelMutation.isPending}
@@ -785,11 +793,14 @@ function CalendarPreferencePanel({
       <SettingsPanelHeading eyebrow="CALENDAR" title="行事曆設定" />
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>顯示開始時間</strong>
+          <strong>
+            <RequiredFieldLabel>顯示開始時間</RequiredFieldLabel>
+          </strong>
           <span>日／週行事曆的主要顯示時段。</span>
         </div>
         <FormSelect
           label="顯示開始時間"
+          required
           value={String(settings?.calendarStartHour ?? 6)}
           disabled={!settings || saving}
           onChange={(value) => changeHour('calendarStartHour', Number(value))}
@@ -801,11 +812,14 @@ function CalendarPreferencePanel({
       </div>
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>顯示結束時間</strong>
+          <strong>
+            <RequiredFieldLabel>顯示結束時間</RequiredFieldLabel>
+          </strong>
           <span>已有安排超出時段時，行事曆會自動延伸顯示。</span>
         </div>
         <FormSelect
           label="顯示結束時間"
+          required
           value={String(settings?.calendarEndHour ?? 22)}
           disabled={!settings || saving}
           onChange={(value) => changeHour('calendarEndHour', Number(value))}
@@ -822,11 +836,14 @@ function CalendarPreferencePanel({
       )}
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>每週第一天</strong>
+          <strong>
+            <RequiredFieldLabel>每週第一天</RequiredFieldLabel>
+          </strong>
           <span>決定週視圖與月曆的排列。</span>
         </div>
         <FormSelect
           label="每週第一天"
+          required
           value={String(settings?.calendarWeekStart ?? 1)}
           disabled={!settings || saving}
           onChange={(value) => onChange({ calendarWeekStart: Number(value) as 0 | 1 })}
@@ -838,11 +855,14 @@ function CalendarPreferencePanel({
       </div>
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>預設每堂課時間</strong>
+          <strong>
+            <RequiredFieldLabel>預設每堂課時間</RequiredFieldLabel>
+          </strong>
           <span>新增課程時預先帶入；既有課程不變。</span>
         </div>
         <FormSelect
           label="預設每堂課時間"
+          required
           value={String(settings?.defaultSessionMinutes ?? 60)}
           disabled={!settings || saving}
           onChange={(value) =>
@@ -874,11 +894,14 @@ function FinancePreferencePanel({
       <SettingsPanelHeading eyebrow="FINANCE" title="收支設定" />
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>預設幣別</strong>
+          <strong>
+            <RequiredFieldLabel>預設幣別</RequiredFieldLabel>
+          </strong>
           <span>新增購課、場地收支與收支明細時使用；既有紀錄保留原幣別。</span>
         </div>
         <FormSelect
           label="預設幣別"
+          required
           value={settings?.defaultCurrency ?? 'TWD'}
           disabled={!settings || saving}
           onChange={(next) => onChange(next as WorkspaceSettings['defaultCurrency'])}
@@ -959,12 +982,12 @@ function DeviceCacheDialog({ session, onClose }: { session: Session; onClose: ()
           </button>
         </header>
         <div className="ui-settings-dialog-content">
-          <div className="ui-settings-dialog-fields">
+          <div className="ui-settings-dialog-fields" data-dialog-scroll-region>
             <p>
               這台裝置保存訓練草稿、待送變更與介面偏好，協助中斷後繼續工作。清除後無法從裝置復原這些內容；雲端正式紀錄不受影響。
             </p>
             <label className="settings-cache-confirm">
-              輸入 CLEAR 以清除
+              <RequiredFieldLabel>輸入 CLEAR 以清除</RequiredFieldLabel>
               <input
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
@@ -1029,11 +1052,14 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
       <SettingsPanelHeading eyebrow="TRAINING" title="訓練設定" />
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>重量單位習慣</strong>
+          <strong>
+            <RequiredFieldLabel>重量單位習慣</RequiredFieldLabel>
+          </strong>
           <span>用於新增訓練紀錄與表現顯示。</span>
         </div>
         <FormSelect
           label="重量單位習慣"
+          required
           value={query.data.defaultWeightUnit}
           disabled={mutations.preference.isPending}
           onChange={(value) =>
@@ -1051,11 +1077,14 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
       </div>
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>距離單位習慣</strong>
+          <strong>
+            <RequiredFieldLabel>距離單位習慣</RequiredFieldLabel>
+          </strong>
           <span>選擇公制或英制。</span>
         </div>
         <FormSelect
           label="距離單位習慣"
+          required
           value={query.data.defaultDistanceUnit}
           disabled={mutations.preference.isPending}
           options={[
@@ -1114,7 +1143,9 @@ function WorkspaceProfile({
       {refreshFailed && <RefreshError onRetry={onRetry} />}
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>教練顯示名稱</strong>
+          <strong>
+            <RequiredFieldLabel>教練顯示名稱</RequiredFieldLabel>
+          </strong>
           <span>顯示在工作台上的名稱。</span>
         </div>
         <input
@@ -1138,7 +1169,9 @@ function WorkspaceProfile({
       </div>
       <div className="settings-row">
         <div className="settings-row-copy">
-          <strong>工作時區</strong>
+          <strong>
+            <RequiredFieldLabel>工作時區</RequiredFieldLabel>
+          </strong>
           <span>常用城市列在前面。改變後影響行事曆、今日與月份的顯示；既有課程時間不會改寫。</span>
         </div>
         <FormSelect
@@ -1211,11 +1244,11 @@ function PasswordDialog({
           </button>
         </header>
         <form className="password-change-form ui-settings-dialog-content" onSubmit={onSubmit}>
-          <div className="ui-settings-dialog-fields">
+          <div className="ui-settings-dialog-fields" data-dialog-scroll-region>
             {emailIdentity && (
               <div className="password-current-field">
                 <label>
-                  目前密碼
+                  <RequiredFieldLabel>目前密碼</RequiredFieldLabel>
                   <input
                     type="password"
                     value={currentPassword}
@@ -1242,7 +1275,7 @@ function PasswordDialog({
               </div>
             )}
             <label>
-              新密碼
+              <RequiredFieldLabel>新密碼</RequiredFieldLabel>
               <input
                 type="password"
                 value={password}
@@ -1253,7 +1286,7 @@ function PasswordDialog({
               />
             </label>
             <label>
-              再次輸入新密碼
+              <RequiredFieldLabel>再次輸入新密碼</RequiredFieldLabel>
               <input
                 type="password"
                 value={confirmPassword}

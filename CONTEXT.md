@@ -10,6 +10,11 @@ The three Coach-facing plans are `Free 方案`, `Pro 方案`, and `Prime 方案`
 Their stable internal tier identifiers remain `free`, `basic`, and `advanced`, respectively.
 Promotional and permanent grants are access sources, not separate plan names.
 
+**Plan Tester**:
+A code-granted testing eligibility that lets one authenticated Workspace switch only its own
+effective plan among Free, Pro, and Prime. It is not an administrative role, paid subscription, or
+separate Coach-facing plan.
+
 **Coach**:
 The authenticated person who owns and operates one private-coaching business data set.
 _Avoid_: Admin, staff, trainer account

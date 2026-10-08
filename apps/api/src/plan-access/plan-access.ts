@@ -1,12 +1,13 @@
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import {
   activeSubscription,
+  PlanSelectionError,
   type PlanSubscription,
   type PlanSubscriptionAction,
 } from './plan-subscription.js'
 
 export type PlanTier = 'free' | 'basic' | 'advanced'
-export type PlanSource = 'free' | 'promotional' | 'permanent' | 'subscription'
+export type PlanSource = 'free' | 'promotional' | 'permanent' | 'tester'
 
 export interface PlanAccess {
   tier: PlanTier
@@ -16,6 +17,7 @@ export interface PlanAccess {
   studentLimit: number | null
   venueLimit: number | null
   overCapacity: boolean
+  canChangePlan: boolean
   offerEndsAt?: string
   version: number
   subscription?: {
@@ -29,7 +31,7 @@ export interface PlanAccess {
 
 export interface PlanAccessRepository {
   get(identity: AuthenticatedIdentity): Promise<{
-    grant: { kind: 'promotional' | 'permanent'; endsAt: Date | null } | null
+    grant: { kind: 'promotional' | 'permanent' | 'tester'; endsAt: Date | null } | null
     activeStudents: number
     activeVenues: number
     subscription?: PlanSubscription | null
@@ -47,7 +49,8 @@ export class PlanAccessModule {
   async get(identity: AuthenticatedIdentity): Promise<PlanAccess> {
     const { grant, activeStudents, activeVenues, subscription, version } =
       await this.repository.get(identity)
-    const activeChoice = activeSubscription(subscription ?? null, this.now())
+    const tester = grant?.kind === 'tester'
+    const activeChoice = tester ? activeSubscription(subscription ?? null, this.now()) : null
     const activeOffer =
       grant?.kind === 'promotional' && grant.endsAt !== null && grant.endsAt > this.now()
     const tier: PlanTier =
@@ -58,8 +61,10 @@ export class PlanAccessModule {
         : activeOffer
           ? 'promotional'
           : activeChoice
-            ? 'subscription'
-            : 'free'
+            ? 'tester'
+            : tester
+              ? 'tester'
+              : 'free'
     const { studentLimit, venueLimit } = limitsForTier(tier)
     return {
       tier,
@@ -71,8 +76,9 @@ export class PlanAccessModule {
       overCapacity:
         (studentLimit !== null && activeStudents > studentLimit) ||
         (venueLimit !== null && activeVenues > venueLimit),
+      canChangePlan: tester,
       ...(activeOffer ? { offerEndsAt: grant.endsAt!.toISOString() } : {}),
-      version: version ?? subscription?.version ?? 0,
+      version: tester ? (version ?? subscription?.version ?? 0) : 0,
       ...(activeChoice
         ? {
             subscription: {
@@ -92,6 +98,8 @@ export class PlanAccessModule {
     action: PlanSubscriptionAction,
   ): Promise<PlanAccess> {
     if (!this.repository.change) throw new Error('Plan selection unavailable')
+    const current = await this.repository.get(identity)
+    if (current.grant?.kind !== 'tester') throw new PlanSelectionError('plan_test_required')
     await this.repository.change(identity, action, this.now())
     return this.get(identity)
   }

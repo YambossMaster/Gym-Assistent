@@ -5,8 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { expect, it, vi } from 'vitest'
-import { VenueManager } from './VenueManager'
+import { VenueManager, VenueRuleImpactPreview } from './VenueManager'
 import { FinanceCurrencyProvider } from '../settings/finance-currency'
+import type { Rule } from './finance-api'
 
 const mutate = vi.hoisted(() => vi.fn())
 const venueFixtureState = vi.hoisted(() => ({ restored: false, empty: false }))
@@ -84,6 +85,110 @@ vi.mock('./finance-api', async (importOriginal) => ({
   }),
   useFinanceMutation: () => ({ isPending: false, error: null, mutate, reset: vi.fn() })
 }))
+
+const commissionRule: Rule = {
+  id: 'old-rule',
+  venueId: 'venue-2',
+  effectiveFrom: '2026-09-01',
+  effectiveAt: '2026-08-31T16:00:00.000Z',
+  kind: 'commission',
+  collectionMode: 'coach',
+  rate: 30,
+  coachRate: null,
+  venueRate: null,
+  amountMinor: null,
+  currency: null
+}
+const rentRule: Rule = {
+  id: 'new-rule',
+  venueId: 'venue-2',
+  effectiveFrom: '2026-10-08',
+  effectiveAt: '2026-10-07T16:00:00.000Z',
+  kind: 'rent',
+  collectionMode: 'coach',
+  rate: null,
+  coachRate: null,
+  venueRate: null,
+  amountMinor: 500,
+  currency: 'TWD'
+}
+
+it('explains a Venue rule change without exposing unchanged finance projection fields', async () => {
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  await act(async () =>
+    root.render(
+      <VenueRuleImpactPreview
+        currentRule={commissionRule}
+        nextRule={rentRule}
+        preview={{
+          scheduledCount: 1,
+          completedChangedCount: 0,
+          months: [
+            {
+              month: '2026-10',
+              before: [{ currency: 'TWD', expenseMinor: 0 }],
+              after: [{ currency: 'TWD', expenseMinor: 0 }]
+            }
+          ]
+        }}
+        timeZone="Asia/Taipei"
+        onBack={() => {}}
+      />
+    )
+  )
+
+  expect(host.textContent).toContain('固定抽成 30%')
+  expect(host.textContent).toContain('單次計費 $500')
+  expect(host.textContent).toContain('2026/10/08 00:00')
+  expect(host.textContent).toContain('1堂已排課程完成後依新設定計算')
+  expect(host.textContent).toContain('目前不會改變既有收支')
+  expect(host.textContent).not.toContain('2026-10')
+  expect(host.textContent).not.toContain('TWD')
+  expect(host.textContent).not.toContain('學生購課總額')
+  expect(host.textContent).not.toContain('試算差額')
+
+  await act(async () => root.unmount())
+  host.remove()
+})
+
+it('shows only meaningful Venue expense changes with a readable month label', async () => {
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  await act(async () =>
+    root.render(
+      <VenueRuleImpactPreview
+        currentRule={commissionRule}
+        nextRule={rentRule}
+        preview={{
+          scheduledCount: 0,
+          completedChangedCount: 1,
+          months: [
+            {
+              month: '2026-10',
+              before: [{ currency: 'TWD', expenseMinor: 0 }],
+              after: [{ currency: 'TWD', expenseMinor: 500 }]
+            }
+          ]
+        }}
+        timeZone="Asia/Taipei"
+        onBack={() => {}}
+      />
+    )
+  )
+
+  expect(host.textContent).toContain('已完成課程的場地支出變化')
+  expect(host.textContent).toContain('2026 年 10 月')
+  expect(host.textContent).toContain('$0')
+  expect(host.textContent).toContain('$500')
+  expect(host.textContent).not.toContain('學生購課總額')
+  expect(host.textContent).not.toContain('試算差額')
+
+  await act(async () => root.unmount())
+  host.remove()
+})
 
 it('guides a Coach with no Venues directly into creating the first one', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)

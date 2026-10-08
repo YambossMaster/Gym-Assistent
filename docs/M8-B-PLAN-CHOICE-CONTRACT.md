@@ -2,6 +2,9 @@
 
 > Product Owner correction, 2026-10-05. This later package follows M8-B-Export and precedes
 > M8-C. It opens Pro and Prime selection to exercise the real plan flow before payment integration.
+> The delivered lifecycle remains test infrastructure, but its general Beta availability is
+> superseded by the 2026-10-08
+> [M8-D Beta plan-access correction](M8-D-BETA-PLAN-ACCESS-CONTRACT.md).
 
 ## Job and authority
 

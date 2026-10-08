@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { CalendarSession, CapabilityLinkMetadata } from '../../api'
 import { CapabilityLinkActions } from './CapabilityLinkManager'
 
@@ -40,6 +40,10 @@ const session = {
   access_token: 'test-access-token'
 } as Session
 
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', () => ({ matches: false }))
+})
+
 it('keeps the active link copyable after closing, reopening, and reloading the page', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -75,7 +79,7 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
   let root = createRoot(host)
   let client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const button = (label: string) =>
-    [...host.querySelectorAll<HTMLButtonElement>('button')].find((element) =>
+    [...document.querySelectorAll<HTMLButtonElement>('button')].find((element) =>
       element.textContent?.includes(label)
     )!
   try {
@@ -87,15 +91,18 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
       )
     )
     await act(async () => button('分享訓練結果').click())
+    const backdrop = document.querySelector<HTMLElement>('.capability-dialog-backdrop')
+    expect(backdrop?.parentElement).toBe(document.body)
+    expect(host.contains(backdrop)).toBe(false)
     await vi.waitFor(() => expect(button('建立連結').disabled).toBe(false))
     expect(button('建立連結').outerHTML).toContain('primary-button')
     await act(async () => button('建立連結').click())
     await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
     expect(api.issue).toHaveBeenCalledTimes(1)
-    expect(host.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
+    expect(document.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
       'test-capability-token'
     )
-    const urlInput = host.querySelector<HTMLInputElement>('#capability-url')!
+    const urlInput = document.querySelector<HTMLInputElement>('#capability-url')!
     urlInput.setSelectionRange(4, 4)
     urlInput.focus()
     expect(urlInput.selectionStart).toBe(4)
@@ -109,15 +116,15 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
     expect(
       button('複製連結').querySelector('.capability-copy-mobile')?.getAttribute('class')
     ).toContain('lucide-check')
-    await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="關閉"]')!.click())
+    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="關閉"]')!.click())
     await act(async () => button('分享訓練結果').click())
-    expect(host.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
+    expect(document.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
       'test-capability-token'
     )
     expect(button('複製連結')).toBeTruthy()
     expect(button('複製連結').getAttribute('data-copy-state')).toBe('idle')
     expect(api.issue).toHaveBeenCalledTimes(1)
-    await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="關閉"]')!.click())
+    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="關閉"]')!.click())
     await act(async () => root.unmount())
     client.clear()
     root = createRoot(host)
@@ -131,26 +138,59 @@ it('keeps the active link copyable after closing, reopening, and reloading the p
     )
     await act(async () => button('分享訓練結果').click())
     await vi.waitFor(() =>
-      expect(host.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
+      expect(document.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
         'test-capability-token'
       )
     )
     await act(async () => button('複製連結').click())
     expect(button('複製連結').getAttribute('data-copy-state')).toBe('success')
     await act(async () => button('重新建立連結').click())
-    expect(host.textContent).toContain('新連結建立後，先前的網址會立即失效。')
+    expect(document.body.textContent).toContain('新連結建立後，先前的網址會立即失效。')
     await act(async () => button('確認重新建立').click())
     await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
-    expect(host.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
+    expect(document.querySelector<HTMLInputElement>('#capability-url')?.value).toContain(
       'replacement-token'
     )
     expect(button('複製連結').getAttribute('data-copy-state')).toBe('idle')
     expect(sessionStorage.getItem(sessionStorage.key(0)!)).toContain('replacement-token')
-    expect(host.textContent).not.toContain('新連結已建立，先前的連結已失效。')
+    expect(document.body.textContent).not.toContain('新連結已建立，先前的連結已失效。')
     await act(async () => button('撤銷連結').click())
     await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
-    expect(host.querySelector('#capability-url')).toBeNull()
+    expect(document.querySelector('#capability-url')).toBeNull()
     expect(sessionStorage.length).toBe(0)
+  } finally {
+    await act(async () => root.unmount())
+    client.clear()
+  }
+})
+
+it('portals the reschedule link dialog outside its action container', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(0)
+    return 1
+  })
+  api.list.mockResolvedValue([])
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <CapabilityLinkActions
+            session={session}
+            item={{ ...item, status: 'scheduled' } as CalendarSession}
+          />
+        </QueryClientProvider>
+      )
+    )
+    await act(async () => host.querySelector<HTMLButtonElement>('button')!.click())
+    const backdrop = document.querySelector<HTMLElement>('.capability-dialog-backdrop')
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('建立改期連結')
+    expect(backdrop?.parentElement).toBe(document.body)
+    expect(host.contains(backdrop)).toBe(false)
   } finally {
     await act(async () => root.unmount())
     client.clear()

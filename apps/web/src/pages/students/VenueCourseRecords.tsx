@@ -16,6 +16,7 @@ import {
   type Rule,
   type Venue
 } from './finance-api'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 type RecordRow = {
   sessionId: string
@@ -385,11 +386,12 @@ export function VenueCourseRecords({
                     )
                   }}
                 >
-                  <div className="venue-course-edit-fields">
+                  <div className="venue-course-edit-fields" data-dialog-scroll-region>
                     <label>
-                      計算方式
+                      <RequiredFieldLabel>計算方式</RequiredFieldLabel>
                       <FormSelect
                         label="計算方式"
+                        required
                         value={mode}
                         onChange={(next) => {
                           setMode(next as typeof mode)
@@ -409,7 +411,7 @@ export function VenueCourseRecords({
                     </label>
                     {mode === 'batch' && (
                       <label>
-                        預購批次
+                        <RequiredFieldLabel>預購批次</RequiredFieldLabel>
                         <FormSelect
                           label="預購批次"
                           required
@@ -436,7 +438,9 @@ export function VenueCourseRecords({
                     )}
                     {(mode === 'amount' || mode === 'rate') && (
                       <label>
-                        {mode === 'rate' ? '費率（%）' : '金額（最小貨幣單位）'}
+                        <RequiredFieldLabel>
+                          {mode === 'rate' ? '費率（%）' : '金額（最小貨幣單位）'}
+                        </RequiredFieldLabel>
                         <input
                           required
                           type="number"

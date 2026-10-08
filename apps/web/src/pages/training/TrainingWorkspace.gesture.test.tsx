@@ -241,6 +241,61 @@ it('uses the shared rich note editor and its toolbar as the only private note in
   expect(notePanel.querySelector('[aria-label="導入課堂資訊"]')).not.toBeNull()
 })
 
+it('leaves note focus mode immediately while saving in the background', async () => {
+  let resolveSave: (value: SessionTraining) => void = () => undefined
+  calls.save.mockImplementationOnce(
+    () =>
+      new Promise<SessionTraining>((resolve) => {
+        resolveSave = resolve
+      })
+  )
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.focus())
+  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
+
+  const block = editor.querySelector<HTMLElement>('.mobile-note-block')!
+  block.textContent = '今天動作品質穩定'
+  await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
+
+  const done = host.querySelector<HTMLButtonElement>('[aria-label="儲存教練筆記並結束專注模式"]')!
+  await act(async () => done.focus())
+  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
+  await act(async () => done.click())
+
+  expect(calls.save).toHaveBeenCalledWith(
+    expect.objectContaining({
+      sessionId: 'gesture-session',
+      payload: expect.objectContaining({ privateNote: '今天動作品質穩定' })
+    })
+  )
+  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(
+    false
+  )
+  expect(host.querySelector('.session-workspace')).not.toBeNull()
+  await act(async () => resolveSave(training))
+})
+
+it('shows the existing background-sync status if saving fails after focus mode closes', async () => {
+  calls.save.mockRejectedValueOnce(new Error('network'))
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.focus())
+  const block = editor.querySelector<HTMLElement>('.mobile-note-block')!
+  block.textContent = '尚未同步的內容'
+  await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
+
+  const done = host.querySelector<HTMLButtonElement>('[aria-label="儲存教練筆記並結束專注模式"]')!
+  await act(async () => {
+    done.click()
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+
+  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(
+    false
+  )
+  expect(host.querySelector('.session-save-status')?.textContent).toContain('背景重試')
+})
+
 it('shows only the destination Session draft when navigating between Training records', async () => {
   const destination = {
     ...training,

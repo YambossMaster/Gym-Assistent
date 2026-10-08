@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PlanAccessModule } from './plan-access.js'
+import type { PlanSubscription } from './plan-subscription.js'
 
 const coach = { userId: '11111111-1111-4111-8111-111111111111' }
 const endsAt = new Date('2026-12-02T02:00:00.000Z')
@@ -64,6 +65,46 @@ describe('plan access', () => {
       studentLimit: null,
       venueLimit: null,
       overCapacity: false,
+    })
+  })
+
+  it('ignores a no-charge subscription unless the Workspace has tester eligibility', async () => {
+    const subscription: PlanSubscription = {
+      tier: 'advanced',
+      interval: 'month',
+      periodStart: new Date('2026-10-01T00:00:00.000Z'),
+      periodEnd: new Date('2026-11-01T00:00:00.000Z'),
+      pendingTier: null,
+      pendingInterval: null,
+      version: 2,
+    }
+    const ordinary = new PlanAccessModule({
+      get: async () => ({
+        grant: null,
+        activeStudents: 0,
+        activeVenues: 0,
+        subscription,
+      }),
+    })
+    await expect(ordinary.get(coach)).resolves.toMatchObject({
+      tier: 'free',
+      source: 'free',
+      canChangePlan: false,
+      version: 0,
+    })
+    const tester = new PlanAccessModule({
+      get: async () => ({
+        grant: { kind: 'tester', endsAt: null },
+        activeStudents: 0,
+        activeVenues: 0,
+        subscription,
+      }),
+    })
+    await expect(tester.get(coach)).resolves.toMatchObject({
+      tier: 'advanced',
+      source: 'tester',
+      canChangePlan: true,
+      version: 2,
     })
   })
 })

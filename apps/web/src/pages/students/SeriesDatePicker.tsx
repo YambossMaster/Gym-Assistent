@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { RequiredFieldMark } from '../../shared/FormFieldLabel'
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -19,7 +20,8 @@ export function SeriesDatePicker({
   label = '起始日期',
   labelSuffix,
   calendarClassName = '',
-  disabled = false
+  disabled = false,
+  required = true
 }: {
   value: string
   onChange: (value: string) => void
@@ -27,6 +29,7 @@ export function SeriesDatePicker({
   labelSuffix?: ReactNode
   calendarClassName?: string
   disabled?: boolean
+  required?: boolean
 }) {
   const trigger = useRef<HTMLButtonElement>(null)
   const calendar = useRef<HTMLDivElement>(null)
@@ -82,13 +85,14 @@ export function SeriesDatePicker({
     <div className="series-date-field">
       <span>
         {label}
+        {required ? <RequiredFieldMark /> : null}
         {labelSuffix}
       </span>
       <button
         ref={trigger}
         type="button"
         className="series-date-trigger"
-        aria-label={label}
+        aria-label={required ? `${label}，必填` : label}
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={disabled}

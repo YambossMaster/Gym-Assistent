@@ -215,7 +215,7 @@ export function LandingPage() {
           ))}
         </div>
         <p className="landing-pricing-note">
-          目前付費結帳尚未開放；啟用前會清楚顯示最終金額、稅額與續訂條件。
+          Beta 期間先開放 Free 方案；付費結帳上線後，會在確認前清楚顯示最終金額、稅額與續訂條件。
         </p>
       </section>
 

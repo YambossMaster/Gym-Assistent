@@ -50,6 +50,32 @@ describe('Beta admission', () => {
     expect(await module.status(first)).toMatchObject({ state: 'free' })
   })
 
+  it.each([
+    ['permanent', { state: 'permanent', startedAt: '2026-10-03T02:00:00.000Z' }],
+    ['tester', { state: 'tester', startedAt: '2026-10-03T02:00:00.000Z' }],
+  ] as const)('redeems a single-use %s code into its own grant', async (kind, expected) => {
+    const { module, repository } = setup()
+    const code = kind === 'tester' ? 'tester-code' : 'permanent-code'
+    repository.issueForTest(codeDigest(code), 1, new Date('2026-10-10T00:00:00.000Z'), kind)
+    await expect(module.redeem(first, '127.0.0.1', { code })).resolves.toEqual(expected)
+  })
+
+  it('allows an uncapped promotional code while keeping one redemption per verified Email', async () => {
+    const { module, repository, emails } = setup()
+    const code = 'shared-beta-code'
+    repository.issueForTest(codeDigest(code), null, new Date('2026-10-10T00:00:00.000Z'))
+    for (let index = 0; index < 12; index += 1) {
+      const identity = { userId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}` }
+      emails.set(identity.userId, `coach-${index}@example.com`)
+      await expect(
+        module.redeem(identity, `127.0.0.${index + 1}`, { code }),
+      ).resolves.toMatchObject({
+        state: 'promotional',
+      })
+    }
+    expect(repository.usageForTest(codeDigest(code))).toBe(12)
+  })
+
   it('never restores a consumed seat or permits same-Email reuse after deletion', async () => {
     const { module, repository, code, emails } = setup()
     await module.redeem(first, '127.0.0.1', { code })

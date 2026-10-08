@@ -3,7 +3,8 @@ import type { BetaAdmissionRepository, BetaGrant, RedemptionFailure } from './be
 
 interface Code {
   digest: string
-  limit: number
+  kind: 'promotional' | 'permanent' | 'tester'
+  limit: number | null
   used: number
   closesAt: Date
   revoked: boolean
@@ -21,8 +22,13 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
     private readonly now = () => new Date(),
   ) {}
 
-  issueForTest(digest: string, limit: number, closesAt: Date) {
-    this.codes.set(digest, { digest, limit, used: 0, closesAt, revoked: false })
+  issueForTest(
+    digest: string,
+    limit: number | null,
+    closesAt: Date,
+    kind: Code['kind'] = 'promotional',
+  ) {
+    this.codes.set(digest, { digest, kind, limit, used: 0, closesAt, revoked: false })
   }
 
   revokeForTest(digest: string) {
@@ -60,18 +66,21 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
     const code = this.codes.get(input.codeDigest)
     if (!code) return 'invalid_code'
     if (code.revoked || code.closesAt <= input.now) return 'code_closed'
-    if (code.used >= code.limit) return 'code_exhausted'
+    if (code.limit !== null && code.used >= code.limit) return 'code_exhausted'
     const fingerprint = createHmac('sha256', this.secret)
       .update(`${code.digest}:${input.verifiedEmail}`)
       .digest('hex')
     if (this.redeemed.has(fingerprint)) return 'already_used'
     this.redeemed.add(fingerprint)
     code.used += 1
-    const grant: BetaGrant = {
-      state: 'promotional',
-      startedAt: input.now.toISOString(),
-      endsAt: input.endsAt.toISOString(),
-    }
+    const grant: BetaGrant =
+      code.kind === 'promotional'
+        ? {
+            state: 'promotional',
+            startedAt: input.now.toISOString(),
+            endsAt: input.endsAt.toISOString(),
+          }
+        : { state: code.kind, startedAt: input.now.toISOString() }
     this.grants.set(input.userId, grant)
     this.grantCodes.set(input.userId, input.codeDigest)
     return grant

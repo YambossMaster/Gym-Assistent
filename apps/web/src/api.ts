@@ -17,6 +17,7 @@ export type BetaGrant =
   | { state: 'promotional'; startedAt: string; endsAt: string }
   | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
+  | { state: 'tester'; startedAt: string }
 
 export interface LegalAcceptanceStatus {
   accepted: boolean
@@ -47,12 +48,13 @@ export async function acceptLegalTerms(
 
 export interface PlanAccess {
   tier: 'free' | 'basic' | 'advanced'
-  source: 'free' | 'promotional' | 'permanent' | 'subscription'
+  source: 'free' | 'promotional' | 'permanent' | 'tester'
   activeStudents: number
   activeVenues: number
   studentLimit: number | null
   venueLimit: number | null
   overCapacity: boolean
+  canChangePlan: boolean
   offerEndsAt?: string
   version: number
   subscription?: {

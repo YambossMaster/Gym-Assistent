@@ -2,13 +2,14 @@ import type { Pool } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { PlanAccessRepository } from './plan-access.js'
 import {
-  nextSubscription,
+  nextTestSubscription,
+  PlanSelectionError,
   type PlanSubscription,
   type PlanSubscriptionAction,
 } from './plan-subscription.js'
 
 interface PlanRow {
-  kind: 'promotional' | 'permanent' | null
+  kind: 'promotional' | 'permanent' | 'tester' | null
   ends_at: Date | null
   active_students: number
   active_venues: number
@@ -96,11 +97,24 @@ export class PostgresPlanAccessRepository implements PlanAccessRepository {
         workspaceId,
       ])
       const result = await client.query<PlanRow>(
-        `select tier,billing_interval,period_start,period_end,pending_tier,pending_interval,version
-         from app_private.plan_subscription where workspace_id=$1`,
+        `select g.kind,p.tier,p.billing_interval,p.period_start,p.period_end,
+           p.pending_tier,p.pending_interval,p.version
+         from app_private.workspace w
+         left join app_private.beta_grant g on g.workspace_id=w.id
+         left join app_private.plan_subscription p on p.workspace_id=w.id
+         where w.id=$1`,
         [workspaceId],
       )
-      const next = nextSubscription(subscriptionFrom(result.rows[0]), action, now)
+      const row = result.rows[0]
+      if (row?.kind !== 'tester') throw new PlanSelectionError('plan_test_required')
+      const next = nextTestSubscription(subscriptionFrom(row), action, now)
+      if (!next) {
+        await client.query('delete from app_private.plan_subscription where workspace_id=$1', [
+          workspaceId,
+        ])
+        await client.query('commit')
+        return
+      }
       await client.query(
         `insert into app_private.plan_subscription
          (workspace_id,tier,billing_interval,period_start,period_end,pending_tier,

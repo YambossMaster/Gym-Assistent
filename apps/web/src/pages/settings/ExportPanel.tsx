@@ -29,6 +29,7 @@ import { PlanAccessMark } from '../../beta-admission/PlanAccessMark'
 import { PlanUpsellDialog } from '../../beta-admission/PlanLocked'
 import { SeriesDatePicker } from '../students/SeriesDatePicker'
 import type { VenueData } from '../students/finance-api'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 type Kind = ExportRequest['type']
 type Format = ExportRequest['format']
@@ -68,7 +69,7 @@ function ExportDialog({ children, onClose }: { children: ReactNode; onClose: () 
       <section
         ref={dialogRef}
         tabIndex={-1}
-        className="settings-export-dialog"
+        className="settings-export-dialog ui-settings-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-export-dialog-title"
@@ -283,11 +284,13 @@ export function ExportPanel({
       {exportOpen && prime && (
         <ExportDialog onClose={() => setExportOpen(false)}>
           <form className="settings-export-form" onSubmit={submit}>
-            <div className="settings-export-form-body">
+            <div className="settings-export-form-body" data-dialog-scroll-region>
               <div className="settings-export-step">
                 <div className="settings-export-step-heading">
                   <span>01</span>
-                  <h3>選擇資料</h3>
+                  <h3>
+                    <RequiredFieldLabel>選擇資料</RequiredFieldLabel>
+                  </h3>
                 </div>
                 <div className="settings-export-type-grid" role="group" aria-label="資料類型">
                   {types.map((item) => (
@@ -308,7 +311,9 @@ export function ExportPanel({
               <div className="settings-export-step">
                 <div className="settings-export-step-heading">
                   <span>02</span>
-                  <h3>選擇格式</h3>
+                  <h3>
+                    <RequiredFieldLabel>選擇格式</RequiredFieldLabel>
+                  </h3>
                 </div>
                 <div className="settings-export-format-options" role="group" aria-label="檔案格式">
                   {(['csv', 'json', 'pdf'] as const).map((item) => (
@@ -326,7 +331,9 @@ export function ExportPanel({
               <div className="settings-export-step">
                 <div className="settings-export-step-heading">
                   <span>03</span>
-                  <h3>設定範圍</h3>
+                  <h3>
+                    <RequiredFieldLabel>設定範圍</RequiredFieldLabel>
+                  </h3>
                 </div>
                 <div className="settings-export-fields">
                   <SeriesDatePicker

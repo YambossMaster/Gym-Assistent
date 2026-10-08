@@ -68,9 +68,11 @@ import { useSchedulingMutations } from './pages/calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from './pages/calendar/calendar-time'
 import { SchedulingDialog } from './pages/calendar/SchedulingDialog'
 import { SeriesDatePicker } from './pages/students/SeriesDatePicker'
+import { initialScheduleHorizon } from './pages/students/schedule-series-form'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
 import { MobilePageAppBar } from './shared/MobilePageAppBar'
+import { RequiredFieldLabel } from './shared/FormFieldLabel'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
 import { usePlanAccess } from './beta-admission/usePlanAccess'
@@ -591,7 +593,7 @@ export function StudentDetailPage({
           >
             <form className="student-detail-profile-form" onSubmit={save} autoComplete="off">
               <label>
-                姓名
+                <RequiredFieldLabel>姓名</RequiredFieldLabel>
                 <input
                   name="name"
                   defaultValue={detail.student.name}
@@ -800,26 +802,32 @@ export function StudentDetailPage({
           variant="profile"
         >
           <form className="purchase-create-form" onSubmit={purchase} autoComplete="off">
-            <PurchaseCollectionFields session={session} />
-            <div className="field-row purchase-date-count-row">
-              <SeriesDatePicker label="購買日期" value={purchaseDate} onChange={setPurchaseDate} />
-              <div className="field-control">
-                <span>購買時間</span>
-                <TimeSelect label="購買時間" value={purchaseTime} onChange={setPurchaseTime} />
+            <div className="purchase-edit-fields" data-dialog-scroll-region>
+              <PurchaseCollectionFields session={session} />
+              <div className="field-row purchase-date-count-row">
+                <SeriesDatePicker
+                  label="購買日期"
+                  value={purchaseDate}
+                  onChange={setPurchaseDate}
+                />
+                <div className="field-control">
+                  <RequiredFieldLabel>購買時間</RequiredFieldLabel>
+                  <TimeSelect label="購買時間" value={purchaseTime} onChange={setPurchaseTime} />
+                </div>
               </div>
+              <PurchaseMoneyFields currency={defaultFinanceCurrency} />
+              <label>
+                教練備註
+                <textarea name="purchaseNote" maxLength={4000} />
+              </label>
+              {purchaseMutation.isError && (
+                <p className="form-error" role="alert">
+                  {purchaseMutation.error instanceof Error
+                    ? purchaseMutation.error.message
+                    : '暫時無法新增，請重試。'}
+                </p>
+              )}
             </div>
-            <PurchaseMoneyFields currency={defaultFinanceCurrency} />
-            <label>
-              教練備註
-              <textarea name="purchaseNote" maxLength={4000} />
-            </label>
-            {purchaseMutation.isError && (
-              <p className="form-error" role="alert">
-                {purchaseMutation.error instanceof Error
-                  ? purchaseMutation.error.message
-                  : '暫時無法新增，請重試。'}
-              </p>
-            )}
             <footer>
               <button
                 type="button"
@@ -1177,7 +1185,7 @@ function StudentSchedule({
             )
           })
         ) : (
-          <p>尚未建立固定課表。</p>
+          <p className="student-series-empty">尚未建立固定課表。</p>
         )}
         {seriesNotice ? (
           <p className="form-notice" role="status">
@@ -1327,9 +1335,7 @@ function SeriesEditor({
     [customerSource, setCustomerSource] = useState(series?.customerSource ?? null)
   const [interval, setInterval] = useState<0 | 1 | 2>(series?.intervalWeeks ?? 1),
     [horizon, setHorizon] = useState<ScheduleSeries['autoScheduleHorizon']>(
-      String(series?.autoScheduleHorizon) === 'MAX_WINDOW'
-        ? '2_WEEKS'
-        : (series?.autoScheduleHorizon ?? 'NONE')
+      initialScheduleHorizon(series?.autoScheduleHorizon)
     )
   const [active, setActive] = useState(series?.active ?? true),
     [error, setError] = useState('')
@@ -1368,13 +1374,14 @@ function SeriesEditor({
       onDelete={onDelete}
     >
       <form className="scheduling-form student-series-editor" onSubmit={submit} autoComplete="off">
-        <div className="student-series-fields">
+        <div className="student-series-fields" data-dialog-scroll-region>
           <div className="field-row">
             <SeriesDatePicker value={date} onChange={setDate} />
             <label>
-              開始時間
+              <RequiredFieldLabel>開始時間</RequiredFieldLabel>
               <FormSelect
                 label="開始時間"
+                required
                 value={start}
                 onChange={setStart}
                 options={[
@@ -1390,9 +1397,10 @@ function SeriesEditor({
           </div>
           <div className="field-row">
             <label>
-              課程長度
+              <RequiredFieldLabel>課程長度</RequiredFieldLabel>
               <FormSelect
                 label="課程長度"
+                required
                 value={String(duration)}
                 onChange={(value) => setDuration(Number(value))}
                 options={[
@@ -1422,9 +1430,10 @@ function SeriesEditor({
           </div>
           <div className="student-series-settings">
             <label>
-              頻率
+              <RequiredFieldLabel>頻率</RequiredFieldLabel>
               <FormSelect
                 label="頻率"
+                required
                 value={String(interval)}
                 onChange={(value) => setInterval(Number(value) as 0 | 1 | 2)}
                 options={[
@@ -1435,9 +1444,10 @@ function SeriesEditor({
               />
             </label>
             <label>
-              自動安排範圍
+              <RequiredFieldLabel>自動安排範圍</RequiredFieldLabel>
               <FormSelect
                 label="自動安排範圍"
+                required
                 value={horizon}
                 onChange={(value) => setHorizon(value as ScheduleSeries['autoScheduleHorizon'])}
                 options={[
@@ -1581,7 +1591,7 @@ function PurchaseEditor({
           })
         }}
       >
-        <div className="purchase-edit-fields">
+        <div className="purchase-edit-fields" data-dialog-scroll-region>
           {conflict ? (
             <p className="form-notice" role="alert">
               這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
@@ -1595,7 +1605,7 @@ function PurchaseEditor({
           ) : null}
           <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
           <div className="field-control">
-            <span>購買時間</span>
+            <RequiredFieldLabel>購買時間</RequiredFieldLabel>
             <TimeSelect label="購買時間" value={time} onChange={setTime} />
           </div>
           <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
@@ -1799,7 +1809,7 @@ export function SettingsPage({ session }: { session: Session }) {
         >
           <SettingsPanelHeading eyebrow="COACH PROFILE" title="教練資料" />
           <label>
-            教練顯示名稱
+            <RequiredFieldLabel>教練顯示名稱</RequiredFieldLabel>
             <input
               name="displayName"
               defaultValue={settings.displayName}
@@ -1808,7 +1818,7 @@ export function SettingsPage({ session }: { session: Session }) {
             />
           </label>
           <label>
-            工作時區
+            <RequiredFieldLabel>工作時區</RequiredFieldLabel>
             <input name="timeZone" defaultValue={settings.timeZone} maxLength={64} required />
           </label>
           <button
@@ -1864,7 +1874,7 @@ export function SettingsPage({ session }: { session: Session }) {
                 >
                   {hasEmailIdentity(session) && (
                     <label>
-                      目前密碼
+                      <RequiredFieldLabel>目前密碼</RequiredFieldLabel>
                       <input
                         type="password"
                         value={currentPassword}
@@ -1875,7 +1885,7 @@ export function SettingsPage({ session }: { session: Session }) {
                     </label>
                   )}
                   <label>
-                    新密碼
+                    <RequiredFieldLabel>新密碼</RequiredFieldLabel>
                     <input
                       type="password"
                       value={password}
@@ -1886,7 +1896,7 @@ export function SettingsPage({ session }: { session: Session }) {
                     />
                   </label>
                   <label>
-                    再次輸入新密碼
+                    <RequiredFieldLabel>再次輸入新密碼</RequiredFieldLabel>
                     <input
                       type="password"
                       value={confirmPassword}
@@ -2019,7 +2029,7 @@ function CreateStudentDialog({
     <SchedulingDialog title="新增學生" variant="profile" onClose={onClose}>
       <form className="student-detail-profile-form" onSubmit={submit} autoComplete="off">
         <label>
-          姓名
+          <RequiredFieldLabel>姓名</RequiredFieldLabel>
           <input name="name" required maxLength={120} autoComplete="off" />
         </label>
         <div className="field-row">

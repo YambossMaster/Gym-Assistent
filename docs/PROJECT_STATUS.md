@@ -8,15 +8,128 @@
 | Field              | Current value                                                                      |
 | ------------------ | ---------------------------------------------------------------------------------- |
 | Active phase       | **M8 — Taiwan Web/PWA commercial Beta release**                                    |
-| Current package    | **M8-C production deployment and internal Alpha**                                  |
-| Package state      | **M8-C public Landing, legal and PWA icon refinements deployed**                   |
-| Approved next      | **Review Production Landing/legal pages; installed-phone recheck remains open**    |
+| Current package    | **M8-D Beta plan-access correction before real-Coach admission**                   |
+| Package state      | **Contract frozen; local Sol implementation ready for Product Owner review**       |
+| Approved next      | **Review ordinary Free and plan-tester UI; migration/live/CI remain gated**        |
 | Completed baseline | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice Done                         |
 | Branch baseline    | Production deploy `4b314f4`; GitHub Actions run `37736240939` is green             |
-| Worktree           | Existing `D:` `main`; exact-SHA deployment is healthy                              |
-| Linked database    | Dev dry-run has one pending legal migration; Production Tokyo has 44 aligned       |
+| Worktree           | Existing `D:` `main`; local Beta plan-access correction is uncommitted             |
+| Linked database    | New plan-access migration plus prior legal migration remain unapplied              |
 | Production         | One healthy Tokyo 512 MB Fly Machine; two synthetic Coaches; no real customer data |
-| Approved M8 scope  | Beta first; checkout before first 60-day offer expiry; permanent grants            |
+| Approved M8 scope  | Free-first Beta; tester/permanent/60-day codes; paid choice begins in M8-E         |
+
+**2026-10-08 Venue rule-preview comprehension correction (local review version):** The previous
+`變更場地支出` preview exposed backend month/currency projection groups and three unchanged finance
+totals without explaining the actual Coach decision. The preview now replaces the editing fields
+with one focused confirmation view: current setting → new setting, effective time, scheduled and
+completed Course Session effects, and a plain-language existing-finance conclusion. It lists only
+months whose Venue expense actually changes; unchanged student income, redundant difference totals,
+raw `YYYY-MM` headings and standalone currency codes are no longer rendered. Focused Venue tests
+passed 1 file / 19 tests and Web typecheck passed. Authenticated local Chrome at 390×844 verified
+the `場地供客 70%／自帶客 40% → 單次計費 $500` example in one readable dialog with fixed actions,
+no horizontal overflow and no console warnings/errors. Full CI, installed-phone acceptance, commit,
+push and deployment remain unverified.
+
+**2026-10-08 fixed-schedule card consistency correction (local review version):** The Student
+detail fixed-schedule empty copy previously used an unscoped paragraph size and appeared larger
+than supporting copy in adjacent cards. `尚未建立固定課表。` now owns the same explicit 13px,
+muted supporting-text hierarchy used by the personal-performance card on desktop and mobile, and
+spans the full empty schedule grid. A newly created fixed schedule now defaults `自動安排範圍` to
+`未來 1 週`; editing an existing `只建立首堂` or `未來 2 週` schedule preserves the stored choice,
+and legacy `MAX_WINDOW` still maps to two weeks. The focused regression passed 1 file / 2 tests,
+targeted formatting, Web typecheck and `git diff --check` passed. Full CI, authenticated browser
+rendering, commit, push and deployment remain unverified.
+
+**2026-10-08 Coach-note focus completion correction (local review version):** Focused mobile
+writing previously hid the surrounding Session controls without providing an in-context way to
+finish, so a Coach could mistake `返回` for the only exit and leave the Training record. Focus mode
+now exposes one compact 44px check action. It immediately exits only focus mode, keeps the same
+Session open and asks the existing autosave pipeline to synchronize in the background; the durable
+local draft and existing Session save status continue to own slow, offline and retry states. Pointer
+use preserves the native keyboard until activation, while keyboard/assistive focus can reach the
+action without prematurely dismissing it. Focused note/workspace tests passed 2 files / 30 tests,
+targeted formatting, Web typecheck and `git diff --check` passed. Installed-iOS/Android visual and
+touch acceptance, full CI, commit, push and deployment remain unverified.
+
+**2026-10-08 mobile numeric-input advance correction (local review version):** Desktop keyboard
+testing had validated `Enter` progression through one exercise's measurement and RPE fields, but
+the installed iOS PWA recording showed that its numeric keyboard exposes no Enter key and therefore
+cannot dispatch the event that owned that behavior. The numeric keyboard remains unchanged. While a
+set value is focused on mobile, the app now provides its own compact keyboard dock identifying the
+current set/field and offering `下一格`; the final RPE offers `完成輸入` and dismisses the keyboard.
+This action reuses the same exercise-bounded navigation as physical Enter and any mobile IME that
+honors `enterKeyHint`, and it prevents pointer focus loss before advancing. Keyboard positioning
+uses the shared cross-platform viewport inset from the Coach-note correction. Focused regressions
+passed 4 files / 14 tests, targeted formatting and Web typecheck passed. The supplied desktop and
+iOS recordings establish expected versus prior behavior; corrected installed-iOS/Android visual
+and touch acceptance, full CI, commit, push and deployment remain unverified.
+
+**2026-10-08 Training exercise-picker usability correction (local review version):** Installed-PWA
+recording confirmed that the `加入動作` result list scrolled while its full filter shelf stayed open,
+leaving too little room to browse exercises. The picker's `全部／常用／自訂` choice is now retained
+as a Coach-scoped local interface preference on both desktop Web and PWA. At 720px and below, the
+filter shelf has a dedicated reopen control and collapses after a category/filter choice, any result
+list scroll or a pointer action outside the picker controls; desktop retains the complete filter
+shelf. Focused Exercise Picker/Library tests passed 2 files / 9 tests, workspace typecheck and
+`git diff --check` passed. The supplied installed-PWA recording verifies the prior defect, not the
+corrected rendering; Product Owner phone review remains open. No full CI, commit, push or deployment
+is claimed.
+
+**2026-10-08 setting-interface discoverability standard (local review version):** Alpha phone
+feedback exposed a product-wide gap rather than a Calendar-only defect. The Web control standard
+now defines and inventories every authenticated setting interface, its required fields and its
+mobile scroll owner. All audited required titles use one compact red `*` immediately after the
+title on desktop and mobile. All bounded mobile setting dialogs use the shared measured bottom fade
+and `向下滑看更多 ↓` cue only while undisclosed content remains; declared scroll regions keep fixed
+actions outside the cue. Calendar additionally keeps one reserved borderless validation line above
+its actions, so a failed save stays visible without shifting layout. Focused Web tests passed 9
+files / 46 tests; workspace typecheck and `git diff --check` passed. Exact desktop and 390x844
+authenticated rendering remains for Product Owner review; no full CI, commit, push or deployment is
+claimed.
+
+**2026-10-08 Beta plan-access correction (local review version):** The Product Owner replaced
+general pre-payment NT$0 plan selection with a Free-first Beta. One single-use plan-tester code
+marks the Product Owner's Workspace and permits immediate self-switching among Free, Pro and Prime;
+one single-use permanent-free code grants Prime without an end date; one shared uncapped Beta code
+grants each verified Email one 60-day Prime trial. Ordinary Coaches remain Free until M8-E checkout
+opens. The API now rejects ordinary plan mutations and ignores historical zero-price selections for
+effective access; the Web keeps pricing visible but exposes switching only to the plan tester. Raw
+approved code values are not committed and PostgreSQL stores only digests. The private-schema
+migration adds code kinds, uncapped promotional redemption, single active special-code constraints
+and tester-aware Student/Venue capacity enforcement. Focused API tests passed 3 files / 17 tests;
+focused Web tests passed 2 files / 4 tests; API and Web typechecks plus `git diff --check` passed.
+The migration has not been applied or dry-run, no live account/code was changed, and no browser,
+full CI, commit, push or Production deployment is claimed. M8-C installed-phone recheck remains
+open independently.
+
+**2026-10-08 mobile capability-link sheet correction (local review version):** Opening either
+`分享結果` or `改期連結` from the mobile Session workspace previously rendered the fixed dialog
+inside the transformable sticky Session header. The header's `will-change: transform` therefore
+became the dialog's fixed-position containing block and compressed its backdrop into the header,
+leaving only part of the sheet visible near the top of the installed PWA. The shared capability-link
+dialog now portals to `document.body`, outside the header, while the header's existing hide/reveal
+animation remains unchanged. The focused capability-link regression first failed on the old DOM
+ownership and now passes both completed-session and scheduled-session flows (2/2). Authenticated
+local Chrome at 390x844 measured the repaired reschedule backdrop at `top=0`, `width=390` and
+`height=760`, with the sheet seated above the 84px bottom navigation; the broken Production version
+had measured `top=82` and `height=27.33`. Formatting and focused `git diff --check` pass. Full Web
+typecheck is currently blocked by the unrelated uncommitted Calendar correction's missing
+`ReactNode` import; no full CI, commit, push, Production deployment or installed-phone recheck is
+claimed.
+
+**2026-10-08 mobile Coach-note keyboard correction (local review version):** The installed PWA
+could let the operating system pan the visual viewport while editing, then incorrectly subtract that
+pan from the measured software-keyboard inset. The note toolbar consequently sank into the keyboard
+accessory area, while the document, Session chrome and note canvas remained competing scroll owners.
+Focused note editing now becomes one restrained writing surface: global and Session chrome are
+hidden, the outer document is fixed, the note canvas alone scrolls, and the active caret block is
+kept inside that canvas. Keyboard placement uses the layout/visual viewport height difference and
+does not change when the visual viewport pans. Supporting Chromium/Android browsers additionally
+receive the standards-based `interactive-widget=resizes-content` request; unsupported browsers
+ignore it and retain the Visual Viewport fallback. Focused regressions passed 3 files / 15 tests,
+targeted formatting and Web typecheck passed. Browser emulation cannot reproduce a native keyboard
+or prove installed-PWA behavior, so physical iOS and Android acceptance, full CI, commit, push and
+deployment remain unverified.
 
 **2026-10-08 PWA and browser icon correction (deployed):** The manifest, iOS
 home-screen metadata and browser favicon now use the Product Owner-supplied dark tile with neon FORM
@@ -476,8 +589,12 @@ and OAuth return. They report deployment/PWA looks good; the full physical touch
 path has the first reported corrections deployed from exact SHA `b3b37cb`; CI run `37641070465` and
 the public readiness check are green. The Product Owner should now recheck the no-Venue action,
 default Coach name, text-selection/zoom behavior, Today-only hidden scrollbar, blue line, Exercise
-filter and Calendar viewport on the installed phone. Prior core Alpha evidence remains valid for
-unchanged workflows. Do not reset Production now that self-registration is enabled.
+filter and Calendar viewport on the installed phone. The current local review also needs both
+capability-link sheets, Coach-note keyboard focus mode and set-input `下一格／完成輸入` dock checked
+on installed iOS and Android PWAs before its broader gate. The Student detail fixed-schedule empty
+copy and new-schedule one-week default also require Product Owner review at desktop and phone width.
+Prior core Alpha evidence remains valid for unchanged workflows. Do not reset Production now that
+self-registration is enabled.
 
 The history below is retained as earlier handoff evidence; its older **Next** labels are not
 the current instruction.
@@ -1093,6 +1210,181 @@ Run only the checks required by the current Roadmap package, then retain exact r
 local pass or successful push is not a remote CI completion claim.
 
 ## Engineering log
+
+### 2026-10-08 — LOG-458 — Replace raw Venue projections with a decision preview
+
+- **Scope:** correct the `變更場地支出` preview across every Venue rule kind without changing the
+  Finance Module calculation, fee-rule authority, effective-time semantics or mutation contract.
+- **Outcome:** preview mode now hides the disabled edit form and presents the decision in Coach
+  language: current and proposed rule details, effective time, scheduled/completed Session effects,
+  and whether existing finance records change. Only actual Venue-expense deltas receive a localized
+  month and before/after money row. Unchanged student income, derived trial difference, raw month
+  keys and standalone currency labels are suppressed. The existing `返回修改` and fixed
+  `取消／確認` actions remain available.
+- **Verification:** focused Vitest passes 1 file / 19 tests, including no-change suppression and
+  meaningful expense-delta presentation; Web typecheck and targeted formatting pass. Authenticated
+  local Chrome at 390×844 rendered the supplied scenario as
+  `場地供客 70%／自帶客 40% → 單次計費 $500`, one scheduled Session, zero completed Sessions and
+  the conclusion `目前不會改變既有收支`. Fixed actions remained visible and browser logs contained
+  no warnings or errors. No full CI, installed-phone or remote evidence is claimed.
+- **Next:** Product Owner reviews the local preview wording and hierarchy for commission, rent,
+  prepaid, free and untracked transitions. Full CI and remote delivery remain gated by that review
+  and explicit authorization.
+
+### 2026-10-08 — LOG-457 — Align fixed-schedule empty copy and default horizon
+
+- **Scope:** correct the Student detail fixed-schedule card's empty-state typography and make a new
+  fixed schedule default its automatic arrangement range to the coming week without altering API,
+  recurrence or existing-series semantics.
+- **Outcome:** `尚未建立固定課表。` now has a dedicated full-grid supporting-text rule at 13px,
+  1.55 line-height and the same muted color as the adjacent personal-performance description. The
+  Series editor resolves a missing horizon to `1_WEEK`; stored `NONE`, `1_WEEK` and `2_WEEKS`
+  values remain unchanged, while legacy `MAX_WINDOW` remains compatible with `2_WEEKS`.
+- **Verification:** both focused regressions failed against the previous unscoped paragraph and
+  `NONE` fallback, then passed 1 file / 2 tests with assertions for the formal page wiring. Targeted
+  Prettier and Web typecheck pass; `git diff --check` passes after this Status update. No full CI or
+  authenticated desktop/mobile rendering is claimed.
+- **Next:** Product Owner reviews the empty card at desktop and phone width and opens a new fixed
+  schedule to confirm `未來 1 週`; full CI and remote delivery remain gated by review and explicit
+  authorization.
+
+### 2026-10-08 — LOG-456 — Complete Coach notes without leaving the Session
+
+- **Scope:** add the missing exit path to mobile Coach-note focus mode without changing note
+  formatting, persistence authority, keyboard inset behavior, desktop layout or Session navigation.
+- **Outcome:** focus mode now has a minimal check action with a 44px target. Activating it drains the
+  existing autosave coordinator and immediately closes only focus mode instead of waiting for a
+  network round trip. The durable local draft and existing Session save-status UI retain ownership of
+  offline, conflict, retry and eventual-success feedback. Preventing pointer-down focus transfer
+  keeps the software keyboard stable until activation, while the editor permits keyboard and
+  assistive focus to reach the completion action.
+- **Verification:** focused Vitest passes 2 files / 30 tests, including immediate exit while the save
+  promise remains pending, remaining in the same Session, background failure status and keyboard
+  focus transfer to the action. Targeted Prettier, Web typecheck and `git diff --check` pass. The
+  initial sandbox test attempt ran zero tests because of the established Windows temporary-file
+  rename `EPERM`; the approved elevated rerun passed. No installed-phone acceptance, full CI or
+  remote evidence is claimed.
+- **Next:** Product Owner reviews the check action on installed iOS and Android PWAs, including
+  immediate response, background save status, keyboard dismissal and return to the unchanged Session.
+  Full CI and remote delivery remain gated by that review and explicit authorization.
+
+### 2026-10-08 — LOG-455 — Restore set-input progression without a mobile Enter key
+
+- **Scope:** preserve fast numeric-keyboard entry on installed mobile PWAs while restoring the
+  existing exercise-scoped `重量／次數／RPE／下一組` progression when the operating-system keyboard
+  exposes no Enter key.
+- **Outcome:** focused set inputs now expose an application-owned mobile dock with the current
+  `第 N 組 · 欄位` context and a `下一格` action. The exercise's final numeric field changes to
+  `完成輸入` and blurs to dismiss the keyboard. Pointer-down is cancelled on the dock so its action
+  runs before focus can disappear. Physical Enter and IME-provided Next keys keep the original
+  path; `numeric`/`decimal` keyboards, field validation and the rule against crossing exercise
+  boundaries remain unchanged.
+- **Verification:** the new regression first failed because the old interface had no app-owned
+  mobile action. Focused Vitest passes 4 files / 14 tests covering the dock, preserved focus,
+  next/final behavior, original Enter navigation, viewport inset and mobile placement contract.
+  Targeted Prettier and Web typecheck pass. The two supplied recordings establish the desktop
+  expectation and prior iOS limitation but do not verify the corrected installed-PWA rendering.
+- **Next:** Product Owner reviews the dock on installed iOS and Android PWAs across integer,
+  decimal, RPE, multiple-set and final-field entry. Full CI and remote delivery remain gated by
+  that review and explicit authorization.
+
+### 2026-10-08 — LOG-454 — Remember picker category and reclaim mobile result space
+
+- **Scope:** correct the `加入動作` browsing workflow shown in the installed-PWA recording without
+  changing the Exercise Library data, favourites, custom-definition mutations or desktop filter
+  density.
+- **Outcome:** the last `全部／常用／自訂` choice is stored under the current Coach's local UI
+  preference key and restored the next time the picker opens on that browser/PWA. At mobile width,
+  the filter shelf now has an accessible reopen button with an active-filter indicator and collapses
+  after category, equipment, movement-type or body-part selection, result-list scrolling, or a
+  pointer action outside the controls. The 220ms restrained transition honors reduced motion;
+  desktop always keeps the shelf visible.
+- **Verification:** the supplied 7.325-second 1170x2532 installed-PWA recording confirmed that the
+  result list was the active scroll owner while the filter shelf stayed fixed. New persistence and
+  all three collapse-trigger regressions pass with the existing picker/library suite: 2 files / 9
+  tests. Workspace typecheck and `git diff --check` pass. No post-change authenticated browser or
+  installed-phone rendering, full CI, commit, push or deployment is claimed.
+- **Next:** Product Owner reviews reopening, all three collapse triggers and remembered category on
+  the installed phone plus one desktop browser. Full CI and remote delivery remain gated by that
+  review and explicit authorization.
+
+### 2026-10-08 — LOG-453 — Stabilize Coach-note editing above mobile keyboards
+
+- **Scope:** correct the installed-PWA Coach-note toolbar obstruction and runaway caret/viewport
+  movement without changing note formatting, persistence, Training data or desktop behavior.
+- **Outcome:** keyboard inset calculation now ignores visual-viewport panning and is covered by a
+  pure cross-platform helper. Focused note entry hides nonessential app and Session chrome, fixes
+  the outer writing surface, delegates scrolling to the note canvas, and keeps the active block in
+  view. The viewport meta opts supporting Android/Chromium browsers into
+  `interactive-widget=resizes-content`; Safari and other visual-viewport implementations use the
+  height-difference fallback, while browsers without either behavior degrade to their native layout
+  resize.
+- **Verification:** the keyboard-pan and single-scroll-owner regressions first failed against the
+  previous implementation. Focused Vitest now passes 3 files / 15 tests across panned visual
+  viewports, Android dual-viewport resize, non-keyboard height changes, focused layout and caret
+  scrolling. Targeted Prettier and Web typecheck pass. A desktop browser cannot reproduce an OS
+  keyboard, keyboard accessory or installed-PWA viewport implementation, so no physical-device
+  acceptance is claimed.
+- **Next:** Product Owner reviews the local version on installed iOS and Android PWAs, including a
+  long multi-paragraph note and repeated keyboard open/close. Full CI and remote delivery remain
+  gated by that review and explicit authorization.
+
+### 2026-10-08 — LOG-452 — Restore mobile capability-link sheets to the viewport
+
+- **Scope:** correct the installed-phone `分享結果` and `改期連結` sheet position without
+  changing capability-link authority, link lifetime, Session header animation or bottom navigation.
+- **Outcome:** the shared capability-link dialog now portals to `document.body`; its fixed backdrop
+  can no longer inherit the transformable Session header as its containing block. Both link purposes
+  retain the same creation, copy, reissue, revoke, dismissal and focus behavior.
+- **Verification:** the focused portal assertion failed against the prior nested DOM, then the
+  completed/reschedule regression passed 2/2. Authenticated local Chrome at exact 390x844 measured
+  the repaired reschedule backdrop at `top=0`, `390x760`, and visually placed the sheet above the
+  bottom navigation. Targeted Prettier and `git diff --check` pass. Full Web typecheck is not claimed:
+  the unrelated uncommitted `CalendarPage.tsx` currently fails on two missing `ReactNode` names.
+- **Next:** Product Owner reviews both link sheets on the installed phone. Full CI and remote delivery
+  remain gated by that review and explicit authorization.
+
+### 2026-10-08 — LOG-451 — Standardize setting requirements and hidden content
+
+- **Scope:** convert the Alpha phone finding into a desktop/mobile setting-interface standard and
+  audit all authenticated create/edit/preference/rule/schedule/export forms without changing their
+  data authority, mutations or existing field requirements.
+- **Outcome:** [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md) now owns the setting-interface
+  definition and review table. Shared required-title components cover Calendar, Sessions, Students,
+  lesson purchases, fixed schedules, Exercises, finances, Venues, Coach preferences, passwords,
+  plans, export and typed confirmations. Shared dialog behavior measures each declared mobile scroll
+  region, shows a fade plus `向下滑看更多 ↓` only while more content remains, and clears it at the
+  lower boundary. Calendar's save error uses one reserved borderless line beside the fixed actions.
+- **Verification:** the audited native `required` controls and shared date/time/Venue controls were
+  reconciled against the inventory. Focused tests passed 9 files / 46 tests, including the shared
+  required-title and continuation-cue boundary tests; workspace typecheck and `git diff --check`
+  passed. The first sandbox Vitest attempt hit the established Windows temporary-file `EPERM`; the
+  approved reruns passed. No authenticated desktop or exact 390x844 rendering is claimed.
+- **Next:** Product Owner reviews representative setting interfaces at desktop and on the installed
+  phone, including Calendar, fixed schedule, Venue rule, Settings password and export. Full CI and
+  remote delivery remain gated by that review and explicit authorization.
+
+### 2026-10-08 — LOG-450 — Restrict Beta to Free plus controlled code grants
+
+- **Scope:** freeze and implement the Product Owner's corrected Beta plan policy before real-Coach
+  admission without activating payment or changing approved prices.
+- **Outcome:** ordinary Coaches can no longer derive Pro/Prime access from the delivered NT$0
+  selection rows or call the plan mutation successfully. Code redemption now distinguishes an
+  uncapped 60-day Prime Beta code, one single-use permanent Prime code and one single-use plan
+  tester code. Only the tester may immediately switch its own effective Free/Pro/Prime plan. The
+  comparison and Settings surfaces retain the accepted design while presenting truthful
+  pre-payment availability. Raw codes remain outside the repository and operator listing.
+- **Verification:** focused elevated API tests passed 3 files / 17 tests; focused elevated Web tests
+  passed 2 files / 4 tests; API and Web typechecks passed; `git diff --check` passed. Supabase's
+  current RLS/Data API guidance was reviewed; the new state remains in `app_private` and is granted
+  only to the dedicated API role.
+- **Known issue:** migration dry-run/application, live redemption and plan switching, desktop and
+  exact 390x844 browser review, full CI, code issuance, commit, push and Production deployment are
+  intentionally unverified pending Product Owner inspection. M8-C installed-phone recheck also
+  remains open.
+- **Next:** present the local Free and plan-tester behavior for Product Owner review; only after
+  explicit approval run migration/live/browser/full delivery gates and propose the exact remote
+  action.
 
 ### 2026-10-08 — LOG-449 — Deliver PWA icon and legal-page refinements
 

@@ -12,6 +12,8 @@ import {
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
 import { MobileNoteEditor } from './MobileNoteEditor'
+import { getNoteKeyboardInset } from './note-viewport'
+import { SetInputAdvanceDock } from './SetInputAdvanceDock'
 import { adoptTrainingDraft } from './conflict-recovery'
 import {
   boundedDragScroll,
@@ -40,6 +42,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   Trash2,
   TrendingUp,
   WifiOff,
@@ -286,8 +289,8 @@ function TrainingEditor({
     [mobileTab, setMobileTab] = useState<'training' | 'note'>('training'),
     [classInfoExpanded, setClassInfoExpanded] = useState(true),
     [noteFocused, setNoteFocused] = useState(false),
-    [setInputFocused, setSetInputFocused] = useState(false),
-    [noteKeyboardInset, setNoteKeyboardInset] = useState(0),
+    [activeSetInput, setActiveSetInput] = useState<HTMLInputElement | null>(null),
+    [keyboardInset, setKeyboardInset] = useState(0),
     [picker, setPicker] = useState(false),
     [offline, setOffline] = useState(!navigator.onLine),
     [storageError, setStorageError] = useState(false),
@@ -313,13 +316,21 @@ function TrainingEditor({
   }, [plan.data?.tier])
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const touchStartY = useRef<number | null>(null)
+  const keyboardFocused = noteFocused || activeSetInput !== null
   useEffect(() => {
-    if (!noteFocused) return
+    if (!keyboardFocused) {
+      setKeyboardInset(0)
+      return
+    }
     const viewport = window.visualViewport
     const updateInset = () => {
-      const visibleBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight)
-      const inset = Math.max(0, Math.round(window.innerHeight - visibleBottom))
-      setNoteKeyboardInset(inset > 120 ? inset : 0)
+      setKeyboardInset(
+        getNoteKeyboardInset({
+          layoutHeight: window.innerHeight,
+          visualHeight: viewport?.height ?? window.innerHeight,
+          visualOffsetTop: viewport?.offsetTop ?? 0
+        })
+      )
     }
     updateInset()
     viewport?.addEventListener('resize', updateInset)
@@ -330,7 +341,7 @@ function TrainingEditor({
       viewport?.removeEventListener('scroll', updateInset)
       window.removeEventListener('resize', updateInset)
     }
-  }, [noteFocused])
+  }, [keyboardFocused])
   const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)
   const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragPointer = useRef<number | null>(null)
@@ -567,6 +578,12 @@ function TrainingEditor({
     setDraft(next)
     setRevision(revisionRef.current)
     setSaveState('pending')
+  }
+  const finishNote = () => {
+    if (!offline) void coordinator.flush().catch(() => undefined)
+    const active = document.activeElement
+    if (active instanceof HTMLElement && active.closest('.mobile-note-canvas')) active.blur()
+    setNoteFocused(false)
   }
   const clearDragTimer = () => {
     if (dragTimer.current) clearTimeout(dragTimer.current)
@@ -1103,8 +1120,8 @@ function TrainingEditor({
   }
   return (
     <section
-      className={`session-workspace is-${mobileTab}-tab ${classInfoExpanded ? 'is-context-expanded' : 'is-context-collapsed'}${noteFocused ? ' is-note-focused' : ''}${setInputFocused ? ' is-set-input-focused' : ''}`}
-      style={{ '--session-keyboard-inset': `${noteKeyboardInset}px` } as CSSProperties}
+      className={`session-workspace is-${mobileTab}-tab ${classInfoExpanded ? 'is-context-expanded' : 'is-context-collapsed'}${noteFocused ? ' is-note-focused' : ''}${activeSetInput ? ' is-set-input-focused' : ''}`}
+      style={{ '--session-keyboard-inset': `${keyboardInset}px` } as CSSProperties}
       onTouchStartCapture={(event) => {
         touchStartY.current = event.touches[0]?.clientY ?? null
       }}
@@ -1117,13 +1134,22 @@ function TrainingEditor({
         touchStartY.current = null
       }}
       onFocusCapture={(event) => {
-        if (event.target instanceof HTMLInputElement && event.target.type === 'number')
-          setSetInputFocused(true)
+        if (
+          event.target instanceof HTMLInputElement &&
+          event.target.matches('.training-set-card input')
+        )
+          setActiveSetInput(event.target)
       }}
       onBlurCapture={(event) => {
-        if (event.target instanceof HTMLInputElement && event.target.type === 'number')
-          setSetInputFocused(
-            event.relatedTarget instanceof HTMLInputElement && event.relatedTarget.type === 'number'
+        if (
+          event.target instanceof HTMLInputElement &&
+          event.target.matches('.training-set-card input')
+        )
+          setActiveSetInput(
+            event.relatedTarget instanceof HTMLInputElement &&
+              event.relatedTarget.matches('.training-set-card input')
+              ? event.relatedTarget
+              : null
           )
       }}
     >
@@ -1195,6 +1221,18 @@ function TrainingEditor({
           </button>
         </div>
       </header>
+      {noteFocused ? (
+        <div className="session-note-focus-actions">
+          <button
+            type="button"
+            aria-label="儲存教練筆記並結束專注模式"
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={finishNote}
+          >
+            <Check />
+          </button>
+        </div>
+      ) : null}
       {sessionNotice ? (
         <p className="session-feedback" role="status">
           {sessionNotice}
@@ -1514,6 +1552,7 @@ function TrainingEditor({
           )}
         </main>
       </div>
+      <SetInputAdvanceDock target={activeSetInput} />
       <footer className="session-bottom">
         <div>
           <span>
@@ -1956,6 +1995,28 @@ function normalizeSet(
   return { ...set, measurements: measurementValues(set, recording, preference) }
 }
 
+type ExercisePickerView = 'all' | 'favorite' | 'custom'
+
+const exercisePickerViewKey = (coachId: string) => `gym-assistant.exercise-picker-view:${coachId}`
+
+export function readExercisePickerView(coachId: string): ExercisePickerView {
+  try {
+    const stored = localStorage.getItem(exercisePickerViewKey(coachId))
+    if (stored === 'favorite' || stored === 'custom') return stored
+  } catch {
+    // A blocked preference store must not interrupt the training flow.
+  }
+  return 'all'
+}
+
+function rememberExercisePickerView(coachId: string, view: ExercisePickerView) {
+  try {
+    localStorage.setItem(exercisePickerViewKey(coachId), view)
+  } catch {
+    // The selected view still applies to the current dialog when storage is unavailable.
+  }
+}
+
 export function ExercisePicker({
   session,
   onPick,
@@ -1966,13 +2027,16 @@ export function ExercisePicker({
   onClose: () => void
 }) {
   const [q, setQ] = useState(''),
-    [view, setView] = useState<'all' | 'favorite' | 'custom'>('all'),
+    [view, setView] = useState<ExercisePickerView>(() => readExercisePickerView(session.user.id)),
     [equipment, setEquipment] = useState(''),
     [movementType, setMovementType] = useState(''),
     [bodyParts, setBodyParts] = useState<string[]>([]),
+    [mobileFiltersOpen, setMobileFiltersOpen] = useState(true),
     [editing, setEditing] = useState<ExerciseDefinition | null | undefined>(undefined),
     [deleting, setDeleting] = useState<ExerciseDefinition | null>(null),
     [message, setMessage] = useState('')
+  const pickerToolbarRef = useRef<HTMLDivElement>(null)
+  const pickerFiltersRef = useRef<HTMLElement>(null)
   const query = useExerciseLibrary(session)
   const mutations = useTrainingMutations(session)
   const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
@@ -1996,6 +2060,30 @@ export function ExercisePicker({
     setMovementType('')
     setBodyParts([])
   }
+  const isMobile = () =>
+    typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 720px)').matches
+  const closeMobileFilters = () => {
+    if (isMobile()) setMobileFiltersOpen(false)
+  }
+  const chooseView = (next: ExercisePickerView) => {
+    setView(next)
+    rememberExercisePickerView(session.user.id, next)
+    closeMobileFilters()
+  }
+  useEffect(() => {
+    if (!mobileFiltersOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!isMobile()) return
+      const target = event.target as Node
+      if (
+        !pickerToolbarRef.current?.contains(target) &&
+        !pickerFiltersRef.current?.contains(target)
+      )
+        setMobileFiltersOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [mobileFiltersOpen])
   return (
     <div className="dialog-backdrop" role="presentation" onPointerDown={onBackdropPointerDown}>
       <section
@@ -2016,7 +2104,7 @@ export function ExercisePicker({
             <X />
           </button>
         </header>
-        <div className="picker-toolbar">
+        <div className="picker-toolbar" ref={pickerToolbarRef}>
           <label className="library-search picker-search">
             <Search aria-hidden="true" />
             <input
@@ -2035,12 +2123,26 @@ export function ExercisePicker({
                 ['custom', '自訂']
               ] as const
             ).map(([key, label]) => (
-              <button key={key} aria-pressed={view === key} onClick={() => setView(key)}>
+              <button key={key} aria-pressed={view === key} onClick={() => chooseView(key)}>
                 {label}
                 <small>{query.data?.totals[key] ?? 0}</small>
               </button>
             ))}
           </div>
+          <button
+            className="picker-mobile-filter-toggle"
+            type="button"
+            aria-label={mobileFiltersOpen ? '收起篩選' : '展開篩選'}
+            aria-controls="exercise-picker-filter-shelf"
+            aria-expanded={mobileFiltersOpen}
+            data-active={Boolean(equipment || movementType || bodyParts.length)}
+            onClick={() => setMobileFiltersOpen((open) => !open)}
+          >
+            <SlidersHorizontal aria-hidden="true" />
+            {(equipment || movementType || bodyParts.length > 0) && (
+              <span className="library-filter-dot" />
+            )}
+          </button>
           <button
             className="primary-button picker-create ui-action-add"
             onClick={() => {
@@ -2053,11 +2155,20 @@ export function ExercisePicker({
           </button>
         </div>
         {query.data && (
-          <section className="filter-shelf picker-filters" aria-label="篩選動作">
+          <section
+            ref={pickerFiltersRef}
+            id="exercise-picker-filter-shelf"
+            className="filter-shelf picker-filters"
+            data-mobile-open={mobileFiltersOpen}
+            aria-label="篩選動作"
+          >
             <FormSelect
               label="器材"
               value={equipment}
-              onChange={setEquipment}
+              onChange={(value) => {
+                setEquipment(value)
+                closeMobileFilters()
+              }}
               options={[
                 { value: '', label: '所有器材' },
                 ...query.data.filters.equipment.map((value) => ({ value, label: value }))
@@ -2066,7 +2177,10 @@ export function ExercisePicker({
             <FormSelect
               label="動作類型"
               value={movementType}
-              onChange={setMovementType}
+              onChange={(value) => {
+                setMovementType(value)
+                closeMobileFilters()
+              }}
               options={[
                 { value: '', label: '所有類型' },
                 ...query.data.filters.movementTypes.map((value) => ({ value, label: value }))
@@ -2078,13 +2192,14 @@ export function ExercisePicker({
                   <button
                     key={part}
                     aria-pressed={bodyParts.includes(part)}
-                    onClick={() =>
+                    onClick={() => {
                       setBodyParts((items) =>
                         items.includes(part)
                           ? items.filter((item) => item !== part)
                           : [...items, part]
                       )
-                    }
+                      closeMobileFilters()
+                    }}
                   >
                     {part}
                   </button>
@@ -2105,17 +2220,17 @@ export function ExercisePicker({
           </p>
         )}
         {query.isLoading ? (
-          <div className="picker-results ui-choice-scroll">
+          <div className="picker-results ui-choice-scroll" onScroll={closeMobileFilters}>
             <p>載入動作庫中…</p>
           </div>
         ) : query.isError ? (
-          <div className="picker-results ui-choice-scroll">
+          <div className="picker-results ui-choice-scroll" onScroll={closeMobileFilters}>
             <p>
               無法載入動作庫。 <button onClick={() => void query.refetch()}>重試</button>
             </p>
           </div>
         ) : definitions.length ? (
-          <div className="picker-results ui-choice-scroll">
+          <div className="picker-results ui-choice-scroll" onScroll={closeMobileFilters}>
             <div className="picker-list">
               {definitions.map((definition) => {
                 const busy =
@@ -2174,14 +2289,14 @@ export function ExercisePicker({
             </div>
           </div>
         ) : (
-          <div className="picker-results ui-choice-scroll">
+          <div className="picker-results ui-choice-scroll" onScroll={closeMobileFilters}>
             <div className="empty-state">
               <strong>沒有符合的動作</strong>
               <button
                 className="secondary-button"
                 onClick={() => {
                   clear()
-                  setView('all')
+                  chooseView('all')
                 }}
               >
                 清除篩選

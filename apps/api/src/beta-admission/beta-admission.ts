@@ -7,6 +7,7 @@ export type BetaGrant =
   | { state: 'promotional'; startedAt: string; endsAt: string }
   | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
+  | { state: 'tester'; startedAt: string }
 
 export type RedemptionFailure =
   | 'invalid_code'
@@ -74,7 +75,7 @@ export class BetaAdmissionModule {
     const input = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
     const email = await this.verifiedEmail.getVerifiedEmail(identity.userId)
     if (!email) throw new BetaAdmissionError('email_unverified', 403)
-    if (typeof input.code !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(input.code))
+    if (typeof input.code !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(input.code))
       throw new BetaAdmissionError('invalid_code')
     const result = await this.repository.redeem({
       userId: identity.userId,

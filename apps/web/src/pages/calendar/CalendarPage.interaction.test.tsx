@@ -225,6 +225,53 @@ describe('Calendar scheduling surface', () => {
     }
   })
 
+  it('marks required course fields, reveals hidden content, and keeps validation beside the actions', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    try {
+      await act(async () =>
+        root.render(<CalendarPage session={{} as Session} timeZone="Asia/Taipei" />)
+      )
+      await act(async () => host.querySelector<HTMLButtonElement>('.page-header button')!.click())
+      const form = host.querySelector<HTMLFormElement>('.scheduling-form')!
+      const dialog = host.querySelector<HTMLElement>('.scheduling-dialog')!
+      expect(form.querySelectorAll('.ui-required-mark')).toHaveLength(5)
+
+      const body = form.querySelector<HTMLElement>('.scheduling-form-body')!
+      Object.defineProperties(body, {
+        clientHeight: { configurable: true, value: 200 },
+        scrollHeight: { configurable: true, value: 500 }
+      })
+      await act(async () => body.dispatchEvent(new Event('scroll', { bubbles: true })))
+      expect(dialog.classList.contains('ui-dialog-has-more')).toBe(true)
+      body.scrollTop = 300
+      await act(async () => body.dispatchEvent(new Event('scroll', { bubbles: true })))
+      expect(dialog.classList.contains('ui-dialog-has-more')).toBe(false)
+
+      await act(async () =>
+        form.querySelector<HTMLButtonElement>('.form-select-trigger[aria-label="場地"]')!.click()
+      )
+      await act(async () =>
+        [...document.querySelectorAll<HTMLButtonElement>('.form-select-menu [role="option"]')]
+          .find((option) => option.textContent?.trim() === '選擇場地')!
+          .click()
+      )
+      await act(async () =>
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      )
+      const error = form.querySelector('.scheduling-form-error')!
+      expect(error.textContent).toBe('請選擇或新增場地。')
+      expect(error.closest('.scheduling-form-footer')).not.toBeNull()
+      expect(error.closest('.scheduling-form-body')).toBeNull()
+      expect(error.classList.contains('notice')).toBe(false)
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
   it('sends a weekly course repeat through the existing Schedule Series operation', async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
     vi.stubGlobal('matchMedia', () => ({ matches: false }))

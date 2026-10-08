@@ -3,6 +3,7 @@ import { Check, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
+import { RequiredFieldMark } from '../../shared/FormFieldLabel'
 import { useFinanceMutation, useVenues, type Venue } from './finance-api'
 
 export function VenueNamePicker({
@@ -82,6 +83,7 @@ export function VenueNamePicker({
     <div className="venue-choice">
       <span className="venue-choice-label">
         {label}
+        {!optional ? <RequiredFieldMark /> : null}
         {validationMessage && (
           <span className="venue-choice-validation" role="alert">
             {' '}

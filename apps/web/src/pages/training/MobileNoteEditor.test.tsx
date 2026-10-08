@@ -2,12 +2,45 @@
 import { act, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MobileNoteEditor } from './MobileNoteEditor'
+import { keepNoteBlockVisible, MobileNoteEditor } from './MobileNoteEditor'
 
 describe('mobile note editor', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     localStorage.removeItem('gym-assistant.note-import-selection')
+  })
+
+  it('scrolls the note canvas instead of the document when the caret block leaves view', () => {
+    const canvas = document.createElement('div')
+    const block = document.createElement('div')
+    canvas.append(block)
+    canvas.scrollTop = 40
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      top: 60,
+      bottom: 460,
+      left: 0,
+      right: 390,
+      width: 390,
+      height: 400,
+      x: 0,
+      y: 60,
+      toJSON: () => ({})
+    })
+    vi.spyOn(block, 'getBoundingClientRect').mockReturnValue({
+      top: 455,
+      bottom: 492,
+      left: 20,
+      right: 370,
+      width: 350,
+      height: 37,
+      x: 20,
+      y: 455,
+      toJSON: () => ({})
+    })
+
+    keepNoteBlockVisible(canvas, block)
+
+    expect(canvas.scrollTop).toBe(92)
   })
 
   it('offers one continuous editable surface for cross-paragraph selection', async () => {

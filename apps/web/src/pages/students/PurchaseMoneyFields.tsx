@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { numericInputKeyDown } from '../../shared/numeric-input'
 import { financeMoney, moneyFactor } from './finance-api'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 export function PurchaseMoneyFields({
   count,
@@ -55,7 +56,7 @@ export function PurchaseMoneyFields({
     <div className="finance-money-fields">
       {includeCount && (
         <label>
-          堂數
+          <RequiredFieldLabel>堂數</RequiredFieldLabel>
           <input
             name="lessonCount"
             type="number"
@@ -70,7 +71,7 @@ export function PurchaseMoneyFields({
         </label>
       )}
       <label>
-        {totalLabel}
+        <RequiredFieldLabel>{totalLabel}</RequiredFieldLabel>
         <input
           aria-label={totalLabel}
           type="text"

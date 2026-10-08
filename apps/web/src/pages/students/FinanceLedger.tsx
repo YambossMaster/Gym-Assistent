@@ -17,6 +17,7 @@ import {
   type MonthlyFinance
 } from './finance-api'
 import { workspaceInstant, workspaceWallTime } from './workspace-time'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 type Row = MonthlyFinance['rows'][number]
 
@@ -458,7 +459,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   save()
                 }}
               >
-                <div className="finance-ledger-fields">
+                <div className="finance-ledger-fields" data-dialog-scroll-region>
                   <div className="finance-ledger-datetime">
                     <SeriesDatePicker
                       label="日期"
@@ -468,7 +469,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                     />
                     <div className="scheduling-time-field">
                       <span>
-                        時間
+                        <RequiredFieldLabel>時間</RequiredFieldLabel>
                         {modifiedFields?.time ? <ModifiedFieldMark /> : null}
                       </span>
                       <TimeSelect
@@ -480,7 +481,8 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   </div>
                   <label>
                     <span className="finance-ledger-field-title">
-                      名稱{modifiedFields?.label && <ModifiedFieldMark />}
+                      <RequiredFieldLabel>名稱</RequiredFieldLabel>
+                      {modifiedFields?.label && <ModifiedFieldMark />}
                     </span>
                     <input
                       required
@@ -492,7 +494,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   <div className={editor === 'new' ? 'finance-ledger-amount-row' : undefined}>
                     {editor === 'new' && (
                       <div className="finance-ledger-direction" role="group" aria-label="方向">
-                        <span>方向</span>
+                        <RequiredFieldLabel>方向</RequiredFieldLabel>
                         <div className="scheduling-segmented">
                           <button
                             type="button"
@@ -513,7 +515,9 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                     )}
                     <label>
                       <span className="finance-ledger-field-title">
-                        金額{editor === 'new' && `（${currency}）`}
+                        <RequiredFieldLabel>
+                          金額{editor === 'new' && `（${currency}）`}
+                        </RequiredFieldLabel>
                         {modifiedFields?.amount && <ModifiedFieldMark />}
                       </span>
                       <input

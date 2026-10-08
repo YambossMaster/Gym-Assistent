@@ -24,6 +24,43 @@ function unlockPageScroll() {
   }
 }
 
+function updateMobileScrollCue(dialog: HTMLElement) {
+  if (typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 720px)').matches) {
+    dialog.classList.remove('ui-dialog-has-more')
+    return
+  }
+  const preferred = dialog.querySelector<HTMLElement>('[data-dialog-scroll-region]')
+  const candidates = preferred
+    ? [preferred]
+    : [
+        ...dialog.querySelectorAll<HTMLElement>(
+          '.scheduling-form-body, .settings-export-form-body, .finance-form-fields, .finance-ledger-fields, .student-series-fields, .purchase-edit-fields, .venue-course-edit-fields, .definition-editor-fields, .ui-settings-dialog-content'
+        )
+      ]
+  if (dialog.scrollHeight > dialog.clientHeight + 2) candidates.push(dialog)
+  const region = candidates.find((candidate) => candidate.scrollHeight > candidate.clientHeight + 2)
+  if (!region) {
+    dialog.classList.remove('ui-dialog-has-more')
+    return
+  }
+  const hasMore = region.scrollHeight - region.scrollTop - region.clientHeight > 2
+  dialog.classList.toggle('ui-dialog-has-more', hasMore)
+  const dialogRect = dialog.getBoundingClientRect()
+  const regionRect = region.getBoundingClientRect()
+  dialog.style.setProperty(
+    '--ui-scroll-cue-left',
+    `${Math.max(0, regionRect.left - dialogRect.left)}px`
+  )
+  dialog.style.setProperty(
+    '--ui-scroll-cue-right',
+    `${Math.max(0, dialogRect.right - regionRect.right)}px`
+  )
+  dialog.style.setProperty(
+    '--ui-scroll-cue-bottom',
+    `${Math.max(0, dialogRect.bottom - regionRect.bottom)}px`
+  )
+}
+
 export function useModalScrollLock(active: boolean) {
   useEffect(() => {
     if (!active) return
@@ -67,6 +104,26 @@ export function useDialogBehavior(
     dialogStack.push(token)
     if (lockScroll) lockPageScroll()
     if (focusDialog) dialogRef.current?.focus()
+    const dialog = dialogRef.current
+    const updateCue = () => {
+      if (dialog) updateMobileScrollCue(dialog)
+    }
+    const cueFrame = requestAnimationFrame(updateCue)
+    dialog?.addEventListener('scroll', updateCue, true)
+    window.addEventListener('resize', updateCue)
+    const cueResizeObserver =
+      dialog && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateCue) : null
+    if (dialog) {
+      cueResizeObserver?.observe(dialog)
+      dialog
+        .querySelectorAll<HTMLElement>('[data-dialog-scroll-region], .ui-settings-dialog-content')
+        .forEach((region) => cueResizeObserver?.observe(region))
+    }
+    const cueMutationObserver =
+      dialog && typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(() => requestAnimationFrame(updateCue))
+        : null
+    if (dialog) cueMutationObserver?.observe(dialog, { childList: true, subtree: true })
     const keydown = (event: KeyboardEvent) => {
       if (dialogStack.at(-1) !== token || event.defaultPrevented || event.isComposing) return
       if (event.key === 'Escape') {
@@ -122,6 +179,11 @@ export function useDialogBehavior(
       if (index !== -1) dialogStack.splice(index, 1)
       if (lockScroll) unlockPageScroll()
       window.removeEventListener('keydown', keydown)
+      cancelAnimationFrame(cueFrame)
+      dialog?.removeEventListener('scroll', updateCue, true)
+      window.removeEventListener('resize', updateCue)
+      cueResizeObserver?.disconnect()
+      cueMutationObserver?.disconnect()
       restoreFocusFrameRef.current = requestAnimationFrame(() => {
         // A replacement dialog may already own focus when this deferred cleanup runs.
         if (

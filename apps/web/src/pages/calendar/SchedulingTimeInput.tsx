@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { TimeSelect, parseTime } from '../../shared/TimeSelect'
+import { RequiredFieldMark } from '../../shared/FormFieldLabel'
 
 export function SchedulingTimeInput({
   label,
@@ -21,6 +22,7 @@ export function SchedulingTimeInput({
     <div className="scheduling-time-field">
       <span>
         {label}
+        <RequiredFieldMark />
         {labelSuffix}
       </span>
       <TimeSelect

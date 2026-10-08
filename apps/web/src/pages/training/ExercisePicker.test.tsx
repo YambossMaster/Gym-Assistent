@@ -50,8 +50,99 @@ vi.mock('./queries', () => ({
 
 afterEach(() => {
   document.body.innerHTML = ''
+  localStorage.clear()
   vi.unstubAllGlobals()
   calls.create.mockReset()
+})
+
+it('remembers the last picker category for the same coach', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const renderPicker = async () => {
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    await act(async () =>
+      root.render(
+        <ExercisePicker
+          session={{ user: { id: 'coach' } } as Session}
+          onPick={vi.fn()}
+          onClose={vi.fn()}
+        />
+      )
+    )
+    return { host, root }
+  }
+
+  const first = await renderPicker()
+  await act(async () =>
+    [...first.host.querySelectorAll<HTMLButtonElement>('.picker-tabs button')]
+      .find((button) => button.textContent?.includes('常用'))!
+      .click()
+  )
+  expect(localStorage.getItem('gym-assistant.exercise-picker-view:coach')).toBe('favorite')
+  await act(async () => first.root.unmount())
+  first.host.remove()
+
+  const second = await renderPicker()
+  expect(
+    [...second.host.querySelectorAll<HTMLButtonElement>('.picker-tabs button')]
+      .find((button) => button.textContent?.includes('常用'))
+      ?.getAttribute('aria-pressed')
+  ).toBe('true')
+  await act(async () => second.root.unmount())
+})
+
+it('collapses mobile picker filters after a choice, result scroll, or outside pointer action', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubGlobal('matchMedia', () => ({ matches: true }))
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <ExercisePicker
+          session={{ user: { id: 'coach' } } as Session}
+          onPick={vi.fn()}
+          onClose={vi.fn()}
+        />
+      )
+    )
+    const shelf = host.querySelector<HTMLElement>('#exercise-picker-filter-shelf')!
+    const toggle = host.querySelector<HTMLButtonElement>('.picker-mobile-filter-toggle')!
+    expect(shelf.dataset.mobileOpen).toBe('true')
+
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('[aria-label="部位"] button')!.click()
+    )
+    expect(shelf.dataset.mobileOpen).toBe('false')
+
+    await act(async () => toggle.click())
+    expect(shelf.dataset.mobileOpen).toBe('true')
+    await act(async () =>
+      host.querySelector<HTMLElement>('.picker-results')!.dispatchEvent(new Event('scroll'))
+    )
+    expect(shelf.dataset.mobileOpen).toBe('false')
+
+    await act(async () => toggle.click())
+    expect(shelf.dataset.mobileOpen).toBe('true')
+    await act(async () =>
+      host
+        .querySelector<HTMLElement>('.picker-results')!
+        .dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    )
+    expect(shelf.dataset.mobileOpen).toBe('false')
+
+    await act(async () => toggle.click())
+    await act(async () =>
+      [...host.querySelectorAll<HTMLButtonElement>('.picker-tabs button')]
+        .find((button) => button.textContent?.includes('自訂'))!
+        .click()
+    )
+    expect(shelf.dataset.mobileOpen).toBe('false')
+  } finally {
+    await act(async () => root.unmount())
+  }
 })
 
 it('provides library filters and creation from the training picker', async () => {

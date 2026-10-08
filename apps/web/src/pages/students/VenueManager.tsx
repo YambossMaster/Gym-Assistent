@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, MapPin, ChevronRight, Pencil, Search, X } from 'lucide-react'
+import { ArrowRight, Plus, MapPin, ChevronRight, Pencil, Search, X } from 'lucide-react'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
 import { SeriesDatePicker } from './SeriesDatePicker'
 import { FormSelect } from '../../shared/FormSelect'
@@ -28,6 +28,7 @@ import { PurchaseMoneyFields } from './PurchaseMoneyFields'
 import { useDefaultFinanceCurrency } from '../settings/finance-currency'
 import { VenueCourseRecords } from './VenueCourseRecords'
 import { workspaceInstant, workspaceWallTime } from './workspace-time'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 import { queryKeys } from '../../query-keys'
 
 type Editor =
@@ -86,6 +87,140 @@ function ruleChange(rule: Rule, previous?: Rule) {
   if (rule.collectionMode !== previous.collectionMode)
     return `收款方式變更：${previous.collectionMode === 'coach' ? '教練收款' : '場地收款'} → ${rule.collectionMode === 'coach' ? '教練收款' : '場地收款'}`
   return `支出設定未變（重新設定生效時間）`
+}
+type RuleImpactTotal = {
+  currency: string
+  expenseMinor: number
+}
+type RuleImpactPreview = {
+  scheduledCount: number
+  completedChangedCount: number
+  completed?: { sessionId: string; studentName: string; endsAt: string }[]
+  months?: {
+    month: string
+    before: RuleImpactTotal[]
+    after: RuleImpactTotal[]
+  }[]
+}
+function ruleExpenseChanges(preview: RuleImpactPreview) {
+  return (preview.months ?? []).flatMap((month) =>
+    [...new Set([...month.before, ...month.after].map((total) => total.currency))]
+      .map((currency) => {
+        const before = month.before.find((total) => total.currency === currency)?.expenseMinor ?? 0
+        const after = month.after.find((total) => total.currency === currency)?.expenseMinor ?? 0
+        return { month: month.month, currency, before, after }
+      })
+      .filter((change) => change.before !== change.after)
+  )
+}
+function displayMonth(month: string) {
+  const [year, value] = month.split('-')
+  return `${year} 年 ${Number(value)} 月`
+}
+export function VenueRuleImpactPreview({
+  currentRule,
+  nextRule,
+  preview,
+  timeZone,
+  onBack
+}: {
+  currentRule: Rule | null
+  nextRule: Rule
+  preview: RuleImpactPreview
+  timeZone: string
+  onBack: () => void
+}) {
+  const expenseChanges = ruleExpenseChanges(preview)
+  const effectiveAt = workspaceWallTime(
+    nextRule.effectiveAt ?? workspaceInstant(`${nextRule.effectiveFrom}T00:00`, timeZone),
+    timeZone
+  )
+  const [effectiveDate, effectiveTime] = effectiveAt.split('T')
+  return (
+    <section
+      className="finance-preview venue-rule-preview"
+      aria-labelledby="venue-rule-preview-title"
+      data-dialog-scroll-region
+    >
+      <header>
+        <div>
+          <span>套用前確認</span>
+          <h3 id="venue-rule-preview-title">支出規則變更</h3>
+        </div>
+        <button type="button" onClick={onBack}>
+          返回修改
+        </button>
+      </header>
+
+      <div className="venue-rule-change-card">
+        <span>支出方式</span>
+        <div className="venue-rule-change-flow">
+          <div>
+            <small>目前</small>
+            <strong>{currentRule ? ruleSetting(currentRule) : '尚未設定'}</strong>
+          </div>
+          <ArrowRight aria-hidden="true" />
+          <div className="is-next">
+            <small>套用後</small>
+            <strong>{ruleSetting(nextRule)}</strong>
+          </div>
+        </div>
+        <p>
+          自 {effectiveDate.replaceAll('-', '/')} {effectiveTime}{' '}
+          起，課堂會依結束時間採用當時已生效的設定。
+        </p>
+      </div>
+
+      <div className="venue-rule-impact-grid" aria-label="受影響課程">
+        <div>
+          <strong>{preview.scheduledCount}</strong>
+          <span>堂已排課程</span>
+          <small>完成後依新設定計算</small>
+        </div>
+        <div>
+          <strong>{preview.completedChangedCount}</strong>
+          <span>堂已完成課程</span>
+          <small>{preview.completedChangedCount ? '套用後會重新計算' : '不會回算既有紀錄'}</small>
+        </div>
+      </div>
+
+      {expenseChanges.length ? (
+        <section className="venue-rule-money-changes" aria-label="既有收支變化">
+          <h4>已完成課程的場地支出變化</h4>
+          {expenseChanges.map((change) => (
+            <div key={`${change.month}:${change.currency}`}>
+              <span>{displayMonth(change.month)}</span>
+              <p>
+                <span>{financeMoney(change.before, change.currency)}</span>
+                <ArrowRight aria-hidden="true" />
+                <strong>{financeMoney(change.after, change.currency)}</strong>
+              </p>
+            </div>
+          ))}
+        </section>
+      ) : (
+        <div className="venue-rule-no-money-change">
+          <strong>目前不會改變既有收支</strong>
+          <p>
+            {preview.completedChangedCount
+              ? '已完成課程重新試算後，場地支出金額沒有變化。'
+              : '沒有已完成課程需要回算；已排課程完成後才會產生場地支出。'}
+          </p>
+        </div>
+      )}
+
+      {preview.completed?.length ? (
+        <details className="venue-rule-affected-list">
+          <summary>查看會重新計算的 {preview.completed.length} 堂課程</summary>
+          {preview.completed.map((item) => (
+            <p key={item.sessionId}>
+              {item.studentName} · {workspaceWallTime(item.endsAt, timeZone).replace('T', ' ')}
+            </p>
+          ))}
+        </details>
+      ) : null}
+    </section>
+  )
 }
 function sameVenueView(a: Venue, b: Venue) {
   return (
@@ -954,11 +1089,16 @@ function VenueEditor({
               setPendingBody(null)
             }}
           >
-            <fieldset disabled={!!preview || mutation.isPending} className="finance-form-fields">
+            <fieldset
+              hidden={!!preview}
+              disabled={mutation.isPending}
+              className="finance-form-fields"
+              data-dialog-scroll-region={preview ? undefined : true}
+            >
               {(editor.kind === 'create' || editor.kind === 'rename') && (
                 <>
                   <label>
-                    場地名稱
+                    <RequiredFieldLabel>場地名稱</RequiredFieldLabel>
                     <input
                       type="text"
                       value={name}
@@ -982,9 +1122,10 @@ function VenueEditor({
               )}
               {editor.kind === 'coach-supplied' && (
                 <label>
-                  選擇學生
+                  <RequiredFieldLabel>選擇學生</RequiredFieldLabel>
                   <FormSelect
                     label="選擇學生"
+                    required
                     value={selectedStudentId}
                     onChange={setSelectedStudentId}
                     options={[
@@ -1016,7 +1157,7 @@ function VenueEditor({
                   {(editor.kind === 'rule' ||
                     (editor.kind === 'create' && kind !== 'untracked')) && (
                     <div className="field-control">
-                      <span>生效時間</span>
+                      <RequiredFieldLabel>生效時間</RequiredFieldLabel>
                       <TimeSelect
                         label="生效時間"
                         name="ruleTime"
@@ -1039,9 +1180,10 @@ function VenueEditor({
               {(editor.kind === 'rule' || editor.kind === 'create') && (
                 <>
                   <label>
-                    場地支出類型
+                    <RequiredFieldLabel>場地支出類型</RequiredFieldLabel>
                     <FormSelect
                       label="場地支出類型"
+                      required
                       value={kind}
                       onChange={(v) => {
                         setKind(v as Rule['kind'])
@@ -1063,7 +1205,7 @@ function VenueEditor({
                     onChange={setDeductDate}
                   />
                   <div className="field-control">
-                    <span>開始扣堂時間</span>
+                    <RequiredFieldLabel>開始扣堂時間</RequiredFieldLabel>
                     <TimeSelect
                       label="開始扣堂時間"
                       name="deductTime"
@@ -1084,9 +1226,10 @@ function VenueEditor({
                   {kind === 'commission' && (
                     <>
                       <label>
-                        抽成方式
+                        <RequiredFieldLabel>抽成方式</RequiredFieldLabel>
                         <FormSelect
                           label="抽成方式"
+                          required
                           value={dual ? 'source' : 'uniform'}
                           onChange={(v) => {
                             setDual(v === 'source')
@@ -1101,12 +1244,14 @@ function VenueEditor({
                       <div className={dual ? 'venue-commission-rates' : 'venue-commission-rate'}>
                         {(dual ? ['venueRate', 'coachRate'] : ['rate']).map((key) => (
                           <label key={key}>
-                            {key === 'coachRate'
-                              ? '教練自帶客源'
-                              : key === 'venueRate'
-                                ? '場地供客'
-                                : '抽成比例'}
-                            （%）
+                            <RequiredFieldLabel>
+                              {key === 'coachRate'
+                                ? '教練自帶客源'
+                                : key === 'venueRate'
+                                  ? '場地供客'
+                                  : '抽成比例'}
+                              （%）
+                            </RequiredFieldLabel>
                             <input
                               name={key}
                               type="number"
@@ -1125,7 +1270,7 @@ function VenueEditor({
                   {kind === 'rent' && (
                     <>
                       <label>
-                        單次計費（{preferredCurrency}）
+                        <RequiredFieldLabel>單次計費（{preferredCurrency}）</RequiredFieldLabel>
                         <input
                           name="rent"
                           type="number"
@@ -1177,7 +1322,9 @@ function VenueEditor({
                   {salaryEnabled && (
                     <div className="venue-salary-fields">
                       <label>
-                        每月底薪（{currentSalary?.currency ?? preferredCurrency}）
+                        <RequiredFieldLabel>
+                          每月底薪（{currentSalary?.currency ?? preferredCurrency}）
+                        </RequiredFieldLabel>
                         <input
                           name="salaryAmount"
                           type="number"
@@ -1194,7 +1341,7 @@ function VenueEditor({
                         />
                       </label>
                       <label>
-                        每月發薪日
+                        <RequiredFieldLabel>每月發薪日</RequiredFieldLabel>
                         <input
                           name="payDay"
                           type="number"
@@ -1324,63 +1471,27 @@ function VenueEditor({
                   })}
               </div>
             )}
-            {preview && (editor.kind === 'history' || editor.kind === 'rule') && (
-              <section className="finance-preview">
-                <h3>{editor.kind === 'rule' ? '確認場地規則影響' : '確認歷史課程關聯'}</h3>
-                <button type="button" onClick={() => setPreview(null)}>
-                  返回
-                </button>
-                {editor.kind === 'rule' && (
-                  <>
-                    <p>
-                      將影響 {preview.completedChangedCount} 堂已完成課程及 {preview.scheduledCount}{' '}
-                      堂已排課程。
-                    </p>
-                    {preview.completed?.map(
-                      (item: { sessionId: string; studentName: string; endsAt: string }) => (
-                        <p key={item.sessionId}>
-                          {item.studentName} ·{' '}
-                          {workspaceWallTime(item.endsAt, data?.timeZone ?? 'Asia/Taipei')}
-                        </p>
-                      )
-                    )}
-                  </>
-                )}
-                {editor.kind === 'history' && (
+            {preview &&
+              (editor.kind === 'history' || editor.kind === 'rule') &&
+              (editor.kind === 'rule' ? (
+                <VenueRuleImpactPreview
+                  currentRule={venue?.currentRule ?? null}
+                  nextRule={pendingBody as Rule}
+                  preview={preview as RuleImpactPreview}
+                  timeZone={data?.timeZone ?? 'Asia/Taipei'}
+                  onBack={() => setPreview(null)}
+                />
+              ) : (
+                <section className="finance-preview">
+                  <h3>確認歷史課程關聯</h3>
+                  <button type="button" onClick={() => setPreview(null)}>
+                    返回
+                  </button>
                   <p>
                     將關聯 {preview.matches?.length} 堂課程、{preview.seriesCount} 組固定課表。
                   </p>
-                )}
-                {preview.months?.map((m: any) => (
-                  <div key={m.month}>
-                    <strong>{m.month}</strong>
-                    {[
-                      ...new Set<string>([...m.before, ...m.after].map((t: any) => t.currency))
-                    ].map((currency) => {
-                      const before = m.before.find((t: any) => t.currency === currency)
-                      const after = m.after.find((t: any) => t.currency === currency)
-                      return (
-                        <div key={currency} className="finance-preview-currency">
-                          <strong>{currency}</strong>
-                          {(
-                            [
-                              ['incomeMinor', '學生購課總額'],
-                              ['expenseMinor', '支出'],
-                              ['differenceMinor', '試算差額']
-                            ] as const
-                          ).map(([key, label]) => (
-                            <p key={key}>
-                              {label} {financeMoney(before?.[key] ?? 0, currency)} →{' '}
-                              {financeMoney(after?.[key] ?? 0, currency)}
-                            </p>
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
-              </section>
-            )}
+                </section>
+              ))}
             {mutation.error instanceof Error && (
               <p className="form-error" role="alert">
                 {mutation.error.message}

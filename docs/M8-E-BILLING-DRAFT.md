@@ -2,6 +2,9 @@
 
 > Product review draft, 2026-10-06. This is not a frozen Contract and does not activate checkout.
 > The approved interval and prices are recorded in [ROADMAP.md](ROADMAP.md).
+> The 2026-10-08 [M8-D Beta plan-access correction](M8-D-BETA-PLAN-ACCESS-CONTRACT.md)
+> supersedes general production use of the zero-price selection phase. That lifecycle remains
+> available only to the single plan-tester Workspace until paid checkout is delivered.
 
 ## Approved for the first paid release
 

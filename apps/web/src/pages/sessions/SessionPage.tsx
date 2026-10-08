@@ -16,6 +16,7 @@ import { TrainingLoading, TrainingWorkspace } from '../training/TrainingWorkspac
 import { useSessionTraining } from '../training/queries'
 import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
 import { SeriesDatePicker } from '../students/SeriesDatePicker'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
@@ -257,9 +258,9 @@ export function SessionEditor({
       variant="session-edit"
     >
       <form className="scheduling-form session-editor-form" onSubmit={submit} autoComplete="off">
-        <div className="scheduling-form-body session-editor-form-body">
+        <div className="scheduling-form-body session-editor-form-body" data-dialog-scroll-region>
           <label>
-            學生
+            <RequiredFieldLabel>學生</RequiredFieldLabel>
             <FormSelect
               label="學生"
               value={studentId}
@@ -284,7 +285,7 @@ export function SessionEditor({
               disabled={item.status !== 'scheduled'}
             />
             <div className="field-control">
-              <span>開始</span>
+              <RequiredFieldLabel>開始</RequiredFieldLabel>
               <TimeSelect
                 label="開始"
                 value={startTime}
@@ -296,7 +297,7 @@ export function SessionEditor({
               →
             </span>
             <div className="field-control">
-              <span>結束</span>
+              <RequiredFieldLabel>結束</RequiredFieldLabel>
               <TimeSelect
                 label="結束"
                 value={endTime}
@@ -321,7 +322,7 @@ export function SessionEditor({
             />
           ) : (
             <label>
-              場地
+              <RequiredFieldLabel>場地</RequiredFieldLabel>
               <input
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}

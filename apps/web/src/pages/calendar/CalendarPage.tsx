@@ -49,8 +49,10 @@ import { SchedulingDialog } from './SchedulingDialog'
 import { SchedulingTimeInput } from './SchedulingTimeInput'
 import { calendarSessionVisualState, selectCalendarRouteState } from './state'
 import { calendarHeaderWheelStep } from './calendar-header-wheel'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 type CalendarView = 'agenda' | 'day' | 'week' | 'month'
+
 type Draft =
   | {
       kind: 'session'
@@ -801,7 +803,7 @@ function Editor({
       }
     >
       <form className="scheduling-form" onSubmit={submit} autoComplete="off">
-        <div className="scheduling-form-body">
+        <div className="scheduling-form-body" data-dialog-scroll-region>
           {!('current' in draft && draft.current) ? (
             <div className="composer-kind" role="group" aria-label="安排類型">
               <button
@@ -892,7 +894,7 @@ function Editor({
           {draft.kind === 'session' ? (
             <>
               <label>
-                學生
+                <RequiredFieldLabel>學生</RequiredFieldLabel>
                 <FormSelect
                   label="學生"
                   value={draft.studentId}
@@ -1027,13 +1029,11 @@ function Editor({
               </p>
             </>
           ) : null}
-          {error ? (
-            <p className="notice error" role="alert">
-              {error}
-            </p>
-          ) : null}
         </div>
         <div className="scheduling-form-footer">
+          <p className="scheduling-form-error" role="alert" aria-live="assertive">
+            {error || '\u00a0'}
+          </p>
           <div className="scheduling-form-actions">
             {draft.kind === 'block' && draft.current ? (
               <button

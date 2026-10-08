@@ -80,6 +80,15 @@ function focusAt(editor: HTMLElement, index: number, offset: number) {
   block.scrollIntoView({ block: 'nearest' })
 }
 
+export function keepNoteBlockVisible(canvas: HTMLElement, block: HTMLElement) {
+  const canvasRect = canvas.getBoundingClientRect()
+  const blockRect = block.getBoundingClientRect()
+  const safeTop = canvasRect.top + 12
+  const safeBottom = canvasRect.bottom - 20
+  if (blockRect.top < safeTop) canvas.scrollTop -= safeTop - blockRect.top
+  else if (blockRect.bottom > safeBottom) canvas.scrollTop += blockRect.bottom - safeBottom
+}
+
 export function MobileNoteEditor({
   value,
   onChange,
@@ -160,6 +169,10 @@ export function MobileNoteEditor({
     if (!block) return
     setActiveIndex(noteNodes(editor).indexOf(block))
     setActiveBold(block.dataset.bold === 'true')
+    requestAnimationFrame(() => {
+      const canvas = editor.closest<HTMLElement>('.mobile-note-canvas')
+      if (canvas) keepNoteBlockVisible(canvas, block)
+    })
   }
 
   const editActive = (change: (block: NoteBlock) => NoteBlock) => {
@@ -381,7 +394,11 @@ export function MobileNoteEditor({
           onMouseUp={updateActive}
           onFocus={() => onFocusChange(true)}
           onBlur={(event) => {
-            if (!event.relatedTarget?.closest('.mobile-note-canvas, .session-note-tools')) {
+            if (
+              !event.relatedTarget?.closest(
+                '.mobile-note-canvas, .session-note-tools, .session-note-focus-actions'
+              )
+            ) {
               onFocusChange(false)
               setMenu(null)
             }

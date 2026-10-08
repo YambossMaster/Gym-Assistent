@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Clipboard, Copy, Link2, Plus, RefreshCw, ShieldOff, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ApiError,
   issueCapabilityLink,
@@ -268,7 +269,7 @@ function CapabilityLinkDialog({
     ? `${window.location.origin}/${purpose === 'training_result' ? 't' : 'r'}/${availableIssued.token}`
     : ''
   const copyState = copyFeedback?.url === rawUrl ? copyFeedback.state : 'idle'
-  return (
+  return createPortal(
     <div
       className="modal-backdrop capability-dialog-backdrop"
       onPointerDown={onBackdropPointerDown}
@@ -434,7 +435,8 @@ function CapabilityLinkDialog({
           ) : null}
         </div>
       </section>
-    </div>
+    </div>,
+    document.body
   )
 }
 

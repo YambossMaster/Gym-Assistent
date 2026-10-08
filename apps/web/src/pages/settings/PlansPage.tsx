@@ -15,6 +15,7 @@ import { betaGrantKey } from '../../beta-admission/BetaGate'
 import { planAccessKey, usePlanAccess } from '../../beta-admission/usePlanAccess'
 import { Confirmation, Page } from '../../shared/primitives'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 function planDate(instant: string): string {
   return new Date(instant).toLocaleString('zh-TW', {
@@ -27,16 +28,7 @@ function planDate(instant: string): string {
   })
 }
 
-function periodDate(instant: string): string {
-  return new Date(instant).toLocaleDateString('zh-TW', {
-    timeZone: 'Asia/Taipei',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric'
-  })
-}
-
-function PlanPanel({
+export function PlanPanel({
   session,
   grant,
   plan,
@@ -102,19 +94,13 @@ function PlanPanel({
   useEffect(() => {
     if (subscription) setSelectedInterval(subscription.interval)
   }, [subscription?.interval])
-  const scheduledSelection =
-    planAction?.kind === 'select' &&
-    subscription &&
-    ((subscription.tier === 'advanced' && planAction.tier === 'basic') ||
-      (subscription.tier === planAction.tier &&
-        subscription.interval === 'year' &&
-        planAction.interval === 'month'))
   const previouslyRedeemed = grant?.state === 'free' && Boolean(grant.startedAt)
   const canRedeem = grant?.state === 'free' && !grant.startedAt
   const currentBadge = (tier: PlanAccess['tier']) => {
     if (plan?.tier !== tier) return null
     if (plan.source === 'promotional') return '目前方案 · 優惠體驗'
     if (plan.source === 'permanent') return '目前方案 · 永久'
+    if (plan.source === 'tester') return '目前方案 · 測試'
     if (subscription?.tier === tier) {
       return `目前方案 · ${subscription.interval === 'month' ? '月費' : '年費'}`
     }
@@ -122,7 +108,7 @@ function PlanPanel({
   }
   const isCurrentSelection = (tier: 'basic' | 'advanced') => {
     if (plan?.tier !== tier) return false
-    if (plan.source !== 'subscription') return true
+    if (plan.source !== 'tester') return true
     return subscription?.tier === tier && subscription.interval === selectedInterval
   }
 
@@ -204,7 +190,7 @@ function PlanPanel({
                 </li>
               ))}
             </ul>
-            {plan?.tier !== 'free' && subscription && (
+            {plan?.canChangePlan && plan.tier !== 'free' && subscription && (
               <div className="settings-plan-card-footer">
                 {subscription.pendingTier === 'free' ? (
                   <span className="settings-plan-card-state">已安排下期使用</span>
@@ -215,7 +201,7 @@ function PlanPanel({
                     disabled={loading || error || changeMutation.isPending}
                     onClick={() => setPlanAction({ kind: 'cancel' })}
                   >
-                    選擇 Free 方案
+                    切換至 Free 方案
                   </button>
                 )}
               </div>
@@ -245,16 +231,20 @@ function PlanPanel({
             </ul>
             {!isCurrentSelection('basic') && (
               <div className="settings-plan-card-footer">
-                <button
-                  type="button"
-                  className="settings-plan-select"
-                  disabled={loading || error || changeMutation.isPending}
-                  onClick={() =>
-                    setPlanAction({ kind: 'select', tier: 'basic', interval: selectedInterval })
-                  }
-                >
-                  選擇 Pro 方案
-                </button>
+                {plan?.canChangePlan ? (
+                  <button
+                    type="button"
+                    className="settings-plan-select"
+                    disabled={loading || error || changeMutation.isPending}
+                    onClick={() =>
+                      setPlanAction({ kind: 'select', tier: 'basic', interval: selectedInterval })
+                    }
+                  >
+                    切換至 Pro 方案
+                  </button>
+                ) : (
+                  <span className="settings-plan-card-state">支付功能上線後開放</span>
+                )}
               </div>
             )}
           </article>
@@ -284,16 +274,24 @@ function PlanPanel({
             </ul>
             {!isCurrentSelection('advanced') && (
               <div className="settings-plan-card-footer">
-                <button
-                  type="button"
-                  className="settings-plan-select"
-                  disabled={loading || error || changeMutation.isPending}
-                  onClick={() =>
-                    setPlanAction({ kind: 'select', tier: 'advanced', interval: selectedInterval })
-                  }
-                >
-                  選擇 Prime 方案
-                </button>
+                {plan?.canChangePlan ? (
+                  <button
+                    type="button"
+                    className="settings-plan-select"
+                    disabled={loading || error || changeMutation.isPending}
+                    onClick={() =>
+                      setPlanAction({
+                        kind: 'select',
+                        tier: 'advanced',
+                        interval: selectedInterval
+                      })
+                    }
+                  >
+                    切換至 Prime 方案
+                  </button>
+                ) : (
+                  <span className="settings-plan-card-state">支付功能上線後開放</span>
+                )}
               </div>
             )}
           </article>
@@ -315,7 +313,9 @@ function PlanPanel({
         </div>
         {canRedeem ? (
           <form className="settings-offer-form" onSubmit={onRedeem}>
-            <label htmlFor="settings-offer-code">輸入優惠碼</label>
+            <label htmlFor="settings-offer-code">
+              <RequiredFieldLabel>輸入優惠碼</RequiredFieldLabel>
+            </label>
             <div className="settings-offer-controls">
               <input
                 id="settings-offer-code"
@@ -340,9 +340,11 @@ function PlanPanel({
               ? `已套用優惠碼，優惠至 ${planDate(plan!.offerEndsAt!)}。`
               : permanent
                 ? '你已具有永久 Prime 方案權限，不需套用優惠碼。'
-                : previouslyRedeemed
-                  ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
-                  : '方案資料讀取後可在此套用優惠碼。'}
+                : grant?.state === 'tester'
+                  ? '此帳號可切換 Free、Pro 與 Prime 方案進行測試。'
+                  : previouslyRedeemed
+                    ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
+                    : '方案資料讀取後可在此套用優惠碼。'}
           </p>
         )}
         {offerSuccess && (
@@ -357,10 +359,8 @@ function PlanPanel({
           title="確認方案變更"
           text={
             planAction.kind === 'cancel'
-              ? `目前方案會使用到 ${periodDate(subscription!.periodEndsAt)}，之後改用 Free 方案。本次不會扣款。`
-              : scheduledSelection
-                ? `目前方案會使用到 ${periodDate(subscription!.periodEndsAt)}，之後改用 ${planAction.tier === 'basic' ? 'Pro' : 'Prime'} 方案（${planAction.interval === 'month' ? '月費' : '年費'}）。本次不會扣款。`
-                : `確認選擇 ${planAction.tier === 'basic' ? 'Pro' : 'Prime'} 方案（${planAction.interval === 'month' ? '月費' : '年費'}）。本次不會扣款。`
+              ? '確認立即切換至 Free 方案。'
+              : `確認立即切換至 ${planAction.tier === 'basic' ? 'Pro' : 'Prime'} 方案（${planAction.interval === 'month' ? '月費' : '年費'}測試狀態）。`
           }
           onCancel={() => setPlanAction(null)}
           onConfirm={() => changeMutation.mutate()}
@@ -390,7 +390,13 @@ export function PlansPage({ session }: { session: Session }) {
       void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       setOfferCode('')
       setOfferError('')
-      setOfferSuccess('優惠碼已套用。')
+      setOfferSuccess(
+        grant.state === 'tester'
+          ? '方案測試資格已啟用。'
+          : grant.state === 'permanent'
+            ? '永久 Prime 資格已啟用。'
+            : '60 天 Prime 體驗已啟用。'
+      )
     },
     onError: (reason) => {
       const messages: Record<string, string> = {
@@ -414,9 +420,9 @@ export function PlansPage({ session }: { session: Session }) {
 
   return (
     <Page
-      title="選擇適合你的方案"
+      title="比較方案與 Beta 權益"
       eyebrow="FORM 方案"
-      description="依照工作台規模與需要的功能，選擇月費或年費方案。"
+      description="Beta 期間開放 Free 方案；Pro 與 Prime 將於支付功能上線後開放選購。"
       className="plans-page"
       beforeHeader={<MobilePageAppBar title="所有方案" />}
     >

@@ -558,7 +558,7 @@ but locks the entire `本月收支` page, the Student `個人運動表現` direc
 views. Basic is planned at NT$199/month with 15 active Students; Advanced is planned at
 NT$259/month with unlimited Students. Both paid tiers remove the Venue and feature locks. During
 the initial Beta, Coaches use Free or the Advanced offer; they can subscribe after checkout opens.
-At most ten permanent free grants provide Advanced access while the service operates. On
+One single-redemption permanent-free code provides Prime access while the service operates. On
 promotional expiry, no charge
 occurs without an active paid subscription; the Coach otherwise returns to Free. Existing records
 remain visible and preserved. If the active Student/Venue count exceeds Free capacity, new Training
@@ -587,6 +587,15 @@ provider so the complete plan and entitlement interaction can be exercised. This
 official no-charge subscriptions; it does not charge, collect a card or issue a payment-provider
 invoice. Paid-price activation, proration and provider events remain in M8-E. An existing NT$0
 selection never starts a paid renewal without the Coach's explicit later confirmation.
+
+**Beta plan-access correction — 2026-10-08:** the zero-price selection slice remains reusable test
+infrastructure but is no longer generally available in Beta. Until M8-E checkout is live, ordinary
+Coaches use Free, an uncapped shared Beta code grants one 60-day Prime trial per verified Email, and
+one single-redemption permanent-free code grants Prime without an end date. A separate one-time
+plan-tester code marks one synthetic/owner Workspace that may immediately switch only its own
+effective plan among Free, Pro and Prime. Previously stored NT$0 selections do not grant ordinary
+Beta access and never become chargeable. The complete boundary is frozen in
+[`M8-D-BETA-PLAN-ACCESS-CONTRACT.md`](M8-D-BETA-PLAN-ACCESS-CONTRACT.md).
 
 The Beta uses **Local + Production** only: the existing development project remains local
 development's database/Auth service, and a separate
@@ -787,9 +796,14 @@ Advanced offer, continuing Free limits, checkout launch timing and limited perma
 grants clearly. Freeze a backup retention period, a recoverable-point check no older than 48 hours,
 the 70%/80%/90% disk review marks and an isolated restore check. Identify the earliest offer expiry
 and start M8-E checkout work at Beta launch.
+The 2026-10-08 plan-access correction fixes the initial Beta catalog to Free for ordinary Coaches,
+plus the frozen 60-day Prime, permanent Prime and plan-tester code classes. Only the plan tester may
+use the pre-payment self-service plan mutation.
 
 **Sol gate:** admit verified Coaches with or without an offer code, keep existing Coach data behind verified identity,
 make expiry/grant state visible, and collect product feedback through the selected external channel.
+Enforce the corrected Beta plan policy in both the API and Web so hiding a control is never the only
+restriction.
 Activate the authorized backup path before the first real Coach is admitted. The Product Owner
 reviews Fly usage, latest recoverable point and Supabase size/billing notices manually at a practical
 cadence and adjusts admissions if recovery, service quality or capacity deteriorates. M8-E payment work

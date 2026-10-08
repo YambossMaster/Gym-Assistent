@@ -243,10 +243,15 @@ it('marks the changed field and supports confirmation cancel and submit shortcut
     await act(async () => host.querySelector<HTMLButtonElement>('.finance-ledger-row')!.click())
     const footer = host.querySelector('.finance-ledger-footer')!
     expect(footer.textContent).toContain('刪除取消修改取消儲存')
-    expect(host.querySelector('.finance-ledger-field-title')?.textContent).toBe('名稱')
+    expect(host.querySelector('.finance-ledger-field-title')?.textContent).toBe('名稱*')
+    expect(
+      host
+        .querySelector('.finance-ledger-field-title .ui-required-mark')
+        ?.getAttribute('aria-label')
+    ).toBe('必填')
     expect(host.querySelectorAll('.finance-ledger-field-modified')).toHaveLength(1)
     expect(host.querySelector('label:has(input[type="number"])')?.textContent).toContain(
-      '金額（已修改）'
+      '金額*（已修改）'
     )
 
     const amountInput = host.querySelector<HTMLInputElement>('input[type="number"]')!

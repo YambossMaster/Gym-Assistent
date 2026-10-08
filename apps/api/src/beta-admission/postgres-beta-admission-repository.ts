@@ -3,16 +3,17 @@ import type { Pool, PoolClient } from 'pg'
 import type { BetaAdmissionRepository, BetaGrant, RedemptionFailure } from './beta-admission.js'
 
 interface GrantRow {
-  kind: 'promotional' | 'permanent'
+  kind: 'promotional' | 'permanent' | 'tester'
   started_at: Date
   ends_at: Date | null
-  state: 'promotional' | 'free' | 'permanent'
+  state: 'promotional' | 'free' | 'permanent' | 'tester'
   code_digest: string | null
 }
 
 interface CodeRow {
   id: string
-  redemption_limit: number
+  code_kind: 'promotional' | 'permanent' | 'tester'
+  redemption_limit: number | null
   redemption_count: number
   closes_at: Date
   revoked_at: Date | null
@@ -28,6 +29,7 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
     const result = await this.pool.query<GrantRow>(
       `select g.kind,g.started_at,g.ends_at,c.code_digest,
         case when g.kind='permanent' then 'permanent'
+             when g.kind='tester' then 'tester'
              when g.ends_at>now() then 'promotional' else 'free' end as state
        from app_private.workspace w
        join app_private.beta_grant g on g.workspace_id=w.id
@@ -56,7 +58,7 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       }
       const code = (
         await client.query<CodeRow>(
-          `select id,redemption_limit,redemption_count,closes_at,revoked_at
+          `select id,code_kind,redemption_limit,redemption_count,closes_at,revoked_at
            from app_private.beta_code where code_digest=$1 for update`,
           [input.codeDigest],
         )
@@ -64,7 +66,7 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       if (!code) return await decline(client, 'invalid_code')
       if (code.revoked_at || code.closes_at <= input.now)
         return await decline(client, 'code_closed')
-      if (code.redemption_count >= code.redemption_limit)
+      if (code.redemption_limit !== null && code.redemption_count >= code.redemption_limit)
         return await decline(client, 'code_exhausted')
       const emailCodeDigest = createHmac('sha256', this.secret)
         .update(`${code.id}:${input.verifiedEmail}`)
@@ -83,19 +85,27 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       await client.query(
         `insert into app_private.beta_grant
           (workspace_id,code_id,kind,started_at,ends_at)
-         values ($1,$2,'promotional',$3,$4)`,
-        [workspaceId, code.id, input.now, input.endsAt],
+         values ($1,$2,$3,$4,$5)`,
+        [
+          workspaceId,
+          code.id,
+          code.code_kind,
+          input.now,
+          code.code_kind === 'promotional' ? input.endsAt : null,
+        ],
       )
       await client.query(
         'update app_private.beta_code set redemption_count=redemption_count+1 where id=$1',
         [code.id],
       )
       await client.query('commit')
-      return {
-        state: 'promotional',
-        startedAt: input.now.toISOString(),
-        endsAt: input.endsAt.toISOString(),
-      }
+      return code.code_kind === 'promotional'
+        ? {
+            state: 'promotional',
+            startedAt: input.now.toISOString(),
+            endsAt: input.endsAt.toISOString(),
+          }
+        : { state: code.code_kind, startedAt: input.now.toISOString() }
     } catch (error) {
       await client.query('rollback')
       throw error
@@ -132,6 +142,7 @@ async function grantForUser(client: PoolClient, userId: string): Promise<GrantRo
   const result = await client.query<GrantRow>(
     `select g.kind,g.started_at,g.ends_at,c.code_digest,
       case when g.kind='permanent' then 'permanent'
+           when g.kind='tester' then 'tester'
            when g.ends_at>now() then 'promotional' else 'free' end as state
      from app_private.workspace w
      join app_private.beta_grant g on g.workspace_id=w.id
@@ -165,6 +176,7 @@ function mapGrant(row: GrantRow | undefined): BetaGrant {
   if (!row) return { state: 'free' }
   if (row.state === 'permanent')
     return { state: 'permanent', startedAt: row.started_at.toISOString() }
+  if (row.state === 'tester') return { state: 'tester', startedAt: row.started_at.toISOString() }
   return {
     state: row.state,
     startedAt: row.started_at.toISOString(),

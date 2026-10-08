@@ -28,6 +28,7 @@ import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { useExerciseLibrary, useTrainingMutations } from '../training/queries'
 import { filterExerciseDefinitions } from './filter'
 import { EquipmentGlyph } from './EquipmentGlyph'
+import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
 type DefinitionFields = Pick<
   ExerciseDefinition,
@@ -563,10 +564,10 @@ export function DefinitionEditor({
           </button>
         </header>
         <form className="ui-settings-dialog-content" onSubmit={submit} autoComplete="off">
-          <div className="definition-editor-fields">
+          <div className="definition-editor-fields" data-dialog-scroll-region>
             <div className="editor-top-grid">
               <label className="editor-field">
-                動作名稱
+                <RequiredFieldLabel>動作名稱</RequiredFieldLabel>
                 <input
                   name="name"
                   defaultValue={definition?.name}
@@ -576,7 +577,9 @@ export function DefinitionEditor({
                 />
               </label>
               <div className="editor-field equipment-field" ref={equipmentRef}>
-                <label htmlFor="editor-equipment">器材</label>
+                <label htmlFor="editor-equipment">
+                  <RequiredFieldLabel>器材</RequiredFieldLabel>
+                </label>
                 <div className="equipment-combobox">
                   <input
                     id="editor-equipment"
