@@ -8,6 +8,8 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { BetaGrant, PlanAccess } from '../../api'
 import { PlanPanel } from './PlansPage'
 
+vi.mock('../../supabase', () => ({ supabase: { auth: {} } }))
+
 const session = { user: { id: 'coach-a' }, access_token: 'test-token' } as Session
 
 afterEach(() => {
