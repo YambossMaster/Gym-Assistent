@@ -21,8 +21,11 @@ test('browser job is selected only by Web or shared browser inputs', () => {
   assert.equal(needsBrowser([]), true)
 })
 
-test('production migration changes are detected without treating other Supabase files as migrations', () => {
+test('production migration and release-gate changes require a production preview', () => {
   assert.equal(hasProductionMigration(['supabase/migrations/20261007000000_example.sql']), true)
+  assert.equal(hasProductionMigration(['.github/workflows/ci.yml']), true)
+  assert.equal(hasProductionMigration(['.github/workflows/production-migration-release.yml']), true)
+  assert.equal(hasProductionMigration(['scripts/ci-scope.mjs']), true)
   assert.equal(hasProductionMigration(['supabase/config.toml', 'apps/api/src/start.ts']), false)
   assert.equal(hasProductionMigration([]), false)
 })

@@ -18,7 +18,13 @@ export const needsBrowser = (paths) =>
   )
 
 export const hasProductionMigration = (paths) =>
-  paths.some((file) => file.startsWith('supabase/migrations/'))
+  paths.some(
+    (file) =>
+      file.startsWith('supabase/migrations/') ||
+      file === '.github/workflows/ci.yml' ||
+      file === '.github/workflows/production-migration-release.yml' ||
+      file === 'scripts/ci-scope.mjs',
+  )
 
 export function changedPaths(base, head) {
   const output = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', base, head])
