@@ -319,7 +319,22 @@ function TrainingEditor({
   const touchStartY = useRef<number | null>(null)
   const noteTouch = useRef<{ x: number; y: number; canvas: HTMLElement | null } | null>(null)
   const keyboardFocused = activeSetInput !== null
-  useEffect(() => {
+  const prepareMobileNoteFocus = () => {
+    const root = document.documentElement
+    const viewport = window.visualViewport
+    const geometry = getNoteFocusViewport({
+      layoutHeight: window.innerHeight,
+      visualHeight: viewport?.height,
+      visualOffsetTop: viewport?.offsetTop
+    })
+    // iOS performs the native contenteditable focus action after pointerdown. Apply the
+    // complete focus geometry synchronously so WebKit never pans the unfocused Session layout.
+    root.classList.add('is-session-note-focused')
+    root.style.setProperty('--session-note-viewport-height', `${geometry.height}px`)
+    workspaceRef.current?.classList.add('is-note-focused')
+    setNoteFocused(true)
+  }
+  useLayoutEffect(() => {
     const root = document.documentElement
     root.classList.toggle('is-session-note-focused', noteFocused)
     if (!noteFocused) {
@@ -1367,7 +1382,10 @@ function TrainingEditor({
                 change({ ...draft, privateNote, operationId: crypto.randomUUID() })
               }
               onFocusChange={(focused) => {
-                if (window.matchMedia('(max-width: 720px)').matches) setNoteFocused(focused)
+                if (window.matchMedia('(max-width: 720px)').matches) {
+                  if (focused) prepareMobileNoteFocus()
+                  else setNoteFocused(false)
+                }
                 if (focused) setClassInfoExpanded(false)
               }}
               onLimit={() => setNotice('筆記已達 5000 字，請先刪減內容。')}

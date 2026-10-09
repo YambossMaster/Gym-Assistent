@@ -384,6 +384,7 @@ export function MobileNoteEditor({
       <div
         className="mobile-note-canvas"
         aria-label="教練筆記編輯器"
+        onPointerDown={() => onFocusChange(true)}
         onClick={(event) => {
           if (
             event.target !== event.currentTarget ||

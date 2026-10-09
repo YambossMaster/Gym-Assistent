@@ -292,6 +292,35 @@ it('keeps mobile note focus mode active through iOS blur until the Coach confirm
   expect(document.querySelector('.session-note-focus-actions')).toBeNull()
 })
 
+it('arms the mobile note focus layout before native editor focus can pan the viewport', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  let readyBeforePointerDefault = false
+  document.addEventListener(
+    'pointerdown',
+    () => {
+      readyBeforePointerDefault =
+        Boolean(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')) &&
+        document.documentElement.classList.contains('is-session-note-focused') &&
+        Boolean(document.documentElement.style.getPropertyValue('--session-note-viewport-height'))
+    },
+    { once: true }
+  )
+  expect(document.activeElement).not.toBe(editor)
+  expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(false)
+
+  await act(async () =>
+    editor.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true }))
+  )
+
+  expect(document.activeElement).not.toBe(editor)
+  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
+  expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
+  expect(document.documentElement.style.getPropertyValue('--session-note-viewport-height')).toBe(
+    `${window.innerHeight}px`
+  )
+  expect(readyBeforePointerDefault).toBe(true)
+})
+
 it('contains drags that start on every non-scrollable part of note focus mode', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
   await act(async () => editor.focus())
