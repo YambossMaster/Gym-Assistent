@@ -36,7 +36,7 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Exact deployed code release candidate on Main: `3afb5562ce82255239472a8a51ebef946435fc11`.
+- Exact deployed code release candidate on Main: `01423cde97432c1212ade6033e923179d43f2bf9`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
   together. Reconcile any subsequent work with `git status --short`.
 - Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
@@ -59,16 +59,20 @@ The detailed behavior and migration contract live in
   (API 183 tests, Web 322 tests and build), browser UI, both migration gates and automatic Production
   deploy for `3afb556`. Public readiness returned `ready`; deployed JS/CSS markers confirm the shared
   header exit event and touch containment are present and the old viewport-top variable is absent.
+- [CI #128](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37883138506) passed verify
+  (API 183 tests, Web 325 tests and build), browser UI, both migration gates and automatic Production
+  deploy for exact SHA `01423cd`. Public readiness returned `ready`; deployed JS/CSS markers confirm
+  caret `preventScroll`, whole-focus touch containment and non-scrollable header/toolbar touch action.
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                                                            | Remaining evidence                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed                                  | Continue monitoring future releases; no current release blocker  |
-| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                                                      | Live redemption and real-Coach admission checks                  |
-| Mobile Training         | A local follow-up moves gesture containment from the note canvas to the complete focus surface and prevents caret placement from scrolling the document | Exact-SHA CI/deploy, then installed iOS/Android keyboard recheck |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests                                 | Authenticated/installed-phone rendering                          |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                                               | Combined browser/product review                                  |
+| Area                    | Current fact                                                                                                            | Remaining evidence                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
+| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                      | Live redemption and real-Coach admission checks                 |
+| Mobile Training         | CI #128 deployed complete-focus gesture containment and document-scroll-free caret placement in `01423cd`               | Installed iOS/Android keyboard recheck                          |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -96,8 +100,7 @@ matching Demo route/components.
 
 ## Next handoff
 
-Commit and deliver the preauthorized whole-surface Coach-note containment correction, verify its
-exact-SHA CI/deploy and public assets, then recheck installed iOS/Android keyboards. Afterward,
-finish the remaining M8-D recovery, reviewer-control and admission gates before inviting real
-Coaches. Investigate legal migration provenance and arrange separately authorized old PAT
-revocation.
+Recheck deployed `01423cd` on installed iOS/Android keyboards, including first focus, shared-header
+and toolbar drags, empty-note boundaries and long-note internal scrolling. Afterward, finish the
+remaining M8-D recovery, reviewer-control and admission gates before inviting real Coaches.
+Investigate legal migration provenance and arrange separately authorized old PAT revocation.
