@@ -36,8 +36,7 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Latest correction on Main: `c5db63f3b315aa84ca606aafd3269d7ed112e531`, not deployed.
-  Production remains on `cd34fccd9c041fa0363a02b6d9966352cd4742f3`.
+- Latest deployed correction: `c5db63f3b315aa84ca606aafd3269d7ed112e531`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
   together. Reconcile any subsequent work with `git status --short`.
 - Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
@@ -72,8 +71,10 @@ The detailed behavior and migration contract live in
 - [CI #133](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37949502049) for exact SHA
   `c5db63f` passed verify (API 183 tests, Web 334 tests and production builds), browser UI and
   Production migration preview. Development migration linking failed with `Invalid access token`,
-  repeating CI #132's credential rejection. Automatic deployment was skipped; no migration was
-  applied and no new Production delivery is claimed.
+  repeating CI #132's credential rejection on attempt 1. After the authorized development token
+  replacement, attempt 2 passed migration dry-run and deploy-production. Public readiness returned
+  ready; index-6I3S6YCI.js and index-Dh6z7Ukn.css contain the new viewport-top markers, and the JS
+  contains read-only entry and caret preventScroll. No migration was applied during this correction.
 
 ## Current local review inventory
 
@@ -81,7 +82,7 @@ The detailed behavior and migration contract live in
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
 | Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                      | Live redemption and real-Coach admission checks                 |
-| Mobile Training         | Completed-tap entry and visual-position compensation pass 66 related tests, browser matrix and CI #133 full verify      | Resolve development token, deploy and installed-phone recheck   |
+| Mobile Training         | Completed-tap entry and visual-position compensation passed related tests, browser matrix and CI #133; deployed c5db63f | Installed-phone keyboard and lower-paragraph recheck            |
 | Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
 | Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
 
@@ -103,8 +104,15 @@ matching Demo route/components.
 
 ## Blockers and open gates
 
-The current Coach-note delivery is held by the rejected development `SUPABASE_ACCESS_TOKEN`.
-Obtain separate authorization before replacing/creating credentials, then rerun exact-SHA CI #133.
+The former Coach-note credential delivery hold is resolved.
+Read-only diagnosis found `GitHub_Actions_CI` marked Expired in Supabase and the development
+GitHub secret last updated 2026-09-09; the separate Production secret was updated 2026-10-08 and
+its current token expires 2027-01-07. The workflow and CLI lockfile did not change between the
+successful CI #130 and failed correction runs. No token or secret was mutated during diagnosis.
+The Product Owner authorized the replacement. A new development-project-scoped PAT with only
+Project Settings, API Keys, API Key Secrets and Connection Pooling Read was created, expiring
+2027-10-08. After the owner completed Confirm access, GitHub displayed Secret updated at
+2026-10-09 23:41 Taipei. The one-time token display was closed; CI #133 attempt 2 passed and deployed.
 Do not bypass the required migration dry-run gate; the Production token/preview already passed.
 
 1. Establish the legal acceptance migration's apply provenance; do not reapply an already-recorded
@@ -115,8 +123,7 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 ## Next handoff
 
-Obtain authorization to replace the development access token, rerun CI #133 for `c5db63f`, and
-deploy only after all required jobs pass. Verify readiness/assets, then recheck installed iOS/Android short-tap keyboard entry, reading
+Recheck installed iOS/Android short-tap keyboard entry, reading
 scroll/long press, lower-paragraph focus and header/toolbar drags. Afterward, finish the remaining
 M8-D recovery, reviewer-control and admission gates before inviting real Coaches. Investigate legal
 migration provenance and arrange separately authorized old PAT revocation.
