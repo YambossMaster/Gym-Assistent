@@ -10,14 +10,14 @@
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                        |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                          |
-| Current gate                  | **First-focus timing correction passes local preflight; preauthorized exact-SHA delivery is next**                                     |
+| Current gate                  | **First-focus timing correction is deployed; installed-PWA acceptance remains open**                                                   |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                               |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                               |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                  |
-| Release candidate             | `01423cde97432c1212ade6033e923179d43f2bf9` on Main; [CI #128](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37883138506) |
-| Worktree                      | Local correction prepares the complete note-focus geometry before iOS native focus; exact-SHA delivery is pending                      |
+| Release candidate             | `cd34fccd9c041fa0363a02b6d9966352cd4742f3` on Main; [CI #130](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37895583759) |
+| Worktree                      | Exact-SHA correction and Production evidence recorded; installed-device verification remains external                                  |
 | Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                  |
-| Production release            | [CI #128](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37883138506) automatically deployed Web correction `01423cd`     |
+| Production release            | [CI #130](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37895583759) automatically deployed Web correction `cd34fcc`     |
 | Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                |
 
 ## Required context
@@ -60,15 +60,18 @@ startup context.
   and never follows Visual Viewport scroll. CI #126 deployed exact SHA `3afb556`; readiness and live
   asset markers passed. The next installed-iOS recording showed header/toolbar gesture escape and
   initial browser caret panning; CI #128 deployed replacement `01423cd`, whose public assets contain
-  whole-focus containment and caret `preventScroll`. Installed-device recheck remains open.
+  whole-focus containment and caret `preventScroll`. CI #130 then deployed `cd34fcc`, which prepares
+  the complete focus layout synchronously on pointerdown before WebKit's native focus action; public
+  readiness and live focus/viewport/canvas bundle markers passed. Installed-device recheck remains
+  open.
 - Real-Coach admission, backup/restore evidence and required Production reviewer controls remain
   governed by the M8-D Contract and Roadmap gate.
 
 ## Next handoff
 
-Commit and push the preauthorized first-focus timing correction, observe exact-SHA CI and automatic
-Production deployment, verify public readiness/assets, then recheck first entry on the installed
-iOS/Android PWA. Continue the remaining M8-D backup/isolated-restore, Production reviewer,
+Recheck the first entry into Coach-note focus mode on the installed iOS/Android PWA, including
+shared-header and toolbar drags, empty-note boundaries, long-note internal scrolling, keyboard
+open/close and focus-only `返回`. Continue the remaining M8-D backup/isolated-restore, Production reviewer,
 legal-migration provenance and real-Coach admission gates afterward. Ask separately before revoking
 the previous Production PAT; the verified replacement expires 2027-01-07.
 

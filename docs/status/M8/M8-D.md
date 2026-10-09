@@ -36,7 +36,7 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Exact deployed code release candidate on Main: `01423cde97432c1212ade6033e923179d43f2bf9`.
+- Exact deployed code release candidate on Main: `cd34fccd9c041fa0363a02b6d9966352cd4742f3`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
   together. Reconcile any subsequent work with `git status --short`.
 - Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
@@ -63,16 +63,20 @@ The detailed behavior and migration contract live in
   (API 183 tests, Web 325 tests and build), browser UI, both migration gates and automatic Production
   deploy for exact SHA `01423cd`. Public readiness returned `ready`; deployed JS/CSS markers confirm
   caret `preventScroll`, whole-focus touch containment and non-scrollable header/toolbar touch action.
+- [CI #130](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37895583759) passed verify
+  (API 183 tests, Web 326 tests and build), 2 browser UI cases, both migration gates and automatic
+  Production deploy for exact SHA `cd34fcc`. Public readiness returned `ready`; deployed
+  `/assets/index-DFzqqHzH.js` contains the focus root, viewport-height and mobile-note-canvas markers.
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                              | Remaining evidence                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed    | Continue monitoring future releases; no current release blocker     |
-| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                        | Live redemption and real-Coach admission checks                     |
-| Mobile Training         | A local follow-up synchronously prepares the complete focus layout on pointerdown before iOS native contenteditable focus | Exact-SHA CI/deploy, then installed iOS/Android first-focus recheck |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests   | Authenticated/installed-phone rendering                             |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                 | Combined browser/product review                                     |
+| Area                    | Current fact                                                                                                               | Remaining evidence                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed     | Continue monitoring future releases; no current release blocker |
+| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                         | Live redemption and real-Coach admission checks                 |
+| Mobile Training         | Deployed `cd34fcc` synchronously prepares the complete focus layout on pointerdown before iOS native contenteditable focus | Installed iOS/Android first-focus and gesture recheck           |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests    | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                  | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -100,8 +104,7 @@ matching Demo route/components.
 
 ## Next handoff
 
-Commit and deliver the preauthorized first-focus timing correction, verify exact-SHA CI/deploy and
-public assets, then recheck installed iOS/Android first entry plus shared-header and toolbar drags.
-Afterward, finish the remaining M8-D recovery, reviewer-control and admission gates before inviting
-real Coaches. Investigate legal migration provenance and arrange separately authorized old PAT
-revocation.
+Recheck installed iOS/Android first entry plus shared-header and toolbar drags, empty-note
+boundaries, long-note internal scrolling, keyboard open/close and focus-only `返回`. Afterward, finish
+the remaining M8-D recovery, reviewer-control and admission gates before inviting real Coaches.
+Investigate legal migration provenance and arrange separately authorized old PAT revocation.
