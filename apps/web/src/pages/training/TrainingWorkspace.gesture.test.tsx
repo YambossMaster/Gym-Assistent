@@ -242,7 +242,7 @@ it('shows Free Training bests while locking only the trajectory action', async (
 
 it('uses the shared rich note editor and its toolbar as the only private note input', () => {
   const notePanel = host.querySelector('#session-note-panel')!
-  expect(notePanel.querySelectorAll('[contenteditable="true"]')).toHaveLength(1)
+  expect(notePanel.querySelectorAll('[role="textbox"]')).toHaveLength(1)
   expect(notePanel.querySelector('textarea')).toBeNull()
   expect(notePanel.querySelector('[aria-label="筆記工具列"]')).not.toBeNull()
   expect(notePanel.querySelector('[aria-label="字級選擇"]')).not.toBeNull()
@@ -258,7 +258,7 @@ it('leaves note focus mode immediately while saving in the background', async ()
       })
   )
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
-  await act(async () => editor.focus())
+  await act(async () => editor.click())
   expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
 
   const block = editor.querySelector<HTMLElement>('.mobile-note-block')!
@@ -282,7 +282,7 @@ it('leaves note focus mode immediately while saving in the background', async ()
 
 it('keeps mobile note focus mode active through iOS blur until the Coach confirms', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
-  await act(async () => editor.focus())
+  await act(async () => editor.click())
 
   expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
   await act(async () => editor.blur())
@@ -292,38 +292,129 @@ it('keeps mobile note focus mode active through iOS blur until the Coach confirm
   expect(document.querySelector('.session-note-focus-actions')).toBeNull()
 })
 
-it('arms the mobile note focus layout before native editor focus can pan the viewport', async () => {
+it('waits for a completed tap, then commits focus geometry and focuses the editor in that gesture', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
-  let readyBeforePointerDefault = false
-  document.addEventListener(
-    'pointerdown',
-    () => {
-      readyBeforePointerDefault =
-        Boolean(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')) &&
-        document.documentElement.classList.contains('is-session-note-focused') &&
-        Boolean(document.documentElement.style.getPropertyValue('--session-note-viewport-height'))
-    },
-    { once: true }
-  )
+  const focus = vi.spyOn(editor, 'focus').mockImplementation(() => {
+    expect(editor.getAttribute('contenteditable')).toBe('true')
+    expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(
+      true
+    )
+    expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
+    expect(document.documentElement.style.getPropertyValue('--session-note-viewport-height')).toBe(
+      `${window.innerHeight}px`
+    )
+  })
   expect(document.activeElement).not.toBe(editor)
   expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(false)
-
-  await act(async () =>
-    editor.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true }))
-  )
-
+  await act(async () => pointer(editor, 'pointerdown', 300, 'touch'))
   expect(document.activeElement).not.toBe(editor)
-  expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
-  expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
-  expect(document.documentElement.style.getPropertyValue('--session-note-viewport-height')).toBe(
-    `${window.innerHeight}px`
-  )
-  expect(readyBeforePointerDefault).toBe(true)
+  expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(false)
+  await act(async () => {
+    pointer(editor, 'pointerup', 300, 'touch')
+    editor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }))
+  })
+  expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+})
+
+it.each(['swipe', 'long press', 'cancel', 'move back'])(
+  'keeps note reading mode after a %s even if the browser sends a click',
+  async (gesture) => {
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    await act(async () => pointer(editor, 'pointerdown', 300, 'touch'))
+    if (gesture === 'long press') await act(async () => vi.advanceTimersByTimeAsync(600))
+    if (gesture === 'swipe' || gesture === 'move back') {
+      await act(async () => pointer(editor, 'pointermove', 220, 'touch'))
+    }
+    await act(async () => {
+      pointer(editor, gesture === 'cancel' ? 'pointercancel' : 'pointerup', 300, 'touch')
+      editor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }))
+    })
+    expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(false)
+    expect(editor.getAttribute('contenteditable')).toBe('false')
+  }
+)
+
+it('anchors both viewport edges after a lower caret pans iOS without changing keyboard height', async () => {
+  const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
+  vi.stubGlobal('visualViewport', viewport)
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.click())
+  viewport.offsetTop = 196
+  viewport.dispatchEvent(new Event('scroll'))
+  const style = document.documentElement.style
+  expect(style.getPropertyValue('--session-note-viewport-top')).toBe('196px')
+  expect(style.getPropertyValue('--session-note-viewport-height')).toBe('480px')
+  viewport.height = 430
+  viewport.offsetTop = 96
+  viewport.dispatchEvent(new Event('resize'))
+  expect(style.getPropertyValue('--session-note-viewport-top')).toBe('96px')
+  expect(style.getPropertyValue('--session-note-viewport-height')).toBe('430px')
+  await act(async () => window.dispatchEvent(new Event('session-note-focus-exit')))
+  expect(style.getPropertyValue('--session-note-viewport-top')).toBe('')
+})
+
+it('starts editing an empty canvas immediately and leaves it read-only again on return', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => host.querySelector<HTMLElement>('.mobile-note-canvas')!.click())
+  expect(document.activeElement).toBe(editor)
+  expect(editor.getAttribute('contenteditable')).toBe('true')
+  await act(async () => window.dispatchEvent(new Event('session-note-focus-exit')))
+  expect(editor.getAttribute('contenteditable')).toBe('false')
+  expect(document.activeElement).not.toBe(editor)
+})
+
+it('accepts a fresh short tap after a cancelled scroll without waiting for a ghost click', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => {
+    pointer(editor, 'pointerdown', 320, 'touch')
+    pointer(editor, 'pointercancel', 300, 'touch')
+    pointer(editor, 'pointerdown', 320, 'touch')
+    pointer(editor, 'pointerup', 320, 'touch')
+    editor.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
+  })
+  expect(document.activeElement).toBe(editor)
+})
+
+it('resolves the lower paragraph caret before moving the canvas, and sets it before keyboard focus', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  const blocks = ['第一段', '第二段點此輸入', '最後一段'].map((text) => {
+    const block = document.createElement('div')
+    block.dataset.noteBlock = ''
+    block.className = 'mobile-note-block'
+    block.textContent = text
+    return block
+  })
+  editor.replaceChildren(...blocks)
+  const range = document.createRange()
+  range.setStart(blocks[1]!.firstChild!, 3)
+  range.collapse(true)
+  Object.defineProperty(document, 'caretRangeFromPoint', {
+    configurable: true,
+    value: vi.fn(() => {
+      expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(false)
+      return range
+    })
+  })
+  const focus = vi.spyOn(editor, 'focus').mockImplementation(() => {
+    expect(window.getSelection()?.anchorNode).toBe(blocks[1]!.firstChild)
+    expect(window.getSelection()?.anchorOffset).toBe(3)
+    expect(editor.getAttribute('contenteditable')).toBe('true')
+  })
+  try {
+    await act(async () => {
+      pointer(blocks[1]!, 'pointerdown', 320, 'touch')
+      pointer(blocks[1]!, 'pointerup', 320, 'touch')
+      blocks[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
+    })
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  } finally {
+    Reflect.deleteProperty(document, 'caretRangeFromPoint')
+  }
 })
 
 it('contains drags that start on every non-scrollable part of note focus mode', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
-  await act(async () => editor.focus())
+  await act(async () => editor.click())
   const toolbar = host.querySelector<HTMLElement>('.session-note-tools')!
   const header = document.createElement('header')
   header.className = 'mobile-header'
@@ -338,7 +429,7 @@ it('contains drags that start on every non-scrollable part of note focus mode', 
 
 it('allows only real in-canvas note scrolling and contains its boundaries', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
-  await act(async () => editor.focus())
+  await act(async () => editor.click())
   const canvas = host.querySelector<HTMLElement>('.mobile-note-canvas')!
   Object.defineProperties(canvas, {
     clientHeight: { configurable: true, value: 500 },
@@ -357,7 +448,7 @@ it('allows only real in-canvas note scrolling and contains its boundaries', asyn
 it('shows the existing background-sync status if saving fails after focus mode closes', async () => {
   calls.save.mockRejectedValueOnce(new Error('network'))
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
-  await act(async () => editor.focus())
+  await act(async () => editor.click())
   const block = editor.querySelector<HTMLElement>('.mobile-note-block')!
   block.textContent = '尚未同步的內容'
   await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))

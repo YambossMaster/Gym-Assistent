@@ -17071,7 +17071,8 @@ button:disabled {
   .session-workspace.is-note-focused {
     --session-note-dock-height: 64px;
     position: relative;
-    height: calc(100% - var(--mobile-header-height));
+    flex: 1 1 0;
+    height: auto;
     min-height: 0;
     padding-bottom: 0;
     overflow: hidden;
@@ -17086,18 +17087,21 @@ button:disabled {
   html.is-session-note-focused .app-shell > .main-content {
     position: fixed;
     z-index: 30;
-    top: 0;
+    top: var(--session-note-viewport-top, 0px);
     right: 0;
     bottom: auto;
     left: 0;
     height: var(--session-note-viewport-height, 100dvh);
     width: 100%;
     max-width: 100vw;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     background: #faf9f4;
   }
 
   html.is-session-note-focused .app-shell[data-mobile-chrome] .mobile-header {
+    flex: 0 0 auto;
     transform: none;
     transition: none;
     pointer-events: auto;
@@ -17120,9 +17124,15 @@ button:disabled {
     min-height: 0;
   }
 
+  .session-workspace.is-note-focused .session-context-details {
+    gap: 0;
+  }
+
   .session-workspace.is-note-focused .mobile-note-canvas {
-    height: calc(100% - var(--session-note-dock-height));
-    padding-top: 18px;
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+    padding: 18px 20px 20px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
@@ -17130,8 +17140,8 @@ button:disabled {
   }
 
   .session-workspace.is-note-focused .session-note-tools {
-    position: absolute;
-    bottom: 0;
+    position: static;
+    flex: 0 0 var(--session-note-dock-height);
     display: flex;
     touch-action: none;
   }

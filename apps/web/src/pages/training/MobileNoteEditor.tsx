@@ -7,6 +7,7 @@ import {
   type FormEvent,
   type KeyboardEvent
 } from 'react'
+import { flushSync } from 'react-dom'
 import { parseNote, serializeNote, type NoteBlock } from './note-format'
 
 export type NoteImportItem = { label: string; text: string }
@@ -62,7 +63,6 @@ function caretOffset(block: HTMLElement): number {
 function focusAt(editor: HTMLElement, index: number, offset: number) {
   const block = noteNodes(editor)[index]
   if (!block) return
-  editor.focus({ preventScroll: true })
   const range = document.createRange()
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
   let text = walker.nextNode()
@@ -77,6 +77,7 @@ function focusAt(editor: HTMLElement, index: number, offset: number) {
   const selection = window.getSelection()
   selection?.removeAllRanges()
   selection?.addRange(range)
+  editor.focus({ preventScroll: true })
   const canvas = editor.closest<HTMLElement>('.mobile-note-canvas')
   if (canvas) keepNoteBlockVisible(canvas, block)
 }
@@ -116,13 +117,15 @@ export function MobileNoteEditor({
   onChange,
   onFocusChange,
   onLimit,
-  importItems
+  importItems,
+  focused = false
 }: {
   value: string
   onChange: (value: string) => void
   onFocusChange: (focused: boolean) => void
   onLimit: () => void
   importItems: NoteImportItem[]
+  focused?: boolean
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null)
   const renderedValue = useRef<string | null>(null)
@@ -131,6 +134,42 @@ export function MobileNoteEditor({
   const [activeBold, setActiveBold] = useState(false)
   const [menu, setMenu] = useState<'style' | 'import' | null>(null)
   const [selectedItems, setSelectedItems] = useState<string[]>(storedImportSelection)
+  const mobile = window.matchMedia?.('(max-width: 720px)').matches ?? false
+  const reading = mobile && !focused
+  const tap = useRef<{
+    id: number
+    x: number
+    y: number
+    started: number
+    cancelled: boolean
+    released: boolean
+  } | null>(null)
+
+  const enterEditing = (target: EventTarget | null, x?: number, y?: number) => {
+    const editor = editorRef.current
+    if (!editor) return
+    const nodes = noteNodes(editor)
+    // Resolve the intended caret against the reading layout, before the surface moves.
+    const point = x !== undefined && y !== undefined ? document.caretRangeFromPoint?.(x, y) : null
+    const selected = blockAt(
+      editor,
+      point?.startContainer ?? (target instanceof Node ? target : null)
+    )
+    const index = selected ? nodes.indexOf(selected) : nodes.length - 1
+    let offset = nodes[index]?.textContent?.length ?? 0
+    if (selected && point && selected.contains(point.startContainer)) {
+      const before = point.cloneRange()
+      before.selectNodeContents(selected)
+      before.setEnd(point.startContainer, point.startOffset)
+      offset = before.toString().length
+    }
+    if (document.activeElement === editor) editor.blur()
+    // Keep layout, editability and keyboard focus inside the same trusted click. Deferring
+    // focus to an effect/frame loses the iOS user gesture required to open the keyboard.
+    flushSync(() => onFocusChange(true))
+    focusAt(editor, index, offset)
+    updateActive()
+  }
 
   const renderBlocks = (blocks: NoteBlock[], focusIndex?: number, offset = 0) => {
     const editor = editorRef.current
@@ -384,7 +423,58 @@ export function MobileNoteEditor({
       <div
         className="mobile-note-canvas"
         aria-label="教練筆記編輯器"
-        onPointerDown={() => onFocusChange(true)}
+        onPointerDown={(event) => {
+          if (!reading) return
+          if (event.isPrimary === false) {
+            if (tap.current) tap.current.cancelled = true
+            return
+          }
+          tap.current = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            started: performance.now(),
+            cancelled: event.button !== 0,
+            released: false
+          }
+        }}
+        onPointerMove={(event) => {
+          const origin = tap.current
+          if (!reading || !origin) return
+          if (Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 10) {
+            origin.cancelled = true
+          }
+        }}
+        onPointerUp={(event) => {
+          const origin = tap.current
+          if (!reading || !origin) return
+          origin.released = true
+          origin.cancelled ||=
+            event.pointerId !== origin.id ||
+            performance.now() - origin.started >= 400 ||
+            Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 10
+        }}
+        onPointerCancel={() => {
+          if (tap.current) {
+            tap.current.cancelled = true
+            tap.current.released = true
+          }
+        }}
+        onContextMenu={() => {
+          if (tap.current) tap.current.cancelled = true
+        }}
+        onMouseDown={(event) => {
+          if (reading) event.preventDefault()
+        }}
+        onClickCapture={(event) => {
+          if (!reading) return
+          event.preventDefault()
+          event.stopPropagation()
+          const origin = tap.current
+          tap.current = null
+          if (origin ? origin.cancelled || !origin.released : event.detail !== 0) return
+          enterEditing(event.target, event.clientX, event.clientY)
+        }}
         onClick={(event) => {
           if (
             event.target !== event.currentTarget ||
@@ -399,11 +489,13 @@ export function MobileNoteEditor({
         <div
           ref={editorRef}
           className="mobile-note-content"
-          contentEditable
+          contentEditable={!reading}
+          tabIndex={0}
           suppressContentEditableWarning
           role="textbox"
           aria-label="教練筆記內文"
           aria-multiline="true"
+          aria-readonly={reading}
           onClick={(event) => {
             if (
               event.target === event.currentTarget &&
@@ -415,7 +507,9 @@ export function MobileNoteEditor({
           }}
           onKeyUp={updateActive}
           onMouseUp={updateActive}
-          onFocus={() => onFocusChange(true)}
+          onFocus={() => {
+            if (!reading) onFocusChange(true)
+          }}
           onBlur={(event) => {
             if (!event.relatedTarget?.closest('.mobile-note-canvas, .session-note-tools')) {
               // iOS can blur a contenteditable while the keyboard or Visual Viewport is
@@ -443,7 +537,15 @@ export function MobileNoteEditor({
               splitBlock()
             }
           }}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(event) => {
+            if (reading) {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                tap.current = null
+                enterEditing(null)
+              }
+            } else handleKeyDown(event)
+          }}
           onPaste={handlePaste}
         />
       </div>

@@ -14,13 +14,15 @@ export function getNoteKeyboardInset({
 
 export function getNoteFocusViewport({
   layoutHeight,
-  visualHeight
+  visualHeight,
+  visualOffsetTop = 0
 }: {
   layoutHeight: number
   visualHeight?: number
   visualOffsetTop?: number
 }) {
   return {
-    height: Math.max(1, Math.round(visualHeight ?? layoutHeight))
+    height: Math.max(1, Math.round(visualHeight ?? layoutHeight)),
+    top: Math.max(0, visualOffsetTop)
   }
 }

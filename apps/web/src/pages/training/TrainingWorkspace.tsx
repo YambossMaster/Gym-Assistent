@@ -11,7 +11,7 @@ import {
 } from './recording'
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
-import { MobileNoteEditor, shouldContainNoteTouch } from './MobileNoteEditor'
+import { keepNoteBlockVisible, MobileNoteEditor, shouldContainNoteTouch } from './MobileNoteEditor'
 import { getNoteFocusViewport, getNoteKeyboardInset } from './note-viewport'
 import { SetInputAdvanceDock } from './SetInputAdvanceDock'
 import { adoptTrainingDraft } from './conflict-recovery'
@@ -319,26 +319,12 @@ function TrainingEditor({
   const touchStartY = useRef<number | null>(null)
   const noteTouch = useRef<{ x: number; y: number; canvas: HTMLElement | null } | null>(null)
   const keyboardFocused = activeSetInput !== null
-  const prepareMobileNoteFocus = () => {
-    const root = document.documentElement
-    const viewport = window.visualViewport
-    const geometry = getNoteFocusViewport({
-      layoutHeight: window.innerHeight,
-      visualHeight: viewport?.height,
-      visualOffsetTop: viewport?.offsetTop
-    })
-    // iOS performs the native contenteditable focus action after pointerdown. Apply the
-    // complete focus geometry synchronously so WebKit never pans the unfocused Session layout.
-    root.classList.add('is-session-note-focused')
-    root.style.setProperty('--session-note-viewport-height', `${geometry.height}px`)
-    workspaceRef.current?.classList.add('is-note-focused')
-    setNoteFocused(true)
-  }
   useLayoutEffect(() => {
     const root = document.documentElement
     root.classList.toggle('is-session-note-focused', noteFocused)
     if (!noteFocused) {
       root.style.removeProperty('--session-note-viewport-height')
+      root.style.removeProperty('--session-note-viewport-top')
       return
     }
     const viewport = window.visualViewport
@@ -349,6 +335,17 @@ function TrainingEditor({
         visualOffsetTop: viewport?.offsetTop
       })
       root.style.setProperty('--session-note-viewport-height', `${geometry.height}px`)
+      root.style.setProperty('--session-note-viewport-top', `${geometry.top}px`)
+    }
+    const onViewportResize = () => {
+      alignFocusSurface()
+      const node = window.getSelection()?.anchorNode
+      const element = node instanceof Element ? node : node?.parentElement
+      const block = element?.closest<HTMLElement>('[data-note-block]')
+      const canvas = block?.closest<HTMLElement>('.mobile-note-canvas')
+      if (block && canvas && workspaceRef.current?.contains(canvas)) {
+        keepNoteBlockVisible(canvas, block)
+      }
     }
     alignFocusSurface()
     const onTouchStart = (event: TouchEvent) => {
@@ -384,13 +381,18 @@ function TrainingEditor({
     document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
     document.addEventListener('touchend', clearTouch, { capture: true })
     document.addEventListener('touchcancel', clearTouch, { capture: true })
-    viewport?.addEventListener('resize', alignFocusSurface)
-    window.addEventListener('resize', alignFocusSurface)
+    viewport?.addEventListener('resize', onViewportResize)
+    // WebKit can pan to a lower caret without resizing. Compensate that offset so
+    // the header and dock stay at the same on-screen coordinates, not the layout origin.
+    viewport?.addEventListener('scroll', alignFocusSurface)
+    window.addEventListener('resize', onViewportResize)
     return () => {
       root.classList.remove('is-session-note-focused')
       root.style.removeProperty('--session-note-viewport-height')
-      viewport?.removeEventListener('resize', alignFocusSurface)
-      window.removeEventListener('resize', alignFocusSurface)
+      root.style.removeProperty('--session-note-viewport-top')
+      viewport?.removeEventListener('resize', onViewportResize)
+      viewport?.removeEventListener('scroll', alignFocusSurface)
+      window.removeEventListener('resize', onViewportResize)
       document.removeEventListener('touchstart', onTouchStart, { capture: true })
       document.removeEventListener('touchmove', onTouchMove, { capture: true })
       document.removeEventListener('touchend', clearTouch, { capture: true })
@@ -1377,14 +1379,14 @@ function TrainingEditor({
             <div className="context-divider" />
             <span className="session-note-label">NOTE</span>
             <MobileNoteEditor
+              focused={noteFocused}
               value={draft.privateNote}
               onChange={(privateNote) =>
                 change({ ...draft, privateNote, operationId: crypto.randomUUID() })
               }
               onFocusChange={(focused) => {
                 if (window.matchMedia('(max-width: 720px)').matches) {
-                  if (focused) prepareMobileNoteFocus()
-                  else setNoteFocused(false)
+                  setNoteFocused(focused)
                 }
                 if (focused) setClassInfoExpanded(false)
               }}
