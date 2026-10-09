@@ -3,9 +3,8 @@
 ## Decision and release boundary
 
 The Product Owner rejected a split release and requested expiry interception. Finance exports and
-calendar integration remain a single held release. No Production migration or deploy has run.
-The earlier APPLY covers the previewed migration; new application changes require fresh exact-SHA
-CI and a matching release preview. No new migration is needed for expiry.
+calendar integration were released together in Production release #3 after exact-SHA CI #137,
+literal APPLY and a matching single-migration preview. No additional migration was needed for expiry.
 
 ## Findings
 
@@ -80,8 +79,8 @@ The bounded Basic Auth test passed on Apple, but Google did not fetch the protec
 therefore explicitly replaced Basic Auth with the private URL contract. At 2026-10-10 04:23 Taipei,
 Google fetched the new synthetic private path with HTTP 200 and its calendar showed the synthetic
 event. This proves initial Google subscription compatibility. External refresh timing remains
-client-controlled. Fresh exact-SHA CI, Production migration preview and the already authorized
-same-version joint release are the remaining delivery gates.
+client-controlled. Exact-SHA CI, Production migration preview and same-version joint release passed;
+installed-PWA and external refresh-timing acceptance remain separate.
 
 ## Authorized synthetic client probe — completed and stopped
 

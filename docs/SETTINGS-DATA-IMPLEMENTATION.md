@@ -5,8 +5,8 @@ and arbitrary historical ranges of up to 366 inclusive days. This is a later M8-
 a reopening of delivered M8-B-Export. On the follow-up review the PO requested continued engineering
 checks and corrected Excel layout; these are not waiting on a new product decision. The PO then
 authorized background download UX and commit/push-main/CI/deploy after checks pass. Installed-PWA
-acceptance will be performed by the PO after deployment. Production migration still requires
-the exact preview and literal APPLY.
+acceptance is the PO's next gate after deployment. Exact preview, literal APPLY and same-SHA
+Production release #3 completed on 2026-10-10; see the active Status for evidence.
 
 ## Approved background execution correction
 
@@ -111,9 +111,9 @@ deployment; installed-PWA proof requires real devices. No package completion cla
   typing during generation and the ready card at desktop and 390x844 without horizontal overflow.
   The browser connector timed out while observing the save/download event and then disconnected;
   device-save completion and viewport cleanup could not be confirmed. No installed-PWA claim.
-- Full workspace verification and exact-SHA remote delivery are authorized and in progress.
-  Production migration requires its exact preview and literal APPLY; external Apple/Google
-  subscription and installed-PWA acceptance remain separate, with PO phone testing after deploy.
+- Full workspace verification and exact-SHA remote delivery were authorized and completed in CI
+  #137 / Production release #3. Apple and Google initial synthetic subscriptions passed; external
+  refresh timing and installed-PWA acceptance remain separate, with PO phone testing next.
 
 ### Authorized release preflight
 

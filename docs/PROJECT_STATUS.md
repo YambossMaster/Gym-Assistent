@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                    |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                      |
-| Current gate                  | **Settings correction: Google private-URL acceptance passed; fresh exact-SHA CI/release pending**                                                  |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                           |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                           |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                              |
-| Release candidate             | `13587f054e44ec370b89f6b9398b92cc199c2fea`; [CI #136](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37977614654) green, not deployed |
-| Worktree                      | Private-path and Prime-expiry correction pending new commit; prior feature SHA passed API 201 / Web 342, builds, browser UI and migration previews |
-| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                              |
-| Production release            | CI #133 attempt 2 deployed `c5db63f`; public readiness and new JS/CSS marker checks passed                                                         |
-| Pending Production migrations | Only `20261009171747` pending; preview passed and PO supplied APPLY; not applied                                                                   |
+| Field                         | Current value                                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                         |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                           |
+| Current gate                  | **Settings joint release deployed; Product Owner installed-PWA acceptance pending**                                                                     |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                   |
+| Release candidate             | `ef347c4b850223e6206496a728ba84fe56bbd5ce`; [CI #137](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988602277) green and deployed       |
+| Worktree                      | Joint Settings correction committed; API 208 / Web 343, builds, browser UI and migration checks passed remotely                                         |
+| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                                   |
+| Production release            | [Release #3](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988898210) applied `20261009171747` and deployed `ef347c4`; `/api/ready` 200 |
+| Pending Production migrations | None after Release #3; Production migration history includes `20261009171747`                                                                           |
 
 ## Required context
 
@@ -81,15 +81,14 @@ startup context.
 PO approved the Google-compatible 256-bit private subscription path and accepted Fly upstream
 request-path log residual risk. Google fetched the synthetic private path and displayed its event;
 Apple initial ICS compatibility was also observed. Prime expiry returns one notice, not schedules.
-See [security design](CALENDAR-SUBSCRIPTION-SECURITY.md). Proceed with fresh exact-SHA CI, Production
-preview, authorized joint migration/deploy, readiness and PO installed-PWA acceptance. The three
-disposable Google subscriptions were removed and the synthetic probe/tunnel stopped.
-Main `13587f0` has green CI #136; Production preview lists only `20261009171747`, and literal APPLY
-is already authorized for the previewed migration. New changes need fresh exact-SHA CI/preview; neither
-migration nor deployment started. See
-[engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for evidence and exact resume point.
-External subscription refresh cadence and installed-PWA acceptance remain separate; PO tests the
-phone after deploy.
+See [security design](CALENDAR-SUBSCRIPTION-SECURITY.md). Exact-SHA CI #137 and joint Production
+Release #3 passed; only `20261009171747` was applied, and the same `ef347c4` was deployed. Public
+readiness is 200; an invalid private feed is 404 with `no-store, private`. Production security advisor
+has no new calendar-table finding; its existing leaked-password-protection warning is separate.
+The three disposable Google subscriptions were removed and the synthetic probe/tunnel stopped.
+Next: PO tests Finance export and Calendar download/subscription on installed PWA, including Prime
+expiry behavior. External subscription refresh cadence remains client-controlled and unverified.
+See [engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for scope.
 The prior M8-D admission/recovery/provenance/device gates and old-PAT authorization remain separate.
 
 ## Status system

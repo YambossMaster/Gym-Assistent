@@ -155,9 +155,9 @@ Apple 官方支援以網址加入訂閱；Google 官方的 From URL 流程由電
 
 2026-10-10 Product Owner 已核准實作；版本、撤除與 token 契約見 `SETTINGS-DATA-IMPLEMENTATION.md`。
 兩個 Settings 功能一起替換舊入口；正式啟動時舊 API 回覆 410，不刪除原始紀錄。
-本機介面、合成 ICS、Apple 初次訂閱與 Google 私密路徑初次訂閱已驗證；待新 SHA 的
-CI、Production migration preview 與聯合部署。上游路徑日誌殘餘風險已由 PO 接受；
-訂閱刷新時機、正式環境負載和安裝版 PWA 仍待發布後驗證。
+本機介面、合成 ICS、Apple 初次訂閱與 Google 私密路徑初次訂閱已驗證；新 SHA 的 CI、
+Production migration preview 與聯合部署已完成。上游路徑日誌殘餘風險已由 PO 接受；
+訂閱刷新時機、正式環境負載和安裝版 PWA 仍待驗證。
 
 ## 官方參考（2026-10-10 查閱）
 

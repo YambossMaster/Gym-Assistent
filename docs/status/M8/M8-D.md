@@ -9,7 +9,7 @@
 | --------- | ------------------------------------------------------------------------------------------------- |
 | Contract  | Beta plan-access correction is frozen; broader admission, backup and restore gates remain binding |
 | Sol       | Accumulated plan-access, mobile and release safeguards reached Main at `fb75b7d`                  |
-| CI        | #120 attempt 2 and exact-SHA Production migration release #2 green; admission checks remain open  |
+| CI        | #120 / release #2 and Settings CI #137 / release #3 green; admission checks remain open           |
 | Admission | No real Coach admitted; Production contains two synthetic Coaches                                 |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
@@ -82,7 +82,8 @@ The detailed behavior and migration contract live in
 - Main `13587f054e44ec370b89f6b9398b92cc199c2fea` is pushed; [CI #136](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37977614654)
   passed API 201 / Web 342, builds, browser UI and both migration checks. Production preview lists
   only `20261009171747`; PO supplied literal APPLY for that preview. Migration/deploy remain
-  unstarted pending fresh exact-SHA CI and preview for the private-path correction. See engineering
+  unstarted at that checkpoint, pending fresh exact-SHA CI and preview for the private-path
+  correction. Release #3 later completed; see the Next handoff for current state and the engineering
   contract for the accepted upstream path-log residual risk.
 
 - Latest deployed correction: `c5db63f3b315aa84ca606aafd3269d7ed112e531`.
@@ -176,9 +177,13 @@ PO approved the 256-bit private path after the bounded Basic Auth Google test fa
 accepted Fly upstream path-log residual risk. The synthetic Google private feed returned 200 to
 Google and its event appeared in the Chrome calendar. Apple initial ICS subscription passed;
 third-party refresh timing remains unverified. See `docs/CALENDAR-SUBSCRIPTION-SECURITY.md`.
-CI #136 covers the earlier `13587f0` candidate; obtain fresh exact-SHA CI/preview for the local
-changes. Literal APPLY and main/deploy permission are granted. No Production migration/deploy has
-run. The temporary probe was stopped and all three disposable Google subscriptions were removed.
+CI #137 passed for `ef347c4` (API 208 / Web 343, browser UI, migration dry-run and Production
+preview). Release #3 re-previewed and applied only `20261009171747`, deployed the same commit,
+and passed `/api/ready`; separate public readback returned 200. An invalid private feed returned
+404 and `no-store, private`. Production migration history and RLS/private grants were read back;
+security advisor has only the pre-existing Auth leaked-password-protection warning. The temporary
+probe was stopped and all three disposable Google subscriptions were removed. Next is PO installed-
+PWA acceptance of the two Settings tools; external subscription refresh cadence is unverified.
 The prior installed-device detail, recovery, reviewer-control, legal-migration provenance and
 real-Coach admission gates remain open; the completed first Alpha round is not blanket evidence
 for those gates. Old PAT revocation remains separately authorized work.
