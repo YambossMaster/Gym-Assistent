@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                   |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                     |
-| Current gate                  | **Settings data correction: background execution implemented; authorized verification and release in progress**                                   |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                          |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                          |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                             |
-| Release candidate             | `c5db63f3b315aa84ca606aafd3269d7ed112e531`; [CI #133 attempt 2](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37949502049) deployed |
-| Worktree                      | Finance/calendar correction ready for authorized push; Web 342 pass, API 200 pass plus isolated PDF rerun 5/5; builds/typechecks pass             |
-| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                             |
-| Production release            | CI #133 attempt 2 deployed `c5db63f`; public readiness and new JS/CSS marker checks passed                                                        |
-| Pending Production migrations | New local calendar migration `20261009171747`, not previewed or applied; remote pending list not refreshed                                        |
+| Field                         | Current value                                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                    |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                      |
+| Current gate                  | **Settings correction: Google private-URL acceptance passed; fresh exact-SHA CI/release pending**                                                  |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                           |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                           |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                              |
+| Release candidate             | `13587f054e44ec370b89f6b9398b92cc199c2fea`; [CI #136](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37977614654) green, not deployed |
+| Worktree                      | Private-path and Prime-expiry correction pending new commit; prior feature SHA passed API 201 / Web 342, builds, browser UI and migration previews |
+| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                              |
+| Production release            | CI #133 attempt 2 deployed `c5db63f`; public readiness and new JS/CSS marker checks passed                                                         |
+| Pending Production migrations | Only `20261009171747` pending; preview passed and PO supplied APPLY; not applied                                                                   |
 
 ## Required context
 
@@ -78,13 +78,18 @@ startup context.
 
 ## Next handoff
 
-Complete checks, commit/push Main, confirm exact-SHA CI, then deploy under the PO's explicit
-authorization. Worker/streaming correction reduced the 20,000-row main-thread delay from 13,741
-to 94 ms and peak RSS from 514 to 203 MiB in the local compiled-JS probe. Background status and
-duplicate safeguards are implemented; synthetic desktop/mobile Chrome reached file-ready state.
-See [engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for evidence and limitations.
-Production calendar migration still needs exact preview and literal APPLY. External Apple/Google
-acceptance needs reachable HTTPS; installed-PWA testing will be performed by the PO after deploy.
+PO approved the Google-compatible 256-bit private subscription path and accepted Fly upstream
+request-path log residual risk. Google fetched the synthetic private path and displayed its event;
+Apple initial ICS compatibility was also observed. Prime expiry returns one notice, not schedules.
+See [security design](CALENDAR-SUBSCRIPTION-SECURITY.md). Proceed with fresh exact-SHA CI, Production
+preview, authorized joint migration/deploy, readiness and PO installed-PWA acceptance. The three
+disposable Google subscriptions were removed and the synthetic probe/tunnel stopped.
+Main `13587f0` has green CI #136; Production preview lists only `20261009171747`, and literal APPLY
+is already authorized for the previewed migration. New changes need fresh exact-SHA CI/preview; neither
+migration nor deployment started. See
+[engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for evidence and exact resume point.
+External subscription refresh cadence and installed-PWA acceptance remain separate; PO tests the
+phone after deploy.
 The prior M8-D admission/recovery/provenance/device gates and old-PAT authorization remain separate.
 
 ## Status system

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   calendarFile,
+  expiredCalendarFile,
   eventUid,
   foldLine,
   reconcileEvents,
@@ -16,6 +17,24 @@ const event: CalendarEvent = {
   cancelled: false,
 }
 describe('subscribed calendar continuity and privacy', () => {
+  it('emits one stable all-day expiry notice without busy time or source event data', () => {
+    const body = expiredCalendarFile('synthetic-hash', now).toString().replace(/\r\n /g, '')
+    expect(body.match(/BEGIN:VEVENT/g)).toHaveLength(1)
+    expect(body).toContain('DTSTART;VALUE=DATE:20261010')
+    expect(body).toContain('DTEND;VALUE=DATE:20261011')
+    expect(body).toContain('TRANSP:TRANSPARENT')
+    expect(body).toContain('SUMMARY:Prime 方案已到期')
+    for (const forbidden of [
+      'synthetic-hash',
+      'VALARM',
+      'ATTENDEE',
+      'LOCATION:',
+      '小白',
+      event.uid,
+    ])
+      expect(body).not.toContain(forbidden)
+    expect(expiredCalendarFile('synthetic-hash', now).toString().replace(/\r\n /g, '')).toBe(body)
+  })
   it('keeps identity and revision stable, increments on reschedule and strips cancellation details', () => {
     const first = reconcileEvents([event], [], now)
     const unchanged = reconcileEvents([event], first, new Date('2026-10-11T00:00:00Z'))

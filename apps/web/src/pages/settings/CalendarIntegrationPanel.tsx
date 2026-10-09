@@ -13,7 +13,7 @@ import { DataDialog, dataError, rangePreset, validRange, workspaceDate } from '.
 import { useExportDownloads } from './ExportDownloads'
 
 type Sharing = { includeBlocks: boolean; showNames: boolean; showLocation: boolean }
-type State = Sharing & { version: number; active: boolean }
+type State = Sharing & { version: number; active: boolean; expired?: boolean }
 const defaults: Sharing = { includeBlocks: false, showNames: false, showLocation: true }
 const sharingOnly = (s: Sharing): Sharing => ({
   includeBlocks: s.includeBlocks,
@@ -185,6 +185,7 @@ function CalendarDialog({
       client.setQueryData(key(session.user.id), {
         version: result.version,
         active: result.active,
+        expired: result.expired,
         includeBlocks: result.includeBlocks,
         showNames: result.showNames,
         showLocation: result.showLocation
@@ -246,15 +247,23 @@ function CalendarDialog({
               <div className="data-tools-section-heading">
                 <h3>日曆訂閱</h3>
                 <span>
-                  {query.data.active
-                    ? prime
-                      ? '已啟用'
-                      : 'Prime 已失效'
-                    : query.data.version
-                      ? '已停用'
-                      : '尚未啟用'}
+                  {query.data.expired
+                    ? 'Prime 已失效'
+                    : query.data.active
+                      ? prime
+                        ? '已啟用'
+                        : 'Prime 已失效'
+                      : query.data.version
+                        ? '已停用'
+                        : '尚未啟用'}
                 </span>
               </div>
+              {query.data.expired && (
+                <p className="settings-export-hint">
+                  舊連結僅顯示方案到期提示，不再提供行程。恢復 Prime 後請建立新連結。
+                  外部日曆的更新時間由該服務決定。
+                </p>
+              )}
               <p className="settings-export-hint">
                 過去 30 天至未來 180 天，僅包含已排定的課程。請在 Form Coach Desk 修改行程。
               </p>
@@ -293,9 +302,6 @@ function CalendarDialog({
                     >
                       複製網址
                     </button>
-                    <a href={link.replace(/^https?:/, 'webcal:')} referrerPolicy="no-referrer">
-                      加入 Apple 日曆
-                    </a>
                   </div>
                   <p className="settings-export-hint">
                     網址僅在建立當次顯示。關閉後需要新網址時，請重設並重新訂閱。
@@ -305,7 +311,7 @@ function CalendarDialog({
               <details className="data-tools-options">
                 <summary>如何加入 Google／Apple 日曆</summary>
                 <p>Google：在電腦版 Google 日曆選「其他日曆 → 新增 → 透過網址」，貼上訂閱網址。</p>
-                <p>Apple：在日曆選「加入日曆 → 加入訂閱日曆」，貼上訂閱網址。</p>
+                <p>Apple：在日曆選「加入日曆 → 加入訂閱日曆」，貼上完整 HTTPS 網址並使用 SSL。</p>
                 <p>加入後的更新由日曆服務處理，不會即時同步，也不會把外部修改寫回本產品。</p>
               </details>
               <div className="data-tools-actions">
@@ -325,9 +331,16 @@ function CalendarDialog({
                     </button>
                   </>
                 ) : (
-                  <button disabled={pending} onClick={() => void change('create')}>
-                    建立訂閱連結
-                  </button>
+                  <>
+                    <button disabled={pending} onClick={() => void change('create')}>
+                      建立訂閱連結
+                    </button>
+                    {query.data.expired && (
+                      <button disabled={pending} onClick={() => setConfirm('disable')}>
+                        停用訂閱
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
               {query.data.version !== loadedVersion && (

@@ -573,7 +573,7 @@ export function buildServer({
       const message = error instanceof Error ? error.message : 'Request validation failed'
       return reply.status(400).send({ error: 'invalid_request', message })
     }
-    if (_request.routeOptions.url?.startsWith('/v1/public/calendar/'))
+    if (_request.routeOptions.url?.startsWith('/v1/public/calendar'))
       server.log.error({ code: 'calendar_feed_failed' })
     else server.log.error(error)
     return reply.status(500).send({ error: 'internal_error', message: 'Unexpected server error' })

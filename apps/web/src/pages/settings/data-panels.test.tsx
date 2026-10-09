@@ -14,7 +14,7 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup()
   vi.unstubAllGlobals()
 })
-async function render(prime = false, active = false) {
+async function render(prime = false, active = false, expired = false) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const fetcher = vi.fn(
     async (_url: string, init?: RequestInit) =>
@@ -33,7 +33,8 @@ async function render(prime = false, active = false) {
                 includeBlocks: false,
                 showNames: false,
                 showLocation: true,
-                version: active ? 1 : 0,
+                version: active || expired ? 1 : 0,
+                expired,
                 active
               }
         ),
@@ -113,7 +114,7 @@ it('sends only explicit sharing flags and never caches the one-time token', asyn
     'synthetic-token'
   )
   expect(document.querySelector<HTMLInputElement>('.data-tools-link input')?.value).toContain(
-    'synthetic-token.ics'
+    '/api/v1/public/calendar/synthetic-token.ics'
   )
   await click('完成')
   await click('設定日曆')
@@ -123,6 +124,18 @@ it('lets downgraded owners manage and disable an existing subscription', async (
   const { fetcher } = await render(false, true)
   await click('管理現有訂閱')
   expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Prime 已失效')
+  await click('停用訂閱')
+  await click('確認停用')
+  const call = fetcher.mock.calls.find(([, init]) => init?.method === 'POST')!
+  expect(JSON.parse(String(call[1]?.body))).toEqual({ action: 'disable', version: 1 })
+})
+
+it('keeps an expired notice-only link revocable without Prime', async () => {
+  const { fetcher } = await render(false, false, true)
+  await click('管理現有訂閱')
+  expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+    '舊連結僅顯示方案到期提示'
+  )
   await click('停用訂閱')
   await click('確認停用')
   const call = fetcher.mock.calls.find(([, init]) => init?.method === 'POST')!

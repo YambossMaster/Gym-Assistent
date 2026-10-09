@@ -12,7 +12,7 @@ export const defaultSharing: Sharing = {
   showNames: false,
   showLocation: true,
 }
-export type CalendarState = Sharing & { version: number; active: boolean }
+export type CalendarState = Sharing & { version: number; active: boolean; expired?: boolean }
 export type CalendarEvent = {
   uid: string
   startsAt: string
@@ -20,6 +20,8 @@ export type CalendarEvent = {
   summary: string
   location: string
   cancelled: boolean
+  allDay?: boolean
+  transparent?: boolean
 }
 export type PublishedEvent = {
   uid: string
@@ -126,15 +128,37 @@ export function calendarFile(
       `DTSTAMP:${instant(e.revisedAt)}`,
       `LAST-MODIFIED:${instant(e.revisedAt)}`,
       `SEQUENCE:${e.sequence}`,
-      `DTSTART:${instant(e.startsAt)}`,
-      `DTEND:${instant(e.endsAt)}`,
+      e.allDay
+        ? `DTSTART;VALUE=DATE:${instant(e.startsAt).slice(0, 8)}`
+        : `DTSTART:${instant(e.startsAt)}`,
+      e.allDay ? `DTEND;VALUE=DATE:${instant(e.endsAt).slice(0, 8)}` : `DTEND:${instant(e.endsAt)}`,
       `SUMMARY:${escapeText(e.summary)}`,
       ...(e.location ? [`LOCATION:${escapeText(e.location)}`] : []),
       `STATUS:${e.cancelled ? 'CANCELLED' : 'CONFIRMED'}`,
-      `TRANSP:${e.cancelled ? 'TRANSPARENT' : 'OPAQUE'}`,
+      `TRANSP:${e.cancelled || e.transparent ? 'TRANSPARENT' : 'OPAQUE'}`,
       'CLASS:PRIVATE',
       'END:VEVENT',
     )
   lines.push('END:VCALENDAR')
   return checkBytes(Buffer.from(lines.map(foldLine).join('\r\n') + '\r\n', 'utf8'))
+}
+
+// A valid replacement feed: no real event UID/timing, account fields or private content.
+// Subscription clients control refresh/removal; this is not a remote deletion guarantee.
+export function expiredCalendarFile(subscriptionHash: string, expiredAt: Date) {
+  const startsAt = new Date(expiredAt.toISOString().slice(0, 10) + 'T00:00:00Z')
+  return calendarFile([
+    {
+      uid: eventUid('prime-expired', subscriptionHash),
+      startsAt: startsAt.toISOString(),
+      endsAt: new Date(startsAt.getTime() + 86400000).toISOString(),
+      summary: 'Prime 方案已到期',
+      location: '',
+      cancelled: false,
+      allDay: true,
+      transparent: true,
+      sequence: 0,
+      revisedAt: expiredAt.toISOString(),
+    },
+  ])
 }

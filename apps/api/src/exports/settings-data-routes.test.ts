@@ -17,7 +17,7 @@ const servers: ReturnType<typeof buildServer>[] = []
 afterEach(async () => {
   await Promise.all(servers.splice(0).map((s) => s.close()))
 })
-function fixture() {
+function fixture(logger: boolean | Record<string, unknown> = false) {
   const repository = new MemoryStudentRepository()
   let prime = true
   const file = {
@@ -34,6 +34,7 @@ function fixture() {
     feed: vi.fn(async () => Buffer.from('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n')),
   }
   const server = buildServer({
+    logger,
     identityVerifier: new DevelopmentIdentityVerifier(),
     students: new StudentModule({ repository }),
     today: new TodayModule(repository),
@@ -162,7 +163,7 @@ it('allows over-capacity downgraded owners to inspect and revoke without reopeni
   ).toBe(200)
   expect(calendar.change).toHaveBeenCalledWith({ userId: other }, input)
 })
-it('serves a no-login, no-store feed and strips the .ics suffix from the token', async () => {
+it('serves a no-store feed from an unguessable private path', async () => {
   const { server, calendar } = fixture()
   const token = 'a'.repeat(43)
   const result = await server.inject({ url: `/v1/public/calendar/${token}.ics` })
@@ -170,4 +171,53 @@ it('serves a no-login, no-store feed and strips the .ics suffix from the token',
   expect(result.headers['content-type']).toContain('text/calendar')
   expect(result.headers['cache-control']).toBe('no-store, private')
   expect(calendar.feed).toHaveBeenCalledWith(token)
+  expect((await server.inject({ url: '/v1/public/calendar.ics' })).statusCode).toBe(404)
+})
+
+it('never logs subscription credentials across success, failure and unmatched routes', async () => {
+  const lines: string[] = []
+  const { server, calendar } = fixture({ stream: { write: (line: string) => lines.push(line) } })
+  const token = 'sensitive-calendar-token-marker'.padEnd(43, 'x')
+  const headers = { authorization: 'Bearer sensitive-auth-marker', cookie: 'secret-cookie-marker' }
+  await server.inject({ url: `/v1/public/calendar/${token}.ics`, headers })
+  calendar.feed.mockRejectedValueOnce(new Error(`failed fetching ${token}`))
+  expect(
+    (await server.inject({ url: `/v1/public/calendar/${token}.ics`, headers })).statusCode,
+  ).toBe(500)
+  await server.inject({ url: `/v1/public/calendar/${token}/unknown`, headers })
+  const output = lines.join('')
+  expect(output).toContain('calendar_feed_failed')
+  expect(output).toContain('request completed')
+  for (const secret of [token, headers.authorization, 'secret-cookie-marker'])
+    expect(output).not.toContain(secret)
+})
+
+it('returns the changed feed even when the client supplies a previous cache validator', async () => {
+  const { server, calendar } = fixture()
+  calendar.feed.mockResolvedValueOnce(
+    Buffer.from('BEGIN:VCALENDAR\r\nSUMMARY:Prime 方案已到期\r\nEND:VCALENDAR\r\n'),
+  )
+  const response = await server.inject({
+    url: `/v1/public/calendar/${'a'.repeat(43)}.ics`,
+    headers: {
+      'if-none-match': 'previous-active-feed',
+      'if-modified-since': new Date().toUTCString(),
+    },
+  })
+  expect(response.statusCode).toBe(200)
+  expect(response.body).toContain('Prime 方案已到期')
+  expect(response.headers['cache-control']).toBe('no-store, private')
+  expect(calendar.feed).toHaveBeenCalledTimes(1)
+})
+
+it('rejects malformed private paths without querying schedules', async () => {
+  const { server, calendar } = fixture()
+  for (const token of ['short', 'a'.repeat(44), `wrong:${'a'.repeat(37)}`]) {
+    const response = await server.inject({
+      url: `/v1/public/calendar/${token}.ics`,
+    })
+    expect(response.statusCode).toBe(404)
+    expect(response.headers['cache-control']).toBe('no-store, private')
+  }
+  expect(calendar.feed).not.toHaveBeenCalled()
 })

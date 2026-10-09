@@ -72,12 +72,18 @@ The detailed behavior and migration contract live in
   ready/save action and five-minute in-memory expiry are implemented. No fake ETA or closed-App
   continuation promise. Desktop/390x844 synthetic Chrome flow passed through file-ready state;
   the connector disconnected during download-event observation, so device saving is unverified.
-  External Apple/Google, upstream token-log review and installed-PWA acceptance remain separate.
+  Apple and Google initial subscription checks now passed with synthetic feeds; installed-PWA
+  acceptance remains separate. The PO accepted Fly upstream private-path log residual risk.
 - Release preflight: API full run 200 passed / one existing PDF timeout; isolated unchanged format
   rerun 5/5 passed. Web 77 files / 342 tests, both typechecks and production builds pass. Real
   development calendar adapter lifecycle passes under rollback-only savepoints; independent readback
   confirms no fixtures remain. Latest streaming workbook passed native Excel/PDF visual recheck.
   Exact-SHA remote CI remains mandatory; this is not a claim that the initial full run was green.
+- Main `13587f054e44ec370b89f6b9398b92cc199c2fea` is pushed; [CI #136](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37977614654)
+  passed API 201 / Web 342, builds, browser UI and both migration checks. Production preview lists
+  only `20261009171747`; PO supplied literal APPLY for that preview. Migration/deploy remain
+  unstarted pending fresh exact-SHA CI and preview for the private-path correction. See engineering
+  contract for the accepted upstream path-log residual risk.
 
 - Latest deployed correction: `c5db63f3b315aa84ca606aafd3269d7ed112e531`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
@@ -166,11 +172,13 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 ## Next handoff
 
-Finish authorized verification, then commit/push Main and confirm exact-SHA CI. Worker isolation,
-streaming, background UI and focused abort/duplicate checks are implemented. Dependency audit and
-development RLS checks are complete. Preview the pending Production calendar migration and obtain
-literal APPLY before the same-SHA migration/deployment workflow. External calendar acceptance needs
-reachable HTTPS; the PO will perform installed-PWA testing after deployment.
+PO approved the 256-bit private path after the bounded Basic Auth Google test failed and explicitly
+accepted Fly upstream path-log residual risk. The synthetic Google private feed returned 200 to
+Google and its event appeared in the Chrome calendar. Apple initial ICS subscription passed;
+third-party refresh timing remains unverified. See `docs/CALENDAR-SUBSCRIPTION-SECURITY.md`.
+CI #136 covers the earlier `13587f0` candidate; obtain fresh exact-SHA CI/preview for the local
+changes. Literal APPLY and main/deploy permission are granted. No Production migration/deploy has
+run. The temporary probe was stopped and all three disposable Google subscriptions were removed.
 The prior installed-device detail, recovery, reviewer-control, legal-migration provenance and
 real-Coach admission gates remain open; the completed first Alpha round is not blanket evidence
 for those gates. Old PAT revocation remains separately authorized work.

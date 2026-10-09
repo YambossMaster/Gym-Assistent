@@ -16,6 +16,7 @@ import { ExportError } from '../exports/export-module.js'
 import {
   CalendarError,
   calendarFile,
+  expiredCalendarFile,
   defaultSharing,
   eventUid,
   reconcileEvents,
@@ -49,6 +50,7 @@ function state(row?: StateRow): CalendarState {
     ? {
         version: row.version,
         active: Boolean(row.token_hash && !row.revoked_at),
+        ...(row.token_hash && row.revoked_at ? { expired: true } : {}),
         includeBlocks: row.include_blocks,
         showNames: row.show_names,
         showLocation: row.show_location,
@@ -265,7 +267,7 @@ export class PostgresCalendarIntegration {
       await c.query("select set_config('app.calendar_token_hash',$1,true)", [tokenHash(token)])
       const lookup = (
         await c.query(
-          'select workspace_id from app_private.calendar_subscription where token_hash=$1 and revoked_at is null',
+          'select workspace_id from app_private.calendar_subscription where token_hash=$1',
           [tokenHash(token)],
         )
       ).rows[0]
@@ -278,24 +280,36 @@ export class PostgresCalendarIntegration {
           [id],
         )
       ).rows[0]
-      if (!raw || raw.token_hash !== tokenHash(token) || raw.revoked_at) return null
+      if (!raw || raw.token_hash !== tokenHash(token)) return null
       const w = (
         await c.query(
           'select owner_user_id,time_zone,deletion_requested_at from app_private.workspace where id=$1',
           [id],
         )
       ).rows[0]
-      if (
-        !w ||
-        w.deletion_requested_at ||
-        (await this.plans.get({ userId: w.owner_user_id })).tier !== 'advanced'
-      ) {
+      if (!w || w.deletion_requested_at) {
         await c.query(
           'update app_private.calendar_subscription set token_hash=null,revoked_at=now(),version=version+1 where workspace_id=$1',
           [id],
         )
         return null
       }
+      // Keep only a notice-reading capability after expiry; never resurrect it on renewal.
+      if (raw.revoked_at) return expiredCalendarFile(raw.token_hash!, raw.revoked_at)
+      const prime = async () =>
+        (await this.plans.get({ userId: w.owner_user_id })).tier === 'advanced'
+      const expire = async () => {
+        const expiredAt = this.now()
+        await c.query(
+          'update app_private.calendar_subscription set revoked_at=$2,version=version+1,updated_at=$2 where workspace_id=$1',
+          [id, expiredAt],
+        )
+        await c.query('delete from app_private.calendar_published_event where workspace_id=$1', [
+          id,
+        ])
+        return expiredCalendarFile(raw.token_hash!, expiredAt)
+      }
+      if (!(await prime())) return expire()
       const today = localDate(now, w.time_zone)
       const events = await this.events(
         c,
@@ -322,6 +336,7 @@ export class PostgresCalendarIntegration {
         cancelledAt: e.cancelled_at?.toISOString() ?? null,
       }))
       const reconciled = reconcileEvents(events, previous, now)
+      if (!(await prime())) return expire()
       const body = calendarFile(reconciled)
       await c.query('delete from app_private.calendar_published_event where workspace_id=$1', [id])
       if (reconciled.length)

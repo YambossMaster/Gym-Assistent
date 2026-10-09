@@ -37,7 +37,7 @@ the exact preview and literal APPLY.
 - `POST /v1/calendar-integration`: versioned create/reset/update/disable; create/reset returns a
   256-bit token once. Except disable, current Prime is required. Zero is the initial version.
 - `POST /v1/calendar-integration/download`: bounded range plus explicit sharing settings, Prime only.
-- `GET /v1/public/calendar/:token.ics`: narrow unauthenticated feed; hashed token resolves one
+- `GET /v1/public/calendar/:token.ics`: narrow private-path feed; hashed subscription secret resolves one
   owner; current account availability and entitlement checked on each request. No login redirects.
 - Legacy `POST /v1/exports` is retired with 410 after both replacement entrances are integrated.
   Preserve historical format code/tests as delivered evidence; no underlying user records deleted.
@@ -128,3 +128,26 @@ deployment; installed-PWA proof requires real devices. No package completion cla
   made the same probe pass. Independent read-back: subscriptions/events/fixture blocks all zero.
 - Latest streaming samples in `output/settings-data-review-v3/` again opened read-only in native
   Excel: two sheets, Microsoft JhengHei, numeric 12,000. Summary/detail PDF render inspection passed.
+
+### Exact-SHA CI and remaining release decision
+
+- Main commit `13587f054e44ec370b89f6b9398b92cc199c2fea` is pushed. [CI #136](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37977614654)
+  passed full verify (API 201 / Web 342), builds, browser UI, development dry-run and Production
+  preview. The preview lists only `20261009171747_settings_calendar_integration.sql`.
+- PO supplied literal APPLY for that preview and SHA. No Production migration/deploy was started.
+- Final upstream privacy review cannot yet substantiate the frozen requirement that Fly proxy
+  logs always mask URL credentials. Current [Fly staff guidance](https://community.fly.io/t/where-are-platform-logs-stored-for-an-nrt-app-data-residency-follow-up-to-a-closed-thread/28598)
+  says ordinary request logs are not stored, but support debugging can retain them; historical
+  [Fly proxy error-log evidence](https://community.fly.io/t/seeing-requests-to-the-fly-proxy-in-the-logs/2318)
+  includes `request.url`. This is a protection/verification gap, not evidence of a leaked token.
+  The live Machine uses ordinary Fly HTTP/TLS routing; app-side URL suppression alone does not
+  prove provider-side suppression. Do not weaken the frozen security contract implicitly.
+- PO rejected split delivery and paid ingress changes. After Basic Auth worked on Apple but not
+  Google, PO approved a 256-bit private path and accepted Fly upstream path-log residual risk.
+  Application logs retain only route templates and generic calendar errors.
+- Prime expiry now returns one stable all-day transparent notice, never real schedules; the first
+  observed expiry clears publication history and retains a notice-only capability. Renewal needs
+  a new link; explicit disable revokes it. Entitlement errors fail closed and generation rechecks
+  access. No schema change. See `CALENDAR-SUBSCRIPTION-SECURITY.md` for full security/release gates.
+- Preserve prior migration approval but refresh exact-SHA CI and preview for the changed code.
+  A synthetic Google subscription fetched the private path with HTTP 200 and displayed the event.

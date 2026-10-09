@@ -25,10 +25,11 @@ const fixtureClient = {
   release: () => undefined,
 } as unknown as PoolClient
 const now = new Date('2026-10-10T02:00:00Z')
+let prime = true
 const adapter = new PostgresCalendarIntegration(
   { connect: async () => fixtureClient } as unknown as Pool,
   async () => workspace,
-  { get: async () => ({ tier: 'advanced' }) } as never,
+  { get: async () => ({ tier: prime ? 'advanced' : 'free' }) } as never,
   () => now,
 )
 const identity = { userId: 'rollback-only' }
@@ -82,7 +83,21 @@ try {
   })
   assert.ok(reset.token)
   await assert.rejects(adapter.feed(created.token), { code: 'not_found' })
-  await adapter.change(identity, { action: 'disable', version: reset.version })
+  prime = false
+  const expired = await adapter.feed(reset.token)
+  assert.ok(expired.toString().includes('SUMMARY:Prime 方案已到期'))
+  assert.equal((expired.toString().match(/BEGIN:VEVENT/g) ?? []).length, 1)
+  assert.ok(
+    !expired
+      .toString()
+      .replace(/\r\n[ \t]/g, '')
+      .includes(eventUid('block', blockId)),
+  )
+  const expiredState = await adapter.get(identity)
+  assert.equal(expiredState.expired, true)
+  prime = true
+  assert.deepEqual(await adapter.feed(reset.token), expired)
+  await adapter.change(identity, { action: 'disable', version: expiredState.version })
   await assert.rejects(adapter.feed(reset.token), { code: 'not_found' })
   console.log(
     JSON.stringify({

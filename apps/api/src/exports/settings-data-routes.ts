@@ -119,7 +119,9 @@ export function settingsDataRoutes(
       if ((buckets.size >= 2000 && !buckets.has(key)) || ++bucket.count > 60)
         return reply.code(429).header('Retry-After', '60').send()
       buckets.set(key, bucket)
-      const body = await generating(`feed:${key}`, () => calendar.feed(request.params.token))
+      const token = request.params.token
+      if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return reply.code(404).send({ error: 'not_found' })
+      const body = await generating(`feed:${key}`, () => calendar.feed(token))
       return reply.type('text/calendar; charset=utf-8').send(body)
     },
   )

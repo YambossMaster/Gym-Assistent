@@ -31,6 +31,8 @@ function fixture(prime = true) {
         }
       if (sql.startsWith('update app_private.calendar_subscription set token_hash=null') && row)
         row = { ...row, token_hash: null, revoked_at: new Date(), version: Number(row.version) + 1 }
+      if (sql.startsWith('update app_private.calendar_subscription set revoked_at=$2') && row)
+        row = { ...row, revoked_at: values[1], version: Number(row.version) + 1 }
       return { rows: [] }
     }),
   }
@@ -53,6 +55,10 @@ function fixture(prime = true) {
     calls,
     resolve,
     client,
+    plans,
+    renew: () => {
+      prime = true
+    },
     downgrade: () => {
       prime = false
     },
@@ -98,15 +104,62 @@ it('rejects downgraded creates, still allows disable, and never leaks a revoked 
   })
   await expect(f.module.feed(result.token!)).rejects.toMatchObject({ code: 'not_found' })
 })
-it('revokes an expired subscription before selecting any schedule data and commits the revocation', async () => {
+it('replaces an expired feed before reading schedules, remains stable after renewal and can be revoked', async () => {
   const f = fixture()
   const { token } = await f.module.change(
     { userId: 'owner' },
     { action: 'create', version: 0, sharing: defaultSharing },
   )
   f.downgrade()
-  await expect(f.module.feed(token!)).rejects.toMatchObject({ code: 'not_found' })
+  const expired = await f.module.feed(token!)
+  expect(expired.toString()).toContain('SUMMARY:Prime 方案已到期')
+  expect(expired.toString().match(/BEGIN:VEVENT/g)).toHaveLength(1)
   expect(f.calls.some((c) => c.sql.includes('from app_private.course_session'))).toBe(false)
+  expect(f.calls.some((c) => c.sql.includes('select uid,fingerprint'))).toBe(false)
+  expect(
+    f.calls.some((c) => c.sql.startsWith('delete from app_private.calendar_published_event')),
+  ).toBe(true)
   expect(f.calls.at(-1)?.sql).toBe('commit')
-  expect(await f.module.get({ userId: 'owner' })).toMatchObject({ active: false })
+  expect(await f.module.get({ userId: 'owner' })).toMatchObject({
+    active: false,
+    expired: true,
+    version: 2,
+  })
+  f.renew()
+  expect(await f.module.feed(token!)).toEqual(expired)
+  expect(f.calls.some((c) => c.sql.includes('from app_private.course_session'))).toBe(false)
+  await f.module.change({ userId: 'owner' }, { action: 'disable', version: 2 })
+  await expect(f.module.feed(token!)).rejects.toMatchObject({ code: 'not_found' })
+})
+
+it('fails closed on plan lookup errors instead of returning a notice or reading schedules', async () => {
+  const f = fixture()
+  const { token } = await f.module.change(
+    { userId: 'owner' },
+    { action: 'create', version: 0, sharing: defaultSharing },
+  )
+  vi.spyOn(f.plans, 'get').mockRejectedValue(new Error('unavailable'))
+  await expect(f.module.feed(token!)).rejects.toThrow('unavailable')
+  expect(f.calls.some((c) => c.sql.includes('from app_private.course_session'))).toBe(false)
+  expect(f.calls.at(-1)?.sql).toBe('rollback')
+})
+
+it('rechecks Prime before returning generated data and expires instead of sending it', async () => {
+  const f = fixture()
+  const { token } = await f.module.change(
+    { userId: 'owner' },
+    { action: 'create', version: 0, sharing: defaultSharing },
+  )
+  const original = f.plans.get.bind(f.plans)
+  let reads = 0
+  vi.spyOn(f.plans, 'get').mockImplementation(async (id) => {
+    if (++reads === 2) f.downgrade()
+    return original(id)
+  })
+  const file = await f.module.feed(token!)
+  expect(reads).toBe(2)
+  expect(file.toString()).toContain('SUMMARY:Prime 方案已到期')
+  expect(
+    f.calls.some((c) => c.sql.includes('insert into app_private.calendar_published_event')),
+  ).toBe(false)
 })

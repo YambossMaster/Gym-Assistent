@@ -28,6 +28,10 @@ async function fixture(onSlowRequest?: (response: import('node:http').ServerResp
     if (request.url === '/v1/slow' && onSlowRequest) return onSlowRequest(response)
     response.setHeader('Content-Type', 'application/json')
     if (request.url === '/health') return response.end('{"status":"ok"}')
+    if (request.url === `/v1/public/calendar/${'a'.repeat(43)}.ics`) {
+      response.setHeader('Cache-Control', 'no-store, private')
+      return response.end('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n')
+    }
     if (request.url === '/v1/public/training-result') {
       response.setHeader('Cache-Control', 'no-store, private')
       response.setHeader('Referrer-Policy', 'no-referrer')
@@ -56,6 +60,13 @@ async function fixture(onSlowRequest?: (response: import('node:http').ServerResp
 }
 
 describe('same-origin site server', () => {
+  it('proxies the private calendar path without caching', async () => {
+    const origin = await fixture()
+    const response = await fetch(origin + `/api/v1/public/calendar/${'a'.repeat(43)}.ics`)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('no-store, private')
+    expect(await response.text()).toContain('BEGIN:VCALENDAR')
+  })
   it('propagates client cancellation to an unfinished upstream response', async () => {
     let started!: () => void
     let closed!: () => void
