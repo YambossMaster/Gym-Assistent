@@ -17101,6 +17101,7 @@ button:disabled {
     transform: none;
     transition: none;
     pointer-events: auto;
+    touch-action: none;
   }
 
   .session-workspace.is-note-focused .session-topbar,
@@ -17132,6 +17133,7 @@ button:disabled {
     position: absolute;
     bottom: 0;
     display: flex;
+    touch-action: none;
   }
 
   .session-workspace.is-note-focused .session-note-popover {

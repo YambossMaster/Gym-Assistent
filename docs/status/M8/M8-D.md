@@ -62,13 +62,13 @@ The detailed behavior and migration contract live in
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                              | Remaining evidence                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed    | Continue monitoring future releases; no current release blocker |
-| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                        | Live redemption and real-Coach admission checks                 |
-| Mobile Training         | Follow-up correction reuses the existing mobile header and contains empty/boundary note drags; CI #126 deployed `3afb556` | Installed iOS/Android keyboard recheck                          |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests   | Authenticated/installed-phone rendering                         |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                 | Combined browser/product review                                 |
+| Area                    | Current fact                                                                                                                                            | Remaining evidence                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed                                  | Continue monitoring future releases; no current release blocker  |
+| Plan access             | Free-first tester/permanent/promotional policy deployed with Production migration `20261008063726`                                                      | Live redemption and real-Coach admission checks                  |
+| Mobile Training         | A local follow-up moves gesture containment from the note canvas to the complete focus surface and prevents caret placement from scrolling the document | Exact-SHA CI/deploy, then installed iOS/Android keyboard recheck |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests                                 | Authenticated/installed-phone rendering                          |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                                               | Combined browser/product review                                  |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -96,6 +96,8 @@ matching Demo route/components.
 
 ## Next handoff
 
-Recheck deployed `3afb556` on installed iOS/Android keyboards, then finish the remaining M8-D
-recovery, reviewer-control and admission gates before inviting real Coaches. Investigate legal
-migration provenance and arrange separately authorized old PAT revocation.
+Commit and deliver the preauthorized whole-surface Coach-note containment correction, verify its
+exact-SHA CI/deploy and public assets, then recheck installed iOS/Android keyboards. Afterward,
+finish the remaining M8-D recovery, reviewer-control and admission gates before inviting real
+Coaches. Investigate legal migration provenance and arrange separately authorized old PAT
+revocation.

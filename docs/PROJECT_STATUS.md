@@ -10,12 +10,12 @@
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                        |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                          |
-| Current gate                  | **Exact-SHA CI #126 and automatic Production deploy green; installed-device acceptance remains open**                                  |
+| Current gate                  | **Whole-surface Coach-note containment passes local preflight; preauthorized exact-SHA delivery is next**                              |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                               |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                               |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                  |
 | Release candidate             | `3afb5562ce82255239472a8a51ebef946435fc11` on Main; [CI #126](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37833191147) |
-| Worktree                      | Coach-note correction and deployment evidence committed; inspect `git status --short` for subsequent work                              |
+| Worktree                      | Local Coach-note follow-up contains every focus-surface drag and prevents document-level caret scrolling; delivery is pending          |
 | Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                  |
 | Production release            | [CI #126](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37833191147) automatically deployed Web correction `3afb556`     |
 | Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                |
@@ -64,10 +64,11 @@ startup context.
 
 ## Next handoff
 
-Recheck deployed `3afb556` on the installed iOS/Android keyboard path, then continue the remaining
-M8-D backup/isolated-restore, Production reviewer, legal-migration provenance
-and real-Coach admission gates. Ask separately before revoking the previous Production PAT; the
-verified replacement expires 2027-01-07.
+Commit and push the preauthorized whole-surface Coach-note correction, observe exact-SHA CI and
+automatic Production deployment, verify public readiness/assets, then recheck the installed
+iOS/Android keyboard path. Continue the remaining M8-D backup/isolated-restore, Production reviewer,
+legal-migration provenance and real-Coach admission gates afterward. Ask separately before revoking
+the previous Production PAT; the verified replacement expires 2027-01-07.
 
 ## Status system
 

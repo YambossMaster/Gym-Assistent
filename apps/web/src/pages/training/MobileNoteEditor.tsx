@@ -62,7 +62,7 @@ function caretOffset(block: HTMLElement): number {
 function focusAt(editor: HTMLElement, index: number, offset: number) {
   const block = noteNodes(editor)[index]
   if (!block) return
-  editor.focus()
+  editor.focus({ preventScroll: true })
   const range = document.createRange()
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
   let text = walker.nextNode()
@@ -77,7 +77,8 @@ function focusAt(editor: HTMLElement, index: number, offset: number) {
   const selection = window.getSelection()
   selection?.removeAllRanges()
   selection?.addRange(range)
-  block.scrollIntoView({ block: 'nearest' })
+  const canvas = editor.closest<HTMLElement>('.mobile-note-canvas')
+  if (canvas) keepNoteBlockVisible(canvas, block)
 }
 
 export function keepNoteBlockVisible(canvas: HTMLElement, block: HTMLElement) {
@@ -124,7 +125,6 @@ export function MobileNoteEditor({
   importItems: NoteImportItem[]
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null)
-  const canvasRef = useRef<HTMLDivElement | null>(null)
   const renderedValue = useRef<string | null>(null)
   const acceptedValue = useRef(value)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -166,40 +166,6 @@ export function MobileNoteEditor({
     acceptedValue.current = value
     renderBlocks(parseNote(value))
   }, [value])
-
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    let startX = 0
-    let startY = 0
-    const onTouchStart = (event: TouchEvent) => {
-      const touch = event.touches[0]
-      if (!touch) return
-      startX = touch.clientX
-      startY = touch.clientY
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      const touch = event.touches[0]
-      if (
-        !touch ||
-        !shouldContainNoteTouch({
-          clientHeight: canvas.clientHeight,
-          scrollHeight: canvas.scrollHeight,
-          scrollTop: canvas.scrollTop,
-          deltaX: touch.clientX - startX,
-          deltaY: touch.clientY - startY
-        })
-      )
-        return
-      event.preventDefault()
-    }
-    canvas.addEventListener('touchstart', onTouchStart, { passive: true })
-    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
-    return () => {
-      canvas.removeEventListener('touchstart', onTouchStart)
-      canvas.removeEventListener('touchmove', onTouchMove)
-    }
-  }, [])
 
   const saveBlocks = (blocks: NoteBlock[]) => {
     const next = serializeNote(blocks)
@@ -416,7 +382,6 @@ export function MobileNoteEditor({
   return (
     <>
       <div
-        ref={canvasRef}
         className="mobile-note-canvas"
         aria-label="教練筆記編輯器"
         onClick={(event) => {

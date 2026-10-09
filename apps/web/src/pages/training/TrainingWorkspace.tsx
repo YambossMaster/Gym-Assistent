@@ -11,7 +11,7 @@ import {
 } from './recording'
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
-import { MobileNoteEditor } from './MobileNoteEditor'
+import { MobileNoteEditor, shouldContainNoteTouch } from './MobileNoteEditor'
 import { getNoteFocusViewport, getNoteKeyboardInset } from './note-viewport'
 import { SetInputAdvanceDock } from './SetInputAdvanceDock'
 import { adoptTrainingDraft } from './conflict-recovery'
@@ -317,6 +317,7 @@ function TrainingEditor({
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const workspaceRef = useRef<HTMLElement | null>(null)
   const touchStartY = useRef<number | null>(null)
+  const noteTouch = useRef<{ x: number; y: number; canvas: HTMLElement | null } | null>(null)
   const keyboardFocused = activeSetInput !== null
   useEffect(() => {
     const root = document.documentElement
@@ -335,6 +336,39 @@ function TrainingEditor({
       root.style.setProperty('--session-note-viewport-height', `${geometry.height}px`)
     }
     alignFocusSurface()
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch) return
+      const target = event.target instanceof Element ? event.target : null
+      noteTouch.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        canvas: target?.closest<HTMLElement>('.mobile-note-canvas') ?? null
+      }
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      const origin = noteTouch.current
+      if (!touch || !origin) return
+      const canvas = origin.canvas
+      const shouldPrevent =
+        !canvas ||
+        shouldContainNoteTouch({
+          clientHeight: canvas.clientHeight,
+          scrollHeight: canvas.scrollHeight,
+          scrollTop: canvas.scrollTop,
+          deltaX: touch.clientX - origin.x,
+          deltaY: touch.clientY - origin.y
+        })
+      if (shouldPrevent) event.preventDefault()
+    }
+    const clearTouch = () => {
+      noteTouch.current = null
+    }
+    document.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
+    document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+    document.addEventListener('touchend', clearTouch, { capture: true })
+    document.addEventListener('touchcancel', clearTouch, { capture: true })
     viewport?.addEventListener('resize', alignFocusSurface)
     window.addEventListener('resize', alignFocusSurface)
     return () => {
@@ -342,6 +376,11 @@ function TrainingEditor({
       root.style.removeProperty('--session-note-viewport-height')
       viewport?.removeEventListener('resize', alignFocusSurface)
       window.removeEventListener('resize', alignFocusSurface)
+      document.removeEventListener('touchstart', onTouchStart, { capture: true })
+      document.removeEventListener('touchmove', onTouchMove, { capture: true })
+      document.removeEventListener('touchend', clearTouch, { capture: true })
+      document.removeEventListener('touchcancel', clearTouch, { capture: true })
+      noteTouch.current = null
     }
   }, [noteFocused])
   useEffect(() => {

@@ -93,6 +93,14 @@ function pointer(
   })
   target.dispatchEvent(event)
 }
+function touch(target: EventTarget, type: string, x: number, y: number) {
+  const event = new Event(type, { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'touches', {
+    value: type === 'touchend' ? [] : [{ clientX: x, clientY: y }]
+  })
+  target.dispatchEvent(event)
+  return event
+}
 async function frame() {
   await act(async () => {
     const batch = [...frames.values()]
@@ -282,6 +290,39 @@ it('keeps mobile note focus mode active through iOS blur until the Coach confirm
   expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(true)
   expect(document.documentElement.classList.contains('is-session-note-focused')).toBe(true)
   expect(document.querySelector('.session-note-focus-actions')).toBeNull()
+})
+
+it('contains drags that start on every non-scrollable part of note focus mode', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.focus())
+  const toolbar = host.querySelector<HTMLElement>('.session-note-tools')!
+  const header = document.createElement('header')
+  header.className = 'mobile-header'
+  document.body.prepend(header)
+
+  for (const surface of [toolbar, header]) {
+    touch(surface, 'touchstart', 180, 640)
+    const move = touch(surface, 'touchmove', 180, 500)
+    expect(move.defaultPrevented).toBe(true)
+  }
+})
+
+it('allows only real in-canvas note scrolling and contains its boundaries', async () => {
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.focus())
+  const canvas = host.querySelector<HTMLElement>('.mobile-note-canvas')!
+  Object.defineProperties(canvas, {
+    clientHeight: { configurable: true, value: 500 },
+    scrollHeight: { configurable: true, value: 900 }
+  })
+
+  canvas.scrollTop = 180
+  touch(canvas, 'touchstart', 180, 500)
+  expect(touch(canvas, 'touchmove', 180, 420).defaultPrevented).toBe(false)
+
+  canvas.scrollTop = 0
+  touch(canvas, 'touchstart', 180, 500)
+  expect(touch(canvas, 'touchmove', 180, 580).defaultPrevented).toBe(true)
 })
 
 it('shows the existing background-sync status if saving fails after focus mode closes', async () => {

@@ -82,6 +82,35 @@ describe('mobile note editor', () => {
     expect(canvas.scrollTop).toBe(92)
   })
 
+  it('never asks the browser to scroll the document when placing the note caret', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const scrollIntoView = vi.fn()
+    HTMLElement.prototype.scrollIntoView = scrollIntoView
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value=""
+          onChange={() => {}}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+        />
+      )
+    )
+
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    const focus = vi.spyOn(editor, 'focus')
+    await act(async () => host.querySelector<HTMLElement>('.mobile-note-canvas')!.click())
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
   it('offers one continuous editable surface for cross-paragraph selection', async () => {
     HTMLElement.prototype.scrollIntoView = vi.fn()
     const host = document.createElement('div')
