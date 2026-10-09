@@ -33,6 +33,8 @@ export function routePolicy(method: string, route: string | undefined): RoutePol
     route === '/v1/beta/redeem' ||
     route === '/v1/plan/subscription' ||
     route === '/v1/exports' ||
+    route === '/v1/finance-export' ||
+    route.startsWith('/v1/calendar-integration') ||
     route === '/v1/workspace-settings' ||
     route.startsWith('/v1/account') ||
     route === '/v1/today/notifications/read' ||

@@ -1,4 +1,8 @@
 import { FinanceModule } from '../finances/finance-module.js'
+import type { FinanceReportModule } from '../exports/finance-report.js'
+import type { PostgresCalendarIntegration } from '../calendar-integration/postgres-calendar.js'
+import { CalendarError } from '../calendar-integration/calendar.js'
+import { settingsDataRoutes } from '../exports/settings-data-routes.js'
 import { ExportError, ExportModule } from '../exports/export-module.js'
 import { csvFile, exportFilename, jsonFile } from '../exports/export-format.js'
 import { pdfFile } from '../exports/export-pdf.js'
@@ -68,6 +72,8 @@ export interface ServerDependencies {
   publicAccess?: PublicAccessModule
   finances?: FinanceModule
   exports?: ExportModule
+  financeReport?: FinanceReportModule
+  calendarIntegration?: Pick<PostgresCalendarIntegration, 'get' | 'change' | 'download' | 'feed'>
   demoImport?: DemoImportModule
   betaAdmission?: BetaAdmissionModule
   alphaAllowedCoachIds?: ReadonlySet<string>
@@ -212,6 +218,8 @@ export function buildServer({
   planAccess,
   finances,
   exports,
+  financeReport,
+  calendarIntegration,
   readiness,
   logger = false,
 }: ServerDependencies): FastifyInstance {
@@ -423,6 +431,8 @@ export function buildServer({
       })
   }
   server.setErrorHandler((error, _request, reply) => {
+    if (error instanceof CalendarError)
+      return reply.status(error.statusCode).send({ error: error.code })
     if (error instanceof ExportError)
       return reply.status(error.statusCode).send({ error: error.code })
     if (error instanceof PlanAccessError) return reply.status(403).send({ error: error.reason })
@@ -563,7 +573,9 @@ export function buildServer({
       const message = error instanceof Error ? error.message : 'Request validation failed'
       return reply.status(400).send({ error: 'invalid_request', message })
     }
-    server.log.error(error)
+    if (_request.routeOptions.url?.startsWith('/v1/public/calendar/'))
+      server.log.error({ code: 'calendar_feed_failed' })
+    else server.log.error(error)
     return reply.status(500).send({ error: 'internal_error', message: 'Unexpected server error' })
   })
 
@@ -627,7 +639,9 @@ export function buildServer({
       request.routeOptions.url?.startsWith('/v1/demo-imports') ||
       request.routeOptions.url?.startsWith('/v1/beta/') ||
       request.routeOptions.url?.startsWith('/v1/legal/') ||
-      request.routeOptions.url === '/v1/exports'
+      request.routeOptions.url === '/v1/exports' ||
+      request.routeOptions.url === '/v1/finance-export' ||
+      request.routeOptions.url?.startsWith('/v1/calendar-integration')
     ) {
       reply.header('Cache-Control', 'no-store, private')
       reply.header('Pragma', 'no-cache')
@@ -643,7 +657,22 @@ export function buildServer({
     async (request) => ({ exists: await registrationEmails.isRegistered(request.body.email) }),
   )
 
-  if (exports && planAccess) {
+  if (planAccess && (financeReport || calendarIntegration))
+    settingsDataRoutes(server, {
+      identityVerifier,
+      planAccess,
+      ...(financeReport ? { financeReport } : {}),
+      ...(calendarIntegration ? { calendarIntegration } : {}),
+    })
+
+  if (financeReport && calendarIntegration) {
+    server.post('/v1/exports', async (request, reply) => {
+      await identityVerifier.verify(request.headers.authorization)
+      return reply
+        .status(410)
+        .send({ error: 'export_replaced', message: '請重新整理，使用設定中的收支匯出或日曆整合。' })
+    })
+  } else if (exports && planAccess) {
     server.post<{ Body: unknown }>('/v1/exports', async (request, reply) => {
       const identity = await identityVerifier.verify(request.headers.authorization)
       if ((await planAccess.get(identity)).tier !== 'advanced')

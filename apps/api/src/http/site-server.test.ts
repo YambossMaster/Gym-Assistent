@@ -17,7 +17,7 @@ afterEach(async () => {
   )
 })
 
-async function fixture() {
+async function fixture(onSlowRequest?: (response: import('node:http').ServerResponse) => void) {
   const root = await mkdtemp(join(tmpdir(), 'gym-site-'))
   directories.push(root)
   await mkdir(join(root, 'assets'))
@@ -25,6 +25,7 @@ async function fixture() {
   await writeFile(join(root, 'sw.js'), 'worker')
   await writeFile(join(root, 'assets', 'main-12345678.js'), 'asset')
   const api = createServer(async (request, response) => {
+    if (request.url === '/v1/slow' && onSlowRequest) return onSlowRequest(response)
     response.setHeader('Content-Type', 'application/json')
     if (request.url === '/health') return response.end('{"status":"ok"}')
     if (request.url === '/v1/public/training-result') {
@@ -55,6 +56,28 @@ async function fixture() {
 }
 
 describe('same-origin site server', () => {
+  it('propagates client cancellation to an unfinished upstream response', async () => {
+    let started!: () => void
+    let closed!: () => void
+    const received = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    const disconnected = new Promise<void>((resolve) => {
+      closed = resolve
+    })
+    const origin = await fixture((response) => {
+      response.once('close', closed)
+      started()
+    })
+    const controller = new AbortController()
+    const response = fetch(origin + '/api/v1/slow', { signal: controller.signal })
+    const rejected = expect(response).rejects.toMatchObject({ name: 'AbortError' })
+    await received
+    controller.abort()
+    await rejected
+    await disconnected
+  })
+
   it('keeps API JSON responses and writes under /api without caching', async () => {
     const origin = await fixture()
     const health = await fetch(origin + '/api/health')

@@ -32,6 +32,8 @@ import { SupabaseVerifiedCoachEmail } from './beta-admission/supabase-verified-c
 import { PlanAccessModule } from './plan-access/plan-access.js'
 import { PostgresPlanAccessRepository } from './plan-access/postgres-plan-access-repository.js'
 import { ExportModule } from './exports/export-module.js'
+import { FinanceReportModule } from './exports/finance-report.js'
+import { PostgresCalendarIntegration } from './calendar-integration/postgres-calendar.js'
 import { LegalAcceptanceModule } from './legal-acceptance/legal-acceptance.js'
 import { PostgresLegalAcceptanceRepository } from './legal-acceptance/postgres-legal-acceptance-repository.js'
 
@@ -53,6 +55,15 @@ const identityVerifier = new OidcIdentityVerifier({
   jwksUrl: `${supabaseIssuer}/.well-known/jwks.json`,
 })
 const server = buildServer({
+  financeReport: new FinanceReportModule(
+    new FinanceModule(repository, new PostgresFinanceRepository(pool)),
+    new WorkspaceModule({ repository }),
+  ),
+  calendarIntegration: new PostgresCalendarIntegration(
+    pool,
+    (identity) => repository.resolveWorkspace(identity),
+    new PlanAccessModule(new PostgresPlanAccessRepository(pool)),
+  ),
   finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
   identityVerifier,
   students: new StudentModule({ repository }),

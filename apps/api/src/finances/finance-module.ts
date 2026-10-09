@@ -2,6 +2,7 @@ import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { StudentRepository } from '../students/student-repository.js'
 import { localMonthPeriod } from '../today/today.js'
 import {
+  applicableRule,
   deriveFinance,
   FinanceError,
   financeLedger,
@@ -14,6 +15,7 @@ import {
 
 export interface FinanceRepository {
   snapshot(workspaceId: string): Promise<FinanceSnapshot>
+  exportSnapshot?(workspaceId: string): Promise<FinanceSnapshot>
   command(
     workspaceId: string,
     operation: string,
@@ -28,6 +30,38 @@ export class FinanceModule {
     private readonly repository: FinanceRepository,
     private readonly now: () => Date = () => new Date(),
   ) {}
+  async reportSource(identity: AuthenticatedIdentity) {
+    const snapshot = await this.reportSnapshot(identity)
+    const today = localMonthPeriod(this.now(), snapshot.timeZone).date
+    const derived = deriveFinance(snapshot, today)
+    const sessions = new Map(snapshot.sessions.map((s) => [s.id, s]))
+    return {
+      rows: financeLedger(snapshot, today).rows,
+      timeZone: snapshot.timeZone,
+      venues: snapshot.venues.map(({ id, name }) => ({ id, name })),
+      manualNotes: new Map(
+        (snapshot.manualEntries ?? []).map((e) => [`manual:${e.id}`, e.privateNote]),
+      ),
+      missing: derived.missing.map((m) => ({
+        date: m.date,
+        venueId: sessions.get(m.sessionId)?.venueId ?? null,
+        reason: m.reason,
+      })),
+      untracked: snapshot.sessions
+        .filter(
+          (s) =>
+            s.status === 'completed' &&
+            (!s.venueId ||
+              applicableRule(snapshot.rules, s.venueId, s.endsAt ?? s.startsAt ?? s.date ?? '')
+                ?.kind === 'untracked'),
+        )
+        .map((s) => ({ date: s.date, venueId: s.venueId })),
+    }
+  }
+  async reportSnapshot(identity: AuthenticatedIdentity) {
+    const id = await this.workspace.resolveWorkspace(identity)
+    return this.repository.exportSnapshot?.(id) ?? this.repository.snapshot(id)
+  }
   async exportVisibleRows(identity: AuthenticatedIdentity) {
     const snapshot = await this.repository.snapshot(await this.workspace.resolveWorkspace(identity))
     const today = localMonthPeriod(this.now(), snapshot.timeZone).date

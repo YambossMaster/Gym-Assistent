@@ -29,6 +29,12 @@ async function handleApi(
   api: URL,
   path: string,
 ) {
+  const controller = new AbortController()
+  const disconnected = () => {
+    if (!response.writableFinished) controller.abort()
+  }
+  request.once('aborted', disconnected)
+  response.once('close', disconnected)
   try {
     const target = new URL(api)
     target.pathname = path.slice(4) || '/'
@@ -51,6 +57,7 @@ async function handleApi(
           : (request as unknown as BodyInit),
       duplex: 'half',
       redirect: 'manual',
+      signal: controller.signal,
     } as RequestInit & { duplex: 'half' })
     const headers: Record<string, string> = { 'cache-control': 'no-store' }
     for (const [name, value] of upstream.headers) {
@@ -61,12 +68,16 @@ async function handleApi(
     if (path.startsWith('/api/v1/public/')) headers['referrer-policy'] = 'no-referrer'
     send(response, upstream.status, headers, Buffer.from(await upstream.arrayBuffer()))
   } catch {
+    if (controller.signal.aborted || response.destroyed) return
     send(
       response,
       502,
       { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       JSON.stringify({ error: 'api_unavailable' }),
     )
+  } finally {
+    request.removeListener('aborted', disconnected)
+    response.removeListener('close', disconnected)
   }
 }
 

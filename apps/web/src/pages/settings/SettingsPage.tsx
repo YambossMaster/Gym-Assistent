@@ -38,7 +38,8 @@ import { supabase } from '../../supabase'
 import { useSettingsRouteMutations, useSettingsRouteQueries } from './queries'
 import { selectSettingsPanelState, type SettingsPanelState } from './state'
 import { useTrainingMutations, useTrainingPreference } from '../training/queries'
-import { ExportPanel } from './ExportPanel'
+import { FinanceExportPanel as ExportPanel } from './FinanceExportPanel'
+import { CalendarIntegrationPanel } from './CalendarIntegrationPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
@@ -378,7 +379,7 @@ const settingsCategories = [
     id: 'data',
     label: '資料與裝置',
     icon: Database,
-    description: '匯出工作台資料並管理此裝置的暫存。'
+    description: '匯出收支、設定日曆整合與管理裝置暫存。'
   },
   {
     id: 'feedback',
@@ -668,6 +669,16 @@ export function SettingsPage({ session }: { session: Session }) {
           {category === 'data' && (
             <>
               <ExportPanel
+                session={session}
+                plan={planQuery.data}
+                timeZone={settingsQuery.data?.timeZone}
+                loadingError={planQuery.isError || settingsQuery.isError}
+                onRetryLoading={() => {
+                  void planQuery.refetch()
+                  void settingsQuery.refetch()
+                }}
+              />
+              <CalendarIntegrationPanel
                 session={session}
                 plan={planQuery.data}
                 timeZone={settingsQuery.data?.timeZone}

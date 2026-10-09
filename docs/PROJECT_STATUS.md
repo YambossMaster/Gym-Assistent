@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-09. This is the always-read current-state dashboard. Approved scope and
+> Last verified: 2026-10-10. This is the always-read current-state dashboard. Approved scope and
 > gates live in [`ROADMAP.md`](ROADMAP.md); package detail and history are loaded only through the
 > pointers below.
 
@@ -10,15 +10,15 @@
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                   |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                     |
-| Current gate                  | **Note correction deployed after credential repair; installed-PWA review remains open**                                                           |
+| Current gate                  | **Settings data correction: background execution implemented; authorized verification and release in progress**                                   |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                          |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                          |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                             |
 | Release candidate             | `c5db63f3b315aa84ca606aafd3269d7ed112e531`; [CI #133 attempt 2](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37949502049) deployed |
-| Worktree                      | Correction committed; 66 related tests, browser matrix and full API 183 / Web 334 tests pass                                                      |
+| Worktree                      | Finance/calendar correction ready for authorized push; Web 342 pass, API 200 pass plus isolated PDF rerun 5/5; builds/typechecks pass             |
 | Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                             |
 | Production release            | CI #133 attempt 2 deployed `c5db63f`; public readiness and new JS/CSS marker checks passed                                                        |
-| Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                           |
+| Pending Production migrations | New local calendar migration `20261009171747`, not previewed or applied; remote pending list not refreshed                                        |
 
 ## Required context
 
@@ -78,10 +78,14 @@ startup context.
 
 ## Next handoff
 
-Recheck first-tap keyboard entry, reading gestures and lower-paragraph
-focus on the installed PWA. Continue the remaining M8-D backup/isolated-restore, Production reviewer,
-legal-migration provenance and real-Coach admission gates afterward. Ask separately before revoking
-the previous Production PAT; the verified replacement expires 2027-01-07.
+Complete checks, commit/push Main, confirm exact-SHA CI, then deploy under the PO's explicit
+authorization. Worker/streaming correction reduced the 20,000-row main-thread delay from 13,741
+to 94 ms and peak RSS from 514 to 203 MiB in the local compiled-JS probe. Background status and
+duplicate safeguards are implemented; synthetic desktop/mobile Chrome reached file-ready state.
+See [engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for evidence and limitations.
+Production calendar migration still needs exact preview and literal APPLY. External Apple/Google
+acceptance needs reachable HTTPS; installed-PWA testing will be performed by the PO after deploy.
+The prior M8-D admission/recovery/provenance/device gates and old-PAT authorization remain separate.
 
 ## Status system
 

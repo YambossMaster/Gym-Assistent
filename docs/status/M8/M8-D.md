@@ -1,6 +1,6 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-09. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-10. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
@@ -35,6 +35,49 @@ The detailed behavior and migration contract live in
 `supabase/migrations/20261008063726_m8d_beta_plan_access_policy.sql`.
 
 ## Current repository and environment state
+
+- On 2026-10-10 the Product Owner reported the first Alpha PWA test round finished and requested
+  export redesign discussion, then approved local implementation of the two Settings specifications.
+  This is not blanket acceptance of the remaining admission gates. The follow-up explicitly
+  authorizes commit, push Main, CI and deployment after checks; Production APPLY stays separate.
+- The explicitly authorized owner-account Prime grant was applied to Production Workspace
+  `0c541f3a-257f-49f6-8318-49611435bfe9`. A read-back confirmed `permanent`, no expiry and effective
+  `advanced`; operator event `44c82ae1-aa27-4b9c-9a22-57c707ffa242` records the request. No code was
+  consumed, payment created or subscription changed. Authenticated PWA display was not checked.
+
+- The Product Owner narrowed the next design to finance exports and calendar integration, both
+  under Settings as separate features, and deferred training/performance export options. Existing
+  click-triggered Prime Upsell remains for Free/Pro; do not add entrances or banners to their daily
+  Finance/Calendar paths. Review drafts: [finance](../../FINANCE-EXPORT-DRAFT.md) and
+  [calendar](../../CALENDAR-INTEGRATION-DRAFT.md). On 2026-10-10 the PO approved both specifications
+  with Coach-prefixed filenames and arbitrary historical ranges (up to 366 inclusive days).
+  The Roadmap records this follow-on correction without reopening the M8-B-Export baseline.
+
+- Settings-data Contract is frozen in those specifications and
+  [engineering contract](../../SETTINGS-DATA-IMPLEMENTATION.md). Local Sol includes two separate
+  panels, XLSX/CSV exports, ICS downloads, hashed-token subscriptions and minimal cancellation
+  history. Legacy API returns 410 when both replacements are installed. No underlying records
+  are deleted. The draft TWD cents example was corrected against existing whole-dollar storage.
+- Focused API 7 files / 37 tests and Web 2 files / 5 tests pass; both typechecks pass. Offline sample
+  generator produces revised files in ignored `output/settings-data-review-v2/`. Native Excel
+  read-only rendering and visual inspection now pass; the summary puts totals before compact notes.
+- Development preview and apply completed for calendar migration `20261009171747` and its two
+  reviewed baseline dependencies. Actual runtime-role rollback-only RLS test passes 9 assertions;
+  no fixture rows remain. Production was not changed. Full and production-only dependency audits
+  report 0 findings; actual ExcelJS resolves patched uuid 11.1.1 and focused tests pass afterward.
+- The initial serializer blocker is corrected with an isolated, terminable Worker and streaming
+  XLSX rows. Compiled-JS 20,000-row rerun: 14,216 ms / peak 203 MiB / max main-loop delay 94 ms
+  (formerly 20,919 ms / 514 MiB / 13,741 ms). This is local serializer, not production-host/DB load.
+  Background status survives route changes; duplicate guarding, cancellation, elapsed time,
+  ready/save action and five-minute in-memory expiry are implemented. No fake ETA or closed-App
+  continuation promise. Desktop/390x844 synthetic Chrome flow passed through file-ready state;
+  the connector disconnected during download-event observation, so device saving is unverified.
+  External Apple/Google, upstream token-log review and installed-PWA acceptance remain separate.
+- Release preflight: API full run 200 passed / one existing PDF timeout; isolated unchanged format
+  rerun 5/5 passed. Web 77 files / 342 tests, both typechecks and production builds pass. Real
+  development calendar adapter lifecycle passes under rollback-only savepoints; independent readback
+  confirms no fixtures remain. Latest streaming workbook passed native Excel/PDF visual recheck.
+  Exact-SHA remote CI remains mandatory; this is not a claim that the initial full run was green.
 
 - Latest deployed correction: `c5db63f3b315aa84ca606aafd3269d7ed112e531`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
@@ -123,7 +166,11 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 ## Next handoff
 
-Recheck installed iOS/Android short-tap keyboard entry, reading
-scroll/long press, lower-paragraph focus and header/toolbar drags. Afterward, finish the remaining
-M8-D recovery, reviewer-control and admission gates before inviting real Coaches. Investigate legal
-migration provenance and arrange separately authorized old PAT revocation.
+Finish authorized verification, then commit/push Main and confirm exact-SHA CI. Worker isolation,
+streaming, background UI and focused abort/duplicate checks are implemented. Dependency audit and
+development RLS checks are complete. Preview the pending Production calendar migration and obtain
+literal APPLY before the same-SHA migration/deployment workflow. External calendar acceptance needs
+reachable HTTPS; the PO will perform installed-PWA testing after deployment.
+The prior installed-device detail, recovery, reviewer-control, legal-migration provenance and
+real-Coach admission gates remain open; the completed first Alpha round is not blanket evidence
+for those gates. Old PAT revocation remains separately authorized work.

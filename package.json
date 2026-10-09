@@ -23,6 +23,9 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
+  "overrides": {
+    "uuid": "11.1.1"
+  },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "prettier": "3.6.2",

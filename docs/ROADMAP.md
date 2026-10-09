@@ -815,6 +815,15 @@ cost and database-size dashboards and resolve release-blocking defects. A Beta i
 completion by itself. Prove one isolated restore before admission and confirm the latest recoverable
 point is no older than 48 hours; the first offer expiry sets the M8-E deadline.
 
+**Approved M8-D follow-on correction — 2026-10-10:** before moving to paid-checkout work, implement
+the separately reviewed Settings finance export and calendar integration described in
+`FINANCE-EXPORT-DRAFT.md`, `CALENDAR-INTEGRATION-DRAFT.md` and `SETTINGS-DATA-IMPLEMENTATION.md`.
+The Product Owner approved local implementation, Coach-prefixed report filenames and arbitrary
+historical intervals up to 366 days. Preserve M8-B-Export as a delivered baseline; replace its
+consumer entry with two independent Settings-only functions and retain click-triggered Prime Upsell.
+Training/performance export choices are deferred. Contract → Sol → CI, existing admission gates
+and separate Production/remote delivery authorization remain required.
+
 #### M8-E — Paid checkout before first offer expiry
 
 **Contract gate:** freeze the named payment provider, merchant prerequisites, Basic/Advanced

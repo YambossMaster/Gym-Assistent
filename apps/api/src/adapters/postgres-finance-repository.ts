@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { ExportError } from '../exports/export-module.js'
 import type { Pool, PoolClient } from 'pg'
 import { z } from 'zod'
 import {
@@ -63,6 +64,36 @@ export class PostgresFinanceRepository implements FinanceRepository {
   }
   async snapshot(workspaceId: string) {
     return this.scoped(workspaceId, (c) => this.load(c, workspaceId))
+  }
+  async exportSnapshot(workspaceId: string) {
+    return this.scoped(workspaceId, async (c) => {
+      await c.query("set local statement_timeout = '25000ms'")
+      // Keep all historical dependencies for allocation/corrections, but reject oversized sources
+      // before loading them. Table identifiers below are fixed application constants.
+      let total = 0
+      for (const table of [
+        'venue',
+        'venue_fee_rule',
+        'lesson_purchase',
+        'course_session',
+        'venue_credit_purchase',
+        'venue_payout',
+        'schedule_series',
+        'venue_salary_rule',
+        'venue_coach_supplied_student',
+        'venue_session_adjustment',
+        'finance_entry_state',
+        'finance_manual_entry',
+      ]) {
+        const result = await c.query(
+          `select count(*)::int n from (select 1 from app_private.${table} where workspace_id=$1 limit 50001) bounded`,
+          [workspaceId],
+        )
+        total += result.rows[0].n
+        if (total > 50000) throw new ExportError(413, 'export_source_limit')
+      }
+      return this.load(c, workspaceId)
+    })
   }
   private async load(c: PoolClient, w: string): Promise<FinanceSnapshot> {
     const timeZone = (await c.query('select time_zone from app_private.workspace where id=$1', [w]))

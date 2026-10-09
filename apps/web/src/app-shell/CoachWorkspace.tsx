@@ -20,6 +20,7 @@ import { Brand } from '../shared/primitives'
 import { MobileSettingsLink } from '../shared/MobilePageAppBar'
 import { resolveCoachIdentity } from './coach-identity'
 import { ResilienceStatus } from './ResilienceStatus'
+import { ExportDownloads } from '../pages/settings/ExportDownloads'
 import { prefetchPrimaryCoachRoutes } from '../route-prefetch'
 import {
   createMobileChromeScrollState,
@@ -36,6 +37,13 @@ const navigation = [
 ]
 
 export function CoachWorkspace({ session }: { session: Session }) {
+  return (
+    <ExportDownloads key={session.user.id} session={session}>
+      <CoachWorkspaceContent session={session} />
+    </ExportDownloads>
+  )
+}
+function CoachWorkspaceContent({ session }: { session: Session }) {
   const location = useLocation()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLElement>(null)

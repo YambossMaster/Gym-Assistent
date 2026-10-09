@@ -93,6 +93,18 @@ export function PlanUpsellDialog({
 
 function featurePresentation(title: string) {
   switch (title) {
+    case '匯出收支明細':
+      return {
+        description: '將指定期間的收支整理成 Excel 或 CSV，方便記帳、分析與交給會計。',
+        previewLabel: '收支報表',
+        Icon: FileDown
+      }
+    case '日曆整合':
+      return {
+        description: '在慣用日曆查看課程與行程，或下載 ICS 行程檔。',
+        previewLabel: '日曆整合',
+        Icon: FileDown
+      }
     case '匯出資料':
       return {
         description: 'Prime 方案可選擇訓練、成長、行事曆或收支資料，下載 CSV、JSON 或 PDF。',
