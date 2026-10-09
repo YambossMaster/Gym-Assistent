@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                          |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                        |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                          |
-| Current gate                  | **Completed-tap note entry and viewport alignment pass local checks; authorized delivery is next**                                     |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                               |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                               |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                  |
-| Release candidate             | `cd34fccd9c041fa0363a02b6d9966352cd4742f3` on Main; [CI #130](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37895583759) |
-| Worktree                      | Local note correction passes 66 related tests and a desktop/mobile browser gesture and viewport matrix                                 |
-| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                  |
-| Production release            | [CI #130](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37895583759) automatically deployed Web correction `cd34fcc`     |
-| Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                |
+| Field                         | Current value                                                                                                                                        |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
+| Current gate                  | **Note correction passes full verify; deployment held by rejected development Supabase token**                                                       |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                |
+| Release candidate             | `c5db63f3b315aa84ca606aafd3269d7ed112e531` on Main; [CI #133](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37949502049); not deployed |
+| Worktree                      | Correction committed; 66 related tests, browser matrix and full API 183 / Web 334 tests pass                                                         |
+| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                                |
+| Production release            | [CI #130](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37895583759) automatically deployed Web correction `cd34fcc`                   |
+| Pending Production migrations | None from this exact release; legal acceptance was already absent from the pending list                                                              |
 
 ## Required context
 
@@ -37,6 +37,10 @@ startup context.
 
 ## Blocking conditions and open gates
 
+- CI #132 and #133 development migration linking both failed with `Invalid access token`.
+  CI #133 verify/build, browser UI and Production preview passed, but deployment was skipped.
+  Replacing GitHub's development `SUPABASE_ACCESS_TOKEN` requires separate authorization;
+  Production remains on `cd34fcc`. Do not bypass the required development migration gate.
 - A new 90-day, Production-project-scoped Supabase PAT with Project Settings, API Keys, API Key
   Secrets and Connection Pooling Read permissions replaced only GitHub's
   `SUPABASE_PRODUCTION_ACCESS_TOKEN`. The previous PAT has not been revoked.
@@ -64,14 +68,15 @@ startup context.
   showed premature entry, missing immediate keyboard focus and lower-caret viewport drift. The local
   replacement keeps notes read-only until a completed short tap, commits editing and focus within
   that click, compensates Visual Viewport position as well as height, and uses one flex layout for
-  header/canvas/dock. Related tests and the synthetic browser matrix pass; device recheck stays open.
+  header/canvas/dock. Related tests, the synthetic browser matrix and CI #133 full verify pass;
+  delivery is held by the development credential failure and device recheck stays open.
 - Real-Coach admission, backup/restore evidence and required Production reviewer controls remain
   governed by the M8-D Contract and Roadmap gate.
 
 ## Next handoff
 
-Deliver the preauthorized completed-tap/viewport correction through exact-SHA CI and Production,
-verify readiness/assets, then recheck first-tap keyboard entry, reading gestures and lower-paragraph
+Obtain authorization to replace the rejected development access token, then rerun exact-SHA CI #133
+and deploy the preauthorized correction. Verify readiness/assets, then recheck first-tap keyboard entry, reading gestures and lower-paragraph
 focus on the installed PWA. Continue the remaining M8-D backup/isolated-restore, Production reviewer,
 legal-migration provenance and real-Coach admission gates afterward. Ask separately before revoking
 the previous Production PAT; the verified replacement expires 2027-01-07.
