@@ -129,6 +129,14 @@ jobs:
           tar -C "$RUNNER_TEMP/restore-input" -xzf "$RUNNER_TEMP/restore-input.tar.gz"
           cd "$RUNNER_TEMP/restore-input"
           sha256sum --check SHA256SUMS
+          # The managed source can dump a superuser-only logging override that
+          # the local CLI postgres role cannot apply. Omit only that setting
+          # from the disposable restore copy, after verifying the source hash.
+          logging_overrides="$(grep -Eic '^ALTER ROLE .* SET "?log_min_messages"? (TO|=) ' roles.sql || true)"
+          test "$logging_overrides" -ge 1
+          sed -E '/^ALTER ROLE .* SET "?log_min_messages"? (TO|=) /Id' \
+            roles.sql > restore-roles.sql
+          echo "Omitted $logging_overrides managed logging override(s) from local restore roles."
           cp "$GITHUB_WORKSPACE/supabase/config.toml" \
             "$RUNNER_TEMP/restore-project/supabase/config.toml"
           sed -i 's/^project_id = .*/project_id = "m8d_restore_probe"/' \
@@ -158,7 +166,7 @@ jobs:
           docker cp "$RUNNER_TEMP/restore-input/." "$container:/tmp/m8d-backup/"
           docker exec "$container" psql -U postgres -d postgres --single-transaction \
             --variable ON_ERROR_STOP=1 \
-            --file /tmp/m8d-backup/roles.sql \
+            --file /tmp/m8d-backup/restore-roles.sql \
             --file /tmp/m8d-backup/schema.sql \
             --command 'SET session_replication_role = replica' \
             --file /tmp/m8d-backup/data.sql
