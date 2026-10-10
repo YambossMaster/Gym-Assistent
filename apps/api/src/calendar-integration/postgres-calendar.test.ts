@@ -72,6 +72,20 @@ function fixture(prime = true) {
     },
   }
 }
+function fixtureWithoutSubscriptionSecret() {
+  const f = fixture()
+  return {
+    ...f,
+    configuredModule: f.module,
+    module: new PostgresCalendarIntegration(
+      { connect: async () => f.client } as unknown as Pool,
+      f.resolve,
+      f.plans,
+      undefined,
+      () => new Date('2026-10-10T00:00:00Z'),
+    ),
+  }
+}
 it('stores only the token hash and salt, recovers the stable URL for its owner and checks versions', async () => {
   const f = fixture(),
     identity = { userId: 'owner' }
@@ -98,6 +112,23 @@ it('stores only the token hash and salt, recovers the stable URL for its owner a
   await expect(
     f.module.change(identity, { action: 'reset', version: 0, sharing: defaultSharing }),
   ).rejects.toMatchObject({ code: 'version_conflict' })
+  expect(f.calls.at(-1)?.sql).toBe('rollback')
+})
+it('keeps the API available and fails closed when token creation is not configured', async () => {
+  const f = fixtureWithoutSubscriptionSecret()
+  const created = await f.configuredModule.change(
+    { userId: 'owner' },
+    { action: 'create', version: 0, sharing: defaultSharing },
+  )
+  expect(await f.module.get({ userId: 'owner' })).toEqual({
+    ...defaultSharing,
+    version: 1,
+    active: true,
+  })
+  expect((await f.module.feed(created.token!)).toString()).toContain('BEGIN:VCALENDAR')
+  await expect(
+    f.module.change({ userId: 'owner' }, { action: 'reset', version: 1, sharing: defaultSharing }),
+  ).rejects.toMatchObject({ statusCode: 503, code: 'calendar_subscription_unavailable' })
   expect(f.calls.at(-1)?.sql).toBe('rollback')
 })
 it('rejects downgraded creates, still allows disable, and never leaks a revoked token', async () => {

@@ -64,17 +64,19 @@ export class PostgresCalendarIntegration {
     private readonly pool: Pool,
     private readonly resolve: (identity: AuthenticatedIdentity) => Promise<string>,
     private readonly plans: PlanAccessModule,
-    private readonly subscriptionSecret: string,
+    private readonly subscriptionSecret?: string,
     private readonly now = () => new Date(),
   ) {}
   private token(workspaceId: string, salt: string) {
+    if (!this.subscriptionSecret) throw new CalendarError(503, 'calendar_subscription_unavailable')
     return createHmac('sha256', this.subscriptionSecret)
       .update(`${workspaceId}:${salt}`)
       .digest('base64url')
   }
   private result(workspaceId: string, row?: StateRow): CalendarState & { token?: string } {
     const result = state(row)
-    if (!result.active || !row?.token_salt || !row.token_hash) return result
+    if (!result.active || !row?.token_salt || !row.token_hash || !this.subscriptionSecret)
+      return result
     const token = this.token(workspaceId, row.token_salt)
     return tokenHash(token) === row.token_hash ? { ...result, token } : result
   }

@@ -37,7 +37,7 @@ export const eventUid = (kind: string, id: string) =>
   `${tokenHash(`${kind}:${id}`)}@formcoachdesk.com`
 export class CalendarError extends Error {
   constructor(
-    readonly statusCode: 404 | 409 | 413 | 429,
+    readonly statusCode: 404 | 409 | 413 | 429 | 503,
     readonly code: string,
   ) {
     super(code)

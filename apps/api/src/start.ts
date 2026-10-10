@@ -45,14 +45,8 @@ const pool = new Pool({
   connectionTimeoutMillis: 10_000,
 })
 const repository = new PostgresStudentRepository(pool)
-if (
-  !config.SUPABASE_SECRET_KEY ||
-  !config.BETA_ADMISSION_SECRET ||
-  !config.CALENDAR_SUBSCRIPTION_SECRET
-) {
-  throw new Error(
-    'M8-D requires SUPABASE_SECRET_KEY, BETA_ADMISSION_SECRET and CALENDAR_SUBSCRIPTION_SECRET',
-  )
+if (!config.SUPABASE_SECRET_KEY || !config.BETA_ADMISSION_SECRET) {
+  throw new Error('M8-D requires SUPABASE_SECRET_KEY and BETA_ADMISSION_SECRET')
 }
 const supabaseIssuer = `${config.SUPABASE_URL.replace(/\/$/, '')}/auth/v1`
 const identityVerifier = new OidcIdentityVerifier({
