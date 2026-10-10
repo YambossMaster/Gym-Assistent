@@ -1,10 +1,6 @@
 name: Production logical backup
 
 on:
-  # Remove this one-off branch trigger after the M8-D restore drill, before merging.
-  push:
-    branches:
-      - codex/m8d-backup-drill
   schedule:
     - cron: '17 2 * * *'
   workflow_dispatch:
