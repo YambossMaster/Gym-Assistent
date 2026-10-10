@@ -1,189 +1,62 @@
-name: Production logical backup
+name: M8-D restore SQL diagnostic
 
 on:
-  schedule:
-    - cron: '17 2 * * *'
-  workflow_dispatch:
+  push:
+    branches:
+      - codex/m8d-backup-drill
 
 permissions:
   contents: read
   actions: read
 
 jobs:
-  dump:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     environment: production
-    concurrency:
-      group: production-logical-backup
-      cancel-in-progress: false
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PRODUCTION_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PRODUCTION_PROJECT_ID }}
       BACKUP_PASSPHRASE: ${{ secrets.PRODUCTION_BACKUP_PASSPHRASE }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Require backup credentials
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$SUPABASE_ACCESS_TOKEN"
-          test -n "$SUPABASE_DB_PASSWORD"
-          test "$SUPABASE_PROJECT_ID" = 'febunjhpruqlywjfvuaq'
-          test "${#BACKUP_PASSPHRASE}" -ge 32
-
-      - name: Resolve Production IPv4 session pooler
-        env:
-          SUPABASE_POOLER_CACHE_ROOT: ${{ runner.temp }}
-        run: node scripts/cache-supabase-pooler.mjs
-
-      - name: Install locked CLI
-        run: npm ci
-
-      - name: Link Production project
-        run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
-
-      - name: Restore verified pooler endpoint
-        run: cp "$RUNNER_TEMP/supabase/.temp/pooler-url" supabase/.temp/pooler-url
-
-      - name: Dump roles, schema, data and migration history
-        shell: bash
-        run: |
-          set -euo pipefail
-          umask 077
-          mkdir -p "$RUNNER_TEMP/logical-backup"
-          npx supabase db dump --linked --role-only -f "$RUNNER_TEMP/logical-backup/roles.sql"
-          npx supabase db dump --linked -f "$RUNNER_TEMP/logical-backup/schema.sql"
-          npx supabase db dump --linked --data-only --use-copy \
-            -x storage.buckets_vectors -x storage.vector_indexes \
-            -f "$RUNNER_TEMP/logical-backup/data.sql"
-          npx supabase db dump --linked --schema supabase_migrations \
-            -f "$RUNNER_TEMP/logical-backup/history_schema.sql"
-          npx supabase db dump --linked --data-only --use-copy --schema supabase_migrations \
-            -f "$RUNNER_TEMP/logical-backup/history_data.sql"
-          cd "$RUNNER_TEMP/logical-backup"
-          for file in roles.sql schema.sql data.sql history_schema.sql history_data.sql; do
-            test -s "$file"
-          done
-          grep -Eq '^(COPY|INSERT INTO) ("?auth"?\.)"?users"?' data.sql
-          date -u +'%Y-%m-%dT%H:%M:%SZ' > created-at-utc.txt
-          printf '%s\n' "$GITHUB_SHA" > source-commit.txt
-          sha256sum *.sql > SHA256SUMS
-
-      - name: Encrypt backup before artifact upload
-        shell: bash
-        run: |
-          set -euo pipefail
-          umask 077
-          printf '%s' "$BACKUP_PASSPHRASE" > "$RUNNER_TEMP/backup.pass"
-          tar -C "$RUNNER_TEMP/logical-backup" -czf "$RUNNER_TEMP/backup.tar.gz" .
-          gpg --batch --yes --pinentry-mode loopback \
-            --passphrase-file "$RUNNER_TEMP/backup.pass" --cipher-algo AES256 \
-            --symmetric --output "$RUNNER_TEMP/production-backup.tar.gz.gpg" \
-            "$RUNNER_TEMP/backup.tar.gz"
-          gpg --batch --yes --pinentry-mode loopback \
-            --passphrase-file "$RUNNER_TEMP/backup.pass" --decrypt \
-            "$RUNNER_TEMP/production-backup.tar.gz.gpg" >/dev/null
-          sha256sum "$RUNNER_TEMP/production-backup.tar.gz.gpg"
-
-      - name: Upload encrypted seven-day recovery artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-logical-backup-${{ github.run_id }}
-          path: ${{ runner.temp }}/production-backup.tar.gz.gpg
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Download the uploaded artifact for the manual restore drill
-        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/codex/m8d-backup-drill'
+      - name: Download existing encrypted backup
         uses: actions/download-artifact@v4
         with:
-          name: production-logical-backup-${{ github.run_id }}
-          path: ${{ runner.temp }}/downloaded-backup
+          run-id: 38077537552
+          github-token: ${{ github.token }}
+          name: production-logical-backup-38077537552
+          path: ${{ runner.temp }}/m8d-existing-backup
 
-      - name: Restore the downloaded backup in a network-isolated database
-        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/codex/m8d-backup-drill'
+      - name: Inspect redacted role SQL structure
         shell: bash
         run: |
           set -euo pipefail
           umask 077
-          encrypted="$RUNNER_TEMP/downloaded-backup/production-backup.tar.gz.gpg"
-          cmp -s "$RUNNER_TEMP/production-backup.tar.gz.gpg" "$encrypted"
-          mkdir -p "$RUNNER_TEMP/restore-input" "$RUNNER_TEMP/restore-project/supabase/migrations"
+          test "${#BACKUP_PASSPHRASE}" -ge 32
+          printf '%s' "$BACKUP_PASSPHRASE" > "$RUNNER_TEMP/m8d-diagnostic.pass"
           gpg --batch --yes --pinentry-mode loopback \
-            --passphrase-file "$RUNNER_TEMP/backup.pass" --decrypt \
-            --output "$RUNNER_TEMP/restore-input.tar.gz" "$encrypted"
-          tar -C "$RUNNER_TEMP/restore-input" -xzf "$RUNNER_TEMP/restore-input.tar.gz"
-          cd "$RUNNER_TEMP/restore-input"
+            --passphrase-file "$RUNNER_TEMP/m8d-diagnostic.pass" --decrypt \
+            --output "$RUNNER_TEMP/m8d-diagnostic.tar.gz" \
+            "$RUNNER_TEMP/m8d-existing-backup/production-backup.tar.gz.gpg"
+          mkdir -p "$RUNNER_TEMP/m8d-diagnostic"
+          tar -C "$RUNNER_TEMP/m8d-diagnostic" -xzf "$RUNNER_TEMP/m8d-diagnostic.tar.gz"
+          cd "$RUNNER_TEMP/m8d-diagnostic"
           sha256sum --check SHA256SUMS
-          # The managed source can dump a superuser-only logging directive that
-          # the local CLI postgres role cannot apply. Omit only that directive
-          # from the disposable restore copy, after verifying the source hash.
-          logging_overrides="$(grep -Eic '^[[:space:]]*(SET[[:space:]]+|ALTER ROLE[[:space:]]+|SELECT pg_catalog.set_config\().*log_min_messages' roles.sql || true)"
-          test "$logging_overrides" -ge 1
-          test "$logging_overrides" -eq "$(grep -ic 'log_min_messages' roles.sql || true)"
-          sed '/log_min_messages/Id' roles.sql > restore-roles.sql
-          echo "Omitted $logging_overrides managed logging override(s) from local restore roles."
-          cp "$GITHUB_WORKSPACE/supabase/config.toml" \
-            "$RUNNER_TEMP/restore-project/supabase/config.toml"
-          sed -i 's/^project_id = .*/project_id = "m8d_restore_probe"/' \
-            "$RUNNER_TEMP/restore-project/supabase/config.toml"
-          sed -i '/^\[db.migrations\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
-            "$RUNNER_TEMP/restore-project/supabase/config.toml"
-          sed -i '/^\[db.seed\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
-            "$RUNNER_TEMP/restore-project/supabase/config.toml"
-          cd "$GITHUB_WORKSPACE"
-          if ! env SUPABASE_ACCESS_TOKEN= SUPABASE_DB_PASSWORD= SUPABASE_PROJECT_ID= \
-            npx supabase db start --workdir "$RUNNER_TEMP/restore-project"; then
-            docker ps -a --format 'container {{.Names}}: {{.Status}}'
-            exit 1
-          fi
-          container="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}')"
-          test -n "$container"
-          test "$(printf '%s\n' "$container" | grep -c .)" -eq 1
-          echo 'PASS exactly one local Supabase DB container is running.'
-          networks="$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container")"
-          test -n "$networks"
-          while IFS= read -r network; do
-            test -n "$network" && docker network disconnect --force "$network" "$container"
-          done <<< "$networks"
-          test -z "$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container")"
-          echo 'PASS restore container has no Docker network attached.'
-          docker exec "$container" mkdir -p /tmp/m8d-backup
-          docker cp "$RUNNER_TEMP/restore-input/." "$container:/tmp/m8d-backup/"
-          docker exec "$container" psql -U postgres -d postgres --single-transaction \
-            --variable ON_ERROR_STOP=1 \
-            --file /tmp/m8d-backup/restore-roles.sql \
-            --file /tmp/m8d-backup/schema.sql \
-            --command 'SET session_replication_role = replica' \
-            --file /tmp/m8d-backup/data.sql
-          docker exec "$container" psql -U postgres -d postgres --single-transaction \
-            --variable ON_ERROR_STOP=1 \
-            --file /tmp/m8d-backup/history_schema.sql \
-            --file /tmp/m8d-backup/history_data.sql
-          auth_count="$(docker exec "$container" psql -U postgres -d postgres -Atqc 'select count(*) from auth.users')"
-          workspace_count="$(docker exec "$container" psql -U postgres -d postgres -Atqc 'select count(*) from app_private.workspace')"
-          migration_count="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from supabase_migrations.schema_migrations where version = '20261010110051'")"
-          test "$auth_count" -ge 1
-          test "$workspace_count" -ge 1
-          test "$migration_count" -eq 1
-          printf 'Restored aggregate counts: Auth users=%s, Workspaces=%s, latest migration=%s.\n' \
-            "$auth_count" "$workspace_count" "$migration_count"
-          echo 'PASS downloaded artifact decrypt, checksum, isolated restore and data read-back.'
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
-      - name: Remove runner plaintext and passphrase
+          lines = Path('roles.sql').read_text().splitlines()
+          print(f'Role SQL lines: {len(lines)}')
+          print('log_min_messages text present:', any('log_min_messages' in line.lower() for line in lines))
+          for number in range(12, min(21, len(lines) + 1)):
+              line = lines[number - 1]
+              line = re.sub(r"'[^']*'", "'<literal>'", line)
+              line = re.sub(r'"[^"]*"', '"<identifier>"', line)
+              line = re.sub(r'(?i)PASSWORD[^;]*', 'PASSWORD <redacted>', line)
+              print(f'{number}: {line[:180]}')
+          PY
+
+      - name: Remove plaintext
         if: always()
         shell: bash
         run: |
-          rm -rf -- "$RUNNER_TEMP/logical-backup"
-          rm -rf -- "$RUNNER_TEMP/restore-input" "$RUNNER_TEMP/downloaded-backup"
-          rm -f -- "$RUNNER_TEMP/backup.tar.gz" "$RUNNER_TEMP/backup.pass" "$RUNNER_TEMP/restore-input.tar.gz"
+          rm -rf -- "$RUNNER_TEMP/m8d-existing-backup" "$RUNNER_TEMP/m8d-diagnostic"
+          rm -f -- "$RUNNER_TEMP/m8d-diagnostic.pass" "$RUNNER_TEMP/m8d-diagnostic.tar.gz"
