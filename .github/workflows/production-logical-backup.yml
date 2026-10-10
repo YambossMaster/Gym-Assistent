@@ -129,10 +129,10 @@ jobs:
           tar -C "$RUNNER_TEMP/restore-input" -xzf "$RUNNER_TEMP/restore-input.tar.gz"
           cd "$RUNNER_TEMP/restore-input"
           sha256sum --check SHA256SUMS
-          # The managed source can dump a superuser-only logging override that
-          # the local CLI postgres role cannot apply. Omit only that setting
+          # The managed source can dump a superuser-only logging directive that
+          # the local CLI postgres role cannot apply. Omit only that directive
           # from the disposable restore copy, after verifying the source hash.
-          logging_overrides="$(grep -Eic '^[[:space:]]*ALTER ROLE[[:space:]].*log_min_messages' roles.sql || true)"
+          logging_overrides="$(grep -Eic '^[[:space:]]*(SET[[:space:]]+|ALTER ROLE[[:space:]]+|SELECT pg_catalog.set_config\().*log_min_messages' roles.sql || true)"
           test "$logging_overrides" -ge 1
           test "$logging_overrides" -eq "$(grep -ic 'log_min_messages' roles.sql || true)"
           sed '/log_min_messages/Id' roles.sql > restore-roles.sql
