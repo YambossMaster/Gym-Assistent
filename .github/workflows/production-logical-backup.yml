@@ -122,7 +122,7 @@ jobs:
           umask 077
           encrypted="$RUNNER_TEMP/downloaded-backup/production-backup.tar.gz.gpg"
           cmp -s "$RUNNER_TEMP/production-backup.tar.gz.gpg" "$encrypted"
-          mkdir -p "$RUNNER_TEMP/restore-input" "$RUNNER_TEMP/restore-project/supabase"
+          mkdir -p "$RUNNER_TEMP/restore-input" "$RUNNER_TEMP/restore-project/supabase/migrations"
           gpg --batch --yes --pinentry-mode loopback \
             --passphrase-file "$RUNNER_TEMP/backup.pass" --decrypt \
             --output "$RUNNER_TEMP/restore-input.tar.gz" "$encrypted"
@@ -133,9 +133,16 @@ jobs:
             "$RUNNER_TEMP/restore-project/supabase/config.toml"
           sed -i 's/^project_id = .*/project_id = "m8d_restore_probe"/' \
             "$RUNNER_TEMP/restore-project/supabase/config.toml"
-          touch "$RUNNER_TEMP/restore-project/supabase/seed.sql"
+          sed -i '/^\[db.migrations\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
+            "$RUNNER_TEMP/restore-project/supabase/config.toml"
+          sed -i '/^\[db.seed\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
+            "$RUNNER_TEMP/restore-project/supabase/config.toml"
           cd "$GITHUB_WORKSPACE"
-          npx supabase db start --workdir "$RUNNER_TEMP/restore-project"
+          if ! npx supabase db start --workdir "$RUNNER_TEMP/restore-project"; then
+            docker ps -a --format 'restore container {{.Names}}: {{.Status}}' \
+              --filter 'name=supabase_db_m8d_restore_probe'
+            exit 1
+          fi
           container="$(docker ps --filter 'name=supabase_db_m8d_restore_probe' --format '{{.ID}}')"
           test -n "$container"
           test "$(printf '%s\n' "$container" | grep -c .)" -eq 1
