@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                        |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
-| Current gate                  | **Production User-JWT red lines, isolated restore and PR/CI substitute passed; scheduled backup activation remains open**                            |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                |
-| Released code                 | `d12edc70942a96e7c73e8c7d86e3135de2b66ba0`; [CI #148](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38060217906) and release #5 passed |
-| Worktree                      | Local PWA update correction awaiting Product Owner review; Alpha red-line development probe passes; two-code release candidate remains on Main       |
-| Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                              |
-| Production release            | Release #5 applied `20261010110051` and deployed exact SHA `d12edc7`; `/api/ready` passed                                                            |
-| Pending Production migrations | None identified after release #5; Production migration history includes `20261010110051`                                                             |
+| Field                         | Current value                                                                                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                  |
+| Current gate                  | **Production User-JWT red lines, `main` backup/restore and PR/CI substitute passed; real-Coach admission remains open**                        |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                       |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                       |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                          |
+| Released code                 | `809dd164ee43bcc697f1069e35cc7ef668fbf0e6`; [main CI #153](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079958383) passed     |
+| Worktree                      | Local PWA update correction awaiting Product Owner review; Alpha red-line development probe passes; two-code release candidate remains on Main |
+| Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                        |
+| Production release            | PR #2 deployed exact SHA `809dd16` after no-pending preview; `/api/ready` passed                                                               |
+| Pending Production migrations | None identified after release #5; Production migration history includes `20261010110051`                                                       |
 
 ## Required context
 
@@ -73,24 +73,23 @@ startup context.
   that click, compensates Visual Viewport position as well as height, and uses one flex layout for
   header/canvas/dock. Related tests, the synthetic browser matrix and CI #133 full verify pass;
   CI #133 attempt 2 delivered it after credential repair; device recheck stays open.
-- Real-Coach admission and scheduled backup activation remain open. The Product Owner approved
+- Real-Coach admission and the first automatic scheduled backup run remain open. The Product Owner approved
   Supabase Free logical backups without PITR and a PR plus required CI substitute for human
   Required Reviewers. The isolated backup/restore drill and PR pending-then-green behavior passed;
-  the first scheduled `main` artifact remains to be verified.
+  `main` backup #10 passed encrypted artifact verification and isolated restore. The next automatic
+  scheduled run remains to be observed.
 
 ## Next handoff
 
-Present [backup PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) at `ee43614` for
-Product Owner review before any `main` merge. [Actions
-#9](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38077980013) passed encrypted
-upload/download, five SQL checksums, network-isolated restore and Auth/Workspace/migration
-read-back. [PR CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38078731251)
-proved required checks block merge while pending and enable it when green. The temporary branch
-trigger is removed. A `main` merge will trigger full CI and, if the Production preview finds no
-pending migration, automatic same-SHA Fly deploy. After authorization, observe that release,
-manually dispatch the backup workflow on `main`, verify its first artifact and restore, then
-monitor 48-hour freshness. The local PWA update and loading screen remain separately pending
-Product Owner review.
+[PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) merged as `809dd164` after all
+required checks passed. [Main CI
+#153](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079958383) passed no-pending
+Production preview, exact-SHA Fly deployment and readiness. [Backup
+#10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792) produced the first
+encrypted `main` artifact and passed network-isolated restore with Auth/Workspace/migration
+read-back. Monitor the next automatic daily run and 48-hour freshness; complete legal migration
+provenance, installed-device acceptance and real-Coach support/admission before admitting users.
+The local PWA update and loading screen remain separately pending Product Owner review.
 
 Release [#5](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38064919971) used the
 Product Owner's `APPLY`, re-previewed and applied only `20261010110051`, deployed exact SHA
@@ -100,8 +99,8 @@ User-JWT red-line smoke passed cross-account denial and Free-plan boundaries. Bo
 accounts and exact Student/Workspace fixtures were cleaned and read back as zero. The local
 [recovery and PR/CI test](M8-D-RECOVERY-REVIEWER-TEST.md) now specifies daily encrypted logical
 dumps, a seven-day artifact, separate recovery passphrase, isolated restore and `pg_net` isolation.
-GitHub's active `main` ruleset and PR behavior passed with three required CI checks. M8-D remains
-open pending scheduled activation and real-Coach admission.
+GitHub's active `main` ruleset and PR behavior passed with three required CI checks. The backup
+workflow is active on `main`; M8-D remains open for admission and other listed gates.
 
 Release-workflow hardening is delivered at exact SHA `8f8c480`. [CI #146](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38047027072)
 passed verify/build, browser UI, development migration dry-run, a fresh no-pending Production

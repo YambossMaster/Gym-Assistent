@@ -275,24 +275,23 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 1. Establish the legal acceptance migration's apply provenance; do not reapply an already-recorded
    migration. Revoke the old PAT only after separate authorization; the new PAT expires 2027-01-07.
-2. Complete the approved logical-backup activation/isolated restore and PR/CI reviewer substitute,
-   plus support/admission and real-Coach Beta gates before admitting the first real Coach.
+2. Monitor the active `main` backup's first automatic scheduled run and 48-hour freshness; complete
+   support/admission and real-Coach Beta gates before admitting the first real Coach. The isolated
+   restore and PR/CI reviewer substitute have passed.
 3. Record installed-device coverage honestly; browser 390×844 evidence is not installed-PWA proof.
 
 ## Next handoff
 
-Present [backup PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) at `ee43614` and
-its restore and exact-head CI evidence for Product Owner review before any `main` merge. Active
-ruleset `24849299` blocked merge while all three required checks were pending and enabled merge
-when they passed in [CI
-`38078731251`](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38078731251).
-The temporary test-branch push trigger has been removed. A merge of this non-Markdown workflow
-triggers the existing full `main` CI and, with no pending migration, automatic same-SHA Fly deploy;
-include that effect in the Product Owner's authorization. After an authorized merge, observe CI,
-deployment and readiness, manually dispatch the backup workflow on `main`, verify its first
-encrypted artifact and restore, then monitor the scheduled run. Keep admission stopped if the latest
-recoverable point exceeds 48 hours. The separate local PWA update and loading screen remain
-awaiting Product Owner review; keep their gate separate.
+[PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) merged as `809dd164` after final
+exact-head [PR CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079713292)
+passed all three required checks. [Main
+CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079958383) passed the full
+verify, browser, migration dry-run, no-pending Production preview, exact-SHA Fly deployment and
+readiness. The manually dispatched [backup
+#10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792) produced the first
+encrypted `main` artifact and passed isolated restore and aggregate read-back. Monitor the next
+automatic daily run and keep admission stopped if the latest recoverable point exceeds 48 hours.
+The separate local PWA update and loading screen remain awaiting Product Owner review.
 
 Release [#5](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38064919971) re-previewed
 and applied only `20261010110051_remove_plan_tester_entitlement.sql`, deployed exact SHA
@@ -312,8 +311,8 @@ aggregate recheck matched the counts, found zero Storage objects/buckets and Vau
 confirmed the one active `pg_net` cron job; `/api/ready` returned HTTP 200. A local restore copy
 omitted exactly one managed logging-parameter grant after source checksum verification. GitHub
 ruleset `24849299` is Active on `main` with PR, zero human approvals, no bypass and three required
-CI checks. PR #2 proved the pending-then-green gate at `ee43614`; `main` scheduled activation
-remains open. See
+CI checks. PR #2 proved the pending-then-green gate at `ee43614`; it then merged as `809dd164` and
+`main` backup #10 passed. The first automatic scheduled run remains to be observed. See
 [`M8-D-RECOVERY-REVIEWER-TEST.md`](../../M8-D-RECOVERY-REVIEWER-TEST.md). The broader
 installed-device and real-Coach admission gates remain separate.
 
