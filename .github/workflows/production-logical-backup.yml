@@ -132,10 +132,10 @@ jobs:
           # The managed source can dump a superuser-only logging override that
           # the local CLI postgres role cannot apply. Omit only that setting
           # from the disposable restore copy, after verifying the source hash.
-          logging_overrides="$(grep -Eic '^ALTER ROLE .* SET "?log_min_messages"? (TO|=) ' roles.sql || true)"
+          logging_overrides="$(grep -Eic '^[[:space:]]*ALTER ROLE[[:space:]].*log_min_messages' roles.sql || true)"
           test "$logging_overrides" -ge 1
-          sed -E '/^ALTER ROLE .* SET "?log_min_messages"? (TO|=) /Id' \
-            roles.sql > restore-roles.sql
+          test "$logging_overrides" -eq "$(grep -ic 'log_min_messages' roles.sql || true)"
+          sed '/log_min_messages/Id' roles.sql > restore-roles.sql
           echo "Omitted $logging_overrides managed logging override(s) from local restore roles."
           cp "$GITHUB_WORKSPACE/supabase/config.toml" \
             "$RUNNER_TEMP/restore-project/supabase/config.toml"
