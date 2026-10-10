@@ -2,8 +2,8 @@
 
 Product Owner decision (2026-10-11): Beta stays on Supabase Free, accepts no PITR, and uses a
 scheduled GitHub Actions logical backup. A single developer uses a protected `main` branch with PRs
-and required CI checks instead of Required Reviewers. This is an approved gate substitution, not a
-claim that the scheduled workflow is already active on `main`.
+and required CI checks instead of Required Reviewers. The workflow is now active on `main`; the
+first manual `main` run passed. The next scheduled run still needs separate observation.
 
 ## Production red-line evidence
 
@@ -84,9 +84,26 @@ An independent Production `/api/ready` check returned HTTP 200 and `{"status":"r
 
 Production aggregate recheck after the drill found zero Storage objects, zero Storage buckets,
 zero Vault secrets, 3 Auth users, 3 Workspaces and one active cron job. Backup freshness is within
-48 hours as of the drill. **Scheduled protection is not active until this workflow reaches
-`main` and a first `main` artifact succeeds.** The separate recovery passphrase must remain
-available to the Product Owner for real disaster recovery.
+48 hours as of the drill. The separate recovery passphrase must remain available to the Product
+Owner for real disaster recovery.
+
+### First `main` artifact and restore — 2026-10-11
+
+[PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) merged as
+`809dd164ee43bcc697f1069e35cc7ef668fbf0e6`. [Main CI
+`38079958383`](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079958383)
+passed `verify`, `browser-ui`, `migration-dry-run`, Production migration preview, exact-SHA Fly
+deployment and Production readiness. The manually dispatched [backup
+#10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792) ran from that same
+`main` SHA and passed. Artifact
+[`11679319803`](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792/artifacts/11679319803)
+is 61,617 bytes, was created 2026-10-10 19:31:40 UTC, expires 2026-10-17 19:31:39 UTC, and has
+digest `sha256:30d25a7a7e1bf2ea4bfe3c1b7e1d6406652e5a458eb1633148cffb1ccca1f805`.
+The downloaded encrypted artifact decrypted, all five SQL hashes were `OK`, the local restore
+container had no Docker network before SQL, and read-back returned 3 Auth users, 3 Workspaces and
+one latest migration. The runner reported `PASS` for download, decrypt, checksum, isolated restore
+and data read-back. This establishes an active, tested `main` recovery point; the daily schedule's
+first automatic run remains unobserved.
 
 **Current scope check (2026-10-11, after drill):** Production read-only aggregate queries found zero
 `storage.objects`, zero `storage.buckets`, and zero `vault.secrets`. The one active `pg_cron` job
@@ -130,17 +147,18 @@ an enabled merge button and no human review requirement. An empty test-branch co
 While its three required checks were queued, the Ready PR showed **Checks pending** and a disabled
 merge button. After `verify`, `browser-ui` and `migration-dry-run` all passed for `ee43614`, GitHub
 showed **Ready to merge** and enabled the merge button again. Production preview and deployment
-were correctly skipped on the PR. No merge was performed.
+were correctly skipped on the PR. The PR was subsequently squash-merged as `809dd164` after its
+final document commit passed the same required checks.
 
 ## Current gate ledger
 
-| Gate                          | Current result                                                                                  | Remaining proof                                          |
-| ----------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Production User-JWT red lines | Passed and synthetic data cleaned                                                               | None for this bounded smoke                              |
-| Backup method decision        | Approved: daily encrypted logical dumps, seven-day retention, no PITR                           | Merge workflow to `main`; dispatch first `main` run      |
-| Recoverable point             | Test-branch artifact from 2026-10-10 18:59:42 UTC verified                                      | Keep a successful `main` artifact no older than 48 hours |
-| Isolated restore              | Passed in [Actions #9](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38077980013) | Repeat after material backup/schema changes              |
-| Reviewer substitution         | Passed: active rule, Ready PR blocked pending checks and enabled after all three passed         | Preserve rule on `main`                                  |
+| Gate                          | Current result                                                                          | Remaining proof                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Production User-JWT red lines | Passed and synthetic data cleaned                                                       | None for this bounded smoke                       |
+| Backup method decision        | Active on `main`: daily encrypted logical dumps, seven-day retention, no PITR           | Observe next scheduled run                        |
+| Recoverable point             | `main` artifact `11679319803` created 2026-10-10 19:31:40 UTC                           | Keep a successful artifact no older than 48 hours |
+| Isolated restore              | Passed in test-branch #9 and `main` #10                                                 | Repeat after material backup/schema changes       |
+| Reviewer substitution         | Passed: active rule, Ready PR blocked pending checks and enabled after all three passed | Preserve rule on `main`                           |
 
 Official references: [Supabase CLI backup/restore](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore),
 [Supabase CLI dump](https://supabase.com/docs/reference/cli/supabase-db-dump), and
