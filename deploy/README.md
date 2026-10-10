@@ -38,8 +38,12 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    Review that exact commit's green `verify`, `browser-ui`, `migration-dry-run`, and Production
    preview jobs. Then manually run **Production migration release** with that full commit SHA and
    confirmation `APPLY`. The workflow proves the SHA is on `main`, requires those exact green jobs,
-   previews Production again, applies pending migrations, and deploys the same SHA. Never include
-   seed data. These are serialized release operations, not part of Fly app startup.
+   checks the declared Fly runtime-secret names before touching the database, previews Production
+   again, applies pending migrations, and deploys the same SHA. A missing startup-required secret
+   stops the release before migration apply. A missing feature-required secret emits a warning and
+   keeps the fail-closed degraded behavior documented in
+   `production-runtime-secrets.json`. Never include seed data. These are serialized release
+   operations, not part of Fly app startup.
 4. A non-documentation `main` push without migration changes automatically deploys only after the
    repository verification, browser and development migration jobs pass. The Fly remote builder
    builds the Docker image using the **public** `VITE_SUPABASE_URL` and
@@ -47,11 +51,18 @@ artifact locally; creating paid resources and inviting Coaches happen later unde
    dedicated rights/support address selected in M8-C and set `VITE_INTERNAL_ALPHA=false` to expose
    registration and Google sign-in. Check the resulting build's public URL matches the intended
    production project. Fly's repository auto-deploy remains off; GitHub Actions owns exact-SHA
-   release sequencing.
+   release sequencing. Release-gate and `fly.production.toml` changes use this same checked path
+   when Production has no pending migration; they do not require an empty follow-up commit. Empty
+   commits are not release candidates and cannot deploy.
 5. Manually check `/api/ready`, sign-in, one Student/Session/Training save and reload, a public
    capability link, and sign-out. Inspect Fly usage/errors and Supabase database size. If a write
    or migration fails, stop new admissions and fix the cause before continuing; do not claim that
    redeploying an app restores lost database rows.
+
+If deploy or readiness fails, both release workflows automatically report Fly app status, health
+checks, the machine list, each machine's state and the most recent 50 log lines. The diagnostic
+filter redacts Calendar and capability bearer paths plus authorization values before they enter CI
+logs. Inspect the failed exact-SHA job before creating any new commit or rerunning a release.
 
 M8-C deployed the image through the Fly remote builder. Production now uses public Auth entry;
 see `docs/PROJECT_STATUS.md` for the exact deployed commit, image, checks and remaining acceptance.

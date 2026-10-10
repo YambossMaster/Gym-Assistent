@@ -84,6 +84,15 @@ jobs:
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
           test -n "$VITE_SUPPORT_EMAIL"
 
+      - name: Set up Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Verify Production runtime secret contract before migration
+        shell: bash
+        run: >-
+          flyctl secrets list --app formcoachdesk --json |
+          node scripts/production-runtime-secrets.mjs
+
       - name: Verify Production pooler access before installing dependencies
         env:
           SUPABASE_POOLER_CACHE_ROOT: ${{ runner.temp }}
@@ -110,9 +119,6 @@ jobs:
       - name: Apply production migrations
         run: npm run db:push
 
-      - name: Set up Fly CLI
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
       - name: Deploy the same exact commit
         run: >-
           flyctl deploy
@@ -132,7 +138,14 @@ jobs:
           --fail
           --silent
           --show-error
+          --max-time 10
           --retry 12
           --retry-all-errors
           --retry-delay 5
           https://formcoachdesk.com/api/ready
+
+      - name: Report Fly state after a failed deploy or readiness check
+        if: failure()
+        timeout-minutes: 2
+        shell: bash
+        run: bash scripts/report-fly-readiness-failure.sh formcoachdesk

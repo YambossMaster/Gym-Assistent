@@ -130,7 +130,22 @@ Production dry-run when versions are pending or migration/release-gate files cha
 deployment requires this job to pass with no pending versions as well as the existing verify,
 browser, and development dry-run jobs. A migration-release target must be a commit that actually
 ran the full CI gate; documentation-only check results are not release evidence. A release is
-rejected if a newer non-documentation Main change superseded its SHA.
+rejected if a newer non-documentation Main change superseded its SHA. An empty commit is not a
+release candidate and cannot trigger deployment. A release-gate or Fly configuration change with no
+schema migration may deploy from its own exact SHA after the full checks and fresh Production
+preview pass; never create an empty follow-up commit merely to retrigger it.
+
+Before an ordinary Fly deployment and before a migration release applies SQL, CI compares Fly's
+secret-name inventory with `deploy/production-runtime-secrets.json`. Missing startup-required names
+fail before deployment or migration application. Missing feature-required names emit an explicit
+degradation warning without printing values; the application must preserve its documented
+fail-closed behavior. If deploy or readiness fails, CI automatically captures app status, health
+checks, machine inventory and per-machine state plus the latest 50 Fly log lines. Bearer routes and
+authorization values are redacted before the log excerpt is printed.
+
+Before treating a deployment as skipped or failed, inspect the exact-SHA workflow job until it is
+completed. Do not infer the final state from a queued or in-progress run, and do not use an empty
+commit to race or duplicate an active deployment.
 
 When a remote test fails intermittently, record the failing assertion, reproduce it at the
 narrowest seam, and fix its synchronization before accepting a rerun as evidence. Use a bounded

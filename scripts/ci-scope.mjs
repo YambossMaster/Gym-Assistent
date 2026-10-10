@@ -20,14 +20,21 @@ export const needsBrowser = (paths) =>
   )
 
 export const hasProductionMigration = (paths) =>
+  paths.some((file) => file.startsWith('supabase/migrations/'))
+
+export const hasReleaseGateChange = (paths) =>
   paths.some(
     (file) =>
-      file.startsWith('supabase/migrations/') ||
       file === '.github/workflows/ci.yml' ||
       file === '.github/workflows/production-migration-release.yml' ||
+      file === 'deploy/fly.production.toml' ||
+      file === 'deploy/production-runtime-secrets.json' ||
       file === 'scripts/cache-supabase-pooler.mjs' ||
       file === 'scripts/ci-scope.mjs' ||
       file === 'scripts/production-migration-state.mjs' ||
+      file === 'scripts/production-runtime-secrets.mjs' ||
+      file === 'scripts/redact-fly-diagnostics.mjs' ||
+      file === 'scripts/report-fly-readiness-failure.sh' ||
       file === 'scripts/require-release-candidate.mjs' ||
       file === 'scripts/require-current-release.mjs',
   )
@@ -42,12 +49,16 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   let docsOnly = false
   let browserNeeded = true
   let productionMigration = false
+  let releaseGate = true
+  let releaseCandidate = false
   if (EVENT_NAME !== 'workflow_dispatch' && BASE_SHA && HEAD_SHA && !/^0+$/.test(BASE_SHA)) {
     try {
       const paths = changedPaths(BASE_SHA, HEAD_SHA)
       docsOnly = isDocsOnly(paths)
       browserNeeded = needsBrowser(paths)
       productionMigration = hasProductionMigration(paths)
+      releaseGate = hasReleaseGateChange(paths)
+      releaseCandidate = isReleaseCandidate(paths)
     } catch {
       // Unknown history must run the full gate.
       productionMigration = true
@@ -56,9 +67,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (GITHUB_OUTPUT)
     appendFileSync(
       GITHUB_OUTPUT,
-      `docs_only=${docsOnly}\nbrowser_needed=${browserNeeded}\nproduction_migration=${productionMigration}\n`,
+      `docs_only=${docsOnly}\nbrowser_needed=${browserNeeded}\nproduction_migration=${productionMigration}\nrelease_gate=${releaseGate}\nrelease_candidate=${releaseCandidate}\n`,
     )
   console.log(
-    `Verification scope: ${docsOnly ? 'docs format only' : 'full'}; browser ${browserNeeded ? 'needed' : 'not needed'}; production migration ${productionMigration ? 'changed' : 'unchanged'}`,
+    `Verification scope: ${docsOnly ? 'docs format only' : 'full'}; browser ${browserNeeded ? 'needed' : 'not needed'}; production migration ${productionMigration ? 'changed' : 'unchanged'}; release gate ${releaseGate ? 'changed' : 'unchanged'}; release candidate ${releaseCandidate ? 'yes' : 'no'}`,
   )
 }

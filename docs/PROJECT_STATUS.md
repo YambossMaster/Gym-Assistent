@@ -10,12 +10,12 @@
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                               |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                 |
-| Current gate                  | **Finance + Calendar correction deployed; configure the Production Calendar secret, then finish installed-PWA acceptance**                                    |
+| Current gate                  | **Release workflow hardening passed the local gate; authorized Main push, exact-SHA CI and deployment are in progress**                                       |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                      |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                      |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                         |
 | Release candidate             | `6073cf13f7ab152290ae772c1e2bde2ae33787a3`; [CI #144](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38044493655) green and deployed             |
-| Worktree                      | Production recovery complete; this Status update is the only local change                                                                                     |
+| Worktree                      | Local release-workflow hardening passed check/build and migration dry-run; awaiting authorized commit and push                                                |
 | Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                                       |
 | Production release            | [Release #4](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38042435568) applied `20261010054011`; recovery CI #144 deployed exact SHA `6073cf1` |
 | Pending Production migrations | None from the Settings package; Production history includes `20261010054011`                                                                                  |
@@ -77,6 +77,21 @@ startup context.
   governed by the M8-D Contract and Roadmap gate.
 
 ## Next handoff
+
+Review the local release-workflow hardening. It adds a startup-required versus feature-required Fly
+secret contract, validates secret names before deploy and before migration apply, reports app,
+health, machine and redacted bounded-log diagnostics on failure, and prevents empty commits from
+deploying. Migration changes still require literal `APPLY`; release-gate/Fly configuration changes
+may deploy the same exact SHA only after the full checks and a fresh no-pending Production preview.
+The Product Owner approved immediate Main push, CI and deployment. Root check passes 33 release
+tests, API 209 tests and Web 349 tests; production build and development migration dry-run pass.
+Create one cohesive commit, push Main, then wait for the exact-SHA Production preview, deployment
+and readiness result before taking another release action.
+
+GitHub's job record corrects the incident narrative: CI #143 for `e2e275f` did run and pass
+`deploy-production` plus readiness. The empty `6073cf1` commit was pushed while CI #143 was still in
+progress and was not required by the safeguard. Future release handling must wait for the exact-SHA
+job to complete before deciding whether a new commit or rerun is needed.
 
 Configure one stable, independently generated 256-bit `CALENDAR_SUBSCRIPTION_SECRET` in Fly
 Production. This is an application secret, not a Supabase access token. The resulting Fly restart

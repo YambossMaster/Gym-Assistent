@@ -17,6 +17,7 @@ jobs:
     outputs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
       production_migration: ${{ steps.scope.outputs.production_migration }}
+      release_candidate: ${{ steps.scope.outputs.release_candidate }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -223,7 +224,8 @@ jobs:
       - name: Preview production migrations
         if: >-
           steps.migration_state.outputs.pending == 'true' ||
-          steps.scope.outputs.production_migration == 'true'
+          steps.scope.outputs.production_migration == 'true' ||
+          steps.scope.outputs.release_gate == 'true'
         run: npm run db:push:dry
 
       - name: Hold deployment for explicit migration release
@@ -250,6 +252,7 @@ jobs:
       needs.production-migration-preview.result == 'success' &&
       needs.production-migration-preview.outputs.pending == 'false' &&
       needs.verify.outputs.docs_only != 'true' &&
+      needs.verify.outputs.release_candidate == 'true' &&
       needs.verify.outputs.production_migration != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -278,6 +281,12 @@ jobs:
 
       - name: Set up Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Verify Production runtime secret contract
+        shell: bash
+        run: >-
+          flyctl secrets list --app formcoachdesk --json |
+          node scripts/production-runtime-secrets.mjs
 
       - name: Reject deployment superseded by a newer Main change
         shell: bash
@@ -314,7 +323,4 @@ jobs:
         if: failure()
         timeout-minutes: 2
         shell: bash
-        run: |
-          flyctl status --app formcoachdesk
-          flyctl checks list --app formcoachdesk
-          flyctl machine list --app formcoachdesk
+        run: bash scripts/report-fly-readiness-failure.sh formcoachdesk

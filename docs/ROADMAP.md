@@ -770,6 +770,12 @@ deployed. Both paths use the GitHub `production` Environment: Alpha has no revie
 enables required reviewers before Beta so migration and deployment pause for approval. Required
 reviewers remain mandatory after Beta and throughout general availability; a formal launch never
 returns Production migration or deployment to unapproved execution.
+The 2026-10-10 incident-hardening amendment checks declared Fly runtime-secret names before deploy
+and before any Production migration application, captures redacted infrastructure diagnostics on
+deploy/readiness failure, and rejects empty commits as release candidates. Release-gate or Fly
+configuration changes without schema migrations may deploy their own exact SHA only after the same
+full checks and a fresh Production preview proves that no migration is pending; the migration hold,
+literal `APPLY` requirement and serialized Production release remain unchanged.
 
 **Sol gate:** provision the separate production Supabase Free project and Fly app, configure
 separate secrets, apply reviewed migrations, deploy the exact release build and configure available
