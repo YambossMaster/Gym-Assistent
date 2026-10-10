@@ -1,0 +1,62 @@
+name: M8-D restore SQL diagnostic
+
+on:
+  push:
+    branches:
+      - codex/m8d-backup-drill
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      BACKUP_PASSPHRASE: ${{ secrets.PRODUCTION_BACKUP_PASSPHRASE }}
+    steps:
+      - name: Download existing encrypted backup
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 38077537552
+          github-token: ${{ github.token }}
+          name: production-logical-backup-38077537552
+          path: ${{ runner.temp }}/m8d-existing-backup
+
+      - name: Inspect redacted role SQL structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test "${#BACKUP_PASSPHRASE}" -ge 32
+          printf '%s' "$BACKUP_PASSPHRASE" > "$RUNNER_TEMP/m8d-diagnostic.pass"
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-file "$RUNNER_TEMP/m8d-diagnostic.pass" --decrypt \
+            --output "$RUNNER_TEMP/m8d-diagnostic.tar.gz" \
+            "$RUNNER_TEMP/m8d-existing-backup/production-backup.tar.gz.gpg"
+          mkdir -p "$RUNNER_TEMP/m8d-diagnostic"
+          tar -C "$RUNNER_TEMP/m8d-diagnostic" -xzf "$RUNNER_TEMP/m8d-diagnostic.tar.gz"
+          cd "$RUNNER_TEMP/m8d-diagnostic"
+          sha256sum --check SHA256SUMS
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          lines = Path('roles.sql').read_text().splitlines()
+          print(f'Role SQL lines: {len(lines)}')
+          print('log_min_messages text present:', any('log_min_messages' in line.lower() for line in lines))
+          for number in range(12, min(21, len(lines) + 1)):
+              line = lines[number - 1]
+              line = re.sub(r"'[^']*'", "'<literal>'", line)
+              line = re.sub(r'"[^"]*"', '"<identifier>"', line)
+              line = re.sub(r'(?i)PASSWORD[^;]*', 'PASSWORD <redacted>', line)
+              print(f'{number}: {line[:180]}')
+          PY
+
+      - name: Remove plaintext
+        if: always()
+        shell: bash
+        run: |
+          rm -rf -- "$RUNNER_TEMP/m8d-existing-backup" "$RUNNER_TEMP/m8d-diagnostic"
+          rm -f -- "$RUNNER_TEMP/m8d-diagnostic.pass" "$RUNNER_TEMP/m8d-diagnostic.tar.gz"
