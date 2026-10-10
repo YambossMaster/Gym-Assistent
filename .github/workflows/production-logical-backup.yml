@@ -138,18 +138,15 @@ jobs:
           sed -i '/^\[db.seed\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
             "$RUNNER_TEMP/restore-project/supabase/config.toml"
           cd "$GITHUB_WORKSPACE"
-          if ! env SUPABASE_ACCESS_TOKEN= SUPABASE_DB_PASSWORD= \
-            npx supabase db start --debug --workdir "$RUNNER_TEMP/restore-project"; then
+          if ! env SUPABASE_ACCESS_TOKEN= SUPABASE_DB_PASSWORD= SUPABASE_PROJECT_ID= \
+            npx supabase db start --workdir "$RUNNER_TEMP/restore-project"; then
             docker ps -a --format 'container {{.Names}}: {{.Status}}'
-            container="$(docker ps -a --filter 'name=supabase_db_m8d_restore_probe' --format '{{.ID}}')"
-            if test -n "$container"; then
-              docker logs --tail 50 "$container"
-            fi
             exit 1
           fi
-          container="$(docker ps --filter 'name=supabase_db_m8d_restore_probe' --format '{{.ID}}')"
+          container="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}')"
           test -n "$container"
           test "$(printf '%s\n' "$container" | grep -c .)" -eq 1
+          echo 'PASS exactly one local Supabase DB container is running.'
           networks="$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container")"
           test -n "$networks"
           while IFS= read -r network; do
