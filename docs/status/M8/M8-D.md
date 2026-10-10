@@ -1,6 +1,6 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-10. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-11. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
@@ -8,9 +8,9 @@
 | Gate      | State                                                                                              |
 | --------- | -------------------------------------------------------------------------------------------------- |
 | Contract  | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
-| Sol       | Two-code correction is on Main; Production migration/deployment remains pending                    |
-| CI        | Exact-SHA CI #148 is green; Production release remains open pending literal `APPLY`                |
-| Admission | No real Coach admitted; Production contains two synthetic Coaches                                  |
+| Sol       | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
+| CI        | Exact-SHA CI #148, release #5 and backup PR checks passed; scheduled activation remains open       |
+| Admission | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
 created the Production internal-Alpha foundation but retains the carry-over listed in
@@ -36,6 +36,31 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner approved a final Alpha red-line pass focused on tenant isolation and Beta
+  business-rule integrity, with extreme load and autonomous exploit campaigns deferred until after
+  Beta stabilizes. The [verification record](../../ALPHA-REDLINE-VERIFICATION.md) separates signed-in
+  User-JWT API requests from privileged fixture administration and direct runtime-role RLS checks.
+  A fresh two-Coach development probe passed cross-Workspace list/detail/update/delete/session
+  denial, owner read-back, private-schema grants and Calendar subscription RLS, then confirmed exact
+  fixture cleanup. The early Student table has no RLS; its protection is the private schema plus
+  server-owned Workspace predicates, so no Student RLS pass is claimed. The isolated Beta live E2E
+  passed, along with 63 focused Beta, plan, Calendar, export, public-link and HTTP tests. An older
+  finance live script stopped at a Free venue-capacity response before its isolation assertion; its
+  fixtures were cleaned and it supplies no passing evidence for this run. The later Production
+  User-JWT smoke passed after release #5; see the Next handoff.
+- A local PWA update correction is ready for Product Owner review. Production builds now emit a
+  no-cache build marker and asset list; the running app checks on return to foreground, primary-route
+  changes and a 15-minute visible interval, with a five-minute check floor. It prepares the new
+  entry assets, then automatically reloads only from a primary route after four seconds without
+  interaction. Form edits, active controls, dialogs, busy UI and Training detail defer the reload;
+  navigation clears the route-local edit hold. The reload preserves the current URL and uses a short
+  branded loading screen with reduced-motion support. Stale active queries now refetch in the
+  background on return to foreground. The Service Worker excludes the version file and immutable
+  assets from its own cache and deletes only its own older shell caches. Focused Web tests pass 2
+  files / 9 tests, Web typecheck passes, and static desktop/390×844 loading visuals were inspected.
+  A production build, running installed-PWA update across two real deployments, and full CI gate
+  remain unverified pending Product Owner review; this local correction has not been committed or
+  pushed and does not alter the pending two-code migration release.
 - The Product Owner removed the former plan-tester code and self-service test switching on
   2026-10-10. Local Sol now exposes only permanent and promotional redemption classes, removes the
   authenticated plan-mutation route and tester UI/API states, and returns historical tester grants
@@ -54,7 +79,7 @@ The detailed behavior and migration contract live in
   correctly held deployment for literal `APPLY`. Before this delivery, an isolated two-account
   Production browser matrix passed permanent single-use, shared promotional, repeat, cross-code and
   exact 60-day rules; both accounts, both codes and all related fixture rows were deleted and read
-  back as zero. Production remains on the prior schema/runtime until the explicit release. The local
+  back as zero. Production has now applied the correction through release #5. The local
   Plan Choice browser case passes at 1440px and 390px. Development security
   advisor has no new plan-access finding; leaked-password protection remains the pre-existing Auth
   warning, and performance advisor findings are informational/pre-existing.
@@ -172,8 +197,8 @@ The detailed behavior and migration contract live in
 - Latest deployed correction: `c5db63f3b315aa84ca606aafd3269d7ed112e531`.
 - Product Owner-retained M8-D corrections, release safeguards and Status split were committed
   together. Reconcile any subsequent work with `git status --short`.
-- Production is a healthy Tokyo Fly internal Alpha with two synthetic Coaches and no real customer
-  data.
+- Production is a healthy Tokyo Fly internal Alpha with no real Coach admitted. The two dedicated
+  red-line synthetic accounts were deleted and exact residue read-back was zero.
 - Production preview on CI #120 attempt 2 lists only plan-access migration `20261008063726` as
   pending. Legal acceptance `20261006145359` is no longer pending according to linked history and
   dry-run; its application provenance remains to be established.
@@ -211,13 +236,13 @@ The detailed behavior and migration contract live in
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                                   | Remaining evidence                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed         | Continue monitoring future releases; no current release blocker |
-| Plan access             | Two-code local/development gates, pre-release Production matrix and exact-SHA CI #148 pass; Production remains on prior policy | Literal `APPLY`, same-SHA migration/deploy and bounded smoke    |
-| Mobile Training         | Completed-tap entry and visual-position compensation passed related tests, browser matrix and CI #133; deployed c5db63f        | Installed-phone keyboard and lower-paragraph recheck            |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests        | Authenticated/installed-phone rendering                         |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                      | Combined browser/product review                                 |
+| Area                    | Current fact                                                                                                            | Remaining evidence                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
+| Plan access             | Two-code local/development gates, pre-release Production matrix, CI #148, release #5 and User-JWT smoke pass            | Real-Coach admission gate remains separate                      |
+| Mobile Training         | Completed-tap entry and visual-position compensation passed related tests, browser matrix and CI #133; deployed c5db63f | Installed-phone keyboard and lower-paragraph recheck            |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -250,18 +275,47 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 1. Establish the legal acceptance migration's apply provenance; do not reapply an already-recorded
    migration. Revoke the old PAT only after separate authorization; the new PAT expires 2027-01-07.
-2. Complete the Roadmap's backup/restore, Production reviewer, support/admission and real-Coach Beta
-   gates before admitting the first real Coach.
+2. Complete the approved logical-backup activation/isolated restore and PR/CI reviewer substitute,
+   plus support/admission and real-Coach Beta gates before admitting the first real Coach.
 3. Record installed-device coverage honestly; browser 390×844 evidence is not installed-PWA proof.
 
 ## Next handoff
 
-Obtain literal `APPLY` for exact SHA `d12edc70942a96e7c73e8c7d86e3135de2b66ba0`. CI #148 passed
-verify/build, Browser UI, development migration dry-run and Production preview; the preview lists
-only `20261010110051_remove_plan_tester_entitlement.sql` and correctly skipped deployment. Then
-re-preview, apply only that migration, deploy the same SHA and run readiness plus a bounded two-code
-post-deploy smoke. The broader recovery, reviewer-control, installed-device and real-Coach admission
-gates remain separate.
+Present [backup PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) at `ee43614` and
+its restore and exact-head CI evidence for Product Owner review before any `main` merge. Active
+ruleset `24849299` blocked merge while all three required checks were pending and enabled merge
+when they passed in [CI
+`38078731251`](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38078731251).
+The temporary test-branch push trigger has been removed. A merge of this non-Markdown workflow
+triggers the existing full `main` CI and, with no pending migration, automatic same-SHA Fly deploy;
+include that effect in the Product Owner's authorization. After an authorized merge, observe CI,
+deployment and readiness, manually dispatch the backup workflow on `main`, verify its first
+encrypted artifact and restore, then monitor the scheduled run. Keep admission stopped if the latest
+recoverable point exceeds 48 hours. The separate local PWA update and loading screen remain
+awaiting Product Owner review; keep their gate separate.
+
+Release [#5](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38064919971) re-previewed
+and applied only `20261010110051_remove_plan_tester_entitlement.sql`, deployed exact SHA
+`d12edc70942a96e7c73e8c7d86e3135de2b66ba0`, and returned `{"status":"ready"}` from
+`/api/ready`. Production migration history includes that version; aggregate read-back found zero
+active tester codes or grants. The Product Owner then authorized two dedicated Production synthetic
+accounts. Both signed in for the bounded User-JWT red-line smoke: cross-account Student and Session
+access was denied, Free and removed plan-mutation boundaries held, owner data remained intact, and
+exact Auth/Workspace/Student read-back after cleanup was zero. No `service_role` key was used in
+test API requests. The Product Owner chose daily GitHub Actions encrypted logical dumps on Supabase
+Free without PITR and PR plus required CI instead of human Required Reviewers. The backup workflow
+was pushed to a dedicated test branch. After diagnostic corrections, [Actions
+#9](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38077980013) uploaded and
+downloaded the encrypted artifact, verified all five SQL hashes, disconnected the restore DB from
+every network, and read back Auth users 3, Workspaces 3 and the latest migration once. Production
+aggregate recheck matched the counts, found zero Storage objects/buckets and Vault secrets, and
+confirmed the one active `pg_net` cron job; `/api/ready` returned HTTP 200. A local restore copy
+omitted exactly one managed logging-parameter grant after source checksum verification. GitHub
+ruleset `24849299` is Active on `main` with PR, zero human approvals, no bypass and three required
+CI checks. PR #2 proved the pending-then-green gate at `ee43614`; `main` scheduled activation
+remains open. See
+[`M8-D-RECOVERY-REVIEWER-TEST.md`](../../M8-D-RECOVERY-REVIEWER-TEST.md). The broader
+installed-device and real-Coach admission gates remain separate.
 
 Release-workflow hardening is complete: exact SHA `8f8c480` passed CI #146 verify/build, browser,
 development migration dry-run, fresh no-pending Production preview, runtime-secret preflight, Fly

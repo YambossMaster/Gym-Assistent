@@ -769,10 +769,9 @@ The 2026-10-07 delivery amendment automatically deploys a non-documentation, non
 changes `supabase/migrations/**` instead runs an independent Production dry-run and holds app
 deployment. Applying that migration requires the explicit exact-commit Production migration
 release workflow, a second dry-run, and the literal `APPLY` confirmation before the same commit is
-deployed. Both paths use the GitHub `production` Environment: Alpha has no reviewer gate; M8-D
-enables required reviewers before Beta so migration and deployment pause for approval. Required
-reviewers remain mandatory after Beta and throughout general availability; a formal launch never
-returns Production migration or deployment to unapproved execution.
+deployed. Both paths use the GitHub `production` Environment. The original M8-D human-reviewer
+proposal was superseded by the Product Owner's 2026-10-11 single-developer amendment below; the
+exact-SHA CI, fresh migration preview and literal `APPLY` release conditions remain binding.
 The 2026-10-10 incident-hardening amendment checks declared Fly runtime-secret names before deploy
 and before any Production migration application, captures redacted infrastructure diagnostics on
 deploy/readiness failure, and rejects empty commits as release candidates. Release-gate or Fly
@@ -823,6 +822,23 @@ grant state, and support route without using real records as fixtures. Check the
 cost and database-size dashboards and resolve release-blocking defects. A Beta invite is not M8
 completion by itself. Prove one isolated restore before admission and confirm the latest recoverable
 point is no older than 48 hours; the first offer expiry sets the M8-E deadline.
+
+**Approved M8-D recovery and release-gate amendment — 2026-10-11:** keep Supabase Free during Beta
+and accept the absence of PITR. Run a daily GitHub Actions `supabase db dump` logical backup, retain
+seven days of encrypted artifacts, keep the recovery passphrase separately available to the Product
+Owner, and verify a successful recoverable point no older than 48 hours. Before the first real Coach,
+prove an isolated logical restore by downloading and decrypting one produced artifact and applying
+its SQL in a network-disconnected Supabase Postgres container on an ephemeral Actions runner. Read
+back Auth users, Workspaces and the latest migration version. This is the M8-D restore evidence;
+the first backup alone cannot pass. Account for database migration history, Auth/Storage
+customizations, Storage object contents and Vault key handling. Disable or isolate restored `pg_cron`
+and `pg_net` outbound effects before any restore can run; never let the restored inactivity-deletion
+job call Production. The choice of logical backup satisfies the backup-method decision, while the
+first successful backup and restore remain evidence gates. For this single-developer repository,
+Required Reviewers are not used. Protect `main` with pull requests, zero required human approvals,
+required GitHub Actions checks and no bypass; the PR plus passing CI is the M8-D reviewer-gate
+substitute. Keep the existing exact-SHA Production deployment checks and literal `APPLY` migration
+release. Verify the saved branch rule before counting this exception as passed.
 
 **Approved M8-D follow-on correction — 2026-10-10:** before moving to paid-checkout work, implement
 the separately reviewed Settings finance export and calendar integration described in
