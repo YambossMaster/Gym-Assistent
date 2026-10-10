@@ -36,15 +36,16 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Local release-workflow hardening now separates actual schema migrations from release-gate/Fly
+- Delivered release-workflow hardening separates actual schema migrations from release-gate/Fly
   configuration changes. It validates declared Fly secret names before ordinary deploy and before
   Production migration apply, fails before SQL for missing startup-required values, warns for
   feature-required degradation, captures redacted bounded Fly logs plus machine state on failure,
   and prevents empty commits from deploying. Migration changes retain the preview and literal
   `APPLY` hold. Focused safeguard tests pass; Product Owner review and the broader delivery gate are
   complete locally: root check passes 33 release tests, API 43 files / 209 tests and Web 78 files /
-  349 tests; production build and development migration dry-run pass. The Product Owner authorized
-  immediate Main push, exact-SHA CI and deployment.
+  349 tests; production build and development migration dry-run pass. Exact SHA `8f8c480` is on
+  Main; CI #146 passed every required job, deployed it to Fly and passed readiness. Independent
+  external checks returned 200 for readiness, root and `/login`.
 - GitHub job evidence corrects the incident interpretation: CI #143 for `e2e275f` successfully ran
   `deploy-production` and readiness. The empty `6073cf1` commit began while that workflow was still
   running, so it was not required by the safeguard. Release handling must wait for the exact-SHA job
@@ -233,9 +234,10 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 ## Next handoff
 
-Commit and push the authorized release-workflow hardening to Main, then wait for exact-SHA verify,
-browser, development migration, fresh Production preview, Fly deployment and readiness. Do not
-create another commit while this workflow is queued or running.
+Release-workflow hardening is complete: exact SHA `8f8c480` passed CI #146 verify/build, browser,
+development migration dry-run, fresh no-pending Production preview, runtime-secret preflight, Fly
+deployment and readiness. Independent external checks returned 200 for `/api/ready`, root and
+`/login`. Do not create a new commit merely to retrigger a still-running exact-SHA workflow.
 
 Configure one stable, independently generated 256-bit `CALENDAR_SUBSCRIPTION_SECRET` in Fly
 Production. It is an application cryptographic secret, not a Supabase access token. Fly will restart
