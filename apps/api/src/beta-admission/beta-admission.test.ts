@@ -50,14 +50,42 @@ describe('Beta admission', () => {
     expect(await module.status(first)).toMatchObject({ state: 'free' })
   })
 
-  it.each([
-    ['permanent', { state: 'permanent', startedAt: '2026-10-03T02:00:00.000Z' }],
-    ['tester', { state: 'tester', startedAt: '2026-10-03T02:00:00.000Z' }],
-  ] as const)('redeems a single-use %s code into its own grant', async (kind, expected) => {
-    const { module, repository } = setup()
-    const code = kind === 'tester' ? 'tester-code' : 'permanent-code'
-    repository.issueForTest(codeDigest(code), 1, new Date('2026-10-10T00:00:00.000Z'), kind)
-    await expect(module.redeem(first, '127.0.0.1', { code })).resolves.toEqual(expected)
+  it('redeems a single-use permanent code once and keeps an identical retry idempotent', async () => {
+    const { module, repository, emails } = setup()
+    const code = 'permanent-code'
+    repository.issueForTest(codeDigest(code), 1, new Date('2026-10-10T00:00:00.000Z'), 'permanent')
+    await expect(module.redeem(first, '127.0.0.1', { code })).resolves.toEqual({
+      state: 'permanent',
+      startedAt: '2026-10-03T02:00:00.000Z',
+    })
+    await expect(module.redeem(first, '127.0.0.1', { code })).resolves.toMatchObject({
+      state: 'permanent',
+    })
+    expect(repository.usageForTest(codeDigest(code))).toBe(1)
+
+    const second = { userId: '22222222-2222-4222-8222-222222222222' }
+    emails.set(second.userId, 'second@example.com')
+    await expect(module.redeem(second, '127.0.0.2', { code })).rejects.toMatchObject({
+      reason: 'code_exhausted',
+    })
+    expect(repository.usageForTest(codeDigest(code))).toBe(1)
+  })
+
+  it('does not let one Workspace redeem a second code', async () => {
+    const { module, repository, code } = setup()
+    const permanentCode = 'another-permanent-code'
+    repository.issueForTest(
+      codeDigest(permanentCode),
+      1,
+      new Date('2026-10-10T00:00:00.000Z'),
+      'permanent',
+    )
+    await module.redeem(first, '127.0.0.1', { code })
+    await expect(module.redeem(first, '127.0.0.1', { code: permanentCode })).rejects.toMatchObject({
+      reason: 'already_eligible',
+    })
+    expect(repository.usageForTest(codeDigest(code))).toBe(1)
+    expect(repository.usageForTest(codeDigest(permanentCode))).toBe(0)
   })
 
   it('allows an uncapped promotional code while keeping one redemption per verified Email', async () => {

@@ -48,7 +48,6 @@ import {
   BetaRedemptionRateError,
 } from '../beta-admission/beta-admission.js'
 import { PlanAccessError, PlanAccessModule } from '../plan-access/plan-access.js'
-import { PlanSelectionError } from '../plan-access/plan-subscription.js'
 import {
   isStudentArchiveOnly,
   isVenueArchiveOnly,
@@ -436,18 +435,6 @@ export function buildServer({
     if (error instanceof ExportError)
       return reply.status(error.statusCode).send({ error: error.code })
     if (error instanceof PlanAccessError) return reply.status(403).send({ error: error.reason })
-    if (error instanceof PlanSelectionError)
-      return reply
-        .status(
-          error.reason === 'version_conflict'
-            ? 409
-            : error.reason === 'plan_test_required'
-              ? 403
-              : 400,
-        )
-        .send({
-          error: error.reason,
-        })
     if (
       (error as { code?: string; message?: string }).code === 'P0003' &&
       (error as { message?: string }).message === 'active_capacity_limit'
@@ -606,21 +593,6 @@ export function buildServer({
     server.get('/v1/plan', async (request) => {
       const identity = await identityVerifier.verify(request.headers.authorization)
       return { plan: await planAccess.get(identity) }
-    })
-    server.post<{ Body: unknown }>('/v1/plan/subscription', async (request) => {
-      const identity = await identityVerifier.verify(request.headers.authorization)
-      const input = z
-        .discriminatedUnion('kind', [
-          z.object({
-            kind: z.literal('select'),
-            tier: z.enum(['basic', 'advanced']),
-            interval: z.enum(['month', 'year']),
-            version: z.number().int().min(0),
-          }),
-          z.object({ kind: z.literal('cancel'), version: z.number().int().min(0) }),
-        ])
-        .parse(request.body)
-      return { plan: await planAccess.change(identity, input) }
     })
   }
   server.get('/ready', async (_request, reply) => {

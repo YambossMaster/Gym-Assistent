@@ -7,7 +7,6 @@ export type BetaGrant =
   | { state: 'promotional'; startedAt: string; endsAt: string }
   | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
-  | { state: 'tester'; startedAt: string }
 
 export type RedemptionFailure =
   | 'invalid_code'

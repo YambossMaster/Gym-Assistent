@@ -45,18 +45,18 @@ async function main(args: string[]) {
     const closesAt = new Date(closesText ?? '')
     const reason = reasonWords.join(' ').trim()
     if (
-      !['promotional', 'permanent', 'tester'].includes(kind ?? '') ||
+      !['promotional', 'permanent'].includes(kind ?? '') ||
       !code ||
       !/^[A-Za-z0-9_-]{8,64}$/.test(code) ||
       (limit !== null && (!Number.isInteger(limit) || limit < 1)) ||
-      ((kind === 'permanent' || kind === 'tester') && limit !== 1) ||
+      (kind === 'permanent' && limit !== 1) ||
       !Number.isFinite(closesAt.getTime()) ||
       closesAt <= new Date() ||
       !actor ||
       !reason
     )
       throw new Error(
-        'Usage: issue-named <promotional|permanent|tester> <code> <positive-limit|unlimited> <future-ISO-close> <actor> <reason>',
+        'Usage: issue-named <promotional|permanent> <code> <positive-limit|unlimited> <future-ISO-close> <actor> <reason>',
       )
     const id = randomUUID()
     await transaction(async (client) => {
@@ -94,12 +94,13 @@ async function main(args: string[]) {
     })
     return
   }
-  if (action === 'revoke-permanent') {
+  if (action === 'grant-permanent' || action === 'revoke-permanent') {
     const [userId, actor, ...reasonWords] = values
     const reason = reasonWords.join(' ').trim()
     if (!userId || !actor || !reason)
       throw new Error(`Usage: ${action} <verified-coach-user-id> <actor> <reason>`)
     await transaction(async (client) => {
+      await client.query("select pg_advisory_xact_lock(hashtext('beta-permanent-grants'))")
       const result = await client.query<{
         workspace_id: string
         kind: string | null
@@ -113,6 +114,24 @@ async function main(args: string[]) {
       )
       const grant = result.rows[0]
       if (!grant) throw new Error('Coach Workspace not found')
+      if (action === 'grant-permanent') {
+        if (grant.kind === 'permanent') return
+        if (grant.kind === 'promotional') {
+          await client.query(
+            `update app_private.beta_grant
+             set kind='permanent',prior_ends_at=ends_at,ends_at=null where workspace_id=$1`,
+            [grant.workspace_id],
+          )
+        } else {
+          await client.query(
+            `insert into app_private.beta_grant
+              (workspace_id,kind,started_at) values ($1,'permanent',now())`,
+            [grant.workspace_id],
+          )
+        }
+        await event(client, 'grant_permanent', actor, reason, null, grant.workspace_id)
+        return
+      }
       if (grant.kind !== 'permanent') throw new Error('Permanent grant not found')
       if (grant.prior_ends_at) {
         await client.query(
@@ -129,7 +148,9 @@ async function main(args: string[]) {
     })
     return
   }
-  throw new Error('Actions: issue, issue-named, list, revoke-code, revoke-permanent')
+  throw new Error(
+    'Actions: issue, issue-named, list, revoke-code, grant-permanent, revoke-permanent',
+  )
 }
 
 async function transaction(run: (client: PoolClient) => Promise<void>) {

@@ -3,7 +3,7 @@ import type { BetaAdmissionRepository, BetaGrant, RedemptionFailure } from './be
 
 interface Code {
   digest: string
-  kind: 'promotional' | 'permanent' | 'tester'
+  kind: 'promotional' | 'permanent'
   limit: number | null
   used: number
   closesAt: Date

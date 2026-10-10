@@ -98,9 +98,7 @@ const server = buildServer({
     new SupabaseVerifiedCoachEmail(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY),
     config.BETA_ADMISSION_SECRET,
   ),
-  planAccess: new PlanAccessModule(
-    new PostgresPlanAccessRepository(pool, (identity) => repository.resolveWorkspace(identity)),
-  ),
+  planAccess: new PlanAccessModule(new PostgresPlanAccessRepository(pool)),
   exports: new ExportModule({
     workspace: new WorkspaceModule({ repository }),
     students: new StudentModule({ repository }),

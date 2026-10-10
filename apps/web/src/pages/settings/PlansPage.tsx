@@ -1,19 +1,12 @@
 import type { Session } from '@supabase/supabase-js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CircleCheck } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ApiError,
-  changePlanSubscription,
-  readBetaGrant,
-  redeemBetaCode,
-  type BetaGrant,
-  type PlanAccess
-} from '../../api'
+import { ApiError, readBetaGrant, redeemBetaCode, type BetaGrant, type PlanAccess } from '../../api'
 import { betaGrantKey } from '../../beta-admission/BetaGate'
 import { planAccessKey, usePlanAccess } from '../../beta-admission/usePlanAccess'
-import { Confirmation, Page } from '../../shared/primitives'
+import { Page } from '../../shared/primitives'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 
@@ -29,7 +22,6 @@ function planDate(instant: string): string {
 }
 
 export function PlanPanel({
-  session,
   grant,
   plan,
   loading,
@@ -42,7 +34,6 @@ export function PlanPanel({
   offerError,
   offerSuccess
 }: {
-  session: Session
   grant: BetaGrant | undefined
   plan: PlanAccess | undefined
   loading: boolean
@@ -55,62 +46,18 @@ export function PlanPanel({
   offerError: string
   offerSuccess: string
 }) {
-  const queryClient = useQueryClient()
   const [selectedInterval, setSelectedInterval] = useState<'month' | 'year'>('month')
-  const [planAction, setPlanAction] = useState<
-    | {
-        kind: 'select'
-        tier: 'basic' | 'advanced'
-        interval: 'month' | 'year'
-      }
-    | { kind: 'cancel' }
-    | null
-  >(null)
-  const [planMessage, setPlanMessage] = useState('')
-  const changeMutation = useMutation({
-    mutationFn: () => {
-      if (!plan || !planAction) throw new Error('請重新讀取方案。')
-      return changePlanSubscription(session.access_token, { ...planAction, version: plan.version })
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(planAccessKey(session.user.id), updated)
-      void queryClient.invalidateQueries()
-      setPlanAction(null)
-      setPlanMessage('方案已更新。')
-    },
-    onError: (reason) => {
-      setPlanAction(null)
-      setPlanMessage(
-        reason instanceof ApiError && reason.status === 409
-          ? '方案已在其他裝置更新，請確認目前狀態後再試。'
-          : '目前無法變更方案，請稍後再試。'
-      )
-      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
-    }
-  })
   const promotional = plan?.source === 'promotional'
   const permanent = plan?.source === 'permanent'
-  const subscription = plan?.subscription
-  useEffect(() => {
-    if (subscription) setSelectedInterval(subscription.interval)
-  }, [subscription?.interval])
   const previouslyRedeemed = grant?.state === 'free' && Boolean(grant.startedAt)
   const canRedeem = grant?.state === 'free' && !grant.startedAt
   const currentBadge = (tier: PlanAccess['tier']) => {
     if (plan?.tier !== tier) return null
     if (plan.source === 'promotional') return '目前方案 · 優惠體驗'
     if (plan.source === 'permanent') return '目前方案 · 永久'
-    if (plan.source === 'tester') return '目前方案 · 測試'
-    if (subscription?.tier === tier) {
-      return `目前方案 · ${subscription.interval === 'month' ? '月費' : '年費'}`
-    }
     return '目前方案'
   }
-  const isCurrentSelection = (tier: 'basic' | 'advanced') => {
-    if (plan?.tier !== tier) return false
-    if (plan.source !== 'tester') return true
-    return subscription?.tier === tier && subscription.interval === selectedInterval
-  }
+  const isCurrentSelection = (tier: 'basic' | 'advanced') => plan?.tier === tier
 
   return (
     <div className="settings-plan-page">
@@ -190,22 +137,6 @@ export function PlanPanel({
                 </li>
               ))}
             </ul>
-            {plan?.canChangePlan && plan.tier !== 'free' && subscription && (
-              <div className="settings-plan-card-footer">
-                {subscription.pendingTier === 'free' ? (
-                  <span className="settings-plan-card-state">已安排下期使用</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="settings-plan-select"
-                    disabled={loading || error || changeMutation.isPending}
-                    onClick={() => setPlanAction({ kind: 'cancel' })}
-                  >
-                    切換至 Free 方案
-                  </button>
-                )}
-              </div>
-            )}
           </article>
           <article className="settings-plan-card is-featured">
             <div className="settings-plan-card-heading">
@@ -231,20 +162,7 @@ export function PlanPanel({
             </ul>
             {!isCurrentSelection('basic') && (
               <div className="settings-plan-card-footer">
-                {plan?.canChangePlan ? (
-                  <button
-                    type="button"
-                    className="settings-plan-select"
-                    disabled={loading || error || changeMutation.isPending}
-                    onClick={() =>
-                      setPlanAction({ kind: 'select', tier: 'basic', interval: selectedInterval })
-                    }
-                  >
-                    切換至 Pro 方案
-                  </button>
-                ) : (
-                  <span className="settings-plan-card-state">支付功能上線後開放</span>
-                )}
+                <span className="settings-plan-card-state">支付功能上線後開放</span>
               </div>
             )}
           </article>
@@ -274,33 +192,11 @@ export function PlanPanel({
             </ul>
             {!isCurrentSelection('advanced') && (
               <div className="settings-plan-card-footer">
-                {plan?.canChangePlan ? (
-                  <button
-                    type="button"
-                    className="settings-plan-select"
-                    disabled={loading || error || changeMutation.isPending}
-                    onClick={() =>
-                      setPlanAction({
-                        kind: 'select',
-                        tier: 'advanced',
-                        interval: selectedInterval
-                      })
-                    }
-                  >
-                    切換至 Prime 方案
-                  </button>
-                ) : (
-                  <span className="settings-plan-card-state">支付功能上線後開放</span>
-                )}
+                <span className="settings-plan-card-state">支付功能上線後開放</span>
               </div>
             )}
           </article>
         </div>
-        {planMessage && (
-          <p role="status" className="settings-plan-note">
-            {planMessage}
-          </p>
-        )}
       </section>
 
       <section
@@ -340,11 +236,9 @@ export function PlanPanel({
               ? `已套用優惠碼，優惠至 ${planDate(plan!.offerEndsAt!)}。`
               : permanent
                 ? '你已具有永久 Prime 方案權限，不需套用優惠碼。'
-                : grant?.state === 'tester'
-                  ? '此帳號可切換 Free、Pro 與 Prime 方案進行測試。'
-                  : previouslyRedeemed
-                    ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
-                    : '方案資料讀取後可在此套用優惠碼。'}
+                : previouslyRedeemed
+                  ? '此帳號已使用過一次優惠體驗，無法重複兌換。'
+                  : '方案資料讀取後可在此套用優惠碼。'}
           </p>
         )}
         {offerSuccess && (
@@ -353,22 +247,6 @@ export function PlanPanel({
           </p>
         )}
       </section>
-
-      {planAction && (
-        <Confirmation
-          title="確認方案變更"
-          text={
-            planAction.kind === 'cancel'
-              ? '確認立即切換至 Free 方案。'
-              : `確認立即切換至 ${planAction.tier === 'basic' ? 'Pro' : 'Prime'} 方案（${planAction.interval === 'month' ? '月費' : '年費'}測試狀態）。`
-          }
-          onCancel={() => setPlanAction(null)}
-          onConfirm={() => changeMutation.mutate()}
-          disabled={changeMutation.isPending}
-          confirmLabel="確認選擇"
-          tone="neutral"
-        />
-      )}
     </div>
   )
 }
@@ -391,11 +269,7 @@ export function PlansPage({ session }: { session: Session }) {
       setOfferCode('')
       setOfferError('')
       setOfferSuccess(
-        grant.state === 'tester'
-          ? '方案測試資格已啟用。'
-          : grant.state === 'permanent'
-            ? '永久 Prime 資格已啟用。'
-            : '60 天 Prime 體驗已啟用。'
+        grant.state === 'permanent' ? '永久 Prime 資格已啟用。' : '60 天 Prime 體驗已啟用。'
       )
     },
     onError: (reason) => {
@@ -431,7 +305,6 @@ export function PlansPage({ session }: { session: Session }) {
         返回方案與帳單
       </Link>
       <PlanPanel
-        session={session}
         grant={grantQuery.data}
         plan={planQuery.data}
         loading={grantQuery.isPending || planQuery.isPending}

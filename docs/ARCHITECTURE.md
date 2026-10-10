@@ -186,16 +186,16 @@ HTTP adapter -> application Module -> repository interface -> PostgreSQL adapter
 identity verifier -------+               in-memory test adapter
 ```
 
-| Module             | Owns                                                                 | Does not own                                             |
-| ------------------ | -------------------------------------------------------------------- | -------------------------------------------------------- |
-| Identity/Workspace | token verification, Workspace bootstrap/resolution                   | Coach-chosen Workspace IDs                               |
-| Account Lifecycle  | profile/settings, sessions, recovery, deletion lifecycle             | feature navigation or Coach workflows                    |
-| Student/Lesson     | Student lifecycle, purchases, derived balance/manual income          | scheduling or payment processing                         |
-| Scheduling         | Course Sessions, Series, availability, blocks, conflict projection   | training-set details or silent repair                    |
-| Training           | exercise definitions, records, exercise/set snapshots, performance   | schedule placement                                       |
-| Public Access      | capability issuance/redemption, expiry/revocation, allowlists        | reuse of private Coach responses                         |
-| Plan Access        | effective tier, code grants, capacity/feature policy, test switching | payment-provider truth or cross-Workspace administration |
-| Notification       | later outbox/delivery policy                                         | direct coupling from core Modules to providers           |
+| Module             | Owns                                                               | Does not own                                             |
+| ------------------ | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| Identity/Workspace | token verification, Workspace bootstrap/resolution                 | Coach-chosen Workspace IDs                               |
+| Account Lifecycle  | profile/settings, sessions, recovery, deletion lifecycle           | feature navigation or Coach workflows                    |
+| Student/Lesson     | Student lifecycle, purchases, derived balance/manual income        | scheduling or payment processing                         |
+| Scheduling         | Course Sessions, Series, availability, blocks, conflict projection | training-set details or silent repair                    |
+| Training           | exercise definitions, records, exercise/set snapshots, performance | schedule placement                                       |
+| Public Access      | capability issuance/redemption, expiry/revocation, allowlists      | reuse of private Coach responses                         |
+| Plan Access        | effective tier, code grants, capacity and feature policy           | payment-provider truth or cross-Workspace administration |
+| Notification       | later outbox/delivery policy                                       | direct coupling from core Modules to providers           |
 
 ### 6.1 Preserved M3 seam
 
@@ -218,11 +218,11 @@ M6 Public Access may read only frozen purpose-specific interfaces from these Mod
 duplicate their private projections or take ownership of placement, status, Training content, or
 performance history.
 
-M8 Plan Access combines Free defaults, promotional/permanent grants and authorized subscription or
-test state into one server-owned effective-plan projection. During the pre-payment Beta, only a
-code-marked plan tester may mutate its own test selection; historical zero-price selection rows do
-not authorize ordinary Coaches. Payment-provider events remain an M8-E authority and cannot be
-fabricated by the tester path.
+M8 Plan Access combines Free defaults and promotional/permanent grants into one server-owned
+effective-plan projection. During the pre-payment Beta, no Coach-facing operation changes the plan;
+historical zero-price selection rows do not authorize ordinary Coaches. Explicit owner testing uses
+isolated fixtures or an individually authorized backend operation rather than a redeemable product
+entitlement. Payment-provider events remain an M8-E authority and cannot be fabricated by testing.
 
 ### 6.3 HTTP and conflict contract
 

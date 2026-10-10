@@ -14,7 +14,6 @@
     "e2e:m1": "node --env-file=.env.e2e --import tsx src/e2e/run-m1-live.ts",
     "e2e:password": "node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/run-password-live.ts",
     "e2e:beta": "node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/run-beta-admission-live.ts",
-    "e2e:plan-choice": "node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/run-plan-selection-live.ts",
     "e2e:m3": "node --env-file=.env.e2e --import tsx src/e2e/run-m3-live.ts",
     "e2e:m4": "node --env-file=.env.e2e --import tsx src/e2e/run-m4-live.ts",
     "e2e:m5": "node --env-file=.env.e2e --import tsx src/e2e/run-m5-live.ts",

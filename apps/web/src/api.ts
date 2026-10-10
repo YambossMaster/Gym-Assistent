@@ -17,7 +17,6 @@ export type BetaGrant =
   | { state: 'promotional'; startedAt: string; endsAt: string }
   | { state: 'free'; startedAt?: string; endsAt?: string }
   | { state: 'permanent'; startedAt: string }
-  | { state: 'tester'; startedAt: string }
 
 export interface LegalAcceptanceStatus {
   accepted: boolean
@@ -48,40 +47,17 @@ export async function acceptLegalTerms(
 
 export interface PlanAccess {
   tier: 'free' | 'basic' | 'advanced'
-  source: 'free' | 'promotional' | 'permanent' | 'tester'
+  source: 'free' | 'promotional' | 'permanent'
   activeStudents: number
   activeVenues: number
   studentLimit: number | null
   venueLimit: number | null
   overCapacity: boolean
-  canChangePlan: boolean
   offerEndsAt?: string
-  version: number
-  subscription?: {
-    tier: 'basic' | 'advanced'
-    interval: 'month' | 'year'
-    periodEndsAt: string
-    pendingTier: 'free' | 'basic' | 'advanced' | null
-    pendingInterval: 'month' | 'year' | null
-  }
 }
 
 export async function readPlanAccess(accessToken: string): Promise<PlanAccess> {
   const response = await request<{ plan: PlanAccess }>('/api/v1/plan', accessToken)
-  return response.plan
-}
-
-export async function changePlanSubscription(
-  accessToken: string,
-  action:
-    | { kind: 'select'; tier: 'basic' | 'advanced'; interval: 'month' | 'year'; version: number }
-    | { kind: 'cancel'; version: number }
-): Promise<PlanAccess> {
-  const response = await request<{ plan: PlanAccess }>(
-    '/api/v1/plan/subscription',
-    accessToken,
-    json('POST', action)
-  )
   return response.plan
 }
 

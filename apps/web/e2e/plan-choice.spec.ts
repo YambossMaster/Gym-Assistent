@@ -38,8 +38,7 @@ async function mockFreePlanJourney(page: Page) {
     activeVenues: 0,
     studentLimit: 5 as number | null,
     venueLimit: 1 as number | null,
-    overCapacity: false,
-    version: 0
+    overCapacity: false
   }
   let planMutationCount = 0
   await page.route('**/api/v1/**', async (route) => {
@@ -48,7 +47,7 @@ async function mockFreePlanJourney(page: Page) {
       await route.fulfill({ json: { plan } })
     } else if (pathname === '/api/v1/plan/subscription') {
       planMutationCount += 1
-      await route.fulfill({ status: 403, json: { error: 'plan_tester_required' } })
+      await route.fulfill({ status: 404, json: { error: 'plan_mutation_unavailable' } })
     } else if (pathname === '/api/v1/beta/status') {
       await route.fulfill({ json: { grant: { state: 'free' } } })
     } else if (pathname === '/api/v1/workspace-settings') {

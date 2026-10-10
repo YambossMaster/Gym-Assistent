@@ -16,29 +16,8 @@ export type PlanSubscriptionAction =
   | { kind: 'cancel'; version: number }
 
 export class PlanSelectionError extends Error {
-  constructor(readonly reason: 'no_subscription' | 'version_conflict' | 'plan_test_required') {
+  constructor(readonly reason: 'no_subscription' | 'version_conflict') {
     super(reason)
-  }
-}
-
-export function nextTestSubscription(
-  stored: PlanSubscription | null,
-  action: PlanSubscriptionAction,
-  now: Date,
-): PlanSubscription | null {
-  if (action.version !== (stored?.version ?? 0)) throw new PlanSelectionError('version_conflict')
-  if (action.kind === 'cancel') {
-    if (!stored) throw new PlanSelectionError('no_subscription')
-    return null
-  }
-  return {
-    tier: action.tier,
-    interval: action.interval,
-    periodStart: now,
-    periodEnd: addInterval(now, action.interval),
-    pendingTier: null,
-    pendingInterval: null,
-    version: action.version + 1,
   }
 }
 

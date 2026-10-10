@@ -4,7 +4,8 @@
 > The approved interval and prices are recorded in [ROADMAP.md](ROADMAP.md).
 > The 2026-10-08 [M8-D Beta plan-access correction](M8-D-BETA-PLAN-ACCESS-CONTRACT.md)
 > supersedes general production use of the zero-price selection phase. That lifecycle remains
-> available only to the single plan-tester Workspace until paid checkout is delivered.
+> unavailable to Coaches until paid checkout is delivered; owner testing uses isolated fixtures or
+> an individually authorized backend operation rather than a redeemable entitlement.
 
 ## Approved for the first paid release
 

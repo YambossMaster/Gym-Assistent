@@ -3,16 +3,16 @@ import type { Pool, PoolClient } from 'pg'
 import type { BetaAdmissionRepository, BetaGrant, RedemptionFailure } from './beta-admission.js'
 
 interface GrantRow {
-  kind: 'promotional' | 'permanent' | 'tester'
+  kind: 'promotional' | 'permanent'
   started_at: Date
   ends_at: Date | null
-  state: 'promotional' | 'free' | 'permanent' | 'tester'
+  state: 'promotional' | 'free' | 'permanent'
   code_digest: string | null
 }
 
 interface CodeRow {
   id: string
-  code_kind: 'promotional' | 'permanent' | 'tester'
+  code_kind: 'promotional' | 'permanent'
   redemption_limit: number | null
   redemption_count: number
   closes_at: Date
@@ -29,12 +29,11 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
     const result = await this.pool.query<GrantRow>(
       `select g.kind,g.started_at,g.ends_at,c.code_digest,
         case when g.kind='permanent' then 'permanent'
-             when g.kind='tester' then 'tester'
              when g.ends_at>now() then 'promotional' else 'free' end as state
        from app_private.workspace w
        join app_private.beta_grant g on g.workspace_id=w.id
        left join app_private.beta_code c on c.id=g.code_id
-       where w.owner_user_id=$1`,
+       where w.owner_user_id=$1 and g.kind in ('promotional','permanent')`,
       [userId],
     )
     return mapGrant(result.rows[0])
@@ -59,7 +58,8 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       const code = (
         await client.query<CodeRow>(
           `select id,code_kind,redemption_limit,redemption_count,closes_at,revoked_at
-           from app_private.beta_code where code_digest=$1 for update`,
+           from app_private.beta_code
+           where code_digest=$1 and code_kind in ('promotional','permanent') for update`,
           [input.codeDigest],
         )
       ).rows[0]
@@ -142,12 +142,11 @@ async function grantForUser(client: PoolClient, userId: string): Promise<GrantRo
   const result = await client.query<GrantRow>(
     `select g.kind,g.started_at,g.ends_at,c.code_digest,
       case when g.kind='permanent' then 'permanent'
-           when g.kind='tester' then 'tester'
            when g.ends_at>now() then 'promotional' else 'free' end as state
      from app_private.workspace w
      join app_private.beta_grant g on g.workspace_id=w.id
      left join app_private.beta_code c on c.id=g.code_id
-     where w.owner_user_id=$1 for update of g`,
+     where w.owner_user_id=$1 and g.kind in ('promotional','permanent') for update of g`,
     [userId],
   )
   return result.rows[0]
@@ -176,7 +175,6 @@ function mapGrant(row: GrantRow | undefined): BetaGrant {
   if (!row) return { state: 'free' }
   if (row.state === 'permanent')
     return { state: 'permanent', startedAt: row.started_at.toISOString() }
-  if (row.state === 'tester') return { state: 'tester', startedAt: row.started_at.toISOString() }
   return {
     state: row.state,
     startedAt: row.started_at.toISOString(),

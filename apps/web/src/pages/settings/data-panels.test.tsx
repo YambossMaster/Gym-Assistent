@@ -58,15 +58,13 @@ async function render(prime = false, active = false, expired = false) {
   const props: DataPanelProps = {
     session: { user: { id: 'coach' }, access_token: 'synthetic' } as Session,
     plan: {
-      tier: prime ? 'advanced' : 'basic',
-      source: 'tester',
+      tier: prime ? 'advanced' : 'free',
+      source: prime ? 'permanent' : 'free',
       activeStudents: 0,
       activeVenues: 0,
       studentLimit: null,
       venueLimit: null,
-      overCapacity: false,
-      canChangePlan: true,
-      version: 1
+      overCapacity: false
     },
     timeZone: 'Asia/Taipei',
     loadingError: false,

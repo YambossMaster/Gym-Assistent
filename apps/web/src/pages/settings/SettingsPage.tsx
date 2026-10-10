@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { FormSelect } from '../../shared/FormSelect'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import {
   ArrowRight,
   CircleCheck,
@@ -20,12 +20,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ApiError,
-  changePlanSubscription,
   deleteAccountImmediately,
   type PlanAccess,
   type WorkspaceSettings
 } from '../../api'
-import { planAccessKey, usePlanAccess } from '../../beta-admission/usePlanAccess'
+import { usePlanAccess } from '../../beta-admission/usePlanAccess'
 import {
   changePassword,
   passwordRecoveryRedirect,
@@ -63,108 +62,25 @@ function planPeriodDate(instant: string): string {
 }
 
 function PlanSummary({
-  session,
   plan,
   loading,
   error,
   onRetry
 }: {
-  session: Session
   plan: PlanAccess | undefined
   loading: boolean
   error: boolean
   onRetry: () => void
 }) {
-  const queryClient = useQueryClient()
-  const [confirmCancel, setConfirmCancel] = useState(false)
-  const [confirmResume, setConfirmResume] = useState(false)
-  const [message, setMessage] = useState('')
-  const subscription = plan?.subscription
-  const pendingPlan = subscription?.pendingTier
-    ? `${subscription.pendingTier === 'free' ? 'Free' : subscription.pendingTier === 'basic' ? 'Pro' : 'Prime'} 方案${subscription.pendingInterval ? ` · ${subscription.pendingInterval === 'month' ? '月費' : '年費'}` : ''}`
-    : null
   const periodLabel =
-    plan?.source === 'promotional'
-      ? '優惠體驗'
-      : plan?.source === 'permanent'
-        ? '永久資格'
-        : plan?.source === 'tester'
-          ? '方案測試'
-          : subscription
-            ? subscription.interval === 'month'
-              ? '月費方案'
-              : '年費方案'
-            : '—'
+    plan?.source === 'promotional' ? '優惠體驗' : plan?.source === 'permanent' ? '永久資格' : '—'
   const periodEnd =
     plan?.source === 'promotional' && plan.offerEndsAt
       ? planPeriodDate(plan.offerEndsAt)
       : plan?.source === 'permanent'
         ? '無期限'
-        : plan?.source === 'tester'
-          ? '隨時切換'
-          : subscription
-            ? planPeriodDate(subscription.periodEndsAt)
-            : '—'
-  const nextPlan = pendingPlan
-    ? pendingPlan
-    : plan?.source === 'tester'
-      ? '可隨時切換方案'
-      : plan?.source === 'promotional'
-        ? subscription
-          ? `${subscription.tier === 'basic' ? 'Pro' : 'Prime'} 方案 · ${subscription.interval === 'month' ? '月費' : '年費'}`
-          : 'Free 方案'
-        : subscription
-          ? `同方案續訂 · ${subscription.interval === 'month' ? '月費' : '年費'}`
-          : planName(plan)
-  const cancelMutation = useMutation({
-    mutationFn: () => {
-      if (!plan || !subscription) throw new Error('請重新讀取方案。')
-      return changePlanSubscription(session.access_token, { kind: 'cancel', version: plan.version })
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(planAccessKey(session.user.id), updated)
-      void queryClient.invalidateQueries()
-      setConfirmCancel(false)
-      setMessage('已安排於本期結束後轉為 Free 方案。')
-    },
-    onError: (reason) => {
-      setConfirmCancel(false)
-      setMessage(
-        reason instanceof ApiError && reason.status === 409
-          ? '方案已在其他裝置更新，請確認目前狀態後再試。'
-          : '目前無法變更方案，請稍後再試。'
-      )
-      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
-    }
-  })
-  const resumeMutation = useMutation({
-    mutationFn: () => {
-      if (!plan || !subscription) throw new Error('請重新讀取方案。')
-      return changePlanSubscription(session.access_token, {
-        kind: 'select',
-        tier: subscription.tier,
-        interval: subscription.interval,
-        version: plan.version
-      })
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(planAccessKey(session.user.id), updated)
-      void queryClient.invalidateQueries()
-      setConfirmResume(false)
-      setMessage(`已取消原定變更，將繼續使用 ${planName(updated)}。`)
-    },
-    onError: (reason) => {
-      setConfirmResume(false)
-      setMessage(
-        reason instanceof ApiError && reason.status === 409
-          ? '方案已在其他裝置更新，請確認目前狀態後再試。'
-          : '目前無法恢復續訂，請稍後再試。'
-      )
-      void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
-    }
-  })
-  const hasPendingChange = Boolean(subscription?.pendingTier)
-  const pendingCancellation = subscription?.pendingTier === 'free'
+        : '—'
+  const nextPlan = plan?.source === 'promotional' ? 'Free 方案' : planName(plan)
   return (
     <div className="settings-plan-overview">
       <section className="settings-current-plan-card" aria-labelledby="current-plan-title">
@@ -190,7 +106,6 @@ function PlanSummary({
             </div>
             {!loading && !error && plan?.source === 'promotional' && <p>Prime 方案優惠體驗</p>}
             {!loading && !error && plan?.source === 'permanent' && <p>永久 Prime 資格</p>}
-            {!loading && !error && plan?.canChangePlan && <p>方案測試帳號</p>}
           </div>
           {error && (
             <button type="button" className="settings-plan-retry" onClick={onRetry}>
@@ -218,37 +133,6 @@ function PlanSummary({
               <p className="settings-plan-capacity">
                 目前超出方案額度。資料仍可查看；封存學員或場地至額度內，即可恢復儲存。
               </p>
-            )}
-            {subscription && plan?.canChangePlan && (
-              <footer className="settings-current-plan-actions">
-                {hasPendingChange && (
-                  <span>
-                    {pendingCancellation
-                      ? `已安排於 ${periodEnd} 轉為 Free 方案。`
-                      : `已安排於 ${periodEnd} 改用 ${pendingPlan}。`}
-                  </span>
-                )}
-                <div>
-                  {hasPendingChange && (
-                    <button
-                      type="button"
-                      className="settings-plan-resume"
-                      onClick={() => setConfirmResume(true)}
-                    >
-                      {pendingCancellation ? '繼續訂閱' : '保留目前方案'}
-                    </button>
-                  )}
-                  {!pendingCancellation && (
-                    <button
-                      type="button"
-                      className="settings-plan-cancel"
-                      onClick={() => setConfirmCancel(true)}
-                    >
-                      切換至 Free
-                    </button>
-                  )}
-                </div>
-              </footer>
             )}
           </>
         )}
@@ -281,37 +165,6 @@ function PlanSummary({
           </div>
         </div>
       </section>
-      {message && (
-        <p role="status" className="settings-plan-note">
-          {message}
-        </p>
-      )}
-      {confirmCancel && subscription && (
-        <Confirmation
-          title="切換至 Free 方案？"
-          text="測試方案會立即切換為 Free；現有資料會保留。"
-          onCancel={() => setConfirmCancel(false)}
-          onConfirm={() => cancelMutation.mutate()}
-          disabled={cancelMutation.isPending}
-          confirmLabel="確認取消訂閱"
-          tone="neutral"
-        />
-      )}
-      {confirmResume && subscription && (
-        <Confirmation
-          title={pendingCancellation ? '繼續訂閱？' : '保留目前方案？'}
-          text={
-            pendingCancellation
-              ? `原定於 ${planPeriodDate(subscription.periodEndsAt)} 轉為 Free。確認後將撤回取消，${planName(plan)}會按${subscription.interval === 'month' ? '月' : '年'}續訂。`
-              : `原定於 ${planPeriodDate(subscription.periodEndsAt)} 改用 ${pendingPlan}。確認後將撤回變更，繼續使用 ${planName(plan)}。`
-          }
-          onCancel={() => setConfirmResume(false)}
-          onConfirm={() => resumeMutation.mutate()}
-          disabled={resumeMutation.isPending}
-          confirmLabel={pendingCancellation ? '繼續訂閱' : '保留目前方案'}
-          tone="neutral"
-        />
-      )}
     </div>
   )
 }
@@ -586,7 +439,6 @@ export function SettingsPage({ session }: { session: Session }) {
           )}
           {category === 'plans' && (
             <PlanSummary
-              session={session}
               plan={planQuery.data}
               loading={planQuery.isPending}
               error={planQuery.isError}

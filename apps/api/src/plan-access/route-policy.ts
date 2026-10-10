@@ -31,7 +31,6 @@ export function routePolicy(method: string, route: string | undefined): RoutePol
   if (route === '/v1/venues/:venueId' && method === 'DELETE') return 'delete-venue'
   if (
     route === '/v1/beta/redeem' ||
-    route === '/v1/plan/subscription' ||
     route === '/v1/exports' ||
     route === '/v1/finance-export' ||
     route.startsWith('/v1/calendar-integration') ||

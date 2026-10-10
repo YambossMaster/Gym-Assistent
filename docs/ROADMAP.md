@@ -588,13 +588,16 @@ official no-charge subscriptions; it does not charge, collect a card or issue a 
 invoice. Paid-price activation, proration and provider events remain in M8-E. An existing NT$0
 selection never starts a paid renewal without the Coach's explicit later confirmation.
 
-**Beta plan-access correction — 2026-10-08:** the zero-price selection slice remains reusable test
-infrastructure but is no longer generally available in Beta. Until M8-E checkout is live, ordinary
-Coaches use Free, an uncapped shared Beta code grants one 60-day Prime trial per verified Email, and
-one single-redemption permanent-free code grants Prime without an end date. A separate one-time
-plan-tester code marks one synthetic/owner Workspace that may immediately switch only its own
-effective plan among Free, Pro and Prime. Previously stored NT$0 selections do not grant ordinary
-Beta access and never become chargeable. The complete boundary is frozen in
+**Beta plan-access correction — 2026-10-08, amended 2026-10-10:** the zero-price selection slice
+remains historical M8-B-Plan-Choice infrastructure but is not available in Beta. Until M8-E checkout
+is live, ordinary Coaches use Free, an uncapped shared Beta code grants one 60-day Prime trial per
+verified Email, and one single-redemption permanent-free code grants Prime without an end date. The
+former plan-tester code and authenticated self-service plan mutation are removed. Product Owner
+testing uses isolated fixtures or an individually authorized backend operation against the owner's
+own Workspace; it is not a redeemable entitlement or general administrative role. Previously stored
+NT$0 selections do not grant ordinary Beta access and never become chargeable. Historical tester
+codes are revoked, their active grants are removed and their audit ledger is retained. The complete
+boundary is frozen in
 [`M8-D-BETA-PLAN-ACCESS-CONTRACT.md`](M8-D-BETA-PLAN-ACCESS-CONTRACT.md).
 
 The Beta uses **Local + Production** only: the existing development project remains local
@@ -802,9 +805,9 @@ Advanced offer, continuing Free limits, checkout launch timing and limited perma
 grants clearly. Freeze a backup retention period, a recoverable-point check no older than 48 hours,
 the 70%/80%/90% disk review marks and an isolated restore check. Identify the earliest offer expiry
 and start M8-E checkout work at Beta launch.
-The 2026-10-08 plan-access correction fixes the initial Beta catalog to Free for ordinary Coaches,
-plus the frozen 60-day Prime, permanent Prime and plan-tester code classes. Only the plan tester may
-use the pre-payment self-service plan mutation.
+The 2026-10-08 plan-access correction, amended on 2026-10-10, fixes the initial Beta catalog to Free
+for ordinary Coaches plus the frozen 60-day Prime and permanent Prime code classes. There is no
+pre-payment self-service plan mutation or plan-tester code.
 
 **Sol gate:** admit verified Coaches with or without an offer code, keep existing Coach data behind verified identity,
 make expiry/grant state visible, and collect product feedback through the selected external channel.
