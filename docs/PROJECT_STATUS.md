@@ -10,15 +10,15 @@
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                               |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                 |
-| Current gate                  | **Finance + calendar correction approved for Main delivery; local full gate green, commit/push and exact-SHA CI next**                                        |
+| Current gate                  | **Finance + Calendar correction deployed; configure the Production Calendar secret, then finish installed-PWA acceptance**                                    |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                      |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                      |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                         |
-| Release candidate             | `ef347c4b850223e6206496a728ba84fe56bbd5ce`; [CI #137](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988602277) green and deployed             |
-| Worktree                      | Approved Finance + calendar hierarchy/interaction/security correction; root check, production build, development dry-run, schema lint and browser review pass |
-| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                                         |
-| Production release            | [Release #3](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988898210) applied `20261009171747` and deployed `ef347c4`; `/api/ready` 200       |
-| Pending Production migrations | `20261010054011` is applied to development and approved for release only after exact-SHA Production preview; Production history ends at `20261009171747`      |
+| Release candidate             | `6073cf13f7ab152290ae772c1e2bde2ae33787a3`; [CI #144](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38044493655) green and deployed             |
+| Worktree                      | Production recovery complete; this Status update is the only local change                                                                                     |
+| Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                                       |
+| Production release            | [Release #4](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38042435568) applied `20261010054011`; recovery CI #144 deployed exact SHA `6073cf1` |
+| Pending Production migrations | None from the Settings package; Production history includes `20261010054011`                                                                                  |
 
 ## Required context
 
@@ -78,10 +78,18 @@ startup context.
 
 ## Next handoff
 
-Commit and push the approved accumulated Settings correction to Main, then require green exact-SHA
-verify, browser UI, development migration dry-run and Production preview. The Product Owner has
-authorized deployment and intends to apply `20261010054011`; preserve the release workflow's final
-literal `APPLY` confirmation after the preview identifies the exact pending migration.
+Configure one stable, independently generated 256-bit `CALENDAR_SUBSCRIPTION_SECRET` in Fly
+Production. This is an application secret, not a Supabase access token. The resulting Fly restart
+must retain `/api/ready`, root and `/login` availability; then verify authenticated Calendar
+subscription create, recover and reset behavior without exposing the secret or private URLs.
+
+Release #4 applied only `20261010054011` but its first Fly deploy left the existing machine stopped.
+CI #142 diagnostics proved the machine had not started because `auto_start_machines` was false. The
+deployment config now enables auto-start, and exact-SHA CI #144 deployed `6073cf1` successfully.
+Independent browser-equivalent checks returned 200 for root and `/login`; `/api/ready` returned
+`{"status":"ready"}`. Missing `CALENDAR_SUBSCRIPTION_SECRET` was not the outage cause: the API now
+starts fail-closed without it, preserves existing feed reads, and returns 503 only for secret-
+dependent create/reset/recovery operations.
 
 PO approved the Google-compatible 256-bit private subscription path and accepted Fly upstream
 request-path log residual risk. Google fetched the synthetic private path and displayed its event;

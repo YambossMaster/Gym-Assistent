@@ -8,8 +8,8 @@
 | Gate      | State                                                                                             |
 | --------- | ------------------------------------------------------------------------------------------------- |
 | Contract  | Beta plan-access correction is frozen; broader admission, backup and restore gates remain binding |
-| Sol       | Accumulated plan-access, mobile and release safeguards reached Main at `fb75b7d`                  |
-| CI        | #120 / release #2 and Settings CI #137 / release #3 green; admission checks remain open           |
+| Sol       | Settings correction and stopped-machine recovery reached Main at `6073cf1`                        |
+| CI        | Settings CI #139, release #4 and recovery CI #144 complete; admission checks remain open          |
 | Admission | No real Coach admitted; Production contains two synthetic Coaches                                 |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
@@ -43,14 +43,15 @@ The detailed behavior and migration contract live in
   sets honest refresh expectations and is now default-collapsed below the interactive management
   controls. Local Sol
   adds an HMAC-derived URL contract that stores only a random salt plus token hash, and migration
-  `20261010054011_calendar_subscription_recoverable_url.sql`. It has been applied only to the
-  development project for local review; it remains uncommitted, unpushed and undeployed to
-  Production. Focused API tests pass 3 files / 15 tests; Web tests pass 4 files / 14 tests.
+  `20261010054011_calendar_subscription_recoverable_url.sql`. It is applied to development and
+  Production. Exact-SHA CI #139 passed the full gate, release #4 applied this migration, and
+  recovery CI #144 deployed the corrected Fly auto-start configuration.
   Isolated Chromium review at desktop and 390×844 confirms Tabs, the portalled quick-range menu,
   date picker and checkboxes remain visible and interactive. Product Owner review and the broader
-  CI gate remain pending. The development-only Calendar subscription secret required by this local
-  Sol is now configured in the ignored API environment; the normal Windows launcher again passes
-  API readiness and serves `/today`. No secret value or Production configuration was changed.
+  CI gate passed. The development-only Calendar subscription secret remains configured in the
+  ignored API environment; the normal Windows launcher passes API readiness and serves `/today`.
+  Production still needs its own stable Calendar application secret. Until then, existing feeds
+  remain readable while create/reset/recovery URL operations fail closed with 503.
 - The shared setting-dialog continuation cue now applies at desktop as well as mobile widths. It
   measures each declared scroll owner, adds a shallow bottom fade / `向下滑看更多 ↓` affordance only
   while content remains, and clears it at the lower boundary or whenever the content fits. The
@@ -66,14 +67,14 @@ The detailed behavior and migration contract live in
 - Development migration `20261010054011` was applied after the local Calendar dialog reproducibly
   failed while the API remained ready. A read-only schema probe proved `token_salt` was absent before
   apply and present afterward; retrying the same authenticated Chrome flow then loaded both Calendar
-  tabs. Production remains unchanged and still lists this migration as pending.
+  tabs. Production release #4 later applied the same migration.
 - The Product Owner's installed-PWA review found the finance export form lacked scannable field
   hierarchy and that all three custom selects appeared inert. The local correction groups controls
   into Time, Filter and Export sections, exposes persistent labels and the private-note checkbox,
   de-emphasizes the footer summary, and raises portalled select menus above the dialog backdrop.
   Focused Web tests pass 3 files / 11 tests; isolated desktop and 390×844 browser review confirms
   the middle scroller, fixed footer and visible select menus. The Product Owner approved the
-  accumulated correction for commit, Main push, CI and deployment; it is not yet deployed.
+  accumulated correction for commit, Main push, CI and deployment; it is now deployed.
 - On 2026-10-10 the Product Owner reported the first Alpha PWA test round finished and requested
   export redesign discussion, then approved local implementation of the two Settings specifications.
   This is not blanket acceptance of the remaining admission gates. The follow-up explicitly
@@ -218,11 +219,20 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 ## Next handoff
 
-Commit and push the approved accumulated Finance and Calendar hierarchy, interaction, security and
-dialog-scroll corrections to Main. Require green exact-SHA verify, browser UI, development migration
-dry-run and Production preview. After the preview lists only `20261010054011`, obtain the release
-workflow's final literal `APPLY`, then apply that migration, deploy the same SHA and verify
-`/api/ready`.
+Configure one stable, independently generated 256-bit `CALENDAR_SUBSCRIPTION_SECRET` in Fly
+Production. It is an application cryptographic secret, not a Supabase access token. Fly will restart
+the machine after the secret change; recheck `/api/ready`, root and `/login`, then verify an
+authenticated Calendar subscription create, recover and reset flow. Never print the secret or a
+private subscription URL in evidence.
+
+Exact-SHA CI #139 passed for the approved Settings correction (API 208 / Web 349), and release #4
+applied only `20261010054011`. The following deploy failure was unrelated to the missing Calendar
+secret: CI #142 diagnostics proved the existing Fly machine was stopped while
+`auto_start_machines = false`. The API was also changed to start fail-closed without the optional
+secret, preserving existing feed reads and limiting only create/reset/recovery URL operations.
+After enabling Fly auto-start, CI #144 deployed exact SHA `6073cf1` and passed readiness;
+independent browser-equivalent checks returned 200 for root and `/login`, and `/api/ready` returned
+`{"status":"ready"}`.
 
 PO approved the 256-bit private path after the bounded Basic Auth Google test failed and explicitly
 accepted Fly upstream path-log residual risk. The synthetic Google private feed returned 200 to
