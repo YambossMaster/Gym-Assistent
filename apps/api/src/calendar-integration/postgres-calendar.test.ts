@@ -23,14 +23,21 @@ function fixture(prime = true) {
       if (sql.startsWith('insert into app_private.calendar_subscription'))
         row = {
           token_hash: values[1],
-          version: values[2],
-          include_blocks: values[3],
-          show_names: values[4],
-          show_location: values[5],
+          token_salt: values[2],
+          version: values[3],
+          include_blocks: values[4],
+          show_names: values[5],
+          show_location: values[6],
           revoked_at: null,
         }
       if (sql.startsWith('update app_private.calendar_subscription set token_hash=null') && row)
-        row = { ...row, token_hash: null, revoked_at: new Date(), version: Number(row.version) + 1 }
+        row = {
+          ...row,
+          token_hash: null,
+          token_salt: null,
+          revoked_at: new Date(),
+          version: Number(row.version) + 1,
+        }
       if (sql.startsWith('update app_private.calendar_subscription set revoked_at=$2') && row)
         row = { ...row, revoked_at: values[1], version: Number(row.version) + 1 }
       return { rows: [] }
@@ -48,6 +55,7 @@ function fixture(prime = true) {
     { connect: async () => client } as unknown as Pool,
     resolve,
     plans,
+    'calendar-subscription-secret-for-tests',
     () => new Date('2026-10-10T00:00:00Z'),
   )
   return {
@@ -64,7 +72,7 @@ function fixture(prime = true) {
     },
   }
 }
-it('stores only the token hash, returns it only once, scopes by verified owner and checks versions', async () => {
+it('stores only the token hash and salt, recovers the stable URL for its owner and checks versions', async () => {
   const f = fixture(),
     identity = { userId: 'owner' }
   const result = await f.module.change(identity, {
@@ -79,8 +87,14 @@ it('stores only the token hash, returns it only once, scopes by verified owner a
   )!
   expect(insert.values[0]).toBe('resolved-owner')
   expect(insert.values[1]).toBe(tokenHash(result.token!))
+  expect(insert.values[2]).toMatch(/^[A-Za-z0-9_-]{22}$/)
   expect(JSON.stringify(f.calls)).not.toContain(result.token)
-  expect(await f.module.get(identity)).toEqual({ ...defaultSharing, version: 1, active: true })
+  expect(await f.module.get(identity)).toEqual({
+    ...defaultSharing,
+    version: 1,
+    active: true,
+    token: result.token,
+  })
   await expect(
     f.module.change(identity, { action: 'reset', version: 0, sharing: defaultSharing }),
   ).rejects.toMatchObject({ code: 'version_conflict' })
@@ -98,6 +112,7 @@ it('rejects downgraded creates, still allows disable, and never leaks a revoked 
   await expect(
     f.module.change(identity, { action: 'reset', version: 1, sharing: defaultSharing }),
   ).rejects.toMatchObject({ reason: 'plan_required' })
+  expect(await f.module.get(identity)).not.toHaveProperty('token')
   expect(await f.module.change(identity, { action: 'disable', version: 1 })).toMatchObject({
     active: false,
     version: 2,

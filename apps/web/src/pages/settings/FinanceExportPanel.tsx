@@ -121,121 +121,147 @@ function FinanceDialog({
         }}
       >
         <div className="settings-export-form-body" data-dialog-scroll-region>
-          <FormSelect
-            label="期間"
-            required
-            value={preset}
-            onChange={(p) => {
-              setPreset(p)
-              if (p !== 'custom') setDates(rangePreset(p, today))
-              setNotice('')
-            }}
-            options={[
-              { value: 'last-month', label: '上個月' },
-              { value: 'month', label: '本月' },
-              { value: 'year', label: '今年' },
-              { value: 'last-year', label: '去年' },
-              { value: 'custom', label: '自訂' }
-            ]}
-            disabled={pending}
-          />
-          {preset === 'custom' && (
-            <div className="data-tools-year">
-              <label>
-                快速選取年度
-                <input
-                  type="number"
-                  min="1900"
-                  max={Number(today.slice(0, 4))}
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={
-                  !/^\d{4}$/.test(year) ||
-                  Number(year) < 1900 ||
-                  Number(year) > Number(today.slice(0, 4)) ||
-                  pending
-                }
-                onClick={() => {
-                  setDates({
-                    start: `${year}-01-01`,
-                    end: year === today.slice(0, 4) ? today : `${year}-12-31`
-                  })
+          <section className="settings-export-step" aria-labelledby="finance-export-when">
+            <div className="settings-export-step-heading">
+              <span>01</span>
+              <h3 id="finance-export-when">時間區間</h3>
+            </div>
+            <div className="settings-export-field">
+              <span className="settings-export-field-label">快速選擇區間</span>
+              <FormSelect
+                label="快速選擇區間"
+                required
+                value={preset}
+                onChange={(p) => {
+                  setPreset(p)
+                  if (p !== 'custom') setDates(rangePreset(p, today))
                   setNotice('')
                 }}
-              >
-                套用年度
-              </button>
+                options={[
+                  { value: 'last-month', label: '上個月' },
+                  { value: 'month', label: '本月' },
+                  { value: 'year', label: '今年' },
+                  { value: 'last-year', label: '去年' },
+                  { value: 'custom', label: '自訂' }
+                ]}
+                disabled={pending}
+              />
             </div>
-          )}
-          <div className="settings-export-fields">
-            <SeriesDatePicker
-              label="開始日期"
-              value={dates.start}
-              disabled={pending}
-              onChange={(start) => {
-                setPreset('custom')
-                setDates({ ...dates, start })
-                setNotice('')
-              }}
-            />
-            <SeriesDatePicker
-              label="結束日期"
-              value={dates.end}
-              disabled={pending}
-              onChange={(end) => {
-                setPreset('custom')
-                setDates({ ...dates, end })
-                setNotice('')
-              }}
-            />
-          </div>
-          <p className="settings-export-hint">
-            可選擇歷史年度，每次最多 366 日；以 {timeZone} 為準。
-          </p>
-          {!valid && <p className="form-error">請選擇不含未來日期、最多 366 日的區間。</p>}
-          <FormSelect
-            label="場地"
-            value={venueId}
-            onChange={(v) => {
-              setVenue(v)
-              setNotice('')
-            }}
-            disabled={pending || venues.isPending || venues.isError}
-            options={[
-              { value: '', label: '全部場地' },
-              { value: 'none', label: '未指定場地' },
-              ...(venues.data?.venues ?? []).map((v) => ({ value: v.id, label: v.name }))
-            ]}
-          />
-          {venues.isError && (
-            <p role="alert">
-              場地暫時無法讀取。
-              <button type="button" onClick={() => void venues.refetch()}>
-                重試
-              </button>
+            {preset === 'custom' && (
+              <div className="data-tools-year">
+                <label>
+                  快速選取年度
+                  <input
+                    type="number"
+                    min="1900"
+                    max={Number(today.slice(0, 4))}
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={
+                    !/^\d{4}$/.test(year) ||
+                    Number(year) < 1900 ||
+                    Number(year) > Number(today.slice(0, 4)) ||
+                    pending
+                  }
+                  onClick={() => {
+                    setDates({
+                      start: `${year}-01-01`,
+                      end: year === today.slice(0, 4) ? today : `${year}-12-31`
+                    })
+                    setNotice('')
+                  }}
+                >
+                  套用年度
+                </button>
+              </div>
+            )}
+            <div className="settings-export-fields">
+              <SeriesDatePicker
+                label="開始日期"
+                value={dates.start}
+                disabled={pending}
+                onChange={(start) => {
+                  setPreset('custom')
+                  setDates({ ...dates, start })
+                  setNotice('')
+                }}
+              />
+              <SeriesDatePicker
+                label="結束日期"
+                value={dates.end}
+                disabled={pending}
+                onChange={(end) => {
+                  setPreset('custom')
+                  setDates({ ...dates, end })
+                  setNotice('')
+                }}
+              />
+            </div>
+            <p className="settings-export-hint">
+              可選擇歷史年度，每次最多 366 日；以 {timeZone} 為準。
             </p>
-          )}
-          <FormSelect
-            label="檔案格式"
-            required
-            value={format}
-            onChange={(f) => {
-              setFormat(f)
-              setNotice('')
-            }}
-            disabled={pending}
-            options={[
-              { value: 'xlsx', label: 'Excel · 摘要與明細' },
-              { value: 'csv', label: 'CSV · 收支明細' }
-            ]}
-          />
-          <details className="data-tools-options">
-            <summary>其他選項</summary>
-            <label className="settings-export-check">
+            {!valid && <p className="form-error">請選擇不含未來日期、最多 366 日的區間。</p>}
+          </section>
+
+          <section className="settings-export-step" aria-labelledby="finance-export-what">
+            <div className="settings-export-step-heading">
+              <span>02</span>
+              <h3 id="finance-export-what">資料篩選</h3>
+            </div>
+            <div className="settings-export-field">
+              <span className="settings-export-field-label">場地篩選</span>
+              <FormSelect
+                label="場地篩選"
+                value={venueId}
+                onChange={(v) => {
+                  setVenue(v)
+                  setNotice('')
+                }}
+                disabled={pending || venues.isPending || venues.isError}
+                options={[
+                  { value: '', label: '全部場地' },
+                  { value: 'none', label: '未指定場地' },
+                  ...(venues.data?.venues ?? []).map((v) => ({ value: v.id, label: v.name }))
+                ]}
+              />
+            </div>
+            {venues.isError && (
+              <p role="alert">
+                場地暫時無法讀取。
+                <button type="button" onClick={() => void venues.refetch()}>
+                  重試
+                </button>
+              </p>
+            )}
+          </section>
+
+          <section className="settings-export-step" aria-labelledby="finance-export-how">
+            <div className="settings-export-step-heading">
+              <span>03</span>
+              <h3 id="finance-export-how">匯出設定</h3>
+            </div>
+            <div className="settings-export-field">
+              <span className="settings-export-field-label">匯出格式</span>
+              <FormSelect
+                label="匯出格式"
+                required
+                value={format}
+                onChange={(f) => {
+                  setFormat(f)
+                  setNotice('')
+                }}
+                disabled={pending}
+                options={[
+                  { value: 'xlsx', label: 'Excel · 摘要與明細' },
+                  { value: 'csv', label: 'CSV · 收支明細' }
+                ]}
+              />
+            </div>
+            <label className="settings-export-check settings-export-option">
               <input
                 type="checkbox"
                 checked={notes}
@@ -247,11 +273,11 @@ function FinanceDialog({
               />
               包含收支私人備註（僅限本次）
             </label>
-          </details>
+          </section>
         </div>
         <footer className="settings-export-footer">
           <div className="settings-export-footer-copy">
-            <p>
+            <p className="settings-export-summary">
               {dates.start} — {dates.end} · {format.toUpperCase()}
               {' · '}
               {venueId === 'none'

@@ -1925,7 +1925,7 @@ svg {
 }
 .form-select-menu {
   position: fixed;
-  z-index: 200;
+  z-index: 1300;
   padding: 4px;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -9753,30 +9753,45 @@ body.is-reordering-exercise * {
   display: flex;
   gap: 9px;
 }
+:is(
+    .ui-settings-dialog,
+    .settings-operation-dialog,
+    .danger-confirmation-card
+  ).ui-dialog-has-more::after {
+  content: '向下滑看更多  ↓';
+  position: absolute;
+  z-index: 12;
+  right: var(--ui-scroll-cue-right, 16px);
+  bottom: var(--ui-scroll-cue-bottom, 0);
+  left: var(--ui-scroll-cue-left, 16px);
+  height: 38px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  box-sizing: border-box;
+  padding-bottom: 5px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 254, 250, 0),
+    rgba(255, 254, 250, 0.48) 48%,
+    rgba(255, 254, 250, 0.94) 100%
+  );
+  box-shadow: 0 -5px 12px rgba(36, 51, 39, 0.025);
+  color: #737b70;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
 @media (max-width: 720px) {
   :is(
       .ui-settings-dialog,
       .settings-operation-dialog,
       .danger-confirmation-card
     ).ui-dialog-has-more::after {
-    content: '向下滑看更多  ↓';
-    position: absolute;
-    z-index: 12;
-    right: var(--ui-scroll-cue-right, 16px);
-    bottom: var(--ui-scroll-cue-bottom, 0);
-    left: var(--ui-scroll-cue-left, 16px);
-    height: 58px;
-    display: flex;
-    align-items: end;
-    justify-content: center;
-    box-sizing: border-box;
-    padding-bottom: 7px;
-    background: linear-gradient(to bottom, rgba(255, 254, 250, 0), rgba(255, 254, 250, 0.98) 72%);
-    color: #6f756c;
+    height: 42px;
+    padding-bottom: 6px;
     font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    pointer-events: none;
   }
   .scheduling-dialog {
     height: min(610px, calc(100dvh - 20px));
@@ -19311,12 +19326,13 @@ button:disabled {
 .settings-export-dialog > header .icon-button {
   flex: 0 0 44px;
 }
-.settings-export-form {
+.settings-export-dialog > .settings-export-form {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
   width: 100%;
+  margin: 0;
 }
 
 .settings-export-step {
@@ -19327,7 +19343,7 @@ button:disabled {
 }
 .settings-export-step:first-child {
   border-top: 0;
-  padding-top: 24px;
+  padding-top: 12px;
 }
 .settings-export-step-heading {
   display: flex;
@@ -19342,6 +19358,17 @@ button:disabled {
   margin: 0;
   font-size: 17px;
   letter-spacing: -0.03em;
+}
+.settings-export-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.settings-export-field-label {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 .settings-export-type-grid {
   display: grid;
@@ -19423,6 +19450,12 @@ button:disabled {
   gap: 4px;
   min-width: 0;
 }
+.settings-export-summary {
+  margin: 0;
+  color: var(--text-secondary, #65715e);
+  font-size: 14px;
+  line-height: 1.5;
+}
 
 .settings-export-fields {
   display: grid;
@@ -19464,12 +19497,308 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px 22px;
 }
+.calendar-integration-tabs {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: #fffefa;
+}
+.calendar-integration-tabs button {
+  min-height: 58px;
+  padding: 9px 14px;
+  display: grid;
+  gap: 2px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink-soft);
+  text-align: left;
+  cursor: pointer;
+}
+.calendar-integration-tabs button strong,
+.calendar-integration-tabs button span {
+  display: block;
+}
+.calendar-integration-tabs button strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+.calendar-integration-tabs button span {
+  font-size: 12px;
+}
+.calendar-integration-tabs button[aria-selected='true'] {
+  border-color: #c8d2b6;
+  background: #f0f4e8;
+  box-shadow: inset 0 -3px #718453;
+}
+.calendar-integration-panel {
+  display: grid;
+  padding-bottom: 30px;
+}
+.calendar-integration-section {
+  display: grid;
+  gap: 15px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+}
+.calendar-integration-section:last-child {
+  border-bottom: 0;
+}
+.calendar-integration-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.calendar-integration-fieldset legend,
+.calendar-section-heading h3,
+.calendar-export-intro h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 750;
+}
+.calendar-integration-fieldset legend {
+  margin-bottom: 10px;
+}
+.calendar-section-heading p,
+.calendar-export-intro p,
+.calendar-guide-grid p,
+.calendar-legacy-link p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.calendar-status-chip {
+  padding: 6px 10px;
+  border-radius: 99px;
+  background: #edf3e3;
+  color: #50613e !important;
+  font-weight: 700;
+}
+.calendar-download-button {
+  justify-self: start;
+}
+.data-tools-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 10px;
+}
+.data-tools-link-row input {
+  width: 100%;
+  min-width: 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+}
+.calendar-copy-button {
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+.calendar-copy-button svg {
+  width: 19px;
+  height: 19px;
+}
+.calendar-legacy-link {
+  padding: 14px 16px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid #d9c695;
+  border-radius: 10px;
+  background: #fbf7e8;
+}
+.calendar-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.calendar-guide-disclosure {
+  border-bottom: 1px solid var(--line);
+}
+.calendar-guide-disclosure > summary {
+  min-height: 66px;
+  padding: 15px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  list-style: none;
+  cursor: pointer;
+}
+.calendar-guide-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.calendar-guide-disclosure > summary > span {
+  display: grid;
+  gap: 3px;
+}
+.calendar-guide-disclosure > summary strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+.calendar-guide-disclosure > summary small,
+.calendar-guide-content > p {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.calendar-guide-disclosure > summary svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: #68725f;
+  transition: transform 160ms ease;
+}
+.calendar-guide-disclosure[open] > summary svg {
+  transform: rotate(180deg);
+}
+.calendar-guide-content {
+  padding: 2px 0 24px;
+  display: grid;
+  gap: 14px;
+}
+.calendar-guide-content > p {
+  margin: 0;
+}
+.calendar-guide-grid article {
+  padding: 15px;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  border: 1px solid #dce2d7;
+  border-radius: 11px;
+  background: #fbfbf7;
+}
+.calendar-guide-grid ol {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  counter-reset: calendar-guide;
+}
+.calendar-guide-grid li {
+  position: relative;
+  min-height: 24px;
+  padding-left: 32px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+  counter-increment: calendar-guide;
+}
+.calendar-guide-grid li::before {
+  content: counter(calendar-guide);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c6d0b9;
+  border-radius: 50%;
+  background: #eef3e6;
+  color: #52643f;
+  font:
+    700 11px/1 'DM Mono',
+    monospace;
+}
+.calendar-guide-note {
+  padding-top: 9px;
+  border-top: 1px solid #e2e6dc;
+}
+.calendar-guide-footnote {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #788b5d;
+  background: #f1f4eb;
+  color: #59675b;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.calendar-advanced-actions {
+  margin-top: 4px;
+}
+.calendar-version-conflict {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+}
+.calendar-export-intro {
+  padding: 18px 0 2px;
+}
+.calendar-range-group {
+  border-top: 0;
+}
+.calendar-export-options {
+  grid-template-columns: minmax(150px, 0.42fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 18px 0;
+}
+.calendar-export-options-copy {
+  display: grid;
+  gap: 5px;
+}
+.calendar-export-options-copy p {
+  margin: 0 0 0 27px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.calendar-enable-button {
+  justify-self: start;
+}
+.calendar-close-button {
+  margin-left: auto;
+}
+.data-tools-toast {
+  position: absolute;
+  z-index: 8;
+  right: 28px;
+  bottom: 92px;
+  max-width: min(420px, calc(100% - 56px));
+  padding: 12px 16px;
+  border: 1px solid #b9c8a6;
+  border-radius: 10px;
+  background: #263a2d;
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(26, 38, 28, 0.24);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.data-tools-toast[data-error='true'] {
+  border-color: #c97061;
+  background: #7f2f24;
+}
+.settings-export-dialog .danger-confirmation {
+  z-index: 1400;
+}
 
 .settings-export-check input,
 .settings-export-checks input {
   accent-color: #263a2d;
   width: 17px;
   height: 17px;
+}
+.settings-export-option {
+  width: fit-content;
+  min-height: 44px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .settings-export-download {
@@ -19551,6 +19880,32 @@ button:disabled {
     flex-direction: column;
     gap: 10px;
     padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+  }
+  .calendar-integration-tabs {
+    padding-top: 12px;
+  }
+  .calendar-guide-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .data-tools-link-row {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 8px;
+  }
+  .calendar-export-options {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .calendar-export-options-copy p {
+    margin-left: 27px;
+  }
+  .calendar-download-button,
+  .calendar-close-button {
+    width: 100%;
+  }
+  .data-tools-toast {
+    right: 18px;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    max-width: calc(100% - 36px);
   }
   .settings-export-fields {
     grid-template-columns: minmax(0, 1fr);

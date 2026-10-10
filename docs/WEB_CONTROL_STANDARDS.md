@@ -47,19 +47,31 @@ interface; when a row changes, verify its required labels and mobile scroll owne
 - Date, time and required Venue controls render the shared mark from their shared component. New
   route code must not hand-build a second red-star style.
 
-## Mobile setting-interface scrolling
+## Setting-interface scrolling
 
-- Every modal or bottom-sheet setting interface uses `useDialogBehavior`. On viewports up to 720px,
-  the shared behavior measures the actual scroll owner and adds a bottom fade plus
-  `向下滑看更多 ↓` only while more content remains. It disappears at the lower boundary and is
-  never shown when the content fits.
+- Every modal or bottom-sheet setting interface uses `useDialogBehavior`. At every viewport width,
+  the shared behavior measures the actual scroll owner and adds a bottom fade, soft upward shadow
+  and `向下滑看更多 ↓` only while more content remains. It disappears at the lower boundary and is
+  never shown when the content fits. Desktop and mobile use the same signal with viewport-appropriate
+  cue sizing. Keep the cue shallow and translucent so it hints at continuation without obscuring a
+  field or section heading.
+- Keep the declared scroll owner's established thin scrollbar and transparent track; do not replace
+  it with a route-specific rail, arrows or stronger color treatment. The scroll owner itself must
+  begin directly below the fixed header with no inherited form margin, so the thumb is not mistaken
+  for the beginning of the scrollable region.
 - Mark a deliberately nested scroll owner with `data-dialog-scroll-region`. A form with a fixed
   action footer must keep that footer outside the marked region; validation needed to understand a
   failed action belongs in a fixed, reserved message slot beside that footer.
+- When tabs replace the contents of one declared scroll owner, reset that owner to the top before
+  presenting the selected panel. A newly selected task must never inherit the prior tab's scroll
+  position.
 - The cue is an affordance, not a replacement for reachability. The last control must remain fully
   reachable above any safe-area inset, the cue must not intercept pointer/touch input, and the page
   behind the dialog remains locked.
-- Desktop retains its normal scrollbar behavior and does not show the mobile cue.
+- Keep the platform's normal scrollbar behavior. The cue supplements the scrollbar because a thin
+  or overlay scrollbar alone is not a reliable sign that necessary settings continue below.
+- Do not narrate internal persistence mechanics such as automatic saving. Preserve the user's
+  choices without a manual save control and surface only actionable failure or recovery feedback.
 
 ## New choice and date fields
 

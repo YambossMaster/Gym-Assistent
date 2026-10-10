@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                           |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                         |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                           |
-| Current gate                  | **Settings joint release deployed; Product Owner installed-PWA acceptance pending**                                                                     |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                   |
-| Release candidate             | `ef347c4b850223e6206496a728ba84fe56bbd5ce`; [CI #137](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988602277) green and deployed       |
-| Worktree                      | Joint Settings correction committed; API 208 / Web 343, builds, browser UI and migration checks passed remotely                                         |
-| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                                   |
-| Production release            | [Release #3](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988898210) applied `20261009171747` and deployed `ef347c4`; `/api/ready` 200 |
-| Pending Production migrations | None after Release #3; Production migration history includes `20261009171747`                                                                           |
+| Field                         | Current value                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                               |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                 |
+| Current gate                  | **Finance + calendar correction approved for Main delivery; local full gate green, commit/push and exact-SHA CI next**                                        |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                      |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                      |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                         |
+| Release candidate             | `ef347c4b850223e6206496a728ba84fe56bbd5ce`; [CI #137](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988602277) green and deployed             |
+| Worktree                      | Approved Finance + calendar hierarchy/interaction/security correction; root check, production build, development dry-run, schema lint and browser review pass |
+| Production                    | Healthy internal Alpha; two synthetic Coaches; no real Coach admitted                                                                                         |
+| Production release            | [Release #3](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37988898210) applied `20261009171747` and deployed `ef347c4`; `/api/ready` 200       |
+| Pending Production migrations | `20261010054011` is applied to development and approved for release only after exact-SHA Production preview; Production history ends at `20261009171747`      |
 
 ## Required context
 
@@ -77,6 +77,11 @@ startup context.
   governed by the M8-D Contract and Roadmap gate.
 
 ## Next handoff
+
+Commit and push the approved accumulated Settings correction to Main, then require green exact-SHA
+verify, browser UI, development migration dry-run and Production preview. The Product Owner has
+authorized deployment and intends to apply `20261010054011`; preserve the release workflow's final
+literal `APPLY` confirmation after the preview identifies the exact pending migration.
 
 PO approved the Google-compatible 256-bit private subscription path and accepted Fly upstream
 request-path log residual risk. Google fetched the synthetic private path and displayed its event;

@@ -69,11 +69,15 @@ Dependencies and operational consequences:
 ## Final subscription decision and release gate
 
 The PO accepted the residual possibility that Fly upstream logs contain request paths. Use a
-256-bit cryptographically random secret at `/api/v1/public/calendar/:token.ics`; store only SHA-256
-in the private database. Application logs, error reporting and analytics must never include the
-raw path, token or headers. No new ingress infrastructure or fee is required. Capability reset,
-disable, expiry interception, HTTPS, `no-store` and `no-referrer` remain binding. Users must treat
-the private URL like a password and can rotate it when needed.
+256-bit bearer token at `/api/v1/public/calendar/:token.ics`; store only its SHA-256 and a 128-bit
+non-secret salt in the private database. A dedicated 32+ character API-only secret and HMAC-SHA-256
+reconstruct the same token only for the authenticated owner while the subscription is active. The
+secret must not enter the database, Web bundle, logs or another credential role. Existing hash-only
+rows are not silently rotated; their owner resets once to opt into recoverable URLs. Application
+logs, error reporting and analytics must never include the raw path, token or headers. No new
+ingress infrastructure or fee is required. Capability reset, disable, expiry interception, HTTPS,
+`no-store` and `no-referrer` remain binding. Users must treat the private URL like a password and
+can rotate it when needed.
 
 The bounded Basic Auth test passed on Apple, but Google did not fetch the protected feed. The PO
 therefore explicitly replaced Basic Auth with the private URL contract. At 2026-10-10 04:23 Taipei,

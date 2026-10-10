@@ -32,10 +32,11 @@ Production release #3 completed on 2026-10-10; see the active Status for evidenc
 
 - `POST /v1/finance-export`: XLSX/CSV, start/end, optional venueId (`none` means unassigned),
   includePrivateNotes. Verified Coach only; current Prime before and after generation.
-- `GET /v1/calendar-integration`: non-secret versioned settings; any authenticated owner can
-  inspect/revoke existing settings even after downgrade.
-- `POST /v1/calendar-integration`: versioned create/reset/update/disable; create/reset returns a
-  256-bit token once. Except disable, current Prime is required. Zero is the initial version.
+- `GET /v1/calendar-integration`: versioned settings; while active, an authenticated owner also
+  receives the recoverable 256-bit bearer token needed to copy the same subscription URL.
+  Downgraded owners can still inspect/revoke existing settings, but receive no live event URL.
+- `POST /v1/calendar-integration`: versioned create/reset/update/disable; active results return the
+  same recoverable token. Except disable, current Prime is required. Zero is the initial version.
 - `POST /v1/calendar-integration/download`: bounded range plus explicit sharing settings, Prime only.
 - `GET /v1/public/calendar/:token.ics`: narrow private-path feed; hashed subscription secret resolves one
   owner; current account availability and entitlement checked on each request. No login redirects.
@@ -45,7 +46,10 @@ Production release #3 completed on 2026-10-10; see the active Status for evidenc
 ## Persistence and serialization
 
 Calendar settings and minimal published-event state live in private tables with tenant RLS.
-One settings row per Workspace stores only token hash, version, revoked time and sharing flags.
+One settings row per Workspace stores only token hash, non-secret random salt, version, revoked time
+and sharing flags. A dedicated server-only `CALENDAR_SUBSCRIPTION_SECRET` plus Workspace ID and salt
+reconstructs the token with HMAC-SHA-256; raw tokens never persist. Legacy rows without a salt remain
+valid but cannot be reconstructed until the owner explicitly resets the link.
 Feed reconciliation compares the current allowed event projection with the previously emitted
 UIDs, under a settings-row lock. Missing events become privacy-free cancelled tombstones for
 210 days. Reappearing events increment their stored sequence; reset clears emitted-event history.

@@ -24,11 +24,7 @@ function unlockPageScroll() {
   }
 }
 
-function updateMobileScrollCue(dialog: HTMLElement) {
-  if (typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 720px)').matches) {
-    dialog.classList.remove('ui-dialog-has-more')
-    return
-  }
+function updateDialogScrollCue(dialog: HTMLElement) {
   const preferred = dialog.querySelector<HTMLElement>('[data-dialog-scroll-region]')
   const candidates = preferred
     ? [preferred]
@@ -106,7 +102,7 @@ export function useDialogBehavior(
     if (focusDialog) dialogRef.current?.focus()
     const dialog = dialogRef.current
     const updateCue = () => {
-      if (dialog) updateMobileScrollCue(dialog)
+      if (dialog) updateDialogScrollCue(dialog)
     }
     const cueFrame = requestAnimationFrame(updateCue)
     dialog?.addEventListener('scroll', updateCue, true)

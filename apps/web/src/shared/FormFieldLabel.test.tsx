@@ -23,14 +23,14 @@ it('renders the shared compact required-field title', async () => {
   await act(async () => root.unmount())
 })
 
-it('shows the shared mobile continuation cue only while the declared region has more content', async () => {
+it('shows the shared continuation cue at desktop width only while the declared region has more content', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     callback(0)
     return 1
   })
   vi.stubGlobal('cancelAnimationFrame', () => undefined)
-  vi.stubGlobal('matchMedia', () => ({ matches: true }))
+  vi.stubGlobal('matchMedia', () => ({ matches: false }))
 
   function Harness() {
     const { dialogRef } = useDialogBehavior(() => undefined, { lockScroll: false })

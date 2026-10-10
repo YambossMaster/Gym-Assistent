@@ -14,6 +14,15 @@ const session = { user: { id: userId }, access_token: `dev:${userId}` } as Sessi
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 client.setQueryData(['export-venues', userId], { venues: [] })
 client.setQueryDefaults(['export-venues', userId], { staleTime: Infinity })
+client.setQueryData(['calendar-integration', userId], {
+  includeBlocks: false,
+  showNames: false,
+  showLocation: true,
+  version: 1,
+  active: true,
+  token: 'abcdefghijklmnopqrstuvwxyzABCDEFGH123456789'
+})
+client.setQueryDefaults(['calendar-integration', userId], { staleTime: Infinity })
 function Preview() {
   const [away, setAway] = useState(false)
   const props: DataPanelProps = {

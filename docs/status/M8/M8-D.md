@@ -36,14 +36,59 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner's calendar-integration review replaces the stacked collapsibles with two tabs,
+  makes labels and all controls directly interactive, keeps the active private URL copyable across
+  dialog sessions, uses Toast feedback and requires a destructive reset confirmation. The retained
+  Google／Apple guide gives short device-specific steps, explains Google's desktop-only URL setup,
+  sets honest refresh expectations and is now default-collapsed below the interactive management
+  controls. Local Sol
+  adds an HMAC-derived URL contract that stores only a random salt plus token hash, and migration
+  `20261010054011_calendar_subscription_recoverable_url.sql`. It has been applied only to the
+  development project for local review; it remains uncommitted, unpushed and undeployed to
+  Production. Focused API tests pass 3 files / 15 tests; Web tests pass 4 files / 14 tests.
+  Isolated Chromium review at desktop and 390×844 confirms Tabs, the portalled quick-range menu,
+  date picker and checkboxes remain visible and interactive. Product Owner review and the broader
+  CI gate remain pending. The development-only Calendar subscription secret required by this local
+  Sol is now configured in the ignored API environment; the normal Windows launcher again passes
+  API readiness and serves `/today`. No secret value or Production configuration was changed.
+- The shared setting-dialog continuation cue now applies at desktop as well as mobile widths. It
+  measures each declared scroll owner, adds a shallow bottom fade / `向下滑看更多 ↓` affordance only
+  while content remains, and clears it at the lower boundary or whenever the content fits. The
+  Product Owner rejected the added scrollbar rail, so the established thin transparent-track style
+  is restored. A higher-specificity inherited form margin was the real blank strip below the fixed
+  header; the export form now starts exactly at the header boundary. Calendar sharing choices now
+  persist without exposing implementation-status copy, and the unsupported reserved-time choice is
+  removed from both subscription and one-time export. Changing Calendar tabs now resets the shared
+  scroll owner to its true top. The collapsed guide follows URL and advanced management, and
+  single-export options use a compact row with dark CTA. Redundant student-name explanation copy is
+  removed; the mobile subscription URL and its accessible icon-only copy action remain on one row.
+  The Product Owner approved this presentation correction for the combined Main delivery.
+- Development migration `20261010054011` was applied after the local Calendar dialog reproducibly
+  failed while the API remained ready. A read-only schema probe proved `token_salt` was absent before
+  apply and present afterward; retrying the same authenticated Chrome flow then loaded both Calendar
+  tabs. Production remains unchanged and still lists this migration as pending.
+- The Product Owner's installed-PWA review found the finance export form lacked scannable field
+  hierarchy and that all three custom selects appeared inert. The local correction groups controls
+  into Time, Filter and Export sections, exposes persistent labels and the private-note checkbox,
+  de-emphasizes the footer summary, and raises portalled select menus above the dialog backdrop.
+  Focused Web tests pass 3 files / 11 tests; isolated desktop and 390×844 browser review confirms
+  the middle scroller, fixed footer and visible select menus. The Product Owner approved the
+  accumulated correction for commit, Main push, CI and deployment; it is not yet deployed.
 - On 2026-10-10 the Product Owner reported the first Alpha PWA test round finished and requested
   export redesign discussion, then approved local implementation of the two Settings specifications.
   This is not blanket acceptance of the remaining admission gates. The follow-up explicitly
-  authorizes commit, push Main, CI and deployment after checks; Production APPLY stays separate.
+  authorizes commit, push Main, CI and deployment after checks. On 2026-10-10 the Product Owner also
+  stated `APPLY`; the release workflow still requires the final literal confirmation after its
+  exact-SHA Production preview.
 - The explicitly authorized owner-account Prime grant was applied to Production Workspace
   `0c541f3a-257f-49f6-8318-49611435bfe9`. A read-back confirmed `permanent`, no expiry and effective
   `advanced`; operator event `44c82ae1-aa27-4b9c-9a22-57c707ffa242` records the request. No code was
   consumed, payment created or subscription changed. Authenticated PWA display was not checked.
+- The same verified owner Email was explicitly granted revocable, no-expiry Prime in the separate
+  development project for local feature testing. Development read-back confirms Workspace
+  `4ba6de2b-520d-4c65-88d0-1fd7d529ae0b` is `permanent` / effective `advanced`; its existing
+  zero-price subscription row remains intact. Operator event
+  `802e0c30-805d-45c8-8293-155be3272f78` records the request. Production was not touched.
 
 - The Product Owner narrowed the next design to finance exports and calendar integration, both
   under Settings as separate features, and deferred training/performance export options. Existing
@@ -172,6 +217,12 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 3. Record installed-device coverage honestly; browser 390×844 evidence is not installed-PWA proof.
 
 ## Next handoff
+
+Commit and push the approved accumulated Finance and Calendar hierarchy, interaction, security and
+dialog-scroll corrections to Main. Require green exact-SHA verify, browser UI, development migration
+dry-run and Production preview. After the preview lists only `20261010054011`, obtain the release
+workflow's final literal `APPLY`, then apply that migration, deploy the same SHA and verify
+`/api/ready`.
 
 PO approved the 256-bit private path after the bounded Basic Auth Google test failed and explicitly
 accepted Fly upstream path-log residual risk. The synthetic Google private feed returned 200 to

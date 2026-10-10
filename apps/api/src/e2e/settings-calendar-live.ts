@@ -30,6 +30,7 @@ const adapter = new PostgresCalendarIntegration(
   { connect: async () => fixtureClient } as unknown as Pool,
   async () => workspace,
   { get: async () => ({ tier: prime ? 'advanced' : 'free' }) } as never,
+  process.env.CALENDAR_SUBSCRIPTION_SECRET ?? 'development-calendar-subscription-secret',
   () => now,
 )
 const identity = { userId: 'rollback-only' }

@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHmac, randomBytes } from 'node:crypto'
 import type { Pool, PoolClient } from 'pg'
 import { z } from 'zod'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
@@ -36,10 +36,12 @@ const mutation = z
   })
   .strict()
 const download = sharingSchema.extend(reportDates).strict()
-const stateColumns = 'version, token_hash, revoked_at, include_blocks, show_names, show_location'
+const stateColumns =
+  'version, token_hash, token_salt, revoked_at, include_blocks, show_names, show_location'
 type StateRow = {
   version: number
   token_hash: string | null
+  token_salt: string | null
   revoked_at: Date | null
   include_blocks: boolean
   show_names: boolean
@@ -62,8 +64,20 @@ export class PostgresCalendarIntegration {
     private readonly pool: Pool,
     private readonly resolve: (identity: AuthenticatedIdentity) => Promise<string>,
     private readonly plans: PlanAccessModule,
+    private readonly subscriptionSecret: string,
     private readonly now = () => new Date(),
   ) {}
+  private token(workspaceId: string, salt: string) {
+    return createHmac('sha256', this.subscriptionSecret)
+      .update(`${workspaceId}:${salt}`)
+      .digest('base64url')
+  }
+  private result(workspaceId: string, row?: StateRow): CalendarState & { token?: string } {
+    const result = state(row)
+    if (!result.active || !row?.token_salt || !row.token_hash) return result
+    const token = this.token(workspaceId, row.token_salt)
+    return tokenHash(token) === row.token_hash ? { ...result, token } : result
+  }
   private async transaction<T>(work: (c: PoolClient) => Promise<T>) {
     const c = await this.pool.connect()
     try {
@@ -84,16 +98,16 @@ export class PostgresCalendarIntegration {
   }
   async get(identity: AuthenticatedIdentity) {
     const id = await this.resolve(identity)
+    const mayReadToken = (await this.plans.get(identity)).tier === 'advanced'
     return this.transaction(async (c) => {
       await this.scope(c, id)
-      return state(
-        (
-          await c.query<StateRow>(
-            `select ${stateColumns} from app_private.calendar_subscription where workspace_id=$1`,
-            [id],
-          )
-        ).rows[0],
-      )
+      const row = (
+        await c.query<StateRow>(
+          `select ${stateColumns} from app_private.calendar_subscription where workspace_id=$1`,
+          [id],
+        )
+      ).rows[0]
+      return mayReadToken ? this.result(id, row) : state(row)
     })
   }
   async change(identity: AuthenticatedIdentity, raw: unknown) {
@@ -128,16 +142,18 @@ export class PostgresCalendarIntegration {
       )
         throw new CalendarError(409, 'version_conflict')
       const sharing = input.sharing ?? current
-      const token = ['create', 'reset'].includes(input.action)
-        ? randomBytes(32).toString('base64url')
+      const tokenSalt = ['create', 'reset'].includes(input.action)
+        ? randomBytes(16).toString('base64url')
         : undefined
-      if (token) {
+      const token = tokenSalt ? this.token(id, tokenSalt) : undefined
+      if (token && tokenSalt) {
         await c.query(
-          `insert into app_private.calendar_subscription (workspace_id,token_hash,version,include_blocks,show_names,show_location) values ($1,$2,$3,$4,$5,$6)
-          on conflict (workspace_id) do update set token_hash=excluded.token_hash,version=excluded.version,include_blocks=excluded.include_blocks,show_names=excluded.show_names,show_location=excluded.show_location,revoked_at=null,updated_at=now()`,
+          `insert into app_private.calendar_subscription (workspace_id,token_hash,token_salt,version,include_blocks,show_names,show_location) values ($1,$2,$3,$4,$5,$6,$7)
+          on conflict (workspace_id) do update set token_hash=excluded.token_hash,token_salt=excluded.token_salt,version=excluded.version,include_blocks=excluded.include_blocks,show_names=excluded.show_names,show_location=excluded.show_location,revoked_at=null,updated_at=now()`,
           [
             id,
             tokenHash(token),
+            tokenSalt,
             current.version + 1,
             sharing.includeBlocks,
             sharing.showNames,
@@ -149,7 +165,7 @@ export class PostgresCalendarIntegration {
         ])
       } else if (input.action === 'disable') {
         await c.query(
-          'update app_private.calendar_subscription set token_hash=null,revoked_at=now(),version=version+1,updated_at=now() where workspace_id=$1',
+          'update app_private.calendar_subscription set token_hash=null,token_salt=null,revoked_at=now(),version=version+1,updated_at=now() where workspace_id=$1',
           [id],
         )
         await c.query('delete from app_private.calendar_published_event where workspace_id=$1', [
@@ -161,7 +177,8 @@ export class PostgresCalendarIntegration {
           [id, sharing.includeBlocks, sharing.showNames, sharing.showLocation],
         )
       }
-      const updated = state(
+      return this.result(
+        id,
         (
           await c.query<StateRow>(
             `select ${stateColumns} from app_private.calendar_subscription where workspace_id=$1`,
@@ -169,7 +186,6 @@ export class PostgresCalendarIntegration {
           )
         ).rows[0],
       )
-      return { ...updated, ...(token ? { token } : {}) }
     })
   }
   private async events(
@@ -289,7 +305,7 @@ export class PostgresCalendarIntegration {
       ).rows[0]
       if (!w || w.deletion_requested_at) {
         await c.query(
-          'update app_private.calendar_subscription set token_hash=null,revoked_at=now(),version=version+1 where workspace_id=$1',
+          'update app_private.calendar_subscription set token_hash=null,token_salt=null,revoked_at=now(),version=version+1 where workspace_id=$1',
           [id],
         )
         return null
