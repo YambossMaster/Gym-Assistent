@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                   |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                     |
-| Current gate                  | **Two-code correction passes local/development verification; Main delivery and Production migration release remain pending**                      |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                          |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                          |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                             |
-| Release candidate             | `8f8c480c20c3417105b671af6589bb37eecc3bca`; [CI #146](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38047027072) green and deployed |
-| Worktree                      | Two-code full local gate/build and development migration/live E2E pass; Production browser redemption remains pending                             |
-| Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                           |
-| Production release            | Release #4 applied `20261010054011`; CI #146 deployed release hardening at exact SHA `8f8c480`                                                    |
-| Pending Production migrations | `20261010110051_remove_plan_tester_entitlement.sql` is verified in development but is not yet on Main or Production                               |
+| Field                         | Current value                                                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                                     |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                       |
+| Current gate                  | **Two-code correction is on Main and exact-SHA CI #148 is green; Production migration release remains pending explicit `APPLY`**                                    |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                            |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                            |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                                               |
+| Release candidate             | `d12edc70942a96e7c73e8c7d86e3135de2b66ba0`; [CI #148](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38060217906) green and held for migration release |
+| Worktree                      | Clean; two-code local/development gates and pre-release Production two-account redemption matrix pass, with all fixtures removed                                    |
+| Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                                             |
+| Production release            | Release #4 applied `20261010054011`; CI #146 deployed release hardening at exact SHA `8f8c480`                                                                      |
+| Pending Production migrations | `20261010110051_remove_plan_tester_entitlement.sql` is on Main, verified by CI #148 and pending Production `APPLY`                                                  |
 
 ## Required context
 
@@ -78,12 +78,13 @@ startup context.
 
 ## Next handoff
 
-Authorize the reviewed M8-D two-code correction for a Main push. It removes the plan-tester code,
-authenticated self-service plan mutation, tester UI/API states and tester-aware capacity rules.
-Only permanent Prime and shared 60-day Prime codes remain. Full local checks/build, development
-migration `20261010110051` and the isolated Beta live E2E pass with cleanup verified. After the
-exact-SHA CI and Production preview pass, obtain literal `APPLY`; then apply/deploy that SHA and run
-the authorized two-account Production redemption matrix before deleting both accounts and codes.
+Obtain literal `APPLY` for exact SHA `d12edc70942a96e7c73e8c7d86e3135de2b66ba0`. CI #148 passed
+verify/build, Browser UI, development migration dry-run and Production preview; the preview lists
+only `20261010110051_remove_plan_tester_entitlement.sql`, and automatic deployment was correctly
+held. The pre-release Production two-account matrix passed permanent single-use, shared promotional,
+repeat, cross-code and exact 60-day rules; both accounts, both codes and all related fixture rows
+were deleted and read back as zero. After literal `APPLY`, re-preview, apply only that migration,
+deploy the same SHA and run a bounded post-deploy two-code smoke/readiness check.
 
 Release-workflow hardening is delivered at exact SHA `8f8c480`. [CI #146](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38047027072)
 passed verify/build, browser UI, development migration dry-run, a fresh no-pending Production

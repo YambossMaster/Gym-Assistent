@@ -8,8 +8,8 @@
 | Gate      | State                                                                                              |
 | --------- | -------------------------------------------------------------------------------------------------- |
 | Contract  | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
-| Sol       | Two-code correction passes local/development verification; Production delivery remains pending     |
-| CI        | Full local gate/build and development live E2E pass; exact-SHA CI/Production release remain open   |
+| Sol       | Two-code correction is on Main; Production migration/deployment remains pending                    |
+| CI        | Exact-SHA CI #148 is green; Production release remains open pending literal `APPLY`                |
 | Admission | No real Coach admitted; Production contains two synthetic Coaches                                  |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
@@ -48,9 +48,14 @@ The detailed behavior and migration contract live in
   migration `20261010110051`; the isolated Beta live E2E then found that the operator-only direct
   permanent grant had been removed, so that owner-testing operation was restored without restoring
   a tester code or self-service mutation. Its focused checks and live E2E pass, and read-back confirms
-  no active fixture code, tester code/grant or Beta E2E Auth user remains. Production is unchanged;
-  exact-SHA CI, Production migration/release and the two-account browser redemption matrix remain
-  pending. The local Plan Choice browser case passes at 1440px and 390px. Development security
+  no active fixture code, tester code/grant or Beta E2E Auth user remains. Exact SHA
+  `d12edc70942a96e7c73e8c7d86e3135de2b66ba0` is now on Main; CI #148 passed verify/build, Browser UI,
+  development migration dry-run and Production preview. The preview lists only `20261010110051` and
+  correctly held deployment for literal `APPLY`. Before this delivery, an isolated two-account
+  Production browser matrix passed permanent single-use, shared promotional, repeat, cross-code and
+  exact 60-day rules; both accounts, both codes and all related fixture rows were deleted and read
+  back as zero. Production remains on the prior schema/runtime until the explicit release. The local
+  Plan Choice browser case passes at 1440px and 390px. Development security
   advisor has no new plan-access finding; leaked-password protection remains the pre-existing Auth
   warning, and performance advisor findings are informational/pre-existing.
 - Delivered release-workflow hardening separates actual schema migrations from release-gate/Fly
@@ -206,13 +211,13 @@ The detailed behavior and migration contract live in
 
 ## Current local review inventory
 
-| Area                    | Current fact                                                                                                            | Remaining evidence                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed  | Continue monitoring future releases; no current release blocker |
-| Plan access             | Two-code full local gate/build, development migration and isolated live E2E pass; Production remains on prior policy    | Main/CI, Production APPLY, two-account browser redemption       |
-| Mobile Training         | Completed-tap entry and visual-position compensation passed related tests, browser matrix and CI #133; deployed c5db63f | Installed-phone keyboard and lower-paragraph recheck            |
-| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests | Authenticated/installed-phone rendering                         |
-| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                               | Combined browser/product review                                 |
+| Area                    | Current fact                                                                                                                   | Remaining evidence                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Release safeguards      | CI #120 proved fail-fast 403 on attempt 1, passed pooler/history/dry-run on attempt 2, and release #2 applied/deployed         | Continue monitoring future releases; no current release blocker |
+| Plan access             | Two-code local/development gates, pre-release Production matrix and exact-SHA CI #148 pass; Production remains on prior policy | Literal `APPLY`, same-SHA migration/deploy and bounded smoke    |
+| Mobile Training         | Completed-tap entry and visual-position compensation passed related tests, browser matrix and CI #133; deployed c5db63f        | Installed-phone keyboard and lower-paragraph recheck            |
+| Mobile dialogs/settings | Capability sheets, Student field scroller, required labels and hidden-content cues passed focused and combined CI tests        | Authenticated/installed-phone rendering                         |
+| Scheduling/Venue        | Fixed-schedule default/copy and Venue decision preview passed combined CI                                                      | Combined browser/product review                                 |
 
 Exact pre-split local test counts and diagnostic narratives remain in LOG-450–LOG-462 of the
 [legacy Status](../archive/PROJECT_STATUS-legacy-through-2026-10-09.md). Load those entries only
@@ -251,9 +256,12 @@ Do not bypass the required migration dry-run gate; the Production token/preview 
 
 ## Next handoff
 
-Review and verify the local two-code plan-access correction. Do not include it in the earlier
-release-workflow delivery authorization; migration `20261010110051`, any push and any deployment
-require the later package checkpoints after this reviewable version.
+Obtain literal `APPLY` for exact SHA `d12edc70942a96e7c73e8c7d86e3135de2b66ba0`. CI #148 passed
+verify/build, Browser UI, development migration dry-run and Production preview; the preview lists
+only `20261010110051_remove_plan_tester_entitlement.sql` and correctly skipped deployment. Then
+re-preview, apply only that migration, deploy the same SHA and run readiness plus a bounded two-code
+post-deploy smoke. The broader recovery, reviewer-control, installed-device and real-Coach admission
+gates remain separate.
 
 Release-workflow hardening is complete: exact SHA `8f8c480` passed CI #146 verify/build, browser,
 development migration dry-run, fresh no-pending Production preview, runtime-secret preflight, Fly
