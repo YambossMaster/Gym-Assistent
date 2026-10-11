@@ -10,13 +10,13 @@
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                  |
-| Current gate                  | **Production User-JWT red lines, `main` backup/restore and PR/CI substitute passed; real-Coach admission remains open**                        |
+| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                             |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                       |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                       |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice                                                                                          |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                     |
 | Released code                 | `809dd164ee43bcc697f1069e35cc7ef668fbf0e6`; [main CI #153](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079958383) passed     |
 | Worktree                      | Local PWA update correction awaiting Product Owner review; Alpha red-line development probe passes; two-code release candidate remains on Main |
-| Production                    | Healthy internal Alpha; root and `/login` 200 with browser Accept, `/api/ready` returns `ready`; no real Coach admitted                        |
+| Production                    | Internal Alpha accepted; latest Fly/Supabase dashboards healthy; no real Coach admitted                                                        |
 | Production release            | PR #2 deployed exact SHA `809dd16` after no-pending preview; `/api/ready` passed                                                               |
 | Pending Production migrations | None identified after release #5; Production migration history includes `20261010110051`                                                       |
 
@@ -50,15 +50,18 @@ startup context.
 - Exact-SHA [CI #120 attempt 2](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37819308629)
   passed verify, browser UI, development migration dry-run and Production preview. The linked
   Production history and dry-run list only `20261008063726` as pending; the legal acceptance
-  migration is no longer pending, but its application provenance has not been established here.
+  migration is no longer pending. Current Production schema/history and private grants were
+  verified; its historical apply-run provenance remains an audit note, not an Alpha retest.
   Automatic deployment was deliberately skipped because a Production migration remained.
 - The Product Owner supplied literal `APPLY`. [Manual release #2](https://github.com/YambossMaster/Gym-Assistent/actions/runs/37823400258)
   re-previewed and applied `20261008063726_m8d_beta_plan_access_policy.sql`, deployed the exact
   `fb75b7d` commit, and returned `{"status":"ready"}` from `/api/ready`. An authenticated
   Production Web workspace loaded afterward; this does not satisfy installed-device or real-Coach
   admission acceptance.
-- Installed iOS/Android review of the current mobile corrections remains separate M8-D acceptance
-  evidence.
+- The Product Owner confirmed on 2026-10-11 that the current Production iPhone PWA Coach Notes
+  short-tap, keyboard, drag and close-keyboard correction passes. The earlier Alpha core-path phone
+  round stands; Android remains untested. Changed M8-D Settings and local PWA-update flows retain
+  their own acceptance scope.
 - Coach-note correction `0632e04` replaces the floating check with a fixed top bar and focus-only
   `返回`, and anchors the focus surface to Visual Viewport geometry without React rerenders during
   viewport panning. CI #121 passed every job and automatically deployed it; public readiness and
@@ -72,12 +75,15 @@ startup context.
   replacement keeps notes read-only until a completed short tap, commits editing and focus within
   that click, compensates Visual Viewport position as well as height, and uses one flex layout for
   header/canvas/dock. Related tests, the synthetic browser matrix and CI #133 full verify pass;
-  CI #133 attempt 2 delivered it after credential repair; device recheck stays open.
-- Real-Coach admission and the first automatic scheduled backup run remain open. The Product Owner approved
-  Supabase Free logical backups without PITR and a PR plus required CI substitute for human
+  CI #133 attempt 2 delivered it after credential repair; the Product Owner's 2026-10-11 iPhone
+  recheck passed.
+- The Product Owner's first installed-PWA Alpha round covers the core paths already exercised;
+  do not repeat those Happy Paths with autonomous DOM or visual E2E. First real-Coach observation
+  belongs to M8-D Beta opening, not to internal-Alpha exit. Real-Coach admission remains open.
+  The Product Owner approved Supabase Free logical backups without PITR and a PR plus required CI substitute for human
   Required Reviewers. The isolated backup/restore drill and PR pending-then-green behavior passed;
-  `main` backup #10 passed encrypted artifact verification and isolated restore. The next automatic
-  scheduled run remains to be observed.
+  `main` backup #10 passed encrypted artifact verification and isolated restore. The first automatic
+  scheduled run is operational monitoring, not another M8-D acceptance gate.
 
 ## Next handoff
 
@@ -87,8 +93,13 @@ required checks passed. [Main CI
 Production preview, exact-SHA Fly deployment and readiness. [Backup
 #10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792) produced the first
 encrypted `main` artifact and passed network-isolated restore with Auth/Workspace/migration
-read-back. Monitor the next automatic daily run and 48-hour freshness; complete legal migration
-provenance, installed-device acceptance and real-Coach support/admission before admitting users.
+read-back. The Product Owner's installed-iPhone Coach Notes recheck passed. Fly's Production App
+showed one running Tokyo Machine; Billing was in Good Standing with a US$0.74 upcoming invoice,
+and Cost Explorer showed the same 2026-10-05–11 estimated spend. No custom Fly spend-alert control
+was visible in inspected settings; Supabase Free spend cap and capacity views were verified. M8-C
+internal Alpha acceptance is complete. Monitor daily backups and 48-hour freshness operationally.
+Observe the first real Coach after Beta admission as the M8-D Beta gate;
+do not repeat the Product Owner's Alpha Happy Path test.
 The local PWA update and loading screen remain separately pending Product Owner review.
 
 Release [#5](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38064919971) used the
@@ -139,7 +150,8 @@ The three disposable Google subscriptions were removed and the synthetic probe/t
 Next: PO tests Finance export and Calendar download/subscription on installed PWA, including Prime
 expiry behavior. External subscription refresh cadence remains client-controlled and unverified.
 See [engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for scope.
-The prior M8-D admission/recovery/provenance/device gates and old-PAT authorization remain separate.
+The remaining M8-D admission and changed-flow device gates, legal-migration provenance audit note
+and old-PAT authorization remain separate. Recovery and PR/CI reviewer gates have passed.
 
 ## Status system
 

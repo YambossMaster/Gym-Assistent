@@ -3,7 +3,8 @@
 Product Owner decision (2026-10-11): Beta stays on Supabase Free, accepts no PITR, and uses a
 scheduled GitHub Actions logical backup. A single developer uses a protected `main` branch with PRs
 and required CI checks instead of Required Reviewers. The workflow is now active on `main`; the
-first manual `main` run passed. The next scheduled run still needs separate observation.
+first manual `main` run passed. Later scheduled runs are operational monitoring, not an additional
+M8-D backup acceptance test.
 
 ## Production red-line evidence
 
@@ -53,7 +54,7 @@ the secret is missing. Only an encrypted artifact is uploaded; runner plaintext 
    full checks and automatically deploy the same SHA to Fly if its Production preview has no
    pending migration. Observe that release and readiness. Then manually dispatch the backup
    workflow on `main` to establish a fresh encrypted artifact immediately and repeat its isolated
-   restore. Confirm the next scheduled run separately. Before real-Coach admission, confirm the
+   restore. Before real-Coach admission, confirm the
    latest successful encrypted artifact is at most 48 hours old. A daily schedule can be delayed
    or fail; alert and stop admission if freshness exceeds 48 hours. Repeat restore drills after
    material schema or backup-tool changes and at an agreed operational cadence.
@@ -102,8 +103,8 @@ digest `sha256:30d25a7a7e1bf2ea4bfe3c1b7e1d6406652e5a458eb1633148cffb1ccca1f805`
 The downloaded encrypted artifact decrypted, all five SQL hashes were `OK`, the local restore
 container had no Docker network before SQL, and read-back returned 3 Auth users, 3 Workspaces and
 one latest migration. The runner reported `PASS` for download, decrypt, checksum, isolated restore
-and data read-back. This establishes an active, tested `main` recovery point; the daily schedule's
-first automatic run remains unobserved.
+and data read-back. This establishes an active, tested `main` recovery point. Monitor later daily
+runs for freshness without withholding the M8-D backup gate for a second trigger-mode test.
 
 **Current scope check (2026-10-11, after drill):** Production read-only aggregate queries found zero
 `storage.objects`, zero `storage.buckets`, and zero `vault.secrets`. The one active `pg_cron` job
@@ -155,7 +156,7 @@ final document commit passed the same required checks.
 | Gate                          | Current result                                                                          | Remaining proof                                   |
 | ----------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | Production User-JWT red lines | Passed and synthetic data cleaned                                                       | None for this bounded smoke                       |
-| Backup method decision        | Active on `main`: daily encrypted logical dumps, seven-day retention, no PITR           | Observe next scheduled run                        |
+| Backup method decision        | Passed: daily encrypted logical dumps active on `main`, seven-day retention, no PITR    | Monitor scheduled runs operationally              |
 | Recoverable point             | `main` artifact `11679319803` created 2026-10-10 19:31:40 UTC                           | Keep a successful artifact no older than 48 hours |
 | Isolated restore              | Passed in test-branch #9 and `main` #10                                                 | Repeat after material backup/schema changes       |
 | Reviewer substitution         | Passed: active rule, Ready PR blocked pending checks and enabled after all three passed | Preserve rule on `main`                           |
