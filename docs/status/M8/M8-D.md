@@ -9,12 +9,13 @@
 | --------- | -------------------------------------------------------------------------------------------------- |
 | Contract  | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
 | Sol       | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
-| CI        | Exact-SHA CI #148, release #5 and backup PR checks passed; scheduled activation remains open       |
+| CI        | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
 | Admission | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
 
-M0–M7.5, M8-A, M8-B, M8-B-Export and M8-B-Plan-Choice are protected delivered baselines. M8-C
-created the Production internal-Alpha foundation but retains the carry-over listed in
-[`M8-C.md`](M8-C.md). M8-E owns paid checkout and must not be pulled into this package.
+M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
+delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
+completed [`M8-C.md`](M8-C.md) for Alpha evidence. M8-E owns paid checkout and must not be pulled
+into this package.
 
 ## Binding Beta plan policy
 
@@ -36,6 +37,13 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- **Alpha/Beta boundary:** M8-C internal Alpha uses the Product Owner and synthetic accounts;
+  the Product Owner already ran its first core-path round on an installed phone. M8-D's first
+  real-Coach observation occurs when Beta opens. It is not an additional Alpha test or a request
+  to repeat the same Happy Paths with agent-operated PWA E2E. For already exercised flows, retain
+  the Alpha evidence; check only unresolved version-specific device defects before release.
+  Keep the M8-D Beta admission result open until a real Coach actually joins; do not claim that
+  person or outcome existed during Alpha.
 - The Product Owner approved a final Alpha red-line pass focused on tenant isolation and Beta
   business-rule integrity, with extreme load and autonomous exploit campaigns deferred until after
   Beta stabilizes. The [verification record](../../ALPHA-REDLINE-VERIFICATION.md) separates signed-in
@@ -139,7 +147,8 @@ The detailed behavior and migration contract live in
   accumulated correction for commit, Main push, CI and deployment; it is now deployed.
 - On 2026-10-10 the Product Owner reported the first Alpha PWA test round finished and requested
   export redesign discussion, then approved local implementation of the two Settings specifications.
-  This is not blanket acceptance of the remaining admission gates. The follow-up explicitly
+  Preserve its core-path evidence without repeating it; the separate Beta admission outcome and
+  unresolved later-version device corrections are still open. The follow-up explicitly
   authorizes commit, push Main, CI and deployment after checks. On 2026-10-10 the Product Owner also
   stated `APPLY`; the release workflow still requires the final literal confirmation after its
   exact-SHA Production preview.
@@ -273,12 +282,15 @@ Project Settings, API Keys, API Key Secrets and Connection Pooling Read was crea
 2026-10-09 23:41 Taipei. The one-time token display was closed; CI #133 attempt 2 passed and deployed.
 Do not bypass the required migration dry-run gate; the Production token/preview already passed.
 
-1. Establish the legal acceptance migration's apply provenance; do not reapply an already-recorded
-   migration. Revoke the old PAT only after separate authorization; the new PAT expires 2027-01-07.
-2. Monitor the active `main` backup's first automatic scheduled run and 48-hour freshness; complete
-   support/admission and real-Coach Beta gates before admitting the first real Coach. The isolated
-   restore and PR/CI reviewer substitute have passed.
-3. Record installed-device coverage honestly; browser 390×844 evidence is not installed-PWA proof.
+1. Keep the legal acceptance migration's historical apply-run provenance as an audit note; current
+   Production history, schema and private grants are verified, so do not reapply it or repeat Alpha
+   testing. Revoke the old PAT only after separate authorization; the new PAT expires 2027-01-07.
+2. Monitor the active `main` backup's 48-hour freshness operationally; complete support/admission
+   and real-Coach Beta gates before admitting the first real Coach. The isolated restore and PR/CI
+   reviewer substitute have passed; a second trigger-mode test is not required.
+3. Record installed-device coverage honestly: the Product Owner's current Production iPhone Coach
+   Notes recheck passed on 2026-10-11; Android and later changed Settings/PWA-update flows are
+   separate and unverified. Browser 390×844 evidence is not installed-PWA proof.
 
 ## Next handoff
 
@@ -290,7 +302,7 @@ verify, browser, migration dry-run, no-pending Production preview, exact-SHA Fly
 readiness. The manually dispatched [backup
 #10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792) produced the first
 encrypted `main` artifact and passed isolated restore and aggregate read-back. Monitor the next
-automatic daily run and keep admission stopped if the latest recoverable point exceeds 48 hours.
+daily runs operationally and keep admission stopped if the latest recoverable point exceeds 48 hours.
 The separate local PWA update and loading screen remain awaiting Product Owner review.
 
 Release [#5](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38064919971) re-previewed
@@ -312,7 +324,7 @@ confirmed the one active `pg_net` cron job; `/api/ready` returned HTTP 200. A lo
 omitted exactly one managed logging-parameter grant after source checksum verification. GitHub
 ruleset `24849299` is Active on `main` with PR, zero human approvals, no bypass and three required
 CI checks. PR #2 proved the pending-then-green gate at `ee43614`; it then merged as `809dd164` and
-`main` backup #10 passed. The first automatic scheduled run remains to be observed. See
+`main` backup #10 passed. Later scheduled runs are operational monitoring rather than an M8-D gate. See
 [`M8-D-RECOVERY-REVIEWER-TEST.md`](../../M8-D-RECOVERY-REVIEWER-TEST.md). The broader
 installed-device and real-Coach admission gates remain separate.
 
@@ -347,6 +359,6 @@ and passed `/api/ready`; separate public readback returned 200. An invalid priva
 security advisor has only the pre-existing Auth leaked-password-protection warning. The temporary
 probe was stopped and all three disposable Google subscriptions were removed. Next is PO installed-
 PWA acceptance of the two Settings tools; external subscription refresh cadence is unverified.
-The prior installed-device detail, recovery, reviewer-control, legal-migration provenance and
-real-Coach admission gates remain open; the completed first Alpha round is not blanket evidence
-for those gates. Old PAT revocation remains separately authorized work.
+The remaining changed-flow installed-device and real-Coach admission gates stay open in M8-D;
+recovery and reviewer-control gates passed. Legal-migration provenance is a historical audit note,
+not an Alpha retest. Old PAT revocation remains separately authorized work.

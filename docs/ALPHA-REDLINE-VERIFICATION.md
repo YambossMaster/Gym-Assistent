@@ -56,5 +56,8 @@ node --env-file=.env --env-file=.env.e2e --import tsx src/e2e/run-beta-admission
 ```
 
 Production release #5 applied `20261010110051_remove_plan_tester_entitlement.sql` and deployed
-the matching runtime. These development results do not claim a post-migration Production User-JWT
-pass or authorize real-Coach admission. That bounded synthetic smoke remains open.
+the matching runtime. The subsequent bounded Production smoke signed in two dedicated synthetic
+accounts with User JWTs, confirmed cross-account denial and Free-plan boundaries, and deleted/read
+back their exact Auth and Workspace fixtures as zero. No `service_role` key was used for application
+API requests. This passes the Production Alpha red-line smoke; it does not authorize real-Coach
+Beta admission.
