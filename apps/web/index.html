@@ -7,10 +7,47 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#151711" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="description" content="FORM Coach Desk 私人教練工作台" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" href="/brand/form-pwa-icon.png?v=20261008" />
-    <link rel="apple-touch-icon" href="/brand/form-pwa-icon.png?v=20261008" />
+    <link rel="apple-touch-icon" href="/brand/form-apple-touch-icon.png?v=20261011" />
+    <link
+      rel="apple-touch-startup-image"
+      href="/brand/launch-390x844.png?v=20261011"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #151711;
+      }
+      #root {
+        min-height: 100vh;
+      }
+      .preload-screen {
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 26px;
+        background: #151711;
+      }
+      .preload-screen img {
+        display: block;
+        width: min(240px, 62vw);
+        height: auto;
+      }
+      .preload-screen span {
+        display: block;
+        width: 112px;
+        height: 3px;
+        border-radius: 999px;
+        background: #d9ff43;
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,7 +57,12 @@
     <title>FORM Coach Desk</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="preload-screen" role="status" aria-label="正在開啟工作台">
+        <img src="/brand/form-horizontal.png" alt="" />
+        <span aria-hidden="true"></span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

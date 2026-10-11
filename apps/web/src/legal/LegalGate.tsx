@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { signOutCurrentDevice } from '../account-auth'
 import { acceptLegalTerms, readLegalAcceptance } from '../api'
 import { Brand } from '../shared/primitives'
+import { AppLoadingScreen } from '../shared/AppLoadingScreen'
 import { supabase } from '../supabase'
 
 export const legalAcceptanceKey = (coachId: string) =>
@@ -29,12 +30,7 @@ export function LegalGate({ session, children }: { session: Session; children: R
     onSuccess: (legal) => client.setQueryData(legalAcceptanceKey(session.user.id), legal)
   })
 
-  if (query.isPending)
-    return (
-      <main className="auth-layout" role="status">
-        正在確認使用條款…
-      </main>
-    )
+  if (query.isPending) return <AppLoadingScreen />
   if (query.isError)
     return (
       <main className="auth-layout" role="alert">

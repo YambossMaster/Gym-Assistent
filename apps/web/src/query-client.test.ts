@@ -11,7 +11,7 @@ describe('formal route query cache', () => {
 
     expect(client.getDefaultOptions().queries?.staleTime).toBe(5 * 60_000)
     expect(client.getDefaultOptions().queries?.gcTime).toBe(30 * 60_000)
-    expect(client.getDefaultOptions().queries?.refetchOnWindowFocus).toBe(false)
+    expect(client.getDefaultOptions().queries?.refetchOnWindowFocus).toBe(true)
   })
 
   it('serves a prefetched student detail from in-memory cache without a second request', async () => {

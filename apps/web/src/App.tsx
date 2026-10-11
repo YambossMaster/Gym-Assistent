@@ -17,6 +17,7 @@ import {
 import { CoachWorkspace } from './app-shell/CoachWorkspace'
 import { BetaGate } from './beta-admission/BetaGate'
 import { Brand } from './shared/primitives'
+import { AppLoadingScreen } from './shared/AppLoadingScreen'
 import { PublicCapabilityApp } from './pages/public/PublicCapabilityPages'
 import { clearOtherCoachCapabilityLinks } from './pages/public/capability-link-session'
 import { createAppQueryClient } from './query-client'
@@ -31,12 +32,14 @@ import { isInternalAlpha } from './config'
 import { LegalGate } from './legal/LegalGate'
 import { PrivacyPage, TermsPage } from './legal/LegalPages'
 import { LandingPage } from './landing/LandingPage'
+import { AppUpdateCoordinator } from './app-update'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
 
 export function App() {
   return (
     <BrowserRouter>
+      <AppUpdateCoordinator />
       <Routes>
         <Route path="/" element={<RootEntry />} />
         <Route path="/t/:token" element={<PublicCapabilityApp purpose="training" />} />
@@ -54,7 +57,7 @@ function RootEntry() {
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session))
   }, [])
-  if (session === undefined) return <Loading />
+  if (session === undefined) return <AppLoadingScreen />
   return session ? <Navigate to="/today" replace /> : <LandingPage />
 }
 
@@ -120,7 +123,7 @@ function AuthenticatedApp() {
     setAuthLinkError(false)
     navigate('/', { replace: true })
   }
-  if (!ready) return <Loading />
+  if (!ready) return <AppLoadingScreen />
   if (authLinkError)
     return <AuthLinkError error={recoveryExitError} onReturn={() => void leaveRecovery()} />
   if (recoveryEntry || location.pathname === '/account/recover') {
@@ -594,14 +597,6 @@ function AuthLinkError({ onReturn, error }: { onReturn: () => void; error: strin
           </button>
         </div>
       </section>
-    </main>
-  )
-}
-function Loading() {
-  return (
-    <main className="app-loading">
-      <Brand />
-      <span>正在開啟工作台…</span>
     </main>
   )
 }
