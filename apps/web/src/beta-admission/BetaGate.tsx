@@ -7,6 +7,7 @@ import { ApiError, readBetaGrant, type SessionTraining, type TodayProjection } f
 import { signOutCurrentDevice } from '../account-auth'
 import { supabase } from '../supabase'
 import { Brand } from '../shared/primitives'
+import { AppLoadingScreen } from '../shared/AppLoadingScreen'
 import { isInternalAlpha } from '../config'
 import { queryKeys } from '../query-keys'
 import { planAccessKey, usePlanAccess } from './usePlanAccess'
@@ -88,13 +89,7 @@ export function BetaGate({ session, children }: { session: Session; children: Re
     return () => window.clearTimeout(timeout)
   }, [client, grant, session.user.id])
 
-  if (internalAlpha && query.isPending) {
-    return (
-      <main className="auth-layout" role="status">
-        正在確認測試資格…
-      </main>
-    )
-  }
+  if (internalAlpha && query.isPending) return <AppLoadingScreen />
 
   if (
     internalAlpha &&

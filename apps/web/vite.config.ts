@@ -1,18 +1,37 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const buildId = process.env.GITHUB_SHA || `local-${Date.now()}`
+
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     {
       name: 'deployment-public-config',
-      generateBundle() {
+      transformIndexHtml() {
+        return [{ tag: 'meta', attrs: { name: 'app-build', content: buildId }, injectTo: 'head' }]
+      },
+      generateBundle(_options, bundle) {
         const publicUrl = loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL ?? ''
         const internalAlpha = loadEnv(mode, process.cwd(), 'VITE_').VITE_INTERNAL_ALPHA === 'true'
         this.emitFile({
           type: 'asset',
           fileName: 'deployment-config.json',
           source: JSON.stringify({ supabaseUrl: publicUrl, internalAlpha })
+        })
+        this.emitFile({
+          type: 'asset',
+          fileName: 'app-version.json',
+          source: JSON.stringify({
+            buildId,
+            assets: Object.values(bundle)
+              .filter(
+                (item) =>
+                  (item.type === 'chunk' && item.isEntry) ||
+                  (item.type === 'asset' && item.fileName.endsWith('.css'))
+              )
+              .map((item) => `/${item.fileName}`)
+          })
         })
       }
     }

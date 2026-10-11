@@ -1809,7 +1809,7 @@
 }
 
 html {
-  background: var(--paper);
+  background: var(--ink);
 }
 
 body {
@@ -4042,17 +4042,88 @@ textarea:focus {
 }
 
 .app-loading {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
-  place-content: center;
+  place-items: center;
+  padding: max(32px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 50% 46%, #22261a 0, var(--ink) min(70vw, 420px));
+  color: #b2b5a8;
+}
+.app-loading-content {
+  width: min(320px, 100%);
+  display: grid;
   justify-items: center;
-  gap: 20px;
-  background: var(--ink);
-  color: #909486;
+  gap: 24px;
+  text-align: center;
+}
+.app-loading-accent {
+  width: 28px;
+  height: 2px;
+  margin-bottom: 8px;
+  background: var(--lime);
+}
+.app-loading .brand-logo {
+  display: block;
+  width: min(240px, 62vw);
+  height: auto;
+}
+.app-loading-caption {
   font:
-    500 10px/1 'DM Mono',
-    monospace;
-  letter-spacing: 0.12em;
+    600 12px/1.5 'Noto Sans TC',
+    sans-serif;
+  letter-spacing: 0.1em;
+}
+.app-loading-progress,
+.app-update-progress {
+  display: block;
+  width: 112px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(217, 255, 67, 0.18);
+}
+.app-loading-progress::after,
+.app-update-progress::after {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lime);
+  content: '';
+  animation: app-loading-glide 1.3s ease-in-out infinite alternate;
+}
+.app-update-screen {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 21px;
+  padding: 24px;
+  background: var(--ink);
+  color: var(--white);
+  text-align: center;
+}
+.app-update-mark {
+  width: min(240px, 62vw);
+  height: auto;
+}
+.app-update-screen strong {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+@keyframes app-loading-glide {
+  to {
+    transform: translateX(145%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-progress::after,
+  .app-update-progress::after {
+    animation: none;
+  }
 }
 
 .app-shell {

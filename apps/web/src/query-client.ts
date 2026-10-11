@@ -7,7 +7,7 @@ export function createAppQueryClient() {
       queries: {
         staleTime: 5 * 60_000,
         gcTime: 30 * 60_000,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
         retry: (count, error) => count < 1 && isRetryableReadError(error)
       }
     }

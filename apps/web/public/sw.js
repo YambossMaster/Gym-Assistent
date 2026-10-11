@@ -1,4 +1,4 @@
-const CACHE_NAME = 'form-coach-shell-v3'
+const CACHE_NAME = 'form-coach-shell-v4'
 const SHELL = ['/', '/today', '/manifest.webmanifest', '/brand/form-pwa-icon.png?v=20261008']
 
 self.addEventListener('install', (event) => {
@@ -11,7 +11,11 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith('form-coach-shell-') && key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
       )
       .then(() => self.clients.claim())
   )
@@ -24,6 +28,8 @@ self.addEventListener('fetch', (event) => {
     request.method !== 'GET' ||
     url.origin !== self.location.origin ||
     url.pathname.startsWith('/api') ||
+    url.pathname === '/app-version.json' ||
+    url.pathname.startsWith('/assets/') ||
     url.pathname.startsWith('/t/') ||
     url.pathname.startsWith('/r/')
   ) {
