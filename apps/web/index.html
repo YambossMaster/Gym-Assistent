@@ -28,12 +28,13 @@
         min-height: 100vh;
       }
       .preload-screen {
-        min-height: 100vh;
+        min-height: 100dvh;
         display: grid;
         place-content: center;
         justify-items: center;
-        gap: 26px;
+        gap: 24px;
         background: #151711;
+        color: #b2b5a8;
       }
       .preload-screen img {
         display: block;
@@ -44,8 +45,35 @@
         display: block;
         width: 112px;
         height: 3px;
+        overflow: hidden;
         border-radius: 999px;
+        background: rgba(217, 255, 67, 0.18);
+      }
+      .preload-screen span::after {
+        display: block;
+        width: 42%;
+        height: 100%;
+        border-radius: inherit;
         background: #d9ff43;
+        content: '';
+        animation: preload-glide 1.3s ease-in-out infinite alternate;
+      }
+      .preload-screen p {
+        margin: 0;
+        font:
+          600 12px/1.5 system-ui,
+          sans-serif;
+        letter-spacing: 0.1em;
+      }
+      @keyframes preload-glide {
+        to {
+          transform: translateX(145%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .preload-screen span::after {
+          animation: none;
+        }
       }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -61,6 +89,7 @@
       <div class="preload-screen" role="status" aria-label="正在開啟工作台">
         <img src="/brand/form-horizontal.png" alt="" />
         <span aria-hidden="true"></span>
+        <p>正在開啟工作台…</p>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
