@@ -216,6 +216,22 @@ function SignIn({
     const interval = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(interval)
   }, [mode, resendWait])
+  useEffect(() => {
+    if (mobileView !== 'welcome') return
+    const welcome = document.querySelector<HTMLElement>('.auth-entry-welcome')
+    if (!welcome) return
+    const stopEmptyPageDrag = (event: TouchEvent) => {
+      if (
+        event.cancelable &&
+        window.matchMedia('(max-width: 480px)').matches &&
+        welcome.scrollHeight <= welcome.clientHeight + 1
+      ) {
+        event.preventDefault()
+      }
+    }
+    welcome.addEventListener('touchmove', stopEmptyPageDrag, { passive: false })
+    return () => welcome.removeEventListener('touchmove', stopEmptyPageDrag)
+  }, [mobileView])
   const change = (next: Mode) => {
     setMode(next)
     setError('')
