@@ -1,6 +1,6 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-12. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-14. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
@@ -52,10 +52,24 @@ The detailed behavior and migration contract live in
   applied only private migration `20261012041429`, deployed the same SHA and passed readiness.
   The Product Owner's three existing verified Workspace owners are individually classified:
   owner `test/owner`, two Alpha accounts `test/manual`. Read-back found one audit event each,
-  zero active unclassified accounts, and no `authenticated` or `service_role` SELECT privilege.
+  zero classification integrity errors, and no `authenticated` or `service_role` SELECT privilege.
   Reporting queries found zero real Coaches, two test Free and one test permanent Prime account;
   both issued Beta codes remain unused. The report remains Agent-only; no reporting UI, payment
   authority or schedule was added.
+- The Product Owner rejected `unclassified` as an operational account state. Local migration
+  `20261012084858` assigns every Auth identity in the same transaction that creates it: public Web
+  Email/Google registration becomes `real`. Development live verification then proved that custom
+  Auth-admin app metadata is unavailable at the INSERT trigger boundary. Follow-up migration
+  `20261014034039` replaces that unsafe assumption with a private, 10-minute, single-use test-account
+  intent consumed atomically by Email. Unsupported creation paths, missing internal intents and
+  invalid test kinds abort Auth creation.
+  Existing missing labels are backfilled as `real` under the confirmed product rule; a remaining
+  gap aborts the migration. Development fixtures now verify the trigger result instead of repairing
+  it afterward, and report queries treat any missing label as an integrity defect. Focused local
+  Both migrations are applied in Development. The three-path classification live E2E passed public
+  Email as `real`, trusted intent as `test/automation`, unsupported creation fail-closed and exact
+  cleanup. Existing password and Beta live E2E also passed with the new intent protocol. Production
+  remains unchanged pending exact-SHA CI and release.
 - **Alpha/Beta boundary:** M8-C internal Alpha uses the Product Owner and synthetic accounts;
   the Product Owner already ran its first core-path round on an installed phone. M8-D's first
   real-Coach observation occurs when Beta opens. It is not an additional Alpha test or a request

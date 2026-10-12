@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-12. This is the always-read current-state dashboard. Approved scope and
+> Last verified: 2026-10-14. This is the always-read current-state dashboard. Approved scope and
 > gates live in [`ROADMAP.md`](ROADMAP.md); package detail and history are loaded only through the
 > pointers below.
 
@@ -15,10 +15,10 @@
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                   |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                 |
 | Released code                 | `70c8982e9eda62513ad5b303b5720f3879192fbf`; [main CI #167](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38210536364) passed |
-| Worktree                      | Price catalog released; primary checkout retains unrelated local changes and iOS device follow-up                                          |
-| Production                    | 0 real Coaches, 3 test (owner 1, manual 2), 0 unclassified; two issued Beta codes unused; no real Coach admitted                           |
+| Worktree                      | Atomic signup classification correction prepared in a dedicated worktree; primary checkout remains untouched                               |
+| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted         |
 | Production release            | [Main CI #167](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38210536364) deployed exact SHA `70c8982`; public routes passed |
-| Pending Production migrations | None; `20261012041429` applied and read back; three existing accounts labelled test (owner 1, manual 2)                                    |
+| Pending Production migrations | Local `20261012084858` + `20261014034039` enforce atomic real/test assignment and trusted test intents; not yet applied                    |
 
 ## Required context
 

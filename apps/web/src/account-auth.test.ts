@@ -42,7 +42,10 @@ describe('Coach account auth actions', () => {
     expect(auth.signUp).toHaveBeenCalledWith({
       email: 'coach@example.com',
       password: 'long-enough-password',
-      options: { emailRedirectTo: 'https://app.example.com' }
+      options: {
+        emailRedirectTo: 'https://app.example.com',
+        data: { gym_registration_channel: 'public-web-v1' }
+      }
     })
   })
 

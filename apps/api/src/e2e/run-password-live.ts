@@ -1,12 +1,18 @@
 import { randomBytes } from 'node:crypto'
+import { Pool } from 'pg'
+import {
+  clearTestAccountIntent,
+  createTestAccountIntent,
+} from '../operations/account-classification-intent.js'
 
 const url = process.env.SUPABASE_URL
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY
 const secretKey = process.env.SUPABASE_SECRET_KEY
 const baseEmail = process.env.COACH_A_EMAIL
+const databaseUrl = process.env.DATABASE_URL
 
-if (!url || !publishableKey || !secretKey || !baseEmail?.includes('@')) {
-  throw new Error('Password live E2E requires development Supabase URL, keys, and Coach email.')
+if (!url || !publishableKey || !secretKey || !baseEmail?.includes('@') || !databaseUrl) {
+  throw new Error('Password live E2E requires development Supabase, database, and Coach email.')
 }
 
 const [localPart, domain] = baseEmail.split('@')
@@ -16,6 +22,7 @@ const oldPassword = randomBytes(24).toString('base64url')
 const newPassword = randomBytes(24).toString('base64url')
 const authUrl = `${url.replace(/\/$/, '')}/auth/v1`
 let createdUserId: string | undefined
+const pool = new Pool({ connectionString: databaseUrl, max: 1 })
 
 async function request(path: string, key: string, init: RequestInit): Promise<Response> {
   return fetch(`${authUrl}${path}`, {
@@ -46,13 +53,22 @@ async function signIn(password: string): Promise<string | null> {
 }
 
 try {
-  const created = await expectJson<{ id?: string }>(
-    await request('/admin/users', secretKey, {
-      method: 'POST',
-      body: JSON.stringify({ email, password: oldPassword, email_confirm: true }),
+  await createTestAccountIntent(pool, {
+    email,
+    testKind: 'automation',
+    actor: 'password-live-fixture',
+    reason: 'Isolated development password verification',
+  })
+  const creationResponse = await request('/admin/users', secretKey, {
+    method: 'POST',
+    body: JSON.stringify({
+      email,
+      password: oldPassword,
+      email_confirm: true,
     }),
-    'test account creation',
-  )
+  })
+  if (!creationResponse.ok) await clearTestAccountIntent(pool, email)
+  const created = await expectJson<{ id?: string }>(creationResponse, 'test account creation')
   if (!created.id) throw new Error('Test account creation returned no user id.')
   createdUserId = created.id
 
@@ -91,4 +107,6 @@ try {
       throw new Error(`Test account cleanup recheck returned HTTP ${recheck.status}`)
     console.log('Isolated test account deleted.')
   }
+  await clearTestAccountIntent(pool, email)
+  await pool.end()
 }

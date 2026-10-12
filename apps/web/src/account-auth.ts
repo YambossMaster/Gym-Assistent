@@ -17,7 +17,10 @@ export interface CoachAuthClient {
   signUp(params: {
     email: string
     password: string
-    options: { emailRedirectTo: string }
+    options: {
+      emailRedirectTo: string
+      data: { gym_registration_channel: 'public-web-v1' }
+    }
   }): Promise<AuthSessionResponse>
   verifyOtp(params: { email: string; token: string; type: 'email' }): Promise<AuthSessionResponse>
   signInWithOAuth(params: {
@@ -46,7 +49,10 @@ export async function signUpCoach(
       auth.signUp({
         email: normalizeEmail(email),
         password,
-        options: { emailRedirectTo: redirectTo }
+        options: {
+          emailRedirectTo: redirectTo,
+          data: { gym_registration_channel: 'public-web-v1' }
+        }
       }),
       '註冊服務回應逾時，請稍後再試。'
     )
