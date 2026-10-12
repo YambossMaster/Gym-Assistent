@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                                  |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                                |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                  |
-| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                                             |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                       |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                       |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                                     |
-| Released code                 | `9cafd3976450787f79402a306eda2a7a6fd6eb2f`; [main CI #163](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208317155) passed                     |
-| Worktree                      | Agent report released; primary checkout still holds unrelated local changes and iOS device follow-up                                                           |
-| Production                    | 0 real Coaches, 3 test (owner 1, manual 2), 0 unclassified; two issued Beta codes unused; no real Coach admitted                                               |
-| Production release            | [Release #6](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208563818) applied reporting migration and deployed `9cafd39`; public routes passed |
-| Pending Production migrations | None; `20261012041429` applied and read back; three existing accounts labelled test (owner 1, manual 2)                                                        |
+| Field                         | Current value                                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                            |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                              |
+| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                         |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                   |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                   |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                 |
+| Released code                 | `70c8982e9eda62513ad5b303b5720f3879192fbf`; [main CI #167](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38210536364) passed |
+| Worktree                      | Price catalog released; primary checkout retains unrelated local changes and iOS device follow-up                                          |
+| Production                    | 0 real Coaches, 3 test (owner 1, manual 2), 0 unclassified; two issued Beta codes unused; no real Coach admitted                           |
+| Production release            | [Main CI #167](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38210536364) deployed exact SHA `70c8982`; public routes passed |
+| Pending Production migrations | None; `20261012041429` applied and read back; three existing accounts labelled test (owner 1, manual 2)                                    |
 
 ## Required context
 

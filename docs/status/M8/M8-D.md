@@ -41,6 +41,11 @@ The detailed behavior and migration contract live in
   NT$1,190/year; Prime NT$149/month or NT$1,490/year. The public landing page and authenticated
   plan comparison show these amounts and the ten-month annual-price rule remains consistent.
   Beta self-service checkout remains unavailable; no payment amount or entitlement changed.
+  [PR #9](https://github.com/YambossMaster/Gym-Assistent/pull/9) merged as
+  `70c8982e9eda62513ad5b303b5720f3879192fbf`. [Main CI #167](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38210536364)
+  passed verify/build, browser UI, both migration checks and exact-SHA Fly deployment/readiness.
+  Independent Production requests returned 200 for /api/ready, / and /login; the public landing
+  and authenticated plan comparison displayed both new monthly and annual amounts.
 - Agent operations reporting is released. [PR #7](https://github.com/YambossMaster/Gym-Assistent/pull/7)
   merged as `9cafd3976450787f79402a306eda2a7a6fd6eb2f`; [Main CI #163](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208317155)
   passed all four required jobs. [Production release #6](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208563818)
