@@ -37,12 +37,16 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
-- Agent operations reporting is prepared; Development applied private migration `20261012041429` adds audited
-  `real`/`test` labels, read-only report queries separate test and unclassified accounts, and
-  development Beta fixtures label synthetic Auth users before app use. The Product Owner confirmed all
-  three current Production Workspace owners are test accounts: their owner account is `test/owner`;
-  the other two are `test/manual`. Production application and ID-confirmed backfill are pending
-  exact-SHA release. No reporting UI, payment authority or schedule was added.
+- Agent operations reporting is released. [PR #7](https://github.com/YambossMaster/Gym-Assistent/pull/7)
+  merged as `9cafd3976450787f79402a306eda2a7a6fd6eb2f`; [Main CI #163](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208317155)
+  passed all four required jobs. [Production release #6](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208563818)
+  applied only private migration `20261012041429`, deployed the same SHA and passed readiness.
+  The Product Owner's three existing verified Workspace owners are individually classified:
+  owner `test/owner`, two Alpha accounts `test/manual`. Read-back found one audit event each,
+  zero active unclassified accounts, and no `authenticated` or `service_role` SELECT privilege.
+  Reporting queries found zero real Coaches, two test Free and one test permanent Prime account;
+  both issued Beta codes remain unused. The report remains Agent-only; no reporting UI, payment
+  authority or schedule was added.
 - **Alpha/Beta boundary:** M8-C internal Alpha uses the Product Owner and synthetic accounts;
   the Product Owner already ran its first core-path round on an installed phone. M8-D's first
   real-Coach observation occurs when Beta opens. It is not an additional Alpha test or a request
