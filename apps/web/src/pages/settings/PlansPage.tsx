@@ -149,9 +149,9 @@ export function PlanPanel({
             <p className="settings-plan-card-subtitle">為成長中的教練工作台擴充空間</p>
             <div className="settings-plan-price">
               <span>NT$</span>
-              <strong>{selectedInterval === 'month' ? '199' : '1,990'}</strong>
+              <strong>{selectedInterval === 'month' ? '119' : '1,190'}</strong>
               <small>／{selectedInterval === 'month' ? '月' : '年'}</small>
-              {selectedInterval === 'year' && <em>約 NT$166／月</em>}
+              {selectedInterval === 'year' && <em>約 NT$99／月</em>}
             </div>
             <ul className="settings-plan-features">
               {['最多 15 名學員', '無限場地數量', '本月收支與成長軌跡'].map((feature) => (
@@ -177,9 +177,9 @@ export function PlanPanel({
             <p className="settings-plan-card-subtitle">完整掌握營運、成長與資料</p>
             <div className="settings-plan-price">
               <span>NT$</span>
-              <strong>{selectedInterval === 'month' ? '259' : '2,590'}</strong>
+              <strong>{selectedInterval === 'month' ? '149' : '1,490'}</strong>
               <small>／{selectedInterval === 'month' ? '月' : '年'}</small>
-              {selectedInterval === 'year' && <em>約 NT$216／月</em>}
+              {selectedInterval === 'year' && <em>約 NT$124／月</em>}
             </div>
             <ul className="settings-plan-features">
               {['無限學員數量', '無限場地數量', '本月收支與成長軌跡', '工作台資料匯出'].map(

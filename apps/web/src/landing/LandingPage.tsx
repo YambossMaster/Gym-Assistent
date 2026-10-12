@@ -42,9 +42,9 @@ const plans = [
     number: '02',
     label: '最受歡迎',
     description: '為穩定成長的教練擴充學員與營運視野。',
-    price: 'NT$199',
+    price: 'NT$119',
     period: '／月',
-    annual: '或 NT$1,990／年',
+    annual: '或 NT$1,190／年',
     features: ['最多 15 名學員', '無限場地數量', '本月收支與成長軌跡'],
     featured: true,
     prime: false
@@ -54,9 +54,9 @@ const plans = [
     number: '03',
     label: '完整功能',
     description: '完整掌握規模、成長與自己的工作台資料。',
-    price: 'NT$259',
+    price: 'NT$149',
     period: '／月',
-    annual: '或 NT$2,590／年',
+    annual: '或 NT$1,490／年',
     features: ['無限學員數量', '無限場地數量', '營運與成長分析', '工作台資料匯出'],
     featured: false,
     prime: true

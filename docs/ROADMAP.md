@@ -555,8 +555,8 @@ for 60 days (fixed 60 × 24 hours) without requiring a payment method at redempt
 introduces server-owned plan limits: Free permits five active Students
 and one active Venue, retains lesson-count, scheduling, Training Record and Venue expense settings,
 but locks the entire `本月收支` page, the Student `個人運動表現` directory and all `成長軌跡`
-views. Basic is planned at NT$199/month with 15 active Students; Advanced is planned at
-NT$259/month with unlimited Students. Both paid tiers remove the Venue and feature locks. During
+views. Basic is planned at NT$119/month with 15 active Students; Advanced is planned at
+NT$149/month with unlimited Students. Both paid tiers remove the Venue and feature locks. During
 the initial Beta, Coaches use Free or the Advanced offer; they can subscribe after checkout opens.
 One single-redemption permanent-free code provides Prime access while the service operates. On
 promotional expiry, no charge
@@ -572,8 +572,8 @@ the exact extension and notice rule must be frozen before Beta admission.
 and `Prime 方案`. They map to the existing `free`, `basic`, and `advanced` tiers respectively;
 the earlier Free/Basic/Advanced references in engineering contracts denote those stable tier
 identifiers. This naming decision does not change prices, limits, grants, or checkout timing.
-**Billing interval decision — 2026-10-05:** the first M8-E paid release offers both monthly and
-annual billing. Pro is NT$199/month or NT$1,990/year; Prime is NT$259/month or NT$2,590/year.
+**Billing interval decision — 2026-10-05; prices revised 2026-10-12:** the first M8-E paid release offers both monthly and
+annual billing. Pro is NT$119/month or NT$1,190/year; Prime is NT$149/month or NT$1,490/year.
 The annual prices equal ten monthly payments. The M8-E Contract must freeze provider-backed
 switching, proration, cancellation, invoice, tax and failed-payment behavior before implementation.
 M8-B-Export delivers one-file-at-a-time PDF/CSV/JSON exports for Training Records, performance
