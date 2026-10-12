@@ -10,6 +10,7 @@ import {
 } from '../beta-admission/beta-admission.js'
 import { PostgresBetaAdmissionRepository } from '../beta-admission/postgres-beta-admission-repository.js'
 import { SupabaseVerifiedCoachEmail } from '../beta-admission/supabase-verified-coach-email.js'
+import { setAccountClassification } from '../operations/account-classification.js'
 
 const url = process.env.SUPABASE_URL
 const secretKey = process.env.SUPABASE_SECRET_KEY
@@ -76,6 +77,13 @@ async function create(email: string) {
   created.set(user.id, email)
   passwords.set(user.id, password)
   allCreatedIds.add(user.id)
+  await setAccountClassification(pool, {
+    userId: user.id,
+    accountClass: 'test',
+    testKind: 'automation',
+    actor: 'beta-admission-fixture',
+    reason: 'Isolated development Beta verification',
+  })
   return { userId: user.id }
 }
 

@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Pool } from 'pg'
 import { codeDigest, newBetaCode } from '../beta-admission/beta-admission.js'
+import { setAccountClassification } from '../operations/account-classification.js'
 
 const { SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY, DATABASE_URL, COACH_A_EMAIL } =
   process.env
@@ -102,6 +103,13 @@ try {
     assert.equal(user.email, fixture.email)
     fixture.userId = user.id
     save()
+    await setAccountClassification(pool, {
+      userId: fixture.userId,
+      accountClass: 'test',
+      testKind: 'automation',
+      actor: 'beta-browser-fixture',
+      reason: 'Isolated development browser acceptance',
+    })
     const token = await tokenFor(fixture)
     const first = await request(token, '/v1/students', 'POST', { name: `M8-B expiry ${id} 1` })
     assert.equal(first.status, 201, 'create Free Student')

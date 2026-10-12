@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-11. This is the always-read current-state dashboard. Approved scope and
+> Last verified: 2026-10-12. This is the always-read current-state dashboard. Approved scope and
 > gates live in [`ROADMAP.md`](ROADMAP.md); package detail and history are loaded only through the
 > pointers below.
 
@@ -18,7 +18,7 @@
 | Worktree                      | Local PWA update correction awaiting Product Owner review; Alpha red-line development probe passes; two-code release candidate remains on Main |
 | Production                    | Internal Alpha accepted; latest Fly/Supabase dashboards healthy; no real Coach admitted                                                        |
 | Production release            | PR #2 deployed exact SHA `809dd16` after no-pending preview; `/api/ready` passed                                                               |
-| Pending Production migrations | None identified after release #5; Production migration history includes `20261010110051`                                                       |
+| Pending Production migrations | Reporting classification `20261012041429` pending; authorized APPLY still requires exact-SHA preview                                           |
 
 ## Required context
 

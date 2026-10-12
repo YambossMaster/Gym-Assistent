@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "beta:operator": "node --env-file=.env --import tsx src/beta-admission/operator.ts",
+    "ops:classify": "node --env-file=.env --import tsx src/operations/account-classification-operator.ts",
     "check": "npm run typecheck && npm test",
     "dev": "node --watch --env-file=.env --import tsx src/start.ts",
     "e2e:m1": "node --env-file=.env.e2e --import tsx src/e2e/run-m1-live.ts",
