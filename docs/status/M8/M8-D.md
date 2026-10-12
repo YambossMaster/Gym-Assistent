@@ -1,6 +1,6 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-11. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-12. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
@@ -37,6 +37,12 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- Agent operations reporting is prepared; Development applied private migration `20261012041429` adds audited
+  `real`/`test` labels, read-only report queries separate test and unclassified accounts, and
+  development Beta fixtures label synthetic Auth users before app use. The Product Owner confirmed all
+  three current Production Workspace owners are test accounts: their owner account is `test/owner`;
+  the other two are `test/manual`. Production application and ID-confirmed backfill are pending
+  exact-SHA release. No reporting UI, payment authority or schedule was added.
 - **Alpha/Beta boundary:** M8-C internal Alpha uses the Product Owner and synthetic accounts;
   the Product Owner already ran its first core-path round on an installed phone. M8-D's first
   real-Coach observation occurs when Beta opens. It is not an additional Alpha test or a request
