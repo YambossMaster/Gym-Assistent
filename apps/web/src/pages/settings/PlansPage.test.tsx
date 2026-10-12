@@ -65,6 +65,17 @@ it('keeps ordinary Beta Coaches on Free without rendering paid selection actions
     }
   )
   try {
+    expect(view.host.textContent).toContain('NT$119／月')
+    expect(view.host.textContent).toContain('NT$149／月')
+    await act(async () => {
+      view.host
+        .querySelectorAll<HTMLButtonElement>('.settings-plan-interval button')[1]
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(view.host.textContent).toContain('NT$1,190／年')
+    expect(view.host.textContent).toContain('NT$1,490／年')
+    expect(view.host.textContent).toContain('約 NT$99／月')
+    expect(view.host.textContent).toContain('約 NT$124／月')
     expect(view.host.textContent).toContain('支付功能上線後開放')
     expect(view.host.textContent).not.toContain('切換至 Pro 方案')
     expect(view.host.textContent).not.toContain('切換至 Prime 方案')

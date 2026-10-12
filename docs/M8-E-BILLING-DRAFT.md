@@ -9,7 +9,7 @@
 
 ## Approved for the first paid release
 
-- Offer Pro at NT$199/month or NT$1,990/year and Prime at NT$259/month or NT$2,590/year.
+- Offer Pro at NT$119/month or NT$1,190/year and Prime at NT$149/month or NT$1,490/year.
 - Keep the no-card 60-day Prime offer. Its expiry never starts a charge or subscription.
 - Keep billing and access authority behind the API. A zero-price subscription is activated by an
   authorized server operation; a charged subscription requires verified provider events.

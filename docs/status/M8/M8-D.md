@@ -37,6 +37,10 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner confirmed the revised future paid catalog on 2026-10-12: Pro NT$119/month or
+  NT$1,190/year; Prime NT$149/month or NT$1,490/year. The public landing page and authenticated
+  plan comparison show these amounts and the ten-month annual-price rule remains consistent.
+  Beta self-service checkout remains unavailable; no payment amount or entitlement changed.
 - Agent operations reporting is released. [PR #7](https://github.com/YambossMaster/Gym-Assistent/pull/7)
   merged as `9cafd3976450787f79402a306eda2a7a6fd6eb2f`; [Main CI #163](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208317155)
   passed all four required jobs. [Production release #6](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38208563818)
