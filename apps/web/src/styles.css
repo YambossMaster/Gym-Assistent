@@ -20664,3 +20664,88 @@ button:disabled {
     animation: none;
   }
 }
+
+/* Student detail cards share one header rhythm at each viewport size. */
+.student-detail-page .student-schedule,
+.student-detail-page .purchase-history,
+.student-detail-page .performance-portal {
+  padding: 35px 30px 26px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--white);
+}
+.student-detail-page .purchase-history {
+  margin-top: 0;
+}
+.student-detail-page .performance-portal:hover:not(:disabled),
+.student-detail-page .performance-portal:focus-visible:not(:disabled) {
+  border-color: #aeba73;
+  background: #fcfdf3;
+}
+.student-detail-page .student-schedule-heading,
+.student-detail-page .purchase-history-heading {
+  align-items: center;
+}
+.student-detail-page .student-course-record-heading {
+  padding-top: 35px;
+}
+.student-detail-page .student-schedule-heading .eyebrow,
+.student-detail-page .purchase-history-heading .eyebrow,
+.student-detail-page .student-course-record-heading .eyebrow,
+.student-detail-page .performance-portal-copy small {
+  display: block;
+  color: #596146;
+  font:
+    600 10px/1.2 'DM Mono',
+    monospace;
+  letter-spacing: 0.12em;
+}
+.student-detail-page .student-schedule-heading h2,
+.student-detail-page .purchase-history-heading h2,
+.student-detail-page .student-course-record-heading h2,
+.student-detail-page .performance-portal-copy strong {
+  margin-top: 10px;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+.student-detail-page .detail-add-button,
+.student-detail-page .detail-add-button.ui-action-add {
+  min-height: 42px;
+  padding: 0 16px;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 620px) {
+  .student-detail-page .student-schedule,
+  .student-detail-page .purchase-history,
+  .student-detail-page .performance-portal {
+    padding: 29px 16px 20px;
+    border-radius: 18px;
+  }
+  .student-detail-page .student-course-record {
+    border-radius: 18px;
+  }
+  .student-detail-page .student-course-record-heading {
+    padding: 29px 16px 16px;
+  }
+  .student-detail-page .student-course-record-list {
+    padding-inline: 16px;
+  }
+  .student-detail-page .student-schedule-heading h2,
+  .student-detail-page .purchase-history-heading h2,
+  .student-detail-page .student-course-record-heading h2,
+  .student-detail-page .performance-portal-copy strong {
+    font-size: 21px;
+  }
+  .student-detail-page .detail-add-button,
+  .student-detail-page .detail-add-button.ui-action-add {
+    min-height: 36px;
+    margin-top: 0;
+    padding: 0 11px;
+    gap: 5px;
+    font-size: 12px;
+  }
+}
