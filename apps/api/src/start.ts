@@ -1,6 +1,11 @@
 import { FinanceModule } from './finances/finance-module.js'
 import { PostgresFinanceRepository } from './adapters/postgres-finance-repository.js'
 import { Pool } from 'pg'
+import { CheckoutModule } from './billing/checkout.js'
+import { PostgresCheckoutRepository } from './billing/postgres-checkout.js'
+import { LemonTestCheckoutProvider, localBillingConfiguration } from './billing/lemon-checkout.js'
+import { createLocalLifecycle } from './billing/local-lifecycle.js'
+import { billingDevelopmentEnabled } from './billing/release-gate.js'
 import { PostgresStudentRepository } from './adapters/postgres-student-repository.js'
 import { loadConfig } from './config.js'
 import { buildServer } from './http/server.js'
@@ -38,6 +43,8 @@ import { LegalAcceptanceModule } from './legal-acceptance/legal-acceptance.js'
 import { PostgresLegalAcceptanceRepository } from './legal-acceptance/postgres-legal-acceptance-repository.js'
 
 const config = loadConfig()
+const billingEnabled = billingDevelopmentEnabled()
+const billingConfig = billingEnabled ? localBillingConfiguration(process.env) : null
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
   max: 10,
@@ -45,6 +52,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 10_000,
 })
 const repository = new PostgresStudentRepository(pool)
+const billingLifecycle = billingEnabled ? createLocalLifecycle(process.env, pool) : null
 if (!config.SUPABASE_SECRET_KEY || !config.BETA_ADMISSION_SECRET) {
   throw new Error('M8-D requires SUPABASE_SECRET_KEY and BETA_ADMISSION_SECRET')
 }
@@ -55,6 +63,20 @@ const identityVerifier = new OidcIdentityVerifier({
   jwksUrl: `${supabaseIssuer}/.well-known/jwks.json`,
 })
 const server = buildServer({
+  ...(billingLifecycle
+    ? {
+        billingInbox: billingLifecycle.billingInbox,
+        billingManagement: billingLifecycle.billingManagement,
+      }
+    : {}),
+  ...(billingEnabled && process.env.BILLING_LOCAL_CHECKOUT === 'true'
+    ? {
+        checkout: new CheckoutModule(
+          new PostgresCheckoutRepository(pool),
+          new LemonTestCheckoutProvider(billingConfig),
+        ),
+      }
+    : {}),
   financeReport: new FinanceReportModule(
     new FinanceModule(repository, new PostgresFinanceRepository(pool)),
     new WorkspaceModule({ repository }),
@@ -133,6 +155,7 @@ const server = buildServer({
 server.addHook('onClose', async () => {
   await pool.end()
 })
+billingLifecycle?.attach(server)
 
 if (config.NODE_ENV === 'production') {
   const webRoot = fileURLToPath(new URL('../../web/dist/', import.meta.url))

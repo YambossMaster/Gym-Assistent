@@ -858,6 +858,18 @@ and separate Production/remote delivery authorization remain required.
 
 #### M8-E — Paid checkout before first offer expiry
 
+**Approved early development and release hold — 2026-10-14:** PO authorized the scoped payment
+frontend/backend preparation and its commit/Main/CI/deployment with all payment entry closed while
+merchant approval is pending. Current catalog is Pro NT$115/month or NT$1,150/year and Prime
+NT$145/month or NT$1,450/year. Existing grants remain protected. Payment activation, Production
+payment schema and merchant verification are not authorized by this release. The implementation
+Contract and payment-design documents record the agreed first-subscription trials, 45-day refund
+request window, upgrade/downgrade policies and remaining integration work. M8-D/M8-E completion
+criteria and release sequencing remain unchanged.
+PO then narrowed this delivery to backend only: frontend changes and the planned catalog remain
+local; the existing Production frontend is preserved. Ship only disabled backend foundations and
+the Development migration-history correction through the authorized release flow.
+
 **Contract gate:** freeze the named payment provider, merchant prerequisites, Basic/Advanced
 monthly and annual subscriptions, voluntary paid activation after a no-card offer, auto-renewal, cancellation,
 failed-payment, refunds, invoices/tax, verified events and reconciliation. Freeze the exact

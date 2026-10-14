@@ -3,6 +3,7 @@ import { strict as assert } from 'node:assert'
 import { readFileSync } from 'node:fs'
 import {
   hasProductionMigration,
+  hasDevelopmentMigration,
   hasReleaseGateChange,
   isDocsOnly,
   isReleaseCandidate,
@@ -65,13 +66,29 @@ test('automatic deployment requires a fresh Production migration state with no p
   assert.match(deploy, /node scripts\/require-current-release\.mjs/)
 })
 
-test('development migration dry run is scoped to commits with migration files', () => {
+test('development history checks run for shared and Development-only migrations without promoting them', () => {
+  assert.equal(
+    hasDevelopmentMigration([
+      'supabase/development-only/20261014100438_billing_checkout_intents.sql',
+    ]),
+    true,
+  )
+  assert.equal(
+    hasProductionMigration([
+      'supabase/development-only/20261014100438_billing_checkout_intents.sql',
+    ]),
+    false,
+  )
+  assert.equal(hasDevelopmentMigration(['supabase/migrations/20261015000000_next.sql']), true)
+  assert.equal(hasDevelopmentMigration(['scripts/development-migration-dry-run.mjs']), true)
+  assert.equal(hasDevelopmentMigration(['apps/web/src/config.ts']), false)
   const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
   const dryRun = workflow
     .split('  migration-dry-run:')[1]
     .split('  production-migration-preview:')[0]
 
-  assert.match(dryRun, /steps\.scope\.outputs\.production_migration == 'true'/)
+  assert.match(dryRun, /steps\.scope\.outputs\.development_migration == 'true'/)
+  assert.match(dryRun, /npm run db:push:dry:development/)
   assert.match(dryRun, /Verify remote migration plan/)
   assert.doesNotMatch(dryRun, /steps\.scope\.outputs\.docs_only/)
 })

@@ -1,4 +1,9 @@
 import { FinanceModule } from '../finances/finance-module.js'
+import { BillingError, type CheckoutModule } from '../billing/checkout.js'
+import { BillingPolicyError } from '../billing/policy.js'
+import { checkoutRoutes } from '../billing/routes.js'
+import { billingWebhookRoutes, type BillingEventInbox } from '../billing/event-inbox.js'
+import { billingManagementRoutes, type BillingManagementModule } from '../billing/management.js'
 import type { FinanceReportModule } from '../exports/finance-report.js'
 import type { PostgresCalendarIntegration } from '../calendar-integration/postgres-calendar.js'
 import { CalendarError } from '../calendar-integration/calendar.js'
@@ -59,6 +64,9 @@ import {
 } from '../legal-acceptance/legal-acceptance.js'
 
 export interface ServerDependencies {
+  checkout?: CheckoutModule
+  billingInbox?: BillingEventInbox
+  billingManagement?: BillingManagementModule
   identityVerifier: IdentityVerifier
   students: StudentModule
   today: TodayModule
@@ -199,6 +207,9 @@ const updateWorkspaceSettingsBodySchema = {
 } as const
 
 export function buildServer({
+  checkout,
+  billingInbox,
+  billingManagement,
   identityVerifier,
   students,
   today,
@@ -430,6 +441,16 @@ export function buildServer({
       })
   }
   server.setErrorHandler((error, _request, reply) => {
+    if (error instanceof BillingError)
+      return reply
+        .header('Cache-Control', 'no-store, private')
+        .status(error.statusCode)
+        .send({ error: error.code })
+    if (error instanceof BillingPolicyError)
+      return reply
+        .header('Cache-Control', 'no-store, private')
+        .status(409)
+        .send({ error: error.code })
     if (error instanceof CalendarError)
       return reply.status(error.statusCode).send({ error: error.code })
     if (error instanceof ExportError)
@@ -1520,6 +1541,9 @@ export function buildServer({
     },
   )
 
+  if (checkout) checkoutRoutes(server, identityVerifier, checkout)
+  if (billingInbox) billingWebhookRoutes(server, billingInbox)
+  if (billingManagement) billingManagementRoutes(server, identityVerifier, billingManagement)
   return server
 }
 

@@ -22,6 +22,15 @@
 
 ## Required context
 
+Payment development/release hold: PO narrowed delivery to backend only. No `apps/web` changes are
+included; the current Main frontend remains unchanged. API billing startup is hard-closed.
+The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
+No paid access or merchant calls are enabled.
+Development's applied `20261014100438` history is preserved separately; the ledger is an unapplied
+draft. Production's migration sequence is unchanged. See [local handoff](M8-E-LOCAL-CHECKOUT.md),
+[Contract](M8-E-IMPLEMENTATION-CONTRACT.md), and
+[history isolation decision](adr/2026-10-14-development-billing-history.md).
+
 For every formal-product task:
 
 1. Read the active [`M8-D status`](status/M8/M8-D.md).

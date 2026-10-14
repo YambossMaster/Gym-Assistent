@@ -48,6 +48,18 @@ The detailed behavior and migration contract live in
   deployment and readiness. Independent Production requests returned 200 for `/api/ready` with
   `{"status":"ready"}`, `/` and `/login`; a fresh 1440px Production browser view rendered the
   restored dark-left/paper-right split with `.auth-panel` at `rgb(242, 240, 233)`.
+
+- Payment release hold (2026-10-14): PO requested Commit/Main/CI/deploy, then explicitly narrowed
+  delivery to backend only. No `apps/web` changes are included. Frontend selection/checkout work
+  stays local with entry closed; Production retains its current Main frontend. API billing startup
+  is hard-disabled. Existing PlanAccess and published legal terms remain unchanged. The planned
+  NT$115/145 monthly catalog and NT$1,150/1,450 annual prices are not deployed by this release.
+  Development has applied `20261014100438`; Production has not. Its exact SQL is stored under
+  `supabase/development-only`; project-pinned staging lets the Development dry-run validate its real
+  history without concealing unknown drift. Unapplied ledger SQL stays in `supabase/drafts/billing`.
+  No database mutation or Production schema release is included. Exact release evidence is pending
+  the authorized checks and deployment; see LOG-547 and `M8-E-LOCAL-CHECKOUT.md`.
+
 - The Product Owner's installed-iPhone Calendar recording showed the view and header being dragged
   upward at the timeline's bottom edge, exposing a paper-colored strip. At 390×844 the document
   itself has no ordinary scroll range; the week timeline is the intended nested scroller. The

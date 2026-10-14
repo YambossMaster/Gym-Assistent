@@ -18,6 +18,7 @@
     "dev:web": "npm run dev --workspace @gym-assistant/web",
     "db:push": "supabase db push --linked",
     "db:push:dry": "supabase db push --linked --dry-run",
+    "db:push:dry:development": "node scripts/development-migration-dry-run.mjs",
     "format:check": "prettier --check .",
     "prepare": "node scripts/install-hooks.mjs",
     "test": "npm run test --workspaces --if-present",
