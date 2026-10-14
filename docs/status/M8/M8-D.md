@@ -39,11 +39,15 @@ The detailed behavior and migration contract live in
 
 - A desktop `/login` colour regression was traced to the 2026-10-11 iPhone Auth document-surface
   fix: `body:has(.auth-layout)` became dark at every viewport width, while the desktop form panel
-  remained transparent. In this isolated local correction, the form panel uses `--paper` above the
-  480px mobile breakpoint. The mobile document surface remains dark. Changed-file Prettier and Git
-  whitespace checks pass. A local 1440×900 preview shows the restored light desktop panel and
-  readable form; 390×844 previews show the existing dark welcome and light form surfaces. Product
-  Owner visual acceptance and the package CI gate have not run.
+  remained transparent. The form panel now uses `--paper` above the 480px mobile breakpoint;
+  mobile Auth was not changed. Local 1440×900 and 390×844 previews, focused formatting, Web
+  typecheck and whitespace checks passed. [PR #19](https://github.com/YambossMaster/Gym-Assistent/pull/19)
+  passed all required checks and merged as `776d7511875f7202b6cc190f917a5d4503c9c804`.
+  [Main CI #190](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38556109452)
+  passed verify/build, browser UI, migration no-op, no-pending Production preview, exact-SHA Fly
+  deployment and readiness. Independent Production requests returned 200 for `/api/ready` with
+  `{"status":"ready"}`, `/` and `/login`; a fresh 1440px Production browser view rendered the
+  restored dark-left/paper-right split with `.auth-panel` at `rgb(242, 240, 233)`.
 - The Product Owner's installed-iPhone Calendar recording showed the view and header being dragged
   upward at the timeline's bottom edge, exposing a paper-colored strip. At 390×844 the document
   itself has no ordinary scroll range; the week timeline is the intended nested scroller. The
