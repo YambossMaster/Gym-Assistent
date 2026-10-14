@@ -51,11 +51,12 @@ Form Coach Desk？` now appears first and walks through Student, purchase, Venue
   published support address. The isolated Help tests pass 3/3, root check passes API 44 files / 213
   tests and Web 80 files / 356 tests, production build passes, and Playwright passes the existing
   Plan Choice plus Help journeys at 1440px and 390×844 (4/4). This UI-only change has no migration;
-  exact-SHA PR, Main CI and automatic Fly deployment remain pending. The Product Owner approved a
-  narrow CI correction: Development linked migration dry-run now runs only when a commit changes
-  `supabase/migrations/**`. This Web-only release keeps the required migration job as an explicit
-  no-op while Main still performs the independent Production history comparison and blocks
-  deployment on any pending or divergent migration.
+  [PR #16](https://github.com/YambossMaster/Gym-Assistent/pull/16) merged as exact Main SHA
+  `bff1f75f42f8c1c5ebe03d3ba9d6c1d48bdc6d29`. Main CI #184 passed verify/build, browser UI,
+  migration-job no-op, no-pending Production history comparison, same-SHA Fly deployment and
+  readiness. Independent requests returned 200 for `/api/ready`, `/`, `/login` and both new PWA
+  image assets. Installed-device instructional accuracy remains Product Owner acceptance, not a
+  browser/deployment claim.
 - The Product Owner's follow-up iPhone recording confirmed the edge bounce but showed the mobile
   header moving with it and intermittently flashing on `今日`. The isolated correction fixes the
   header to the viewport on the seven bounce-enabled route families, reserves its content space,
