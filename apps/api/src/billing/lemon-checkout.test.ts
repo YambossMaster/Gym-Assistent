@@ -1,0 +1,99 @@
+import { expect, it, vi } from 'vitest'
+import {
+  LemonTestCheckoutProvider,
+  localBillingConfiguration,
+  type LemonTestConfiguration,
+} from './lemon-checkout.js'
+import type { CheckoutQuote } from './checkout.js'
+const config: LemonTestConfiguration = {
+  key: 'test-only-fake-key',
+  storeId: '1',
+  returnUrl: 'http://127.0.0.1:4177/settings/checkout',
+  variants: { basic_month: '2', basic_year: '3', advanced_month: '4', advanced_year: '5' },
+}
+const quote: CheckoutQuote = {
+  id: 'q',
+  expiresAt: '2030-01-01T00:00:00Z',
+  termsVersion: 'local',
+  tier: 'basic',
+  interval: 'month',
+  today: { amount: 11500, currency: 'TWD' },
+  renewal: { amount: 11500, currency: 'TWD' },
+  trial: null,
+  chargeAt: '2030-02-01T00:00:00Z',
+  promotion: null,
+}
+it('defaults off, rejects production opt-in and blocks incomplete merchant setup', () => {
+  expect(localBillingConfiguration({})).toBeNull()
+  expect(localBillingConfiguration({ BILLING_LOCAL_CHECKOUT: 'true' })).toBeNull()
+  expect(() =>
+    localBillingConfiguration({ BILLING_LOCAL_CHECKOUT: 'true', DEPLOYMENT_TARGET: 'production' }),
+  ).toThrow()
+  expect(() =>
+    localBillingConfiguration({ BILLING_LOCAL_CHECKOUT: 'true', NODE_ENV: 'production' }),
+  ).toThrow()
+  expect(new LemonTestCheckoutProvider(null).ready(quote)).toBe(false)
+  expect(
+    localBillingConfiguration({
+      BILLING_LOCAL_CHECKOUT: 'true',
+      LEMON_SQUEEZY_API_KEY: 'fake',
+      LEMON_SQUEEZY_STORE_ID: '1',
+      BILLING_RETURN_URL: 'http://127.0.0.1:4178/settings/checkout',
+      LEMON_PRO_MONTH_VARIANT: '2',
+      LEMON_PRO_YEAR_VARIANT: '3',
+      LEMON_PRIME_MONTH_VARIANT: '4',
+      LEMON_PRIME_YEAR_VARIANT: '5',
+    }),
+  ).toBeNull()
+})
+it('uses only server-mapped Test Mode checkout and skips repeat trial', async () => {
+  const request = vi.fn<typeof fetch>(
+    async () =>
+      new Response(
+        JSON.stringify({
+          data: {
+            type: 'checkouts',
+            id: 'checkout-1',
+            attributes: {
+              test_mode: true,
+              url: 'https://store.lemonsqueezy.com/checkout/custom/1',
+            },
+          },
+        }),
+      ),
+  )
+  const provider = new LemonTestCheckoutProvider(config, request)
+  expect(
+    await provider.create({
+      intentId: 'i',
+      quote,
+      email: 'coach@example.invalid',
+      expiresAt: quote.expiresAt,
+    }),
+  ).toMatchObject({ id: 'checkout-1' })
+  const payload = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
+  expect(payload.data.attributes.test_mode).toBe(true)
+  expect(payload.data.attributes.checkout_options.skip_trial).toBe(true)
+  expect(payload.data.relationships.variant.data.id).toBe('2')
+  expect(payload.data.attributes.checkout_data.custom).toEqual({ intent_id: 'i' })
+})
+it('does not accept live-mode or unsafe provider URLs and does not retry failures', async () => {
+  for (const attributes of [
+    { test_mode: false, url: 'https://store.lemonsqueezy.com/checkout/1' },
+    { test_mode: true, url: 'https://attacker.example/checkout/1' },
+  ]) {
+    const request = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ data: { type: 'checkouts', id: '1', attributes } })),
+    )
+    await expect(
+      new LemonTestCheckoutProvider(config, request).create({
+        intentId: 'i',
+        quote,
+        email: 'coach@example.invalid',
+        expiresAt: quote.expiresAt,
+      }),
+    ).rejects.toThrow()
+    expect(request).toHaveBeenCalledTimes(1)
+  }
+})

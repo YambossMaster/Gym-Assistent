@@ -1,5 +1,12 @@
 # M8-E billing decision draft
 
+> **2026-10-14 superseding design:** [Payment design](M8-E-PAYMENT-DESIGN.md) records the PO's
+> latest Pro NT$115 / Prime NT$145 tax-inclusive monthly prices (annual NT$1,150 / NT$1,450),
+> one-month payment-authorized trial, and unified checkout with a 60-day Prime-code trial that
+> also auto-renews after authorization. Existing card-free grants are not silently converted.
+> The sections below preserve the earlier proposal; where they differ, use the new design and
+> Roadmap amendment. Neither document is a frozen engineering Contract or live-checkout approval.
+
 > Product review draft, 2026-10-06. This is not a frozen Contract and does not activate checkout.
 > The approved interval and prices are recorded in [ROADMAP.md](ROADMAP.md).
 > The 2026-10-08 [M8-D Beta plan-access correction](M8-D-BETA-PLAN-ACCESS-CONTRACT.md)
@@ -9,7 +16,7 @@
 
 ## Approved for the first paid release
 
-- Offer Pro at NT$119/month or NT$1,190/year and Prime at NT$149/month or NT$1,490/year.
+- Offer Pro at NT$115/month or NT$1,150/year and Prime at NT$145/month or NT$1,450/year.
 - Keep the no-card 60-day Prime offer. Its expiry never starts a charge or subscription.
 - Keep billing and access authority behind the API. A zero-price subscription is activated by an
   authorized server operation; a charged subscription requires verified provider events.

@@ -22,6 +22,15 @@ export const needsBrowser = (paths) =>
 export const hasProductionMigration = (paths) =>
   paths.some((file) => file.startsWith('supabase/migrations/'))
 
+export const hasDevelopmentMigration = (paths) =>
+  hasProductionMigration(paths) ||
+  paths.some(
+    (file) =>
+      file.startsWith('supabase/development-only/') ||
+      file === 'scripts/development-migration-dry-run.mjs' ||
+      file === '.github/workflows/ci.yml',
+  )
+
 export const hasReleaseGateChange = (paths) =>
   paths.some(
     (file) =>
@@ -49,6 +58,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   let docsOnly = false
   let browserNeeded = true
   let productionMigration = false
+  let developmentMigration = true
   let releaseGate = true
   let releaseCandidate = false
   if (EVENT_NAME !== 'workflow_dispatch' && BASE_SHA && HEAD_SHA && !/^0+$/.test(BASE_SHA)) {
@@ -57,6 +67,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       docsOnly = isDocsOnly(paths)
       browserNeeded = needsBrowser(paths)
       productionMigration = hasProductionMigration(paths)
+      developmentMigration = hasDevelopmentMigration(paths)
       releaseGate = hasReleaseGateChange(paths)
       releaseCandidate = isReleaseCandidate(paths)
     } catch {
@@ -67,7 +78,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (GITHUB_OUTPUT)
     appendFileSync(
       GITHUB_OUTPUT,
-      `docs_only=${docsOnly}\nbrowser_needed=${browserNeeded}\nproduction_migration=${productionMigration}\nrelease_gate=${releaseGate}\nrelease_candidate=${releaseCandidate}\n`,
+      `docs_only=${docsOnly}\nbrowser_needed=${browserNeeded}\nproduction_migration=${productionMigration}\ndevelopment_migration=${developmentMigration}\nrelease_gate=${releaseGate}\nrelease_candidate=${releaseCandidate}\n`,
     )
   console.log(
     `Verification scope: ${docsOnly ? 'docs format only' : 'full'}; browser ${browserNeeded ? 'needed' : 'not needed'}; production migration ${productionMigration ? 'changed' : 'unchanged'}; release gate ${releaseGate ? 'changed' : 'unchanged'}; release candidate ${releaseCandidate ? 'yes' : 'no'}`,
