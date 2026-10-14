@@ -234,7 +234,7 @@ export function LandingPage() {
           <Link to="/terms">服務條款 Terms</Link>
           <Link to="/privacy">隱私權政策 Privacy</Link>
         </div>
-        <p>© 2026 The Developer of Form Coach Desk · Taipei, Taiwan</p>
+        <p>© 2026 Form Coach Desk Studio · Taipei, Taiwan</p>
       </footer>
     </main>
   )
