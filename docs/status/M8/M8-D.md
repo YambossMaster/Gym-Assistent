@@ -46,8 +46,14 @@ The detailed behavior and migration contract live in
   previews can show them. The Students downward jump keeps the header and bottom navigation
   visible until the next manual gesture. Product Owner 390px review passed after a correction;
   the same local preview settled at `scrollY=737.5` with visible chrome and no transforms.
-  Isolated branch local `npm run check` and `npm run build` passed; remote delivery checks are
-  pending. No schema or API change is included.
+  Isolated branch local `npm run check` and `npm run build` passed. [PR
+  #25](https://github.com/YambossMaster/Gym-Assistent/pull/25) passed required verify, browser UI
+  and migration dry-run checks and merged as `7ea8283d2c2ff50043723859a6d0630948f73dc0`.
+  [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38618476830) passed
+  verify, browser UI, migration dry-run and Production preview, then deployed that exact SHA to
+  Fly and passed readiness. Independent Production requests returned 200 for `/api/ready`, `/`
+  and `/login`; the deployed JS contains the shortcut event marker. No schema or API change was
+  included. Installed-device touch acceptance remains unobserved.
 
 - The Product Owner requested two in-app notices for newly registered Coaches and explicitly
   waived screenshot review before Main delivery. The existing `協助與回饋` getting-started guide on
