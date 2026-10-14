@@ -7,6 +7,14 @@ Workspace, and creates or lists Students without accepting a workspace identifie
 
 Requirements: Node.js 22+ and a linked Supabase project.
 
+For the shared Development project (`yvhijxhtelujfsaplzpi`), run
+`npm run db:push:dry:development` from the repository root. It accounts for the already-applied,
+Development-only billing baseline without promoting unfinished payment SQL to Production.
+Do not repair/delete that remote history to make a check pass. See
+[`supabase/development-only/README.md`](../../supabase/development-only/README.md) before a separately
+authorized Development apply. Ordinary API startup needs no migration apply. The generic commands
+below remain the shared-schema workflow; Production keeps its explicit preview/APPLY gate.
+
 ```bash
 copy .env.example .env
 npm run db:push:dry

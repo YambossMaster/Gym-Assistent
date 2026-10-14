@@ -5,6 +5,13 @@
 Latest PO direction: backend-only delivery. No frontend files or prices are part of this release.
 Frontend components described below remain in the primary local working tree, not this Main commit.
 
+Released through PR #21 as `f550daaca73de3b5cc4656aae270fea0a68e7073`.
+[Main CI #194](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38558499766) passed
+verification/build, browser checks, Development dry-run, no-pending Production preview and Fly
+deployment/readiness. Independent API readiness and browser `Accept: text/html` root/login checks
+returned 200; billing current/records returned 404. `apps/web` and shared migrations are identical
+to the preceding Main commit. Frontend and merchant activation remain deferred.
+
 PO requested commit/Main/CI/deployment with payment entry closed. `localBillingEnabled` and the
 API startup release gate are now hard-closed even if old environment flags remain. `/plans` is a
 read-only comparison; checkout and synthetic review deep links return to Settings. Components and

@@ -6,19 +6,19 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                 |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                   |
-| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                              |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                        |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                        |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                      |
-| Released code                 | `776d7511875f7202b6cc190f917a5d4503c9c804`; [main CI #190](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38556109452) passed      |
-| Worktree                      | Atomic signup classification is released; this dedicated worktree now records release evidence                                                  |
-| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted              |
-| Production release            | Main CI #190 deployed exact SHA `776d751` and passed readiness; `/api/ready`, `/`, `/login` and desktop login colour were independently checked |
-| Pending Production migrations | None observed in CI #190 Production preview                                                                                                     |
+| Field                         | Current value                                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                            |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                              |
+| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                         |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                   |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                   |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                 |
+| Released code                 | `f550daaca73de3b5cc4656aae270fea0a68e7073`; [main CI #194](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38558499766) passed |
+| Worktree                      | Backend-only release delivered; frontend work remains local and payment activation is deferred                                             |
+| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted         |
+| Production release            | Main CI #194 deployed exact SHA `f550daa`; API and browser pages healthy; billing endpoints unavailable                                    |
+| Pending Production migrations | None observed in CI #194; Development-only history and unapplied billing draft are outside the Production sequence                         |
 
 ## Required context
 
