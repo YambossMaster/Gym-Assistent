@@ -37,6 +37,12 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner's follow-up iPhone recording confirmed the edge bounce but showed the mobile
+  header moving with it and intermittently flashing on `今日`. The isolated correction fixes the
+  header to the viewport on the seven bounce-enabled route families, reserves its content space,
+  and removes transform promotion/transition from pinned chrome. Direction-based hide/show remains.
+  Web typecheck, focused mobile tests (13/13), scoped formatting and whitespace checks pass;
+  installed-iPhone acceptance remains pending.
 - The Product Owner's installed-iPhone recordings showed the main `今日` document stopping at its
   vertical edges while a scheduling form's own scroll region rubber-banded. The scoped mobile CSS
   correction restores native edge bounce on `今日`, `學生`, `動作庫`, student detail, `本月收支`,
