@@ -6,11 +6,11 @@
 -- A. Coach audience and last sign-in (Auth billing MAU is a different metric).
 with coaches as (
   select u.id, u.created_at, u.last_sign_in_at,
-         coalesce(c.account_class, 'unclassified') as account_class,
+         c.account_class,
          c.test_kind
   from auth.users u
   join app_private.workspace w on w.owner_user_id = u.id
-  left join app_private.account_reporting_classification c on c.user_id = u.id
+  join app_private.account_reporting_classification c on c.user_id = u.id
   where u.deleted_at is null and u.email_confirmed_at is not null
 )
 select account_class, test_kind, count(*) as coach_count,
@@ -22,7 +22,7 @@ order by account_class, test_kind;
 
 -- B. Effective Beta access. M8-E must replace this query with provider-verified
 -- paid subscription state before the first live charge.
-select coalesce(c.account_class, 'unclassified') as account_class,
+select c.account_class,
        case
          when g.kind = 'permanent' and g.started_at <= now() then 'permanent_prime'
          when g.kind = 'promotional' and g.started_at <= now() and g.ends_at > now()
@@ -32,7 +32,7 @@ select coalesce(c.account_class, 'unclassified') as account_class,
        count(*) as coach_count
 from auth.users u
 join app_private.workspace w on w.owner_user_id = u.id
-left join app_private.account_reporting_classification c on c.user_id = u.id
+join app_private.account_reporting_classification c on c.user_id = u.id
 left join app_private.beta_grant g on g.workspace_id = w.id
 where u.deleted_at is null and u.email_confirmed_at is not null
 group by 1, 2
@@ -93,12 +93,10 @@ select count(*) filter (where code_id is null and kind = 'permanent')
          as next_promotional_expiry
 from app_private.beta_grant;
 
--- F. Classification backlog. User IDs are for operator action only; omit from
--- the routine report. Do not assume an unclassified account is real.
-select u.id as user_id, u.created_at, u.email_confirmed_at is not null as verified,
-       w.id is not null as has_workspace
+-- F. Integrity assertion. The expected result is one row with zero. Any
+-- positive count is a system defect: stop the report and repair the creation
+-- path rather than inventing an operational audience category.
+select count(*) as classification_integrity_errors
 from auth.users u
-left join app_private.workspace w on w.owner_user_id = u.id
 left join app_private.account_reporting_classification c on c.user_id = u.id
-where u.deleted_at is null and c.user_id is null
-order by u.created_at;
+where u.deleted_at is null and c.user_id is null;

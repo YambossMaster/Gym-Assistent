@@ -42,12 +42,14 @@ async function main(args: string[]) {
   if (action === 'list') {
     const result = await pool.query(
       `select w.owner_user_id as user_id,
-              coalesce(c.account_class,'unclassified') as account_class,
+              c.account_class,
               c.test_kind,c.classified_at
        from app_private.workspace w
        left join app_private.account_reporting_classification c on c.user_id=w.owner_user_id
        order by w.created_at,w.owner_user_id`,
     )
+    if (result.rows.some((row) => row.account_class === null))
+      throw new Error('Account classification invariant violated')
     process.stdout.write(`${JSON.stringify(result.rows, null, 2)}\n`)
     return
   }

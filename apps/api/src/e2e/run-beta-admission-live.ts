@@ -10,7 +10,10 @@ import {
 } from '../beta-admission/beta-admission.js'
 import { PostgresBetaAdmissionRepository } from '../beta-admission/postgres-beta-admission-repository.js'
 import { SupabaseVerifiedCoachEmail } from '../beta-admission/supabase-verified-coach-email.js'
-import { setAccountClassification } from '../operations/account-classification.js'
+import {
+  clearTestAccountIntent,
+  createTestAccountIntent,
+} from '../operations/account-classification-intent.js'
 
 const url = process.env.SUPABASE_URL
 const secretKey = process.env.SUPABASE_SECRET_KEY
@@ -63,6 +66,12 @@ async function auth(path: string, init: RequestInit = {}) {
 
 async function create(email: string) {
   const password = randomBytes(24).toString('base64url')
+  await createTestAccountIntent(pool, {
+    email,
+    testKind: 'automation',
+    actor: 'beta-admission-fixture',
+    reason: 'Isolated development Beta verification',
+  })
   const response = await auth('/admin/users', {
     method: 'POST',
     body: JSON.stringify({
@@ -71,19 +80,27 @@ async function create(email: string) {
       email_confirm: true,
     }),
   })
-  if (!response.ok) throw new Error(`Synthetic Auth creation returned ${response.status}`)
+  if (!response.ok) {
+    await clearTestAccountIntent(pool, email)
+    throw new Error(`Synthetic Auth creation returned ${response.status}`)
+  }
   const user = (await response.json()) as { id?: string; email?: string }
   if (!user.id || user.email !== email) throw new Error('Synthetic Auth identity mismatch')
   created.set(user.id, email)
   passwords.set(user.id, password)
   allCreatedIds.add(user.id)
-  await setAccountClassification(pool, {
-    userId: user.id,
-    accountClass: 'test',
-    testKind: 'automation',
-    actor: 'beta-admission-fixture',
-    reason: 'Isolated development Beta verification',
-  })
+  const classification = await pool.query<{ account_class: string; test_kind: string | null }>(
+    `select account_class,test_kind
+     from app_private.account_reporting_classification
+     where user_id=$1`,
+    [user.id],
+  )
+  if (
+    classification.rows.length !== 1 ||
+    classification.rows[0]?.account_class !== 'test' ||
+    classification.rows[0]?.test_kind !== 'automation'
+  )
+    throw new Error('Synthetic Auth user was not classified atomically as test/automation')
   return { userId: user.id }
 }
 

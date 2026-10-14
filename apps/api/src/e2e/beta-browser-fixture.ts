@@ -5,7 +5,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { Pool } from 'pg'
 import { codeDigest, newBetaCode } from '../beta-admission/beta-admission.js'
-import { setAccountClassification } from '../operations/account-classification.js'
+import {
+  clearTestAccountIntent,
+  createTestAccountIntent,
+} from '../operations/account-classification-intent.js'
 
 const { SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY, DATABASE_URL, COACH_A_EMAIL } =
   process.env
@@ -90,6 +93,12 @@ try {
     }
     const file = fileFor(id)
     const save = () => writeFileSync(file, JSON.stringify(fixture), { mode: 0o600 })
+    await createTestAccountIntent(pool, {
+      email: fixture.email,
+      testKind: 'automation',
+      actor: 'beta-browser-fixture',
+      reason: 'Isolated development browser acceptance',
+    })
     const created = await auth('/admin/users', {
       method: 'POST',
       body: JSON.stringify({
@@ -98,18 +107,23 @@ try {
         email_confirm: true,
       }),
     })
+    if (!created.ok) await clearTestAccountIntent(pool, fixture.email)
     assert.equal(created.status, 200, 'create synthetic Auth user')
     const user = (await created.json()) as { id: string; email: string }
     assert.equal(user.email, fixture.email)
     fixture.userId = user.id
     save()
-    await setAccountClassification(pool, {
-      userId: fixture.userId,
-      accountClass: 'test',
-      testKind: 'automation',
-      actor: 'beta-browser-fixture',
-      reason: 'Isolated development browser acceptance',
-    })
+    const classification = await pool.query<{ account_class: string; test_kind: string | null }>(
+      `select account_class,test_kind
+       from app_private.account_reporting_classification
+       where user_id=$1`,
+      [fixture.userId],
+    )
+    assert.deepEqual(
+      classification.rows,
+      [{ account_class: 'test', test_kind: 'automation' }],
+      'Auth creation classified synthetic fixture atomically',
+    )
     const token = await tokenFor(fixture)
     const first = await request(token, '/v1/students', 'POST', { name: `M8-B expiry ${id} 1` })
     assert.equal(first.status, 201, 'create Free Student')
