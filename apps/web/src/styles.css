@@ -3641,6 +3641,12 @@ svg {
   place-items: center;
 }
 
+@media (min-width: 481px) {
+  .auth-panel {
+    background: var(--paper);
+  }
+}
+
 .auth-card {
   width: min(420px, 100%);
   display: grid;

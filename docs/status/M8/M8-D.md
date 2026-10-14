@@ -37,6 +37,13 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- A desktop `/login` colour regression was traced to the 2026-10-11 iPhone Auth document-surface
+  fix: `body:has(.auth-layout)` became dark at every viewport width, while the desktop form panel
+  remained transparent. In this isolated local correction, the form panel uses `--paper` above the
+  480px mobile breakpoint. The mobile document surface remains dark. Changed-file Prettier and Git
+  whitespace checks pass. A local 1440×900 preview shows the restored light desktop panel and
+  readable form; 390×844 previews show the existing dark welcome and light form surfaces. Product
+  Owner visual acceptance and the package CI gate have not run.
 - The Product Owner's installed-iPhone Calendar recording showed the view and header being dragged
   upward at the timeline's bottom edge, exposing a paper-colored strip. At 390×844 the document
   itself has no ordinary scroll range; the week timeline is the intended nested scroller. The
