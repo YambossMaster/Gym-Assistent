@@ -39,13 +39,18 @@ The detailed behavior and migration contract live in
 
 - The Product Owner requested two in-app notices for newly registered Coaches and explicitly
   waived screenshot review before Main delivery. The existing `協助與回饋` getting-started guide on
-  Main is the second notice's destination. Local Sol derives stable welcome and guide notices from
+  Main is the second notice's destination. Today derives stable welcome and guide notices from
   a new Workspace timestamp, reuses Today read/dismiss state, and leaves existing Workspaces
-  ineligible. Migration `20261014113954` was applied only to Development: its four existing
-  Workspaces remain unmarked, the new-column default is `now()`, and dry-run is now up to date.
-  Production application still requires the exact-SHA preview and literal `APPLY`. API affected
-  tests pass 286/286; Web typecheck/build pass. One Web full-suite worker start timed out after
-  337 tests passed, and its isolated 19-test rerun passed. Remote full CI remains required.
+  ineligible. Migration `20261014113954` was applied to Development and Production; their four
+  and three pre-existing Workspaces respectively remain unmarked, with `now()` as the new-row
+  default. API affected tests passed 286/286; Web typecheck/build passed. One local Web worker
+  timed out after 337 tests passed; the isolated 19-test rerun and remote verify passed.
+  [PR #23](https://github.com/YambossMaster/Gym-Assistent/pull/23) passed required checks and
+  merged as `e35af9a`. [Main CI #198](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38562585025)
+  passed all four checks and previewed only this migration. With the Product Owner's literal
+  `APPLY`, [release #8](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38563009700)
+  re-previewed, applied and deployed the same SHA; readiness passed. Independent public requests
+  returned 200 for `/api/ready`, `/` and `/login`. First real new-Coach receipt remains unobserved.
 
 - A desktop `/login` colour regression was traced to the 2026-10-11 iPhone Auth document-surface
   fix: `body:has(.auth-layout)` became dark at every viewport width, while the desktop form panel
