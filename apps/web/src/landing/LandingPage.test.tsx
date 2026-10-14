@@ -32,6 +32,8 @@ it('shows product purpose, public prices, support and legal links without authen
     expect(host.textContent).toContain('NT$149')
     expect(host.textContent).toContain('NT$1,190／年')
     expect(host.textContent).toContain('NT$1,490／年')
+    expect(host.textContent).toContain('© 2026 Form Coach Desk Studio · Taipei, Taiwan')
+    expect(host.textContent).not.toContain('The Developer of Form Coach Desk')
     expect(host.textContent).toContain('Beta 期間先開放 Free 方案')
     expect(host.querySelector('a[href="mailto:support@formcoachdesk.com"]')).not.toBeNull()
     expect(host.querySelector('a[href="/terms"]')).not.toBeNull()
