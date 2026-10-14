@@ -4255,6 +4255,37 @@ textarea:focus {
   display: none;
 }
 
+.mobile-pwa-scroll-shortcut {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .mobile-pwa-scroll-shortcut {
+    position: fixed;
+    z-index: 18;
+    right: 16px;
+    bottom: calc(var(--mobile-bottom-nav-height) + 104px);
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #4b5732;
+    border-radius: 15px;
+    background: var(--ink);
+    color: var(--lime);
+    box-shadow: 0 8px 22px rgba(20, 26, 16, 0.22);
+    cursor: pointer;
+  }
+  .mobile-pwa-scroll-shortcut svg {
+    width: 21px;
+    height: 21px;
+  }
+  .mobile-pwa-scroll-shortcut:focus-visible {
+    outline: 2px solid var(--lime);
+    outline-offset: 3px;
+  }
+}
+
 .detail-page-grid,
 .settings-stack {
   width: min(820px, 100%);

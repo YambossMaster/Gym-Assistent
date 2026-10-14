@@ -72,6 +72,7 @@ import { initialScheduleHorizon } from './pages/students/schedule-series-form'
 import { selectCollectionRouteState, selectDetailRouteState } from './route-state'
 import { Confirmation, Page, SettingsPanelHeading } from './shared/primitives'
 import { MobilePageAppBar } from './shared/MobilePageAppBar'
+import { MobilePwaScrollShortcut } from './shared/MobilePwaScrollShortcut'
 import { RequiredFieldLabel } from './shared/FormFieldLabel'
 import { supabase } from './supabase'
 import { useStudentPerformance, useStudentTrend } from './pages/training/queries'
@@ -112,6 +113,7 @@ export function StudentsPage({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
+  const managementLinksRef = useRef<HTMLDivElement>(null)
   const { students: studentsQuery } = useStudentsRouteQuery(session)
   const plan = usePlanAccess(session)
   const openCreate = () => {
@@ -265,7 +267,7 @@ export function StudentsPage({
           ))}
         </section>
       )}
-      <div className="student-management-links">
+      <div className="student-management-links" ref={managementLinksRef}>
         <Link
           className="student-finance-entry"
           to="/students/finances"
@@ -291,6 +293,10 @@ export function StudentsPage({
           <ArrowRight aria-hidden="true" />
         </Link>
       </div>
+      <MobilePwaScrollShortcut
+        itemCount={rosterResult.state === 'ready' ? rosterResult.students.length : 0}
+        bottomTargetRef={managementLinksRef}
+      />
       {createOpen && (
         <CreateStudentDialog
           accessToken={session.access_token}
