@@ -51,7 +51,11 @@ Form Coach Desk？` now appears first and walks through Student, purchase, Venue
   published support address. The isolated Help tests pass 3/3, root check passes API 44 files / 213
   tests and Web 80 files / 356 tests, production build passes, and Playwright passes the existing
   Plan Choice plus Help journeys at 1440px and 390×844 (4/4). This UI-only change has no migration;
-  exact-SHA PR, Main CI and automatic Fly deployment remain pending.
+  exact-SHA PR, Main CI and automatic Fly deployment remain pending. The Product Owner approved a
+  narrow CI correction: Development linked migration dry-run now runs only when a commit changes
+  `supabase/migrations/**`. This Web-only release keeps the required migration job as an explicit
+  no-op while Main still performs the independent Production history comparison and blocks
+  deployment on any pending or divergent migration.
 - The Product Owner's follow-up iPhone recording confirmed the edge bounce but showed the mobile
   header moving with it and intermittently flashing on `今日`. The isolated correction fixes the
   header to the viewport on the seven bounce-enabled route families, reserves its content space,
@@ -345,7 +349,8 @@ The Product Owner authorized the replacement. A new development-project-scoped P
 Project Settings, API Keys, API Key Secrets and Connection Pooling Read was created, expiring
 2027-10-08. After the owner completed Confirm access, GitHub displayed Secret updated at
 2026-10-09 23:41 Taipei. The one-time token display was closed; CI #133 attempt 2 passed and deployed.
-Do not bypass the required migration dry-run gate; the Production token/preview already passed.
+Do not bypass a required database-boundary migration dry-run; the Production token/preview already
+passed.
 
 1. Keep the legal acceptance migration's historical apply-run provenance as an audit note; current
    Production history, schema and private grants are verified, so do not reapply it or repeat Alpha
