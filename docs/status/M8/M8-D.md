@@ -37,6 +37,16 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- On 2026-10-15 the Product Owner accepted the single-Student detail card spacing and explicitly
+  authorized Main push and deployment. The isolated release changes only route-scoped Web CSS:
+  four cards share 35px desktop and 29px mobile top insets, aligned eyebrow/title typography,
+  and matched schedule/purchase add buttons. Authenticated local desktop and 390px preview
+  measurements put all four eyebrow offsets at 35.7px/29.7px and title offsets at 57.7px/51.7px.
+  Root 36/36, API 286/286, Web 360/360 and API/Web builds pass. Local Supabase dry-run lacks
+  this clean worktree's linked project; exact-SHA remote migration evidence remains pending.
+  Installed-phone acceptance is
+  separate. See LOG-551.
+
 - On 2026-10-15 the Product Owner accepted the mobile PWA Students/Exercise Library scroll
   shortcut and authorized isolated Main delivery, CI and deployment. The Students button appears
   with at least five visible students on a long compact page, jumps to the monthly finance and

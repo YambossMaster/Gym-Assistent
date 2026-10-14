@@ -15,7 +15,7 @@
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                    |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                                  |
 | Released code                 | `7ea8283d2c2ff50043723859a6d0630948f73dc0`; [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38618476830) passed                       |
-| Worktree                      | Mobile PWA scroll shortcut delivered; payment frontend and merchant activation remain deferred                                                              |
+| Worktree                      | Student detail spacing isolated for Main delivery; payment frontend and merchant activation remain deferred                                                 |
 | Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted                          |
 | Production release            | [Main CI deployment](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38618476830) deployed `7ea8283d` and passed readiness; no migration needed |
 | Pending Production migrations | None after release #8; three pre-existing Workspaces remain unmarked                                                                                        |
