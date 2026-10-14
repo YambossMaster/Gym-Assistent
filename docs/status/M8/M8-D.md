@@ -42,10 +42,14 @@ The detailed behavior and migration contract live in
   four cards share 35px desktop and 29px mobile top insets, aligned eyebrow/title typography,
   and matched schedule/purchase add buttons. Authenticated local desktop and 390px preview
   measurements put all four eyebrow offsets at 35.7px/29.7px and title offsets at 57.7px/51.7px.
-  Root 36/36, API 286/286, Web 360/360 and API/Web builds pass. Local Supabase dry-run lacks
-  this clean worktree's linked project; exact-SHA remote migration evidence remains pending.
-  Installed-phone acceptance is
-  separate. See LOG-551.
+  Root 36/36, API 286/286, Web 360/360 and API/Web builds pass. Local Supabase dry-run lacked
+  this clean worktree's linked project. [PR #27](https://github.com/YambossMaster/Gym-Assistent/pull/27)
+  passed required checks and merged as `ce309d8554cdc7055bcd8f286cddcd6e2681e63f`.
+  [Main CI #206](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38631358128)
+  passed verify, browser UI, Development migration dry-run, Production migration preview,
+  exact-SHA Fly deploy and readiness. Independent requests returned HTTP 200 for `/api/ready`
+  (`{"status":"ready"}`), `/` and `/login`. Installed-phone acceptance remains separate.
+  See LOG-551.
 
 - On 2026-10-15 the Product Owner accepted the mobile PWA Students/Exercise Library scroll
   shortcut and authorized isolated Main delivery, CI and deployment. The Students button appears
