@@ -778,6 +778,13 @@ deploy/readiness failure, and rejects empty commits as release candidates. Relea
 configuration changes without schema migrations may deploy their own exact SHA only after the same
 full checks and a fresh Production preview proves that no migration is pending; the migration hold,
 literal `APPLY` requirement and serialized Production release remain unchanged.
+The 2026-10-14 Product Owner amendment scopes the linked Development migration dry-run to commits
+that change `supabase/migrations/**`. Other commits keep an explicit successful migration-job result
+without linking Development. They still require the applicable verify/browser jobs and, on `main`,
+the independent Production history comparison; release-gate changes also force a Production
+dry-run. If Git cannot determine the diff, migration selection fails closed. Any pending or
+divergent Production history continues to block automatic deployment, and schema application still
+requires literal `APPLY`.
 
 **Sol gate:** provision the separate production Supabase Free project and Fly app, configure
 separate secrets, apply reviewed migrations, deploy the exact release build and configure available

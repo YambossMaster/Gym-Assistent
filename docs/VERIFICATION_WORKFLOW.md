@@ -118,17 +118,18 @@ not a substitute for typecheck or tests.
 
 On GitHub, every push and pull request still gets a `verify` result. Markdown-only changes run
 root formatting only; code or mixed changes run the full check/build. The browser job reports a
-no-op when the change has no Web impact. The independent migration job reports a
-documentation-only no-op for Markdown-only commits and performs the linked dry-run for other
-commits. If Git cannot determine the diff, it defaults to the full gate. This avoids skipped
-required workflow checks while reducing documentation-only work.
+no-op when the change has no Web impact. The independent migration job reports a successful no-op
+for commits without `supabase/migrations/**` changes and performs the linked Development dry-run
+when a migration changes. If Git cannot determine the diff, migration selection fails closed. The
+required job therefore always reports a result without allowing an unrelated Development migration
+branch to block a Web-only release.
 
 On each non-documentation `main` push, the independent Production preview job checks credentials
 and pooler access before dependency installation, compares local migration versions with the
 Production migration history, and fails closed on an unreadable or divergent history. It runs the
 Production dry-run when versions are pending or migration/release-gate files changed. Automatic Fly
 deployment requires this job to pass with no pending versions as well as the existing verify,
-browser, and development dry-run jobs. A migration-release target must be a commit that actually
+browser, and migration-job results. A migration-release target must be a commit that actually
 ran the full CI gate; documentation-only check results are not release evidence. A release is
 rejected if a newer non-documentation Main change superseded its SHA. An empty commit is not a
 release candidate and cannot trigger deployment. A release-gate or Fly configuration change with no
