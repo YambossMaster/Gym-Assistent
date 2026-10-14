@@ -57,8 +57,10 @@ The detailed behavior and migration contract live in
   Development has applied `20261014100438`; Production has not. Its exact SQL is stored under
   `supabase/development-only`; project-pinned staging lets the Development dry-run validate its real
   history without concealing unknown drift. Unapplied ledger SQL stays in `supabase/drafts/billing`.
-  No database mutation or Production schema release is included. Exact release evidence is pending
-  the authorized checks and deployment; see LOG-547 and `M8-E-LOCAL-CHECKOUT.md`.
+  No database mutation or Production schema release is included. PR #21 merged as `f550daa`;
+  Main CI #194 passed all jobs, both migration checks and exact-SHA Fly deployment/readiness.
+  Independent checks returned 200 for API readiness and browser-accepting root/login requests;
+  billing current/records routes remain 404. See LOG-547/548 and `M8-E-LOCAL-CHECKOUT.md`.
 
 - The Product Owner's installed-iPhone Calendar recording showed the view and header being dragged
   upward at the timeline's bottom edge, exposing a paper-colored strip. At 390×844 the document
