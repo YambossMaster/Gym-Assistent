@@ -29,6 +29,79 @@ const conflicts = [
 ] as SessionWithConflicts[]
 
 describe('Today notifications', () => {
+  it('shows two welcome notices only for a newly created Workspace and links to the guide', async () => {
+    const reads = new Map<string, string>()
+    const dismissed = new Set<string>()
+    const repository: TodayNotificationRepository = {
+      sourceTimes: async (workspaceId) => ({
+        welcomeAt: workspaceId === 'workspace-new' ? '2026-10-14T03:00:00.000Z' : null,
+        balances: {},
+        conflicts: {},
+        reschedules: [],
+      }),
+      states: async (workspaceId, ids) =>
+        Object.fromEntries(
+          ids.flatMap((id) => {
+            const key = `${workspaceId}:${id}`
+            return reads.has(key) || dismissed.has(key)
+              ? [
+                  [
+                    id,
+                    {
+                      readAt: reads.get(key) ?? null,
+                      dismissedAt: dismissed.has(key) ? '2026-10-14T04:00:00.000Z' : null,
+                    },
+                  ],
+                ]
+              : []
+          }),
+        ),
+      markRead: async (workspaceId, id, now) => {
+        const key = `${workspaceId}:${id}`
+        if (!reads.has(key)) reads.set(key, now.toISOString())
+        return reads.get(key)!
+      },
+      dismiss: async (workspaceId, id) => {
+        dismissed.add(`${workspaceId}:${id}`)
+      },
+    }
+    const module = new TodayNotificationModule(
+      { resolveWorkspace: async ({ userId }) => `workspace-${userId}` },
+      repository,
+      () => new Date('2026-10-14T04:00:00.000Z'),
+    )
+    const owner = { userId: 'new' }
+    const notices = await module.list(owner, [], [], 'Asia/Taipei')
+    expect(notices.map(({ id }) => id)).toEqual([
+      'onboarding:01-welcome',
+      'onboarding:02-getting-started',
+    ])
+    expect(notices[0]).toMatchObject({
+      title: '歡迎你使用 FORM Coach Desk',
+      detail: '為你省下繁瑣的課堂安排與學生管理時間！',
+      targetRoute: null,
+    })
+    expect(notices[1]).toMatchObject({
+      title: '點此查看快速上手指南',
+      detail: '解鎖高效排課體驗 →',
+      targetRoute: '/settings?category=feedback&guide=getting-started',
+    })
+    expect(await module.list({ userId: 'existing' }, [], [], 'Asia/Taipei')).toEqual([])
+    expect(
+      await module.read({ userId: 'existing' }, notices[0]!.id, [], [], 'Asia/Taipei'),
+    ).toBeNull()
+    expect(await module.read(owner, notices[0]!.id, [], [], 'Asia/Taipei')).toBe(
+      '2026-10-14T04:00:00.000Z',
+    )
+    expect((await module.list(owner, [], [], 'Asia/Taipei'))[0]?.readAt).toBe(
+      '2026-10-14T04:00:00.000Z',
+    )
+    expect(await module.dismiss(owner, notices[0]!.id, [], [], 'Asia/Taipei')).toBe(true)
+    expect((await module.list(owner, [], [], 'Asia/Taipei')).map(({ id }) => id)).toEqual([
+      'onboarding:02-getting-started',
+    ])
+  })
+
   it('sorts source events, persists idempotent reads, and rejects another Coach or stale ID', async () => {
     const reads = new Map<string, string>()
     const dismissals = new Map<string, string>()
@@ -40,6 +113,7 @@ describe('Today notifications', () => {
         expect(sessions).toEqual([{ sessionId, relatedSessionIds: ['other'], blockIds: [] }])
         return workspaceId === 'workspace-owner'
           ? {
+              welcomeAt: null,
               balances: { [studentId]: '2026-09-13T00:00:00.000Z' },
               conflicts: { [sessionId]: '2026-09-14T00:00:00.000Z' },
               reschedules: [
@@ -53,7 +127,7 @@ describe('Today notifications', () => {
                 },
               ],
             }
-          : { balances: {}, conflicts: {}, reschedules: [] }
+          : { welcomeAt: null, balances: {}, conflicts: {}, reschedules: [] }
       },
       states: async (workspaceId, ids) =>
         Object.fromEntries(
@@ -118,6 +192,7 @@ describe('Today notifications', () => {
   it('keeps only 30 newest visible notices and describes legacy reschedules without inventing an original time', async () => {
     const repository: TodayNotificationRepository = {
       sourceTimes: async () => ({
+        welcomeAt: null,
         balances: {},
         conflicts: {},
         reschedules: Array.from({ length: 35 }, (_, index) => ({

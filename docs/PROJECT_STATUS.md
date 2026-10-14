@@ -15,15 +15,15 @@
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                        |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                      |
 | Released code                 | `776d7511875f7202b6cc190f917a5d4503c9c804`; [main CI #190](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38556109452) passed      |
-| Worktree                      | Atomic signup classification is released; this dedicated worktree now records release evidence                                                  |
+| Worktree                      | New-Coach welcome notices are isolated on `codex/welcome-notices` for verification and Main delivery                                            |
 | Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted              |
 | Production release            | Main CI #190 deployed exact SHA `776d751` and passed readiness; `/api/ready`, `/`, `/login` and desktop login colour were independently checked |
-| Pending Production migrations | None observed in CI #190 Production preview                                                                                                     |
+| Pending Production migrations | Welcome-notice `20261014113954` is prepared locally; Production apply requires exact-SHA preview and literal `APPLY`                            |
 
 ## Required context
 
-Payment development/release hold: PO narrowed delivery to backend only. No `apps/web` changes are
-included; the current Main frontend remains unchanged. API billing startup is hard-closed.
+Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
+changes are included in this welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
 No paid access or merchant calls are enabled.
 Development's applied `20261014100438` history is preserved separately; the ledger is an unapplied

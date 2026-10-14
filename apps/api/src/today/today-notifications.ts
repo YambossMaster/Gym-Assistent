@@ -6,7 +6,13 @@ import type { TodayProjection } from './today.js'
 
 export type TodayNotification = {
   id: string
-  kind: 'low_venue_balance' | 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
+  kind:
+    | 'welcome'
+    | 'getting_started'
+    | 'low_venue_balance'
+    | 'low_lesson_balance'
+    | 'schedule_conflict'
+    | 'student_reschedule'
   title: string
   detail: string
   targetRoute: string | null
@@ -36,6 +42,7 @@ export interface TodayNotificationRepository {
     conflicts: ConflictSource[],
     since: Date,
   ): Promise<{
+    welcomeAt: string | null
     balances: Record<string, string>
     conflicts: Record<string, string>
     reschedules: RescheduleSource[]
@@ -79,6 +86,28 @@ export class TodayNotificationModule {
       since,
     )
     const notices: TodayNotification[] = [
+      ...(sources.welcomeAt
+        ? [
+            {
+              id: 'onboarding:01-welcome',
+              kind: 'welcome' as const,
+              title: '歡迎你使用 FORM Coach Desk',
+              detail: '為你省下繁瑣的課堂安排與學生管理時間！',
+              targetRoute: null,
+              occurredAt: sources.welcomeAt,
+              readAt: null,
+            },
+            {
+              id: 'onboarding:02-getting-started',
+              kind: 'getting_started' as const,
+              title: '點此查看快速上手指南',
+              detail: '解鎖高效排課體驗 →',
+              targetRoute: '/settings?category=feedback&guide=getting-started',
+              occurredAt: sources.welcomeAt,
+              readAt: null,
+            },
+          ]
+        : []),
       ...((await this.venues?.lowNotices(workspaceId)) ?? []),
       ...attention.flatMap((item) => {
         const changedAt = sources.balances[item.student.id]

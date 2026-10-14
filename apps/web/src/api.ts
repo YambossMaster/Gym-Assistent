@@ -143,7 +143,13 @@ export interface TodayProjection {
 
 export interface TodayNotification {
   id: string
-  kind: 'low_venue_balance' | 'low_lesson_balance' | 'schedule_conflict' | 'student_reschedule'
+  kind:
+    | 'welcome'
+    | 'getting_started'
+    | 'low_venue_balance'
+    | 'low_lesson_balance'
+    | 'schedule_conflict'
+    | 'student_reschedule'
   title: string
   detail: string
   targetRoute: string | null
