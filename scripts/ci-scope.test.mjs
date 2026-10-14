@@ -65,6 +65,17 @@ test('automatic deployment requires a fresh Production migration state with no p
   assert.match(deploy, /node scripts\/require-current-release\.mjs/)
 })
 
+test('development migration dry run is scoped to commits with migration files', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
+  const dryRun = workflow
+    .split('  migration-dry-run:')[1]
+    .split('  production-migration-preview:')[0]
+
+  assert.match(dryRun, /steps\.scope\.outputs\.production_migration == 'true'/)
+  assert.match(dryRun, /Verify remote migration plan/)
+  assert.doesNotMatch(dryRun, /steps\.scope\.outputs\.docs_only/)
+})
+
 test('automatic deployment validates Fly runtime secret names before deploying', () => {
   const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
   const deploy = workflow.slice(workflow.indexOf('  deploy-production:'))
