@@ -37,6 +37,11 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner's installed-iPhone recordings showed the main `今日` document stopping at its
+  vertical edges while a scheduling form's own scroll region rubber-banded. The scoped mobile CSS
+  correction restores native edge bounce on `今日`, `學生`, `動作庫`, student detail, `本月收支`,
+  `場地管理` and `設定`. Calendar and focused Training notes retain their separate boundaries.
+  Installed-PWA recheck is pending after the isolated release; this CSS change has no migration.
 - The Product Owner confirmed the revised future paid catalog on 2026-10-12: Pro NT$119/month or
   NT$1,190/year; Prime NT$149/month or NT$1,490/year. The public landing page and authenticated
   plan comparison show these amounts and the ten-month annual-price rule remains consistent.
