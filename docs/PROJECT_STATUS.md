@@ -6,24 +6,24 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                            |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                              |
-| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                         |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                   |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                   |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                 |
-| Released code                 | `f550daaca73de3b5cc4656aae270fea0a68e7073`; [main CI #194](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38558499766) passed |
-| Worktree                      | Backend-only billing release delivered; new-Coach welcome notices are on `codex/welcome-notices` for Main delivery                         |
-| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted         |
-| Production release            | Main CI #194 deployed exact SHA `f550daa`; API and browser pages healthy; billing endpoints unavailable                                    |
-| Pending Production migrations | Welcome-notice `20261014113954` is prepared; Production apply requires exact-SHA preview and literal `APPLY`                               |
+| Field                         | Current value                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                               |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                 |
+| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                                            |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                      |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                      |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                                    |
+| Released code                 | `e35af9a214267ab4fc60def1c69e9ccefe5cc68c`; [main CI #198](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38562585025) passed                    |
+| Worktree                      | New-Coach welcome notices delivered; payment frontend and merchant activation remain deferred                                                                 |
+| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted                            |
+| Production release            | [Release #8](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38563009700) applied only welcome migration, deployed `e35af9a` and passed readiness |
+| Pending Production migrations | None after release #8; three pre-existing Workspaces remain unmarked                                                                                          |
 
 ## Required context
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
-changes are included in this welcome-notice release. API billing startup is hard-closed.
+changes were included in the welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
 No paid access or merchant calls are enabled.
 Development's applied `20261014100438` history is preserved separately; the ledger is an unapplied
