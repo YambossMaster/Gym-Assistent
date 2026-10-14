@@ -37,6 +37,13 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner's installed-iPhone Calendar recording showed the view and header being dragged
+  upward at the timeline's bottom edge, exposing a paper-colored strip. At 390×844 the document
+  itself has no ordinary scroll range; the week timeline is the intended nested scroller. The
+  isolated mobile Calendar correction fixes its outer shell to the viewport and clips outer
+  overflow while retaining timeline scrolling. Local 390px checks keep the header at top 0 and
+  bottom navigation at the viewport edge after the week timeline reaches its end; Day, Month and
+  Agenda also fit. Physical iPhone acceptance remains pending.
 - The Product Owner's follow-up iPhone recording confirmed the edge bounce but showed the mobile
   header moving with it and intermittently flashing on `今日`. The isolated correction fixes the
   header to the viewport on the seven bounce-enabled route families, reserves its content space,
