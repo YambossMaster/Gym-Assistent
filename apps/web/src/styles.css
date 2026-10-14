@@ -6067,6 +6067,19 @@ textarea:focus {
   html {
     overscroll-behavior-y: none;
   }
+  /* Let the main Coach pages keep iOS's native edge bounce. Calendar and
+     focused Training notes retain their separate scroll boundaries. */
+  html:has(
+    .app-shell:is(
+      [data-route='/today'],
+      [data-route='/students'],
+      [data-route^='/students/'],
+      [data-route='/exercises'],
+      [data-route='/settings']
+    )
+  ) {
+    overscroll-behavior-y: contain;
+  }
   body {
     min-height: 100dvh;
     background: var(--paper);
