@@ -860,7 +860,7 @@ and separate Production/remote delivery authorization remain required.
 
 **Approved early development and release hold — 2026-10-14:** PO authorized the scoped payment
 frontend/backend preparation and its commit/Main/CI/deployment with all payment entry closed while
-merchant approval is pending. Current catalog is Pro NT$115/month or NT$1,150/year and Prime
+merchant approval is pending. Planned catalog is Pro NT$115/month or NT$1,150/year and Prime
 NT$145/month or NT$1,450/year. Existing grants remain protected. Payment activation, Production
 payment schema and merchant verification are not authorized by this release. The implementation
 Contract and payment-design documents record the agreed first-subscription trials, 45-day refund
