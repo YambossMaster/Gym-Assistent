@@ -1,6 +1,6 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-14. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-15. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
@@ -36,6 +36,18 @@ The detailed behavior and migration contract live in
 `supabase/migrations/20261008063726_m8d_beta_plan_access_policy.sql`.
 
 ## Current repository and environment state
+
+- On 2026-10-15 the Product Owner accepted the mobile PWA Students/Exercise Library scroll
+  shortcut and authorized isolated Main delivery, CI and deployment. The Students button appears
+  with at least five visible students on a long compact page, jumps to the monthly finance and
+  venue links, then returns to top in the lower half. The Exercise Library button returns to top
+  after scrolling with at least five visible exercises. Both use the right edge above mobile
+  navigation and are restricted to installed mobile PWA in Production; local mobile browser
+  previews can show them. The Students downward jump keeps the header and bottom navigation
+  visible until the next manual gesture. Product Owner 390px review passed after a correction;
+  the same local preview settled at `scrollY=737.5` with visible chrome and no transforms.
+  Isolated branch local `npm run check` and `npm run build` passed; remote delivery checks are
+  pending. No schema or API change is included.
 
 - The Product Owner requested two in-app notices for newly registered Coaches and explicitly
   waived screenshot review before Main delivery. The existing `協助與回饋` getting-started guide on

@@ -23,6 +23,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent }
 import type { ExerciseDefinition } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
+import { MobilePwaScrollShortcut } from '../../shared/MobilePwaScrollShortcut'
 import { Confirmation, Page } from '../../shared/primitives'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { useExerciseLibrary, useTrainingMutations } from '../training/queries'
@@ -407,6 +408,7 @@ export function ExercisesPage({ session }: { session: Session }) {
           </button>
         </section>
       )}
+      <MobilePwaScrollShortcut itemCount={definitions.length} />
       {editing !== undefined && (
         <DefinitionEditor
           key={editing?.id ?? 'new'}
