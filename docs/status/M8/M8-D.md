@@ -37,6 +37,16 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- The Product Owner requested two in-app notices for newly registered Coaches and explicitly
+  waived screenshot review before Main delivery. The existing `協助與回饋` getting-started guide on
+  Main is the second notice's destination. Local Sol derives stable welcome and guide notices from
+  a new Workspace timestamp, reuses Today read/dismiss state, and leaves existing Workspaces
+  ineligible. Migration `20261014113954` was applied only to Development: its four existing
+  Workspaces remain unmarked, the new-column default is `now()`, and dry-run is now up to date.
+  Production application still requires the exact-SHA preview and literal `APPLY`. API affected
+  tests pass 286/286; Web typecheck/build pass. One Web full-suite worker start timed out after
+  337 tests passed, and its isolated 19-test rerun passed. Remote full CI remains required.
+
 - A desktop `/login` colour regression was traced to the 2026-10-11 iPhone Auth document-surface
   fix: `body:has(.auth-layout)` became dark at every viewport width, while the desktop form panel
   remained transparent. The form panel now uses `--paper` above the 480px mobile breakpoint;

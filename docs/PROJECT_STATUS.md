@@ -15,15 +15,15 @@
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                   |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                 |
 | Released code                 | `f550daaca73de3b5cc4656aae270fea0a68e7073`; [main CI #194](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38558499766) passed |
-| Worktree                      | Backend-only release delivered; frontend work remains local and payment activation is deferred                                             |
+| Worktree                      | Backend-only billing release delivered; new-Coach welcome notices are on `codex/welcome-notices` for Main delivery                         |
 | Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted         |
 | Production release            | Main CI #194 deployed exact SHA `f550daa`; API and browser pages healthy; billing endpoints unavailable                                    |
-| Pending Production migrations | None observed in CI #194; Development-only history and unapplied billing draft are outside the Production sequence                         |
+| Pending Production migrations | Welcome-notice `20261014113954` is prepared; Production apply requires exact-SHA preview and literal `APPLY`                               |
 
 ## Required context
 
-Payment development/release hold: PO narrowed delivery to backend only. No `apps/web` changes are
-included; the current Main frontend remains unchanged. API billing startup is hard-closed.
+Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
+changes are included in this welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
 No paid access or merchant calls are enabled.
 Development's applied `20261014100438` history is preserved separately; the ledger is an unapplied

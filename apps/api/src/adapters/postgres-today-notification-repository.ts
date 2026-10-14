@@ -15,6 +15,10 @@ export class PostgresTodayNotificationRepository implements TodayNotificationRep
     since: Date,
   ) {
     return this.scoped(workspaceId, async (client) => {
+      const welcome = await client.query<{ welcome_notification_at: Date | null }>(
+        `select welcome_notification_at from app_private.workspace where id=$1`,
+        [workspaceId],
+      )
       const balances = studentIds.length
         ? await client.query<{ id: string; changed_at: Date }>(
             `select s.id, greatest(s.created_at,
@@ -71,6 +75,7 @@ export class PostgresTodayNotificationRepository implements TodayNotificationRep
         [workspaceId, since],
       )
       return {
+        welcomeAt: welcome.rows[0]?.welcome_notification_at?.toISOString() ?? null,
         balances: Object.fromEntries(
           balances.rows.map((row) => [row.id, row.changed_at.toISOString()]),
         ),
