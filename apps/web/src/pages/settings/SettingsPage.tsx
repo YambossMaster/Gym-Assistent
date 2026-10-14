@@ -41,10 +41,10 @@ import { FinanceExportPanel as ExportPanel } from './FinanceExportPanel'
 import { CalendarIntegrationPanel } from './CalendarIntegrationPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
-import { DEFAULT_FEEDBACK_FORM_URL, getFeedbackFormUrl } from './feedback-link'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 import { resolveCoachDisplayName } from '../../app-shell/coach-identity'
 import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
+import { HelpPanel } from './HelpPanel'
 
 function planName(plan: PlanAccess | undefined): string {
   if (plan?.tier === 'advanced') return 'Prime 方案'
@@ -166,45 +166,6 @@ function PlanSummary({
         </div>
       </section>
     </div>
-  )
-}
-
-function FeedbackPanel() {
-  const formUrl =
-    getFeedbackFormUrl(import.meta.env.VITE_FEEDBACK_FORM_URL) ?? DEFAULT_FEEDBACK_FORM_URL
-  const address = (import.meta.env.VITE_SUPPORT_EMAIL ?? '').trim()
-  const available = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)
-  return (
-    <section className="settings-panel account-settings-panel">
-      <div className="settings-row">
-        <div className="settings-row-copy">
-          <strong>意見回饋</strong>
-          <span>
-            每一則回饋都是我們改進產品的線索。遇到不順手的地方、發現問題，或想到更好的做法，都歡迎告訴我們。
-          </span>
-          <span>可匿名填寫；表單內可切換 English。請勿填寫密碼、分享連結或非必要的學員資料。</span>
-        </div>
-        <a className="settings-row-action" href={formUrl} target="_blank" rel="noopener noreferrer">
-          填寫意見回饋 <ArrowRight aria-hidden="true" />
-        </a>
-      </div>
-      <div className="settings-row">
-        <div className="settings-row-copy">
-          <strong>聯絡我們</strong>
-          <span>帳號、隱私或資料相關問題，請透過 Email 聯絡。</span>
-        </div>
-        {available ? (
-          <a
-            className="settings-row-action"
-            href={`mailto:${address}?subject=${encodeURIComponent('FORM 協助')}`}
-          >
-            寄送 Email <ArrowRight aria-hidden="true" />
-          </a>
-        ) : (
-          <span className="settings-account-value">聯絡方式準備中</span>
-        )}
-      </div>
-    </section>
   )
 }
 
@@ -543,7 +504,7 @@ export function SettingsPage({ session }: { session: Session }) {
               <DeviceDataPanel session={session} />
             </>
           )}
-          {category === 'feedback' && <FeedbackPanel />}
+          {category === 'feedback' && <HelpPanel />}
         </div>
       </section>
       {passwordOpen && (

@@ -44,6 +44,14 @@ The detailed behavior and migration contract live in
   overflow while retaining timeline scrolling. Local 390px checks keep the header at top 0 and
   bottom navigation at the viewport edge after the week timeline reaches its end; Day, Month and
   Agenda also fit. Physical iPhone acceptance remains pending.
+- The Product Owner approved a Settings `協助與回饋` upgrade with two task-focused guides. `如何開始使用
+Form Coach Desk？` now appears first and walks through Student, purchase, Venue, scheduling and the
+  first Course Session in five card-based steps. The PWA guide explains the purpose before showing
+  separate iOS and Android image steps, uses the current `顯示更多` recovery wording and retains the
+  published support address. The isolated Help tests pass 3/3, root check passes API 44 files / 213
+  tests and Web 80 files / 356 tests, production build passes, and Playwright passes the existing
+  Plan Choice plus Help journeys at 1440px and 390×844 (4/4). This UI-only change has no migration;
+  exact-SHA PR, Main CI and automatic Fly deployment remain pending.
 - The Product Owner's follow-up iPhone recording confirmed the edge bounce but showed the mobile
   header moving with it and intermittently flashing on `今日`. The isolated correction fixes the
   header to the viewport on the seven bounce-enabled route families, reserves its content space,
