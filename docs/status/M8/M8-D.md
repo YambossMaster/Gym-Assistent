@@ -37,6 +37,18 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- On 2026-10-15 the Product Owner accepted the desktop extension of the list scroll shortcut and
+  authorized Main push, CI and deployment. Exercise Library now offers return to top after
+  scrolling when at least five visible exercises make the desktop page meaningfully long. Students
+  switches between monthly finance/venue links and page top when at least nine visible students
+  make the desktop page meaningfully long. The desktop button sits at the lower right; the mobile
+  PWA gate and raised button position are unchanged. Focused tests passed 11/11 and Web typecheck
+  passed in the source checkout. Authenticated desktop review showed no shortcut with six students;
+  Exercise Library showed the button while scrolling 109 exercises and returned to `scrollY=0`.
+  The nine-student behavior is covered by the component test. Isolated `npm run check` passed root
+  scripts 36/36, API 286/286 and Web 362/362; `npm run build` passed. Remote evidence is pending.
+  No schema or API change is included.
+
 - On 2026-10-15 the Product Owner accepted the single-Student detail card spacing and explicitly
   authorized Main push and deployment. The isolated release changes only route-scoped Web CSS:
   four cards share 35px desktop and 29px mobile top insets, aligned eyebrow/title typography,

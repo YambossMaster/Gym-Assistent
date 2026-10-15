@@ -7,10 +7,12 @@ export const MOBILE_CHROME_PIN_FOR_SHORTCUT = 'mobile-chrome-pin-for-shortcut'
 
 export function MobilePwaScrollShortcut({
   itemCount,
-  bottomTargetRef
+  bottomTargetRef,
+  desktopMinItems = 5
 }: {
   itemCount: number
   bottomTargetRef?: RefObject<HTMLElement | null>
+  desktopMinItems?: number
 }) {
   const [state, setState] = useState<ShortcutState>('hidden')
 
@@ -27,10 +29,10 @@ export function MobilePwaScrollShortcut({
       const scrollRange =
         Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) -
         window.innerHeight
+      const mobile = compact.matches
       if (
-        itemCount < 5 ||
-        !compact.matches ||
-        (!standalone.matches && !iosStandalone && !localPreview) ||
+        itemCount < (mobile ? 5 : desktopMinItems) ||
+        (mobile && !standalone.matches && !iosStandalone && !localPreview) ||
         scrollRange < window.innerHeight / 2
       ) {
         setState('hidden')
@@ -81,7 +83,8 @@ export function MobilePwaScrollShortcut({
       aria-label={label}
       title={label}
       onClick={() => {
-        if (state === 'down') window.dispatchEvent(new Event(MOBILE_CHROME_PIN_FOR_SHORTCUT))
+        if (state === 'down' && window.matchMedia('(max-width: 720px)').matches)
+          window.dispatchEvent(new Event(MOBILE_CHROME_PIN_FOR_SHORTCUT))
         const target = bottomTargetRef?.current
         const headerHeight =
           document.querySelector('.mobile-header')?.getBoundingClientRect().height ?? 0

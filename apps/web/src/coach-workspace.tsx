@@ -296,6 +296,7 @@ export function StudentsPage({
       <MobilePwaScrollShortcut
         itemCount={rosterResult.state === 'ready' ? rosterResult.students.length : 0}
         bottomTargetRef={managementLinksRef}
+        desktopMinItems={9}
       />
       {createOpen && (
         <CreateStudentDialog

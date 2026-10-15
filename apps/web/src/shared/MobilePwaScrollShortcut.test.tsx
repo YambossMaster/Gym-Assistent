@@ -154,3 +154,112 @@ it('allows mobile browser emulation on the local Vite development server', async
     await act(async () => root.unmount())
   }
 })
+
+it('shows the desktop student shortcut at nine visible students and switches direction halfway', async () => {
+  vi.stubEnv('DEV', false)
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {}
+  }))
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    }
+  )
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(0)
+    return 1
+  })
+  vi.stubGlobal('cancelAnimationFrame', () => {})
+  Object.defineProperty(document.documentElement, 'scrollHeight', {
+    configurable: true,
+    value: 1800
+  })
+  Object.defineProperty(window, 'innerHeight', { configurable: true, value: 700 })
+  Object.defineProperty(window, 'scrollY', { configurable: true, value: 0, writable: true })
+  const scrollTo = vi.fn()
+  vi.stubGlobal('scrollTo', scrollTo)
+  const pinChrome = vi.fn()
+  window.addEventListener(MOBILE_CHROME_PIN_FOR_SHORTCUT, pinChrome)
+  const target = document.createElement('div')
+  vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({ top: 1200 } as DOMRect)
+  const targetRef = createRef<HTMLDivElement>()
+  Object.defineProperty(targetRef, 'current', { value: target })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <MobilePwaScrollShortcut itemCount={8} bottomTargetRef={targetRef} desktopMinItems={9} />
+      )
+    )
+    expect(host.querySelector('button')).toBeNull()
+    await act(async () =>
+      root.render(
+        <MobilePwaScrollShortcut itemCount={9} bottomTargetRef={targetRef} desktopMinItems={9} />
+      )
+    )
+    const button = host.querySelector('button')!
+    expect(button.getAttribute('aria-label')).toBe('直達本月收支與場地管理')
+    await act(async () => button.click())
+    expect(scrollTo).toHaveBeenCalledWith({ top: 1188, behavior: 'smooth' })
+    expect(pinChrome).not.toHaveBeenCalled()
+    window.scrollY = 600
+    await act(async () => window.dispatchEvent(new Event('scroll')))
+    expect(button.getAttribute('aria-label')).toBe('回到頁面頂部')
+  } finally {
+    window.removeEventListener(MOBILE_CHROME_PIN_FOR_SHORTCUT, pinChrome)
+    await act(async () => root.unmount())
+  }
+})
+
+it('shows desktop exercise return-to-top only with five visible items and useful page height', async () => {
+  vi.stubEnv('DEV', false)
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {}
+  }))
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    }
+  )
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(0)
+    return 1
+  })
+  vi.stubGlobal('cancelAnimationFrame', () => {})
+  Object.defineProperty(document.documentElement, 'scrollHeight', {
+    configurable: true,
+    value: 900,
+    writable: true
+  })
+  Object.defineProperty(window, 'innerHeight', { configurable: true, value: 700 })
+  Object.defineProperty(window, 'scrollY', { configurable: true, value: 200, writable: true })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () => root.render(<MobilePwaScrollShortcut itemCount={4} />))
+    expect(host.querySelector('button')).toBeNull()
+    await act(async () => root.render(<MobilePwaScrollShortcut itemCount={5} />))
+    expect(host.querySelector('button')).toBeNull()
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      configurable: true,
+      value: 1800
+    })
+    await act(async () => window.dispatchEvent(new Event('scroll')))
+    expect(host.querySelector('button')?.getAttribute('aria-label')).toBe('回到頁面頂部')
+  } finally {
+    await act(async () => root.unmount())
+  }
+})
