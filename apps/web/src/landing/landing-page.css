@@ -1702,3 +1702,37 @@
     font-size: 14px;
   }
 }
+
+.landing-back-to-top {
+  position: fixed;
+  z-index: 18;
+  right: 24px;
+  bottom: 24px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #4b5732;
+  border-radius: 15px;
+  background: var(--ink);
+  color: var(--lime);
+  box-shadow: 0 8px 22px rgba(20, 26, 16, 0.22);
+  cursor: pointer;
+}
+
+.landing-back-to-top svg {
+  width: 21px;
+  height: 21px;
+}
+
+.landing-back-to-top:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .landing-back-to-top {
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
