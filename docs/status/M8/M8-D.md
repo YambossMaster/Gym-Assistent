@@ -40,9 +40,14 @@ The detailed behavior and migration contract live in
 - 2026-10-15: The Product Owner approved Main delivery of the Landing return-to-top control.
   The isolated Web change shows a 48px lower-right shortcut after 120px of scrolling on desktop
   and mobile, follows reduced-motion preference, and leaves mobile safe-area spacing. Desktop and
-  390px local previews confirmed the interaction and footer clearance; focused Landing tests passed
-  3/3, Web typecheck, formatting and diff whitespace passed. Remote release evidence is pending.
-  See LOG-575.
+  390px local previews confirmed the interaction and footer clearance. Isolated affected checks
+  passed 3 files/11 tests, Web typecheck, formatting and diff whitespace. [PR #33](https://github.com/YambossMaster/Gym-Assistent/pull/33)
+  passed required checks and merged as `4f49ca666914d2b8e9cefe30a4cf72e65dbff2ad`.
+  [Main CI #218](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38698764401)
+  passed verify/build, browser UI, Development migration no-op, Production migration preview,
+  exact-SHA Fly deployment and readiness. Independent `/api/ready`, `/` and `/login` returned
+  HTTP 200; the Production 390px Landing button appeared on scroll and returned to the hero.
+  Payment, API and schema changes were excluded. See LOG-575.
 
 - 2026-10-15: The Product Owner accepted the public Landing redesign and authorized mobile review, Main delivery and deployment. The isolated release retained published Pro/Prime prices (NT$119/NT$149 per month) and changed only Landing Web files and their tests. Desktop, 390px and 320px previews checked heading breaks, plan order, FAQ expansion, overflow and 44px mobile footer link targets; affected checks passed 10/10 tests, Web typecheck, formatting and diff whitespace. [PR #31](https://github.com/YambossMaster/Gym-Assistent/pull/31) passed required checks and merged as `692b252cb37e3a52ede1e21d00be654f1479c761`. [Main CI #214](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38688575905) passed verify/build, browser UI, Development migration no-op, Production migration preview, exact-SHA Fly deploy and readiness. Independent `/api/ready`, `/` and `/login` returned HTTP 200; the Production 390px page shows the new copy and prices without horizontal overflow. No payment, API or schema change was released. Installed-device acceptance and M8-D real-Coach admission remain separate. See LOG-569.
 
