@@ -73,7 +73,7 @@ it('renders the public landing page at the root for a signed-out visitor', async
   auth.getSession.mockResolvedValue({ data: { session: null } })
   const { host, root } = await renderApp()
   try {
-    expect(host.textContent).toContain('給私人教練的日常工作台')
+    expect(host.textContent).toContain('自由教練的一站式管理工具')
     expect(host.querySelector('a[href="/login"]')).not.toBeNull()
   } finally {
     await act(async () => root.unmount())
