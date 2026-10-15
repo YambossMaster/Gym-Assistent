@@ -37,6 +37,8 @@ The detailed behavior and migration contract live in
 
 ## Current repository and environment state
 
+- 2026-10-15: The Product Owner accepted the public Landing redesign and authorized mobile review, Main delivery and deployment. The isolated release retained published Pro/Prime prices (NT$119/NT$149 per month) and changed only Landing Web files and their tests. Desktop, 390px and 320px previews checked heading breaks, plan order, FAQ expansion, overflow and 44px mobile footer link targets; affected checks passed 10/10 tests, Web typecheck, formatting and diff whitespace. [PR #31](https://github.com/YambossMaster/Gym-Assistent/pull/31) passed required checks and merged as `692b252cb37e3a52ede1e21d00be654f1479c761`. [Main CI #214](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38688575905) passed verify/build, browser UI, Development migration no-op, Production migration preview, exact-SHA Fly deploy and readiness. Independent `/api/ready`, `/` and `/login` returned HTTP 200; the Production 390px page shows the new copy and prices without horizontal overflow. No payment, API or schema change was released. Installed-device acceptance and M8-D real-Coach admission remain separate. See LOG-569.
+
 - On 2026-10-15 the Product Owner accepted the desktop extension of the list scroll shortcut and
   authorized Main push, CI and deployment. Exercise Library now offers return to top after
   scrolling when at least five visible exercises make the desktop page meaningfully long. Students
