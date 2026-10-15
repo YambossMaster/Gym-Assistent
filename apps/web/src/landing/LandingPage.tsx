@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  ArrowUp,
   CalendarCheck2,
   CalendarDays,
   ChartNoAxesCombined,
@@ -10,6 +11,7 @@ import {
   Smartphone,
   UserRoundPlus
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isInternalAlpha } from '../config'
 import './landing-page.css'
@@ -244,6 +246,14 @@ function LandingFeaturePreview({ kind }: { kind: (typeof features)[number]['prev
 
 export function LandingPage() {
   const allowSignup = !isInternalAlpha()
+  const [showBackToTop, setShowBackToTop] = useState(false)
+
+  useEffect(() => {
+    const update = () => setShowBackToTop(window.scrollY > 120)
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [])
 
   return (
     <main className="landing-page">
@@ -553,6 +563,24 @@ export function LandingPage() {
         </div>
         <p>© 2026 Form Coach Desk Studio · Taipei, Taiwan</p>
       </footer>
+      {showBackToTop && (
+        <button
+          className="landing-back-to-top"
+          type="button"
+          aria-label="回到頂部"
+          title="回到頂部"
+          onClick={() =>
+            window.scrollTo({
+              top: 0,
+              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 'instant'
+                : 'smooth'
+            })
+          }
+        >
+          <ArrowUp aria-hidden="true" />
+        </button>
+      )}
     </main>
   )
 }

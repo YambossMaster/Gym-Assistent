@@ -75,6 +75,42 @@ it('shows product purpose, public prices, support and legal links without authen
   }
 })
 
+it('offers a return to top after scrolling and respects reduced motion', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  vi.stubGlobal('scrollY', 0)
+  const scrollTo = vi.fn()
+  const matchMedia = vi.fn(() => ({ matches: true }))
+  vi.stubGlobal('scrollTo', scrollTo)
+  vi.stubGlobal('matchMedia', matchMedia)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <LandingPage />
+        </MemoryRouter>
+      )
+    )
+    expect(host.querySelector('[aria-label="回到頂部"]')).toBeNull()
+
+    vi.stubGlobal('scrollY', 121)
+    await act(async () => window.dispatchEvent(new Event('scroll')))
+    const button = host.querySelector<HTMLButtonElement>('[aria-label="回到頂部"]')
+    expect(button).not.toBeNull()
+    await act(async () => button?.click())
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+
+    vi.stubGlobal('scrollY', 0)
+    await act(async () => window.dispatchEvent(new Event('scroll')))
+    expect(host.querySelector('[aria-label="回到頂部"]')).toBeNull()
+  } finally {
+    await act(async () => root.unmount())
+    vi.unstubAllGlobals()
+  }
+})
+
 it('keeps internal Alpha honest by offering sign-in without public registration', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   entry.alpha = true
