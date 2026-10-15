@@ -46,8 +46,13 @@ The detailed behavior and migration contract live in
   passed in the source checkout. Authenticated desktop review showed no shortcut with six students;
   Exercise Library showed the button while scrolling 109 exercises and returned to `scrollY=0`.
   The nine-student behavior is covered by the component test. Isolated `npm run check` passed root
-  scripts 36/36, API 286/286 and Web 362/362; `npm run build` passed. Remote evidence is pending.
-  No schema or API change is included.
+  scripts 36/36, API 286/286 and Web 362/362; `npm run build` passed.
+  [PR #29](https://github.com/YambossMaster/Gym-Assistent/pull/29) passed required checks and
+  merged as `d3d5b287740f5e5d4d1b06632851e579dd8c674c`.
+  [Main CI #209](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38678469173)
+  passed verify, browser UI, Development migration dry-run, Production migration preview,
+  exact-SHA Fly deployment and readiness. Independent requests returned HTTP 200 for
+  `/api/ready` (`{"status":"ready"}`), `/` and `/login`. No schema or API change is included.
 
 - On 2026-10-15 the Product Owner accepted the single-Student detail card spacing and explicitly
   authorized Main push and deployment. The isolated release changes only route-scoped Web CSS:
