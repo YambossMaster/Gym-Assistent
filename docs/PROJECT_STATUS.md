@@ -48,6 +48,10 @@ and API/Web builds pass. Production has not yet applied the two M8-D migrations;
 CI preview and migration release remain pending. A separate pre-existing
 Development Auth-delete trigger defect is recorded in the active [M8-D
 status](status/M8/M8-D.md).
+PR #35's first Development migration dry-run rejected eight already-applied, Development-only
+M8-E history versions. The isolated history guard now audits those exact versions, fetches their
+SQL only into temporary storage for the dry-run and removes it afterward; the local official
+Development dry-run returned `upToDate:true` without applying anything. PR CI must pass again.
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.

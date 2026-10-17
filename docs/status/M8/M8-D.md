@@ -55,7 +55,13 @@ CI and deploy. The full local gate passed root 36/36, API 297/297 and Web 369/36
 builds passed. Production currently has 4 Workspaces, 8 Students, 4 purchases and 3 completed
 Sessions; neither M8-D migration is applied there. The release uses a protected PR, exact-SHA
 Production migration preview, manual migration apply and same-SHA Fly deployment. The Production
-release workflow requires a literal `APPLY` at dispatch. No remote action has completed yet.
+release workflow requires a literal `APPLY` at dispatch. PR #35 is open; Main merge and
+Production release have not completed.
+PR #35 first exposed a Development CI history-guard mismatch: eight M8-E versions had already
+been applied there but were absent from this isolated branch. The guard now accepts only those
+exact versions, fetches them into temporary storage for the official dry-run, and cleans up all
+copies. Local root guard tests and the real Development dry-run passed with no pending migration;
+the first PR migration job failure remains historical evidence until fresh CI succeeds.
 Reopen/delete now clears the affected Session's income and expense entry-state overrides in the
 existing scheduling transaction so re-completion cannot revive an old manual amount; the focused
 Finance plus scheduling-adapter checks passed 27/27.
