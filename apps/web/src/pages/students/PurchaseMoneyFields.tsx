@@ -9,6 +9,7 @@ export function PurchaseMoneyFields({
   defaultUnitPrice,
   currency = 'TWD',
   includeCount = true,
+  showUnitPrice = true,
   showSummary = true,
   totalLabel = '總金額'
 }: {
@@ -17,6 +18,7 @@ export function PurchaseMoneyFields({
   defaultUnitPrice?: number
   currency?: string
   includeCount?: boolean
+  showUnitPrice?: boolean
   showSummary?: boolean
   totalLabel?: string
 }) {
@@ -92,24 +94,26 @@ export function PurchaseMoneyFields({
           }}
         />
       </label>
-      <label>
-        每堂參考價{approximateUnit ? '（約）' : ''}
-        <input
-          aria-label="每堂參考價"
-          type="text"
-          inputMode="decimal"
-          pattern="[0-9]+(?:[.][0-9]{1,4})?"
-          value={unit}
-          placeholder="0"
-          onChange={(e) => {
-            setUnitDraft(e.target.value)
-            setEditedField('unit')
-          }}
-        />
-      </label>
+      {showUnitPrice && (
+        <label>
+          每堂參考價{approximateUnit ? '（約）' : ''}
+          <input
+            aria-label="每堂參考價"
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]+(?:[.][0-9]{1,4})?"
+            value={unit}
+            placeholder="0"
+            onChange={(e) => {
+              setUnitDraft(e.target.value)
+              setEditedField('unit')
+            }}
+          />
+        </label>
+      )}
       <input type="hidden" name="amountMinor" value={minor ?? ''} />
       <input type="hidden" name="currency" value={code} />
-      {showSummary && n > 0 && minor !== null && unitSummary && (
+      {showSummary && showUnitPrice && n > 0 && minor !== null && unitSummary && (
         <span className="finance-money-equation">
           {`${n} 堂 · 合計 ${financeMoney(minor, code)} · ${unitSummary} / 堂`}
         </span>

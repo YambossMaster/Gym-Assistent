@@ -8,8 +8,6 @@ import { workspaceInstant, workspaceWallTime } from './pages/students/workspace-
 import { PurchaseCollectionFields } from './pages/students/PurchaseCollectionFields'
 import {
   financeReturnPath,
-  moneyFactor,
-  singleLessonMinor,
   suggestedStudentVenue,
   useFinanceMutation,
   useVenues,
@@ -457,6 +455,7 @@ export function StudentDetailPage({
     onNotice: setNotice,
     onDeleted: () => navigate('/students')
   })
+  const singleLessonMutation = useFinanceMutation(session)
   const routeState = selectDetailRouteState({
     data: detailQuery.data,
     isLoading: detailQuery.isLoading,
@@ -474,7 +473,8 @@ export function StudentDetailPage({
     purchaseMutation.isPending ||
     deleteMutation.isPending ||
     deletePurchaseMutation.isPending ||
-    updatePurchaseMutation.isPending
+    updatePurchaseMutation.isPending ||
+    singleLessonMutation.isPending
 
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -944,51 +944,72 @@ export function StudentDetailPage({
           disabled={submitting}
         />
       )}
-      {purchaseEditor &&
-        (purchaseEditor.sourceKind === 'generated_single' ? (
-          <GeneratedSingleLessonEditor
-            session={session}
-            purchase={purchaseEditor}
-            onClose={() => setPurchaseEditor(null)}
-          />
-        ) : (
-          <PurchaseEditor
-            session={session}
-            timeZone={timeZone}
-            initialVenueId={purchaseEditor.venueId ?? null}
-            purchase={purchaseEditor}
-            conflict={purchaseConflict}
-            error={updatePurchaseMutation.error ?? saveMutation.error}
-            disabled={submitting}
-            saving={updatePurchaseMutation.isPending}
-            onCancel={() => {
-              setPurchaseEditor(null)
-              setPurchaseConflict(null)
-            }}
-            onSave={(input) => {
-              updatePurchaseMutation.mutate(
-                { purchaseId: purchaseEditor.id, input },
-                {
-                  onSuccess: () => {
-                    setPurchaseEditor(null)
-                    setPurchaseConflict(null)
-                  },
-                  onError: (error) => {
-                    if (error instanceof ApiError && error.details.currentPurchase) {
-                      setPurchaseConflict(error.details.currentPurchase)
-                      setPurchaseEditor(error.details.currentPurchase)
-                    }
+      {purchaseEditor && (
+        <PurchaseEditor
+          session={session}
+          timeZone={timeZone}
+          initialVenueId={purchaseEditor.venueId ?? null}
+          purchase={purchaseEditor}
+          conflict={purchaseConflict}
+          error={singleLessonMutation.error ?? updatePurchaseMutation.error ?? saveMutation.error}
+          disabled={submitting}
+          saving={updatePurchaseMutation.isPending || singleLessonMutation.isPending}
+          onCancel={() => {
+            setPurchaseEditor(null)
+            setPurchaseConflict(null)
+          }}
+          onUsePackage={
+            isSingleLessonPurchase(purchaseEditor)
+              ? () => {
+                  if (
+                    !purchaseEditor.sourceSessionId ||
+                    !purchaseEditor.sourceSessionVersion ||
+                    !purchaseEditor.sourceVersion
+                  )
+                    return
+                  singleLessonMutation.mutate(
+                    {
+                      path: `/sessions/${purchaseEditor.sourceSessionId}/billing/re-evaluate`,
+                      body: {
+                        expectedSessionVersion: purchaseEditor.sourceSessionVersion,
+                        expectedSourceVersion: purchaseEditor.sourceVersion
+                      }
+                    },
+                    { onSuccess: () => setPurchaseEditor(null) }
+                  )
+                }
+              : undefined
+          }
+          onSave={(input) => {
+            if (isSingleLessonPurchase(purchaseEditor)) {
+              const request = singleLessonPurchaseEditRequest(purchaseEditor, input.amountMinor)
+              if (!request) return
+              singleLessonMutation.mutate(request, { onSuccess: () => setPurchaseEditor(null) })
+              return
+            }
+            updatePurchaseMutation.mutate(
+              { purchaseId: purchaseEditor.id, input },
+              {
+                onSuccess: () => {
+                  setPurchaseEditor(null)
+                  setPurchaseConflict(null)
+                },
+                onError: (error) => {
+                  if (error instanceof ApiError && error.details.currentPurchase) {
+                    setPurchaseConflict(error.details.currentPurchase)
+                    setPurchaseEditor(error.details.currentPurchase)
                   }
                 }
-              )
-            }}
-          />
-        ))}
+              }
+            )
+          }}
+        />
+      )}
     </section>
   )
 }
 
-function PurchaseLedgerRows({
+export function PurchaseLedgerRows({
   purchases,
   timeZone,
   venues,
@@ -1010,15 +1031,15 @@ function PurchaseLedgerRows({
       <span className="purchase-ledger-date">
         {new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })}
       </span>
-      <strong>
-        {item.sourceKind === 'generated_single' ? '單堂計費' : `+${item.lessonCount} 堂`}
-      </strong>
+      <strong>{isSingleLessonPurchase(item) ? '單堂計費' : `+${item.lessonCount} 堂`}</strong>
       <span className="purchase-ledger-money">
         {formatMoney(item.amountMinor, item.currency)}
-        {item.sourceKind === 'generated_single' ? (
+        {isSingleLessonPurchase(item) ? (
           <small>
             單堂計費 ·{' '}
             {item.sourceSessionId && <Link to={`/sessions/${item.sourceSessionId}`}>查看課堂</Link>}
+            {item.priceUnset && ' · 尚未設定學生課堂單價'}
+            {item.amountModified && ` · 已修改（來源 ${formatMoney(0, item.currency)}）`}
           </small>
         ) : (
           <small>
@@ -1033,22 +1054,18 @@ function PurchaseLedgerRows({
       </span>
       <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
       <span className="purchase-ledger-actions">
-        {(item.sourceKind !== 'generated_single' || canCorrectSingle) && (
+        {(!isSingleLessonPurchase(item) || canCorrectSingle) && (
           <button
             type="button"
             className="purchase-ledger-icon"
-            aria-label={
-              item.sourceKind === 'generated_single'
-                ? '修正單堂金額'
-                : `編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} 的購課紀錄`
-            }
+            aria-label={`編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} 的購課紀錄`}
             onClick={() => onEdit(item)}
             disabled={submitting}
           >
             <Pencil aria-hidden="true" />
           </button>
         )}
-        {item.sourceKind !== 'generated_single' && (
+        {!isSingleLessonPurchase(item) && (
           <button
             className="purchase-ledger-icon danger-button"
             type="button"
@@ -1064,112 +1081,29 @@ function PurchaseLedgerRows({
   ))
 }
 
-function GeneratedSingleLessonEditor({
-  session,
-  purchase,
-  onClose
-}: {
-  session: Session
-  purchase: LessonPurchase
-  onClose: () => void
-}) {
-  const mutation = useFinanceMutation(session)
-  const [amount, setAmount] = useState(
-    String(purchase.amountMinor / moneyFactor(purchase.currency))
-  )
-  const [currency, setCurrency] = useState(purchase.currency)
-  const [switching, setSwitching] = useState(false)
-  const sourceId = purchase.sourceSessionId
-  const correct = () => {
-    if (!sourceId || !purchase.sourceSessionVersion) return
-    const amountMinor = singleLessonMinor(amount, currency)
-    if (amountMinor === null) return
-    mutation.mutate(
-      {
-        path: `/sessions/${sourceId}/single-lesson-price`,
-        method: 'PATCH',
-        body: {
-          expectedSessionVersion: purchase.sourceSessionVersion,
-          expectedPurchaseVersion: purchase.version,
-          amountMinor,
-          currency
-        }
-      },
-      { onSuccess: onClose }
-    )
-  }
-  const usePackage = () => {
-    if (!sourceId || !purchase.sourceSessionVersion || !purchase.sourceVersion) return
-    mutation.mutate(
-      {
-        path: `/sessions/${sourceId}/billing/re-evaluate`,
-        body: {
-          expectedSessionVersion: purchase.sourceSessionVersion,
-          expectedSourceVersion: purchase.sourceVersion
-        }
-      },
-      { onSuccess: onClose }
-    )
-  }
-  return (
-    <SchedulingDialog title="修正單堂金額" variant="profile" onClose={onClose}>
-      <div className="purchase-create-form">
-        <p>這筆單堂計費來自已完成課堂。修正後，購課紀錄與收支明細會使用同一金額。</p>
-        {sourceId && <Link to={`/sessions/${sourceId}`}>查看來源課堂</Link>}
-        <label>
-          單堂金額
-          <input
-            type="number"
-            min="0"
-            step={1 / moneyFactor(currency)}
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-          />
-        </label>
-        <label>
-          幣別
-          <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
-            <option value="TWD">TWD</option>
-            <option value="USD">USD</option>
-            <option value="JPY">JPY</option>
-            <option value="EUR">EUR</option>
-            <option value="HKD">HKD</option>
-          </select>
-        </label>
-        {switching && (
-          <p>
-            改用既有堂數後，這筆單堂計費收入會移除，課堂會使用目前可用的購課堂數。若無可用堂數，原紀錄會保留。
-          </p>
-        )}
-        {mutation.isError && (
-          <p role="alert" className="form-notice">
-            紀錄已變更或操作失敗。輸入仍保留；請關閉後重新查看最新紀錄。
-          </p>
-        )}
-        <div className="finance-actions">
-          <button type="button" className="secondary-button" onClick={onClose}>
-            取消
-          </button>
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={mutation.isPending}
-            onClick={() => (switching ? usePackage() : setSwitching(true))}
-          >
-            {switching ? '確認改用既有堂數' : '改用既有堂數'}
-          </button>
-          <button
-            type="button"
-            className="primary-button compact"
-            disabled={mutation.isPending}
-            onClick={correct}
-          >
-            {mutation.isPending ? '儲存中…' : '儲存金額'}
-          </button>
-        </div>
-      </div>
-    </SchedulingDialog>
-  )
+function isSingleLessonPurchase(item: LessonPurchase) {
+  return item.sourceKind === 'generated_single' || item.sourceKind === 'pending_single'
+}
+
+export function singleLessonPurchaseEditRequest(item: LessonPurchase, amountMinor: number) {
+  if (item.sourceKind === 'pending_single')
+    return {
+      path: `/finances/entries/${encodeURIComponent(item.id)}`,
+      method: 'PATCH',
+      body: { version: item.version, amountMinor }
+    }
+  if (item.sourceKind === 'generated_single' && item.sourceSessionId && item.sourceSessionVersion)
+    return {
+      path: `/sessions/${item.sourceSessionId}/single-lesson-price`,
+      method: 'PATCH',
+      body: {
+        expectedSessionVersion: item.sourceSessionVersion,
+        expectedPurchaseVersion: item.version,
+        amountMinor,
+        currency: item.currency
+      }
+    }
+  return null
 }
 
 export function StudentCourseRecord({
@@ -1715,7 +1649,7 @@ function formatScheduleTime(value: string | null) {
     : '—'
 }
 
-function PurchaseEditor({
+export function PurchaseEditor({
   session,
   timeZone,
   initialVenueId,
@@ -1725,6 +1659,7 @@ function PurchaseEditor({
   disabled,
   saving,
   onCancel,
+  onUsePackage,
   onSave
 }: {
   session: Session
@@ -1736,6 +1671,7 @@ function PurchaseEditor({
   disabled: boolean
   saving: boolean
   onCancel: () => void
+  onUsePackage?: () => void
   onSave: (input: {
     venueId: string | null
     purchasedAt: string
@@ -1748,6 +1684,8 @@ function PurchaseEditor({
 }) {
   const [date, setDate] = useState(isoToLocalDateTime(purchase.purchasedAt, timeZone).date)
   const [time, setTime] = useState(isoToLocalDateTime(purchase.purchasedAt, timeZone).time)
+  const [confirmUsePackage, setConfirmUsePackage] = useState(false)
+  const single = isSingleLessonPurchase(purchase)
   return (
     <SchedulingDialog title="編輯購課紀錄" variant="profile" onClose={onCancel}>
       <form
@@ -1757,12 +1695,16 @@ function PurchaseEditor({
           event.preventDefault()
           const values = new FormData(event.currentTarget)
           onSave({
-            purchasedAt: workspaceInstant(`${date}T${time}`, timeZone),
-            lessonCount: Number(values.get('lessonCount')),
+            purchasedAt: single
+              ? purchase.purchasedAt
+              : workspaceInstant(`${date}T${time}`, timeZone),
+            lessonCount: single ? 1 : Number(values.get('lessonCount')),
             amountMinor: Number(values.get('amountMinor')),
-            currency: String(values.get('currency') || purchase.currency),
-            venueId: String(values.get('venueId') || '') || null,
-            privateNote: String(values.get('privateNote') || '').trim(),
+            currency: purchase.currency,
+            venueId: single ? null : String(values.get('venueId') || '') || null,
+            privateNote: single
+              ? purchase.privateNote
+              : String(values.get('privateNote') || '').trim(),
             version: purchase.version
           })
         }}
@@ -1785,23 +1727,62 @@ function PurchaseEditor({
               {error.message}
             </p>
           ) : null}
-          <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
-          <div className="field-control">
-            <RequiredFieldLabel>購買時間</RequiredFieldLabel>
-            <TimeSelect label="購買時間" value={time} onChange={setTime} />
-          </div>
-          <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
+          {single ? (
+            <p>
+              {new Date(purchase.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} · 單堂計費
+              {purchase.sourceSessionId && (
+                <>
+                  {' '}
+                  · <Link to={`/sessions/${purchase.sourceSessionId}`}>查看課堂</Link>
+                </>
+              )}
+              {purchase.priceUnset && ' · 尚未設定學生課堂單價'}
+            </p>
+          ) : (
+            <>
+              <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
+              <div className="field-control">
+                <RequiredFieldLabel>購買時間</RequiredFieldLabel>
+                <TimeSelect label="購買時間" value={time} onChange={setTime} />
+              </div>
+              <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
+            </>
+          )}
+          {single && (
+            <label>
+              堂數
+              <input type="number" value={1} disabled />
+            </label>
+          )}
           <PurchaseMoneyFields
             count={purchase.lessonCount}
             amount={purchase.amountMinor}
             currency={purchase.currency}
+            includeCount={!single}
+            showUnitPrice={!single}
+            totalLabel={single ? '單堂金額' : '總金額'}
           />
-          <label>
-            教練備註
-            <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
-          </label>
+          {!single && (
+            <label>
+              教練備註
+              <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
+            </label>
+          )}
+          {confirmUsePackage && (
+            <p>改用既有堂數會移除這筆單堂計費收入；若沒有可用堂數，原紀錄會保留。</p>
+          )}
         </div>
         <div className="purchase-editor-actions">
+          {onUsePackage && (
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={disabled}
+              onClick={() => (confirmUsePackage ? onUsePackage() : setConfirmUsePackage(true))}
+            >
+              {confirmUsePackage ? '確認改用既有堂數' : '改用既有堂數'}
+            </button>
+          )}
           <button
             className="secondary-button ui-action-cancel"
             type="button"

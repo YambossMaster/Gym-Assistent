@@ -13,6 +13,19 @@
 | Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
 | Single-lesson correction | PO accepted local UI; PR #35, exact-SHA Main CI and Production migration release passed            |
 
+The PO reported a post-release purchase-history gap on 2026-10-18: two completed lessons without
+a Student price were absent from purchase history, while a third priced lesson appeared. The PO
+also directed that either the purchase record or Finance amount edit update both effective views,
+without changing the original missing-price source or Student default price. The follow-up Sol is
+in isolated `codex/m8d-single-purchase-records`, based on released Main. Student detail now projects
+each completed unpriced source as a one-lesson purchase-history row with the effective Finance
+entry-state amount and version. The existing purchase editor handles both priced and unpriced
+single lessons, locks count to one and omits the currency control. Unpriced edits use the ordinary
+Finance entry override, so Finance and purchase history share the amount. No schema or Production
+change has been made for this follow-up. Focused API regression reproduced the missing two records
+before the fix and passed afterward; focused Web list/editor checks and both typechecks passed.
+PO UI inspection and the later live/browser/CI gate remain open for this follow-up.
+
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
 completed [`M8-C.md`](M8-C.md) for Alpha evidence. M8-E owns paid checkout and must not be pulled

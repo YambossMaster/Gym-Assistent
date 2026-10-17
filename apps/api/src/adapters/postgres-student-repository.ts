@@ -66,6 +66,17 @@ interface LessonPurchaseRow {
   updated_at: Date
 }
 
+interface PendingSingleLessonRow {
+  session_id: string
+  ended_at: Date
+  session_version: number
+  source_version: number
+  decided_at: Date
+  amount_minor: string | number | null
+  entry_version: number | null
+  default_currency: string
+}
+
 interface WorkspaceSettingsRow {
   display_name: string
   time_zone: string
@@ -318,14 +329,14 @@ export class PostgresStudentRepository
     workspaceId: WorkspaceId,
     studentId: string,
   ): Promise<StudentDetail | null> {
-    const [studentResult, purchasesResult, summary] = await Promise.all([
+    const [studentResult, purchaseRecords, summary] = await Promise.all([
       this.#pool.query<StudentRow>(
         `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at
          FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
         [workspaceId, studentId],
       ),
-      new PostgresFinanceRepository(this.#pool).scoped(workspaceId, (client) =>
-        client.query<LessonPurchaseRow>(
+      new PostgresFinanceRepository(this.#pool).scoped(workspaceId, async (client) => {
+        const purchases = await client.query<LessonPurchaseRow>(
           `SELECT p.id,p.purchased_at,p.lesson_count,p.amount_minor,p.currency,p.private_note,p.version,p.created_at,p.updated_at,p.collection_mode,p.entitlement_venue_id venue_id,p.source_kind,p.source_session_id,
           s.version source_session_version,a.version source_version
          FROM app_private.lesson_purchase p
@@ -333,15 +344,34 @@ export class PostgresStudentRepository
          LEFT JOIN app_private.session_lesson_source a ON a.workspace_id=p.workspace_id AND a.session_id=p.source_session_id
          WHERE p.workspace_id = $1 AND p.student_id = $2 ORDER BY p.purchased_at, p.id`,
           [workspaceId, studentId],
-        ),
-      ),
+        )
+        const pending = await client.query<PendingSingleLessonRow>(
+          `SELECT a.session_id, s.ends_at ended_at, s.version session_version,
+                  a.version source_version, a.decided_at,
+                  e.manual_amount_minor amount_minor, e.version entry_version,
+                  w.default_currency
+           FROM app_private.session_lesson_source a
+           JOIN app_private.course_session s ON s.workspace_id=a.workspace_id AND s.id=a.session_id
+           JOIN app_private.workspace w ON w.id=a.workspace_id
+           LEFT JOIN app_private.finance_entry_state e
+             ON e.workspace_id=a.workspace_id AND e.entry_id='single-lesson:' || a.session_id
+           WHERE a.workspace_id=$1 AND a.student_id=$2 AND a.kind='pending'
+             AND s.status='completed' AND s.ends_at IS NOT NULL
+           ORDER BY s.ends_at, a.session_id`,
+          [workspaceId, studentId],
+        )
+        return { purchases: purchases.rows, pending: pending.rows }
+      }),
       this.lessonSummary(workspaceId, studentId),
     ])
     const student = studentResult.rows[0]
     if (!student || !summary) return null
     return {
       student: mapStudent(student),
-      purchases: purchasesResult.rows.map(mapLessonPurchase),
+      purchases: [
+        ...purchaseRecords.purchases.map(mapLessonPurchase),
+        ...purchaseRecords.pending.map(mapPendingSingleLesson),
+      ],
       lessonSummary: summary,
     }
   }
@@ -625,6 +655,29 @@ function mapLessonPurchase(row: LessonPurchaseRow): LessonPurchase {
     version: row.version,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
+  }
+}
+
+function mapPendingSingleLesson(row: PendingSingleLessonRow): LessonPurchase {
+  const occurredAt = row.ended_at.toISOString()
+  return {
+    id: `single-lesson:${row.session_id}`,
+    collectionMode: 'coach',
+    venueId: null,
+    sourceKind: 'pending_single',
+    sourceSessionId: row.session_id,
+    sourceSessionVersion: row.session_version,
+    sourceVersion: row.source_version,
+    priceUnset: true,
+    amountModified: row.amount_minor !== null,
+    purchasedAt: occurredAt,
+    lessonCount: 1,
+    amountMinor: Number(row.amount_minor ?? 0),
+    currency: row.default_currency,
+    privateNote: '',
+    version: row.entry_version ?? 0,
+    createdAt: row.decided_at.toISOString(),
+    updatedAt: row.decided_at.toISOString(),
   }
 }
 
