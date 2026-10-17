@@ -33,10 +33,12 @@ overlay instead of shifting the fields. Focused Web tests 7/7 and Web typecheck 
 revision. A read-only Development query under Workspace RLS found two pending sources and one
 generated source for the reported Student; this branch's Student detail projection returned all
 three. The first unscoped diagnostic query falsely showed no sources and was discarded. The
-5173 now serves this isolated branch's latest Web through API 3002; HTTP read-back confirmed the
-editor footer change and API readiness. The unused 5188 preview was stopped. The Student query
-cache may retain the old one-row response until a page reload. Full changed-flow browser
-verification has not started because the PO requested further adjustments.
+5173 now serves this isolated branch's latest Web through API 3002. Initially, 5173 served the new
+Web but still proxied to an older API; the PO's refreshed screen therefore showed only one record.
+After restarting Vite with `API_PROXY_TARGET=http://127.0.0.1:3002`, the isolated API logged the
+authenticated Student detail request and the PO confirmed the screen shows all three records
+($1,500, $60 corrected from an original $0, and $0). The unused 5188 preview was stopped.
+Full changed-flow browser verification has not started because the PO requested further adjustments.
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
