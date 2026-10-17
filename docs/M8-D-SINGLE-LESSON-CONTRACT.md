@@ -92,28 +92,31 @@ unbounded schedule horizon. Student private notes remain private.
   there is no separate `待處理單堂紀錄` card or Coach-facing billing queue. An internal source marker
   distinguishes absent price from an explicitly set zero price. This does not ask whether payment
   was received.
-- The Coach edits that exact zero-income row to enter or confirm its amount. The server creates one
-  linked generated purchase and replaces the zero source with the authoritative amount; explicit
-  zero is valid. The row offers a link to the Student profile, where the Coach may independently set
-  `學生課堂單價` for future lessons. Editing the historical row never changes that default, and changing
-  the default never silently rewrites or prices earlier zero-income rows.
-- This correction uses the existing versioned settlement command for one Session at a time. It
-  validates Workspace ownership, completed/unpriced state, Session version and amount before one
-  atomic write; retrying the same successful request is idempotent and a conflicting retry returns 409. The Web preserves the Coach's entered amount on a recoverable conflict. The server may retain
-  bounded multi-item support internally, but the Finance UI presents ordinary individual rows only.
-- Venue cost remains tied to the completed Session. A fixed per-Session fee and prepaid Venue-lesson
-  consumption can be recorded at completion even while Student income is pending. A percentage
-  commission that needs the missing Student price stays pending rather than being calculated from
-  an invented zero; settling the price produces the corresponding cost in that Session's month.
-- A Coach may correct a generated amount from purchase history or the matching Finance income row.
-  Both surfaces must show the same authoritative amount afterward. Price correction is versioned
-  and does not alter the Student's default price or Session date.
+- The Coach may edit that exact zero-income **Finance row** using the established versioned ledger
+  override. This changes only the displayed historical amount; its source remains zero and marked
+  `尚未設定學生課堂單價`. The row remains `已修改`, shows the original zero in source explanation, supports
+  `取消修改`, and retains its Student-profile link. Setting `學生課堂單價` on that profile affects future
+  lessons only. Neither action silently rewrites the other.
+- Editing a generated single-lesson Finance income row likewise creates an independent ledger
+  override, never a purchase/source price update. Purchase-history source correction remains a
+  separate explicit command; existing Finance overrides survive later source changes and identify
+  that the source changed. The Finance editor preserves entered amounts on recoverable conflicts.
+- Venue cost remains tied to the completed Session. Fixed rent and prepaid Venue-lesson consumption
+  apply at completion even without a Student price. For a commission Venue, show a matching `支出 -$0`
+  row alongside the unpriced income row, both marked `尚未設定學生課堂單價`. A Finance override of that
+  income recalculates the commission row at the configured rate without changing the Student source.
+  If the Coach overrides the commission row itself, that expense amount stays fixed until its own
+  `取消修改`, even if the income override changes again.
+- A Coach may correct the generated purchase source from purchase history; that source correction is
+  versioned and does not change the Student's default price or Session date. Finance row edits remain
+  independent overrides with their own source explanation and reset action.
 
 ### Reopen, delete and corrections
 
 - Reopening a completed Session releases its explicit package allocation, removes that Session's
   generated single-lesson purchase and derived Finance income, or removes its unpriced zero-income row.
-  Deleting a completed Session has the same source cleanup. This is atomic with the Session
+  Its income and Venue expense ledger overrides are cleared so a later re-completion cannot revive
+  historical manual amounts. Deleting a completed Session has the same source cleanup. This is atomic with the Session
   transition, so failure leaves both sides unchanged. Re-completion makes a fresh source decision
   from the then-current eligible balance and Student price. Retry and double-click cannot create
   duplicate generated purchases or zero-income rows.
@@ -146,12 +149,18 @@ unbounded schedule horizon. Student private notes remain private.
   Purchase edit: show only the purchase's saved amount-derived reference price until the Coach
   deliberately changes it.
 - Calendar Student picker: for the selected Venue, show its usable package count when positive or
-  `姓名・單堂計費` at zero or below. Venue picker shows all active Venues, including in-context create.
+  `姓名・單堂計費` at zero or below. Venue picker shows all active Venues, including in-context create,
+  and appends a short fee-rule kind in parentheses (`不計`, `預購`, `單次`, `抽成`, `免費`).
   Do not add a separate billing-source or price line to the Session form or Session detail.
 - Purchase history: distinguish manual packages from generated `單堂計費`, show source Course Session
-  link. Finance income uses the same label, amount, currency and source link. A completed Session
+  link. Finance income starts from the same source label, amount, currency and link, while later
+  Finance edits remain separate overrides. A completed Session
   missing a price appears directly in `收支明細` as `+$0` with `尚未設定學生課堂單價` and can be edited
   there. Its Student link leads to the profile where future-lesson price can be set separately.
+- Venue course records distinguish the Venue expense from the Student billing source. A completed
+  single lesson shows `單堂計費` and its effective Finance income, including an edited amount while
+  preserving the original missing-price explanation. A zero commission is shown as a calculated
+  `$0` expense, not as missing Venue data; later Finance edits update the displayed amounts.
 - Loading, refresh, mutation and conflict states preserve the current draft and surrounding layout;
   stale Session or price edits explain the conflict and offer a safe retry. Do not expose schema or
   migration terminology to Coaches.
@@ -168,14 +177,9 @@ unbounded schedule horizon. Student private notes remain private.
   facts in one database transaction. The Module interface must be versioned explicitly rather than
   having the Web compose a Session mutation followed by a purchase mutation. Database uniqueness and
   tenant-qualified foreign keys defend replay and cross-Workspace writes.
-- An unpriced row correction is one versioned, Workspace-scoped Module command and one PostgreSQL
-  transaction, including its generated purchase and Finance source. The Web invokes it from that
-  row's editor. The existing server command also accepts bounded multi-item requests internally;
-  this does not add a batch UI. Same-key replay with a different payload is rejected.
-- Finance source amounts and purchase amounts must agree for generated single lessons. A Finance
-  edit that changes the generated income amount must update its source amount atomically rather than
-  storing an unrelated display override. Preserve the existing general Finance edit behavior for
-  unrelated entries.
+- Finance row edits use the existing versioned, Workspace-scoped entry-state command and leave
+  source records intact. Generated purchase source amounts remain authoritative in purchase history;
+  Finance rows may carry independent overrides with `已修改`, immutable source explanation and reset.
 - Package balance is manual package grants minus completed Sessions explicitly allocated to those
   grants. Generated single-lesson purchases and unpriced Sessions never contribute package
   capacity or Venue eligibility. Venue-specific balance and commission allocation use explicit
@@ -197,10 +201,10 @@ unbounded schedule horizon. Student private notes remain private.
   request ID and identical payload return the saved result; a changed payload with that ID returns 409. Success returns each Session ID/new version and generated purchase ID/version. A stale,
   already settled or concurrently changed item returns 409 with affected IDs and current states;
   invalid shape returns 400; an out-of-Workspace ID is not disclosed as another Coach's resource.
-- `PATCH /v1/sessions/:sessionId/single-lesson-price` accepts expected Session and purchase versions
-  plus the corrected amount/currency. Both purchase history and Finance income edit call this same
-  operation, which updates their common source atomically. The generic Finance override operation
-  must not create a separate amount override for these generated income rows.
+  This retained internal operation is not called by the ordinary Finance row editor.
+- `PATCH /v1/sessions/:sessionId/single-lesson-price` remains the purchase-history source
+  correction operation. `PATCH /v1/finances/entries/:entryId` handles single-lesson Finance edits
+  as ledger overrides without altering a purchase or the internal unpriced marker.
 - `POST /v1/sessions/:sessionId/billing/re-evaluate` accepts the expected Session and current source
   versions. It rechecks package eligibility and capacity under the same Student lock, then replaces
   that Session's generated or pending source with one manual package allocation. If no package can
@@ -224,9 +228,11 @@ unbounded schedule horizon. Student private notes remain private.
 5. Concurrent completion, repeated request, stale version, reopen, re-complete and delete each leave
    exactly the expected allocation/purchase/Finance state. Cross-Workspace operations are denied.
 6. A missing-price completion yields a completed Session and one ordinary `+$0` Finance row with
-   `尚未設定學生課堂單價`. Editing that row creates the correct linked purchase and amount; explicit zero
-   is valid. Setting Student price separately affects future lessons only. Stale or unauthorized
-   corrections write nothing; same-payload retry never duplicates income.
+   `尚未設定學生課堂單價`; a commission Venue simultaneously shows `-$0` with the same annotation.
+   Editing income produces `已修改` and a ledger amount override while source stays zero; a matching
+   commission recalculates unless its own row was separately overridden. Both rows support
+   `取消修改`. Setting Student price separately affects future lessons only. Stale or unauthorized
+   ledger edits write nothing and retries never duplicate a source.
 7. Migration comparison for existing Workspaces preserves visible balances and monthly Finance
    totals, including legacy, negative-balance, Venue-bound and manually adjusted entries.
 8. Coach review on desktop and 390 × 844 covers Student create/edit, purchase create/edit, Calendar

@@ -113,6 +113,70 @@ describe('monthly finance authority', () => {
     })
     expect(derived.rows.some((row) => row.id === 'purchase-commission:single')).toBe(false)
     expect(derived.studentVenueBalances).toEqual([])
+    snapshot.entryStates = [
+      {
+        entryId: 'purchase:single',
+        version: 1,
+        hidden: false,
+        manualAmountMinor: 1500,
+        manualAt: null,
+        manualLabel: null,
+        sourceFingerprint: null,
+        sourceSnapshot: null,
+      },
+    ]
+    const edited = monthlyFinance(snapshot, '2026-09', '2026-09-24').rows
+    expect(snapshot.purchases[0]!.amountMinor).toBe(1200)
+    expect(edited.find((row) => row.id === 'purchase:single')).toMatchObject({
+      amountMinor: 1500,
+      originalAmountMinor: 1200,
+      status: 'modified',
+    })
+    expect(edited.find((row) => row.id === 'session:s1')?.amountMinor).toBe(300)
+  })
+  it('applies each Venue cost rule to a completed single lesson', () => {
+    const snapshot = fixture()
+    snapshot.sessions[0]!.endsAt = '2026-09-01T03:00:00.000Z'
+    snapshot.purchases = [
+      {
+        ...snapshot.purchases[0]!,
+        id: 'single',
+        lessonCount: 1,
+        amountMinor: 1200,
+        purchasedOn: '2026-09-01',
+        venueId: 'v',
+        sourceKind: 'generated_single',
+        sourceSessionId: 's1',
+      },
+    ]
+    snapshot.lessonSources = [{ sessionId: 's1', kind: 'generated_single', purchaseId: 'single' }]
+
+    snapshot.rules = [{ ...rule, kind: 'commission', rate: 20 }]
+    let month = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(month.rows.find((row) => row.id === 'session:s1')).toMatchObject({
+      kind: 'commission',
+      amountMinor: 240,
+      direction: 'expense',
+    })
+    expect(month.rows.some((row) => row.id === 'purchase-commission:single')).toBe(false)
+
+    snapshot.rules = [{ ...rule, kind: 'rent', amountMinor: 400, currency: 'TWD' }]
+    month = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(month.rows.find((row) => row.id === 'session:s1')).toMatchObject({
+      kind: 'rent',
+      amountMinor: 400,
+      direction: 'expense',
+    })
+
+    snapshot.rules = [rule]
+    month = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(month.rows.find((row) => row.id === 'purchase:single')?.amountMinor).toBe(1200)
+    expect(month.rows.some((row) => row.id === 'session:s1')).toBe(false)
+    expect(month.totals.find((total) => total.currency === 'TWD')?.expenseMinor).toBe(0)
+    expect(monthlyFinance(snapshot, '2026-08', '2026-09-24').rows).toEqual([
+      expect.objectContaining({ id: 'prepaid:c', amountMinor: 3000, direction: 'expense' }),
+    ])
+    expect(venueCreditBalances(snapshot)[0]?.remainingLessons).toBe(0)
   })
   it('shows a missing Student price as an editable zero-income ledger row alongside fixed Venue cost', () => {
     const snapshot = fixture()
@@ -138,7 +202,11 @@ describe('monthly finance authority', () => {
     expect(deriveFinance(snapshot, '2026-09-24').studentVenueBalances).toEqual([])
     snapshot.rules = [{ ...rule, kind: 'commission', rate: 20 }]
     const commissionMonth = monthlyFinance(snapshot, '2026-09', '2026-09-24')
-    expect(commissionMonth.rows.some((row) => row.id === 'session:s1')).toBe(false)
+    expect(commissionMonth.rows.find((row) => row.id === 'session:s1')).toMatchObject({
+      amountMinor: 0,
+      direction: 'expense',
+      detail: expect.stringContaining('尚未設定學生課堂單價'),
+    })
     expect(commissionMonth.rows.some((row) => row.id === 'single-lesson:s1')).toBe(true)
     expect(
       deriveFinance(snapshot, '2026-09-24').missing.find((item) => item.sessionId === 's1'),
@@ -165,6 +233,82 @@ describe('monthly finance authority', () => {
     const bookedZero = explicitZero.find((row) => row.id === 'purchase:single')
     expect(bookedZero?.amountMinor).toBe(0)
     expect(bookedZero?.singleLessonPriceUnset).toBeUndefined()
+  })
+  it('keeps unpriced source at zero while ledger edits recalculate commission and respect an expense override', () => {
+    const snapshot = fixture()
+    snapshot.sessions[0]!.endsAt = '2026-09-01T03:00:00.000Z'
+    snapshot.purchases = []
+    snapshot.lessonSources = [{ sessionId: 's1', kind: 'pending', purchaseId: null }]
+    snapshot.rules = [{ ...rule, kind: 'commission', rate: 70 }]
+    const original = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(original.rows.map((row) => [row.id, row.amountMinor, row.detail])).toEqual([
+      ['single-lesson:s1', 0, '尚未設定學生課堂單價'],
+      ['session:s1', 0, expect.stringContaining('尚未設定學生課堂單價')],
+    ])
+    expect(venueCourseRecords(snapshot, 'v', '2026-09-24')[0]).toMatchObject({
+      status: 'expense',
+      purchaseId: null,
+      singleLesson: { priceUnset: true, amountMinor: 0, originalAmountMinor: 0 },
+      expense: { amountMinor: 0 },
+    })
+    snapshot.entryStates = [
+      {
+        entryId: 'single-lesson:s1',
+        version: 1,
+        hidden: false,
+        manualAmountMinor: 600,
+        manualAt: null,
+        manualLabel: null,
+        sourceFingerprint: null,
+        sourceSnapshot: null,
+      },
+    ]
+    const edited = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(edited.rows.find((row) => row.id === 'single-lesson:s1')).toMatchObject({
+      amountMinor: 600,
+      originalAmountMinor: 0,
+      status: 'modified',
+      detail: '尚未設定學生課堂單價',
+      studentPriceRoute: '/students/s',
+    })
+    expect(edited.rows.find((row) => row.id === 'session:s1')).toMatchObject({
+      amountMinor: 420,
+      originalAmountMinor: 420,
+    })
+    expect(venueCourseRecords(snapshot, 'v', '2026-09-24')[0]).toMatchObject({
+      singleLesson: { priceUnset: true, amountMinor: 600, originalAmountMinor: 0, modified: true },
+      expense: { amountMinor: 420 },
+    })
+    snapshot.entryStates.push({
+      entryId: 'session:s1',
+      version: 1,
+      hidden: false,
+      manualAmountMinor: 100,
+      manualAt: null,
+      manualLabel: null,
+      sourceFingerprint: null,
+      sourceSnapshot: null,
+    })
+    snapshot.entryStates[0]!.manualAmountMinor = 800
+    const independent = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(independent.rows.find((row) => row.id === 'session:s1')).toMatchObject({
+      amountMinor: 100,
+      originalAmountMinor: 560,
+      status: 'modified',
+    })
+    expect(venueCourseRecords(snapshot, 'v', '2026-09-24')[0]).toMatchObject({
+      singleLesson: { amountMinor: 800, originalAmountMinor: 0, modified: true },
+      expense: { amountMinor: 100, originalAmountMinor: 560, status: 'modified' },
+    })
+    snapshot.entryStates[1]!.manualAmountMinor = null
+    expect(
+      monthlyFinance(snapshot, '2026-09', '2026-09-24').rows.find((row) => row.id === 'session:s1')
+        ?.amountMinor,
+    ).toBe(560)
+    snapshot.entryStates[0]!.manualAmountMinor = null
+    const restored = monthlyFinance(snapshot, '2026-09', '2026-09-24').rows
+    expect(restored.find((row) => row.id === 'single-lesson:s1')?.amountMinor).toBe(0)
+    expect(restored.find((row) => row.id === 'session:s1')?.amountMinor).toBe(0)
   })
   it('shows prepaid activation time without changing its booked date or ledger order', () => {
     const snapshot = fixture()

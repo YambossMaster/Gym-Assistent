@@ -76,6 +76,11 @@ it('permits explicit deletion of a completed temporal Session', async () => {
   await expect(repository.deleteSession('workspace-1', 'session-1', 4)).resolves.toBe(true)
 
   expect(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.finance_entry_state')),
+  ).toBeLessThan(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.session_lesson_source')),
+  )
+  expect(
     calls.findIndex((sql) => sql.startsWith('delete from app_private.session_lesson_source')),
   ).toBeLessThan(
     calls.findIndex((sql) => sql.startsWith('delete from app_private.lesson_purchase')),

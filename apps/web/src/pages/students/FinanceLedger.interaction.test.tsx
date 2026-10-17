@@ -83,6 +83,7 @@ it('edits an unset-price zero income from the ordinary ledger without a separate
     expect(host.querySelector('.finance-ledger-editor')?.textContent).toContain(
       '前往學生資料設定單價'
     )
+    expect(host.querySelectorAll('.finance-ledger-source-links a')).toHaveLength(2)
     expect(host.querySelector('.finance-ledger-footer .ui-action-delete')).toBeNull()
     const amountInput = host.querySelector<HTMLInputElement>('input[type="number"]')!
     await act(async () => {
@@ -97,12 +98,9 @@ it('edits an unset-price zero income from the ordinary ledger without a separate
     )
     expect(mutation.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: '/finances/pending-single-lessons/settle',
-        method: 'POST',
-        body: {
-          requestId: expect.any(String),
-          items: [{ sessionId: 'session-1', expectedVersion: 3, amountMinor: 650, currency: 'TWD' }]
-        }
+        path: '/finances/entries/single-lesson%3Asession-1',
+        method: 'PATCH',
+        body: { version: 0, label: '學生 · 單堂計費', amountMinor: 650 }
       }),
       expect.any(Object)
     )

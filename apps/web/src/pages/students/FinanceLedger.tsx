@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowUpRight, ChevronRight, Plus, Wrench } from 'lucide-react'
@@ -13,7 +13,6 @@ import {
   financeKey,
   financeMoney,
   moneyFactor,
-  singleLessonMinor,
   useFinanceMutation,
   type MonthlyFinance
 } from './finance-api'
@@ -104,24 +103,13 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
   const ascending = (a: Row, b: Row) =>
     `${a.date}T${a.occurredAt ? workspaceWallTime(a.occurredAt, data.timeZone).slice(11) : '00:00'}`.localeCompare(
       `${b.date}T${b.occurredAt ? workspaceWallTime(b.occurredAt, data.timeZone).slice(11) : '00:00'}`
-    ) || a.id.localeCompare(b.id)
+    ) ||
+    Number(b.direction === 'income') - Number(a.direction === 'income') ||
+    a.id.localeCompare(b.id)
   const mutation = useFinanceMutation(session)
-  const queryClient = useQueryClient()
   const [editor, setEditor] = useState<Row | 'new' | null>(null)
   const modifiedFields =
     editor && editor !== 'new' ? modifiedFinanceFields(editor, data.timeZone) : null
-  const pendingConflict =
-    editor &&
-    editor !== 'new' &&
-    editor.singleLessonPriceUnset &&
-    mutation.error instanceof ApiError &&
-    mutation.error.status === 409
-      ? (
-          mutation.error.details as unknown as {
-            current?: Array<{ sessionId: string; sessionVersion: number; kind: string }>
-          }
-        ).current?.find((item) => item.sessionId === editor.singleLessonSessionId)
-      : null
   const [deletedOpen, setDeletedOpen] = useState(false)
   const [label, setLabel] = useState('')
   const [when, setWhen] = useState('')
@@ -210,32 +198,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
         currency,
         privateNote: note
       })
-    else if (editor.singleLessonSessionId) {
-      if (!editor.singleLessonSessionVersion) return
-      const correctedMinor = singleLessonMinor(amount, currency)
-      if (correctedMinor === null) return
-      if (editor.singleLessonPriceUnset) {
-        send('/finances/pending-single-lessons/settle', 'POST', {
-          requestId: entryId,
-          items: [
-            {
-              sessionId: editor.singleLessonSessionId,
-              expectedVersion: editor.singleLessonSessionVersion,
-              amountMinor: correctedMinor,
-              currency
-            }
-          ]
-        })
-        return
-      }
-      if (!editor.singleLessonPurchaseVersion) return
-      send(`/sessions/${editor.singleLessonSessionId}/single-lesson-price`, 'PATCH', {
-        expectedSessionVersion: editor.singleLessonSessionVersion,
-        expectedPurchaseVersion: editor.singleLessonPurchaseVersion,
-        amountMinor: correctedMinor,
-        currency
-      })
-    } else {
+    else {
       const displayedWhen = editor.occurredAt
         ? workspaceWallTime(editor.occurredAt, data.timeZone)
         : `${editor.date}T00:00`
@@ -596,27 +559,29 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                       <pre className="finance-ledger-source-display">
                         {sourceExplanation(editor)}
                       </pre>
-                      {editor.targetRoute && (
-                        <Link
-                          className="finance-ledger-source-link ui-action-general"
-                          to={financeSourceRoute(editor, params)}
-                        >
-                          前往來源紀錄 <ArrowUpRight aria-hidden="true" />
-                        </Link>
-                      )}
-                      {editor.singleLessonPriceUnset && editor.studentPriceRoute && (
-                        <Link
-                          className="finance-ledger-source-link ui-action-general"
-                          to={`${editor.studentPriceRoute}?${new URLSearchParams({
-                            from: 'finances',
-                            edit: 'price',
-                            ...(params.get('month') ? { month: params.get('month')! } : {}),
-                            entry: editor.id
-                          })}`}
-                        >
-                          前往學生資料設定單價 <ArrowUpRight aria-hidden="true" />
-                        </Link>
-                      )}
+                      <div className="finance-ledger-source-links">
+                        {editor.targetRoute && (
+                          <Link
+                            className="finance-ledger-source-link ui-action-general"
+                            to={financeSourceRoute(editor, params)}
+                          >
+                            前往來源紀錄 <ArrowUpRight aria-hidden="true" />
+                          </Link>
+                        )}
+                        {editor.singleLessonPriceUnset && editor.studentPriceRoute && (
+                          <Link
+                            className="finance-ledger-source-link ui-action-general"
+                            to={`${editor.studentPriceRoute}?${new URLSearchParams({
+                              from: 'finances',
+                              edit: 'price',
+                              ...(params.get('month') ? { month: params.get('month')! } : {}),
+                              entry: editor.id
+                            })}`}
+                          >
+                            前往學生資料設定單價 <ArrowUpRight aria-hidden="true" />
+                          </Link>
+                        )}
+                      </div>
                     </section>
                   )}
                 </div>
@@ -669,39 +634,8 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
             )}
             {mutation.isError && (
               <div role="alert" className="notice error">
+                {mutation.error.message}
                 {editor !== 'new' &&
-                editor.singleLessonPriceUnset &&
-                mutation.error instanceof ApiError &&
-                mutation.error.status === 409
-                  ? '這堂課的計費資料已變更，請確認最新紀錄。'
-                  : mutation.error.message}
-                {editor !== 'new' &&
-                  editor.singleLessonPriceUnset &&
-                  mutation.error instanceof ApiError &&
-                  mutation.error.status === 409 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (pendingConflict?.kind === 'pending') {
-                          setEditor({
-                            ...editor,
-                            singleLessonSessionVersion: pendingConflict.sessionVersion
-                          })
-                          setEntryId(crypto.randomUUID())
-                          mutation.reset()
-                        } else {
-                          void queryClient.invalidateQueries({
-                            queryKey: financeKey(session.user.id)
-                          })
-                          close()
-                        }
-                      }}
-                    >
-                      {pendingConflict?.kind === 'pending' ? '保留金額並重試' : '重新載入收支明細'}
-                    </button>
-                  )}
-                {editor !== 'new' &&
-                  !editor.singleLessonPriceUnset &&
                   mutation.error instanceof ApiError &&
                   mutation.error.status === 409 &&
                   (mutation.error.details as unknown as { current?: Row }).current && (

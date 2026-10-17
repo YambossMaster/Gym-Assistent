@@ -625,55 +625,73 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
     let purchaseOriginalRate: number | null = null
     let originalCommissionRule: FeeRule | undefined
     let appliedRate: number | null = null
+    const billingPending =
+      snapshot.lessonSources?.some(
+        (source) => source.sessionId === s.id && source.kind === 'pending',
+      ) ?? false
+    const singleLessonEntryId = billingPending
+      ? `single-lesson:${s.id}`
+      : p?.sourceKind === 'generated_single'
+        ? `purchase:${p.id}`
+        : null
+    const singleLessonOverride = singleLessonEntryId
+      ? (snapshot.entryStates?.find((state) => state.entryId === singleLessonEntryId)
+          ?.manualAmountMinor ?? null)
+      : null
+    const effectiveAmount = singleLessonOverride ?? p?.amountMinor ?? 0
+    const lessonCount = p?.lessonCount ?? 1
     if (rule.kind === 'commission') {
-      if (!p) {
+      if (!p && !billingPending) {
         missing.push({
           sessionId: s.id,
           date,
           reason: 'price',
           label: s.studentName,
-          billingPending: Boolean(
-            snapshot.lessonSources?.some(
-              (source) => source.sessionId === s.id && source.kind === 'pending',
-            ),
-          ),
         })
         continue
       }
+      if (billingPending)
+        missing.push({
+          sessionId: s.id,
+          date,
+          reason: 'price',
+          label: s.studentName,
+          billingPending: true,
+        })
       const rate = rule.rate ?? (s.customerSource === 'coach' ? rule.coachRate : rule.venueRate)
       if (rate === null) {
         missing.push({ sessionId: s.id, date, reason: 'source', label: s.studentName })
         continue
       }
       const originalRule =
-        p.sourceKind !== 'generated_single' && p.venueId === s.venueId
+        p && p.sourceKind !== 'generated_single' && p.venueId === s.venueId
           ? applicableRule(snapshot.rules, s.venueId, p.purchasedAt ?? p.purchasedOn)
           : undefined
       const originalRate =
         originalRule?.kind === 'commission'
           ? (originalRule.rate ??
-            (p.customerSource === 'coach' ? originalRule.coachRate : originalRule.venueRate))
+            (p?.customerSource === 'coach' ? originalRule.coachRate : originalRule.venueRate))
           : null
       purchaseOriginalRate = originalRate
       originalCommissionRule = originalRule
       appliedRate = rate
       amountMinor =
-        allocatedCommission(p.amountMinor, p.lessonCount, rate) -
+        allocatedCommission(effectiveAmount, lessonCount, rate) -
         (originalRate === null
           ? 0
-          : allocatedCommission(p.amountMinor, p.lessonCount, originalRate))
-      currency = p.currency
+          : allocatedCommission(p!.amountMinor, p!.lessonCount, originalRate))
+      currency = p?.currency ?? snapshot.defaultCurrency ?? 'TWD'
     }
     const adjustment = snapshot.sessionAdjustments?.find((a) => a.sessionId === s.id)
     if (adjustment?.mode === 'exempt') continue
     if (adjustment?.mode === 'amount' && adjustment.amountMinor !== null)
       amountMinor = adjustment.amountMinor
-    if (adjustment?.mode === 'rate' && adjustment.rate !== null && p)
+    if (adjustment?.mode === 'rate' && adjustment.rate !== null && (p || billingPending))
       amountMinor =
-        allocatedCommission(p.amountMinor, p.lessonCount, adjustment.rate) -
+        allocatedCommission(effectiveAmount, lessonCount, adjustment.rate) -
         (purchaseOriginalRate === null
           ? 0
-          : allocatedCommission(p.amountMinor, p.lessonCount, purchaseOriginalRate))
+          : allocatedCommission(p!.amountMinor, p!.lessonCount, purchaseOriginalRate))
     if (adjustment?.mode === 'rate' && adjustment.rate !== null) appliedRate = adjustment.rate
     if (amountMinor === 0 && purchaseOriginalRate !== null && adjustment?.mode !== 'amount')
       continue
@@ -686,9 +704,11 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
       detail:
         rule.kind === 'rent'
           ? `場地租用 · 單次計價 ${financeAmount(rule.amountMinor ?? 0, rule.currency ?? currency)}／次${adjustment?.mode === 'amount' ? ' · 本堂金額已調整' : ''}`
-          : p && appliedRate !== null
-            ? `${purchaseOriginalRate === null ? '逐堂抽成' : amountMinor < 0 ? '沖減抽成差額' : '補扣抽成差額'} · ${purchaseOriginalRate !== null && originalCommissionRule ? `${commissionRate(originalCommissionRule, p.customerSource)} → ` : ''}${commissionRate(rule, s.customerSource, adjustment?.mode === 'rate' ? appliedRate : undefined)} · ${lessonPrice(p)}`
-            : '抽成支出 · 計算來源待確認',
+          : billingPending && singleLessonOverride === null
+            ? `尚未設定學生課堂單價 · ${commissionRate(rule, s.customerSource, adjustment?.mode === 'rate' ? (appliedRate ?? undefined) : undefined)}`
+            : (p || billingPending) && appliedRate !== null
+              ? `${purchaseOriginalRate === null ? '逐堂抽成' : amountMinor < 0 ? '沖減抽成差額' : '補扣抽成差額'} · ${purchaseOriginalRate !== null && originalCommissionRule ? `${commissionRate(originalCommissionRule, p?.customerSource)} → ` : ''}${commissionRate(rule, s.customerSource, adjustment?.mode === 'rate' ? appliedRate : undefined)} · ${singleLessonOverride !== null ? `${financeAmount(effectiveAmount, currency)}／堂` : p ? lessonPrice(p) : `${financeAmount(effectiveAmount, currency)}／堂`}${billingPending ? ' · 尚未設定學生課堂單價' : ''}`
+              : '抽成支出 · 計算來源待確認',
       amountMinor,
       currency,
       direction: 'expense',
@@ -757,7 +777,7 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
   }
 }
 export function financeLedger(snapshot: FinanceSnapshot, today: string) {
-  const sourceRows = deriveFinance({ ...snapshot, entryStates: [], manualEntries: [] }, today).rows
+  const sourceRows = deriveFinance({ ...snapshot, manualEntries: [] }, today).rows
   const current = new Map(sourceRows.map((row) => [row.id, row]))
   const rows: FinanceRow[] = []
   const deleted: FinanceRow[] = []
@@ -826,12 +846,15 @@ export function financeLedger(snapshot: FinanceSnapshot, today: string) {
   const sortKey = (row: FinanceRow) =>
     `${row.date}T${row.occurredAt ? wallTime.format(new Date(row.occurredAt)) : '00:00:00'}`
   const sortRows = (a: FinanceRow, b: FinanceRow) =>
-    sortKey(a).localeCompare(sortKey(b)) || a.id.localeCompare(b.id)
+    sortKey(a).localeCompare(sortKey(b)) ||
+    Number(b.direction === 'income') - Number(a.direction === 'income') ||
+    a.id.localeCompare(b.id)
   return { rows: rows.sort(sortRows), deleted: deleted.sort(sortRows) }
 }
 export function venueCourseRecords(snapshot: FinanceSnapshot, venueId: string, today: string) {
   const allocations = venueAllocations(snapshot)
   const sourceRows = deriveFinance(snapshot, today).rows
+  const ledgerRows = financeLedger(snapshot, today).rows
   const purchaseBySession = purchaseAssignments(snapshot).assigned
   const creditBalances = venueCreditBalances(snapshot)
   const creditById = new Map(snapshot.credits.map((credit) => [credit.id, credit]))
@@ -860,6 +883,18 @@ export function venueCourseRecords(snapshot: FinanceSnapshot, venueId: string, t
       const expense = sourceRows.find((r) => r.id === `session:${s.id}`)
       const creditId = allocations.assignments.get(s.id) ?? null
       const purchase = purchaseBySession.get(s.id)
+      const lessonSource = snapshot.lessonSources?.find((source) => source.sessionId === s.id)
+      const singleLessonEntryId =
+        lessonSource?.kind === 'pending'
+          ? `single-lesson:${s.id}`
+          : purchase?.sourceKind === 'generated_single'
+            ? `purchase:${purchase.id}`
+            : null
+      const singleLessonIncome = singleLessonEntryId
+        ? (ledgerRows.find((row) => row.id === singleLessonEntryId) ??
+          sourceRows.find((row) => row.id === singleLessonEntryId))
+        : undefined
+      const displayedExpense = ledgerRows.find((row) => row.id === `session:${s.id}`) ?? expense
       const originalRule =
         purchase?.venueId === venueId
           ? applicableRule(snapshot.rules, venueId, purchase.purchasedAt ?? purchase.purchasedOn)
@@ -891,6 +926,18 @@ export function venueCourseRecords(snapshot: FinanceSnapshot, venueId: string, t
         customerSource: s.customerSource,
         purchaseId: purchase?.id ?? null,
         purchaseRoute: purchase ? `/students/${s.studentId}` : null,
+        singleLesson:
+          singleLessonEntryId && singleLessonIncome
+            ? {
+                entryId: singleLessonEntryId,
+                priceUnset: lessonSource?.kind === 'pending',
+                amountMinor: singleLessonIncome.amountMinor,
+                originalAmountMinor:
+                  singleLessonIncome.originalAmountMinor ?? singleLessonIncome.amountMinor,
+                currency: singleLessonIncome.currency,
+                modified: singleLessonIncome.status === 'modified',
+              }
+            : null,
         calculation:
           purchase && rule?.kind === 'commission'
             ? {
@@ -937,7 +984,7 @@ export function venueCourseRecords(snapshot: FinanceSnapshot, venueId: string, t
                     : upfront
                       ? 'recorded-at-purchase'
                       : 'missing',
-        expense: expense ?? null,
+        expense: displayedExpense ?? null,
         adjustment: adjustment ?? null,
         targetRoute: `/sessions/${s.id}`,
       }

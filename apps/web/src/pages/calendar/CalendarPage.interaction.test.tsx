@@ -298,7 +298,7 @@ describe('Calendar scheduling surface', () => {
       )
       await act(async () =>
         [...document.querySelectorAll<HTMLButtonElement>('.form-select-menu [role="option"]')]
-          .find((option) => option.textContent?.trim() === '教室')!
+          .find((option) => option.textContent?.trim() === '教室（不計）')!
           .click()
       )
       await act(async () =>

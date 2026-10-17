@@ -1,17 +1,17 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-17. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-18. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
 
-| Gate                     | State                                                                                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| Contract                 | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
-| Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
-| CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
-| Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
-| Single-lesson correction | PO-corrected Contract; isolated Sol, Development and browser checks passed; remote CI not started  |
+| Gate                     | State                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Contract                 | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding             |
+| Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed              |
+| CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                                     |
+| Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                              |
+| Single-lesson correction | PO accepted local UI; full local check/build passed; protected PR, exact-SHA CI and Production release pending |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
@@ -32,6 +32,33 @@ capacity first, otherwise creates a linked single purchase or an annotated zero-
 purchase history, reopen/delete, settlement, correction and explicit re-evaluation use
 Workspace-scoped server sources. Free can schedule and complete; after-the-fact zero-row correction
 and generated-price correction are Pro/Prime-only on both API and UI, as confirmed by the PO.
+The focused Finance test now directly checks a generated single lesson against percentage commission,
+fixed per-Session rent and prepaid Venue-credit consumption. All 22 Finance tests pass locally.
+The later PO correction keeps Finance edits separate from purchase/zero-income sources. Unpriced
+commission Sessions now show income `+$0` and expense `-$0` together; an income ledger override
+recalculates commission, while an independently overridden expense stays fixed until reset. Finance
+rows retain their original source explanation, `已修改` marker, `取消修改`, and the Student price link.
+Calendar and Session Venue choices show the selected date's short cost kind in parentheses; income
+precedes expense for the same time, and the two source links share a desktop row. Focused Finance
+23/23 and affected Web interaction 16/16 tests plus API/Web typechecks passed. The isolated
+Development API test verified zero source, zero commission, income 600 to commission 420, a manual
+expense of 100 staying fixed after income moved to 800, and expense reset to 560. The exact test
+Sessions, Venue and synthetic Coach were removed. The revised UI still awaits PO inspection;
+exact-SHA CI and Production remain unverified and unauthorized.
+The latest Venue-record correction shows zero commission as a calculated `$0` expense, identifies
+`單堂計費` without claiming a missing purchase source, and reads effective Finance income/expense
+after ledger edits while retaining the original missing-price explanation. The Venue dropdown's
+untracked label is shortened to `不計`. Focused Venue-record and Calendar tests passed 9/9;
+Finance tests passed 23/23 and both API/Web typechecks passed.
+On 2026-10-18 the PO reviewed the local happy path, accepted the version and authorized Main,
+CI and deploy. The full local gate passed root 36/36, API 297/297 and Web 369/369; API and Web
+builds passed. Production currently has 4 Workspaces, 8 Students, 4 purchases and 3 completed
+Sessions; neither M8-D migration is applied there. The release uses a protected PR, exact-SHA
+Production migration preview, manual migration apply and same-SHA Fly deployment. The Production
+release workflow requires a literal `APPLY` at dispatch. No remote action has completed yet.
+Reopen/delete now clears the affected Session's income and expense entry-state overrides in the
+existing scheduling transaction so re-completion cannot revive an old manual amount; the focused
+Finance plus scheduling-adapter checks passed 27/27.
 
 Development project `yvhijxhtelujfsaplzpi` applied only M8-D migrations `20261017105438`
 and `20261017110659`. The project had eight applied remote-only M8-E versions, so a temporary
@@ -64,24 +91,12 @@ that caused a live completion 500, and enforce the Pro/Prime correction gate. Fo
 typechecks and `git diff --check` passed. Exact-SHA remote CI, Production migration and release
 remain unverified; the branch has not been pushed.
 
-The PO then corrected the missing-price behavior: a completed single lesson must immediately appear
-in ordinary `收支明細` as `收入 +$0` with `尚未設定學生課堂單價`; there must be no separate
-`待處理單堂紀錄` area. The historical zero row is edited directly, while Student price is set
-separately for future lessons. The Contract and isolated Sol branch now reflect this correction.
-The API projects the internal unpriced source into the monthly ledger and totals using Settings'
-Finance currency; the Web removed the pending card and its styles, routes the row editor through the
-versioned single-Session settlement command, and links directly to the Student profile editor.
-Development authenticated flow verified zero income plus Venue expense in the same month, no
-retroactive change after setting Student price, later priced completion, correction from 0 to 500,
-total income of 1400 and same-request replay. Desktop and 390px browser checks on local 5173
-confirmed the ordinary zero row, annotation, editor and Student link. A version conflict in the
-zero-row editor now retains the entered amount when the source is still unpriced. Focused API and Web
-tests passed. The exact synthetic Session, Venue and account were removed. Root 36/36 and Web 368/368
-passed. The default 60-second API suite had one newly added assertion error (fixed) and one
-pre-existing PDF export timeout; that export file then passed 5/5 alone, and the full API suite
-passed 295/295 with a 120-second local per-test limit. API/Web build passed. The final Web editor
-change passed typecheck and 4/4 focused tests. Exact-SHA remote CI and Production remain unverified;
-there has been no push.
+The earlier zero-income ledger iteration removed the separate pending card and passed Development
+and desktop/390px checks. Its settlement-based row edit was superseded by the PO's later requirement
+to preserve source and use an ordinary Finance override; see LOG-603 and LOG-605 for exact evidence.
+The earlier root 36/36, Web 368/368, API 295/295 and API/Web build checks preceded the latest
+correction; the latest scoped checks and live API result are recorded above. Exact-SHA remote CI and
+Production remain unverified; there has been no push.
 
 Known separate defect: deleting a Development Auth user with Venue-linked financial records can
 fail in the existing `app_private.refresh_changed_venue_balance()` trigger because

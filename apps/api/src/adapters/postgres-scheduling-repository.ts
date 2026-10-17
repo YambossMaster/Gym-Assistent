@@ -814,6 +814,20 @@ async function removeSessionLessonSource(
     [workspaceId, sessionId],
   )
   await client.query(
+    `delete from app_private.finance_entry_state
+     where workspace_id=$1 and entry_id = any($2::text[])`,
+    [
+      workspaceId,
+      [
+        `session:${sessionId}`,
+        `single-lesson:${sessionId}`,
+        ...(source.rows[0]?.kind === 'generated_single' && source.rows[0].purchase_id
+          ? [`purchase:${source.rows[0].purchase_id}`]
+          : []),
+      ],
+    ],
+  )
+  await client.query(
     'delete from app_private.session_lesson_source where workspace_id=$1 and session_id=$2',
     [workspaceId, sessionId],
   )

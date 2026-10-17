@@ -970,15 +970,6 @@ export class PostgresFinanceRepository implements FinanceRepository {
     if (op === 'entry-restore' && source.sourceRemoved)
       throw new FinanceError(409, '來源已移除，請另存為自行新增。', source)
     const input = op === 'entry-edit' ? editEntrySchema.parse(raw) : null
-    if (
-      entryId.startsWith('purchase:') &&
-      op === 'entry-edit' &&
-      snapshot.purchases.some(
-        (purchase) =>
-          `purchase:${purchase.id}` === entryId && purchase.sourceKind === 'generated_single',
-      )
-    )
-      throw new FinanceError(409, '請從單堂計費紀錄修正金額。', row)
     if (input?.amountMinor !== undefined && input.amountMinor < 0 && source.kind !== 'commission')
       throw new FinanceError(400, '只有抽成差額可以是負支出。')
     const hidden =

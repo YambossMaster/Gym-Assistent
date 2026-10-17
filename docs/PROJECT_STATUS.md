@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-17. This is the always-read current-state dashboard. Approved scope and
+> Last verified: 2026-10-18. This is the always-read current-state dashboard. Approved scope and
 > gates live in [`ROADMAP.md`](ROADMAP.md); package detail and history are loaded only through the
 > pointers below.
 
@@ -10,7 +10,7 @@
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
-| Current gate                  | **M8-D Beta opening active; corrected single-lesson Sol verified locally, PO review pending**                                                        |
+| Current gate                  | **M8-D Beta opening active; single-lesson Sol accepted by PO, CI delivery in progress**                                                              |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                           |
@@ -37,8 +37,15 @@ edits that row and independently sets Student price for future lessons. The sepa
 has been removed. Development API and desktop/390px browser checks passed this revised flow;
 Root 36/36, Web 368/368, full API 295/295 with a 120-second local test limit and API/Web build
 passed. The default API run had a PDF export timeout; its isolated file passed 5/5. Synthetic data
-were removed. PO review follows; remote push,
-exact-SHA CI and Production migration/release are not yet authorized. A separate pre-existing
+were removed. A subsequent PO correction separated Finance overrides from single-lesson sources,
+added simultaneous zero commission, independent expense reset, same-time income-first ordering,
+Venue cost labels and compact source links. Focused API/Web tests and an isolated Development API
+journey passed; the synthetic Coach and records were removed. The Venue-record follow-up displays
+zero commission and effective single-lesson Finance amounts, identifies no-purchase Sessions as
+`單堂計費`, and uses `不計` as the short untracked label. The PO's 2026-10-18 local happy-path review
+accepted this version and authorized Main, CI and deploy. Root 36/36, API 297/297, Web 369/369
+and API/Web builds pass. Production has not yet applied the two M8-D migrations; the exact-SHA
+CI preview and migration release remain pending. A separate pre-existing
 Development Auth-delete trigger defect is recorded in the active [M8-D
 status](status/M8/M8-D.md).
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
@@ -115,11 +122,11 @@ startup context.
 
 ## Next handoff
 
-Present the verified local M8-D single-lesson and unrestricted-Venue flows on port 5173 to the
-Product Owner for inspection. Apply any reported correction in the isolated branch and repeat its
-focused check. Development migrations and authenticated/browser validation have passed; no remote
-push, exact-SHA CI, Production migration or release has been authorized. Before a remote action,
-report the final diff, tests and exact target, then obtain separate delivery authorization.
+Deliver the accepted single-lesson correction from isolated `codex/m8d-single-lesson` through a
+protected PR into `main`. Confirm exact-SHA CI including the Production migration preview, then
+use the manual migration-release workflow for the same commit and verify readiness and migration
+read-back. The PO authorized Main/CI/deploy on 2026-10-18; the release workflow still requires its
+literal `APPLY` confirmation at dispatch. Do not include M8-E payment work.
 
 The real-Coach Beta admission and installed-device gates remain open in
 [`status/M8/M8-D.md`](status/M8/M8-D.md). Keep payment work and the primary checkout isolated.

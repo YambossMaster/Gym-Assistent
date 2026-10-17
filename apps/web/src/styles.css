@@ -13290,6 +13290,12 @@ a.venue-course-purchase:focus-visible {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.finance-ledger-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
 .finance-ledger-source .finance-ledger-source-link {
   display: inline-flex;
   align-items: center;

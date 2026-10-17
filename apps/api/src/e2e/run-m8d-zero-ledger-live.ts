@@ -47,13 +47,13 @@ const venue = await call<{ entity: { id: string; version: number } }>('/v1/venue
   name: `M8-D zero ledger ${randomUUID()}`,
   rule: {
     effectiveFrom: '2026-01-01',
-    kind: 'rent',
+    kind: 'commission',
     collectionMode: 'coach',
-    rate: null,
+    rate: 70,
     coachRate: null,
     venueRate: null,
-    amountMinor: 650,
-    currency: 'TWD',
+    amountMinor: null,
+    currency: null,
   },
 })
 const venueId = venue.entity.id
@@ -108,6 +108,9 @@ try {
         direction: string
         singleLessonPriceUnset?: boolean
         singleLessonSessionVersion?: number
+        originalAmountMinor?: number
+        status?: string
+        version?: number
       }>
       totals: Array<{ incomeMinor: number; expenseMinor: number; currency: string }>
     }>(`/v1/finances/months/${month}`)
@@ -129,7 +132,11 @@ try {
     },
   )
   assert.equal(finance.rows.filter((row) => row.id === `single-lesson:${first.id}`).length, 1)
-  assert.equal(finance.rows.find((row) => row.id === `session:${first.id}`)?.amountMinor, 650)
+  assert.equal(finance.rows.find((row) => row.id === `session:${first.id}`)?.amountMinor, 0)
+  assert.match(
+    finance.rows.find((row) => row.id === `session:${first.id}`)?.detail ?? '',
+    /尚未設定學生課堂單價/,
+  )
   assert.equal(finance.totals.find((total) => total.currency === 'TWD')?.incomeMinor, 0)
 
   const student = await call<{ detail: { student: { name: string; version: number } } }>(
@@ -152,29 +159,42 @@ try {
   assert.ok(finance.rows.some((row) => row.id.startsWith('purchase:') && row.amountMinor === 900))
   assert.equal(finance.rows.find((row) => row.id === `single-lesson:${first.id}`)?.amountMinor, 0)
 
-  const requestId = randomUUID()
-  const correction = {
-    requestId,
-    items: [
-      {
-        sessionId: first.id,
-        expectedVersion: zero!.singleLessonSessionVersion,
-        amountMinor: 500,
-        currency: 'TWD',
-      },
-    ],
-  }
-  await call('/v1/finances/pending-single-lessons/settle', 'POST', correction)
-  await call('/v1/finances/pending-single-lessons/settle', 'POST', correction)
+  const incomeId = `single-lesson:${first.id}`
+  const expenseId = `session:${first.id}`
+  await call(`/v1/finances/entries/${encodeURIComponent(incomeId)}`, 'PATCH', {
+    version: zero!.version ?? 0,
+    amountMinor: 600,
+  })
   finance = await ledger()
-  assert.equal(
-    finance.rows.some((row) => row.id === `single-lesson:${first.id}`),
-    false,
+  assert.deepEqual(
+    [
+      finance.rows.find((row) => row.id === incomeId)?.amountMinor,
+      finance.rows.find((row) => row.id === incomeId)?.originalAmountMinor,
+      finance.rows.find((row) => row.id === incomeId)?.status,
+      finance.rows.find((row) => row.id === expenseId)?.amountMinor,
+    ],
+    [600, 0, 'modified', 420],
   )
-  assert.ok(finance.rows.some((row) => row.id.startsWith('purchase:') && row.amountMinor === 500))
-  assert.equal(finance.totals.find((total) => total.currency === 'TWD')?.incomeMinor, 1400)
+  assert.equal(finance.rows.find((row) => row.id === incomeId)?.detail, '尚未設定學生課堂單價')
+  await call(`/v1/finances/entries/${encodeURIComponent(expenseId)}`, 'PATCH', {
+    version: finance.rows.find((row) => row.id === expenseId)?.version ?? 0,
+    amountMinor: 100,
+  })
+  finance = await ledger()
+  await call(`/v1/finances/entries/${encodeURIComponent(incomeId)}`, 'PATCH', {
+    version: finance.rows.find((row) => row.id === incomeId)?.version ?? 0,
+    amountMinor: 800,
+  })
+  finance = await ledger()
+  assert.equal(finance.rows.find((row) => row.id === expenseId)?.amountMinor, 100)
+  await call(`/v1/finances/entries/${encodeURIComponent(expenseId)}/adjustment`, 'DELETE', {
+    version: finance.rows.find((row) => row.id === expenseId)?.version ?? 0,
+  })
+  finance = await ledger()
+  assert.equal(finance.rows.find((row) => row.id === expenseId)?.amountMinor, 560)
+  assert.equal(finance.totals.find((total) => total.currency === 'TWD')?.incomeMinor, 1700)
   console.log(
-    'Development M8-D: zero income, Venue cost, future Student price, row correction, replay and totals passed.',
+    'Development M8-D: immutable zero source, simultaneous commission, independent ledger overrides and reset passed.',
   )
 } finally {
   for (const id of sessionIds.reverse()) {

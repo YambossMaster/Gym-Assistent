@@ -3,6 +3,7 @@ import { VenueNamePicker } from './VenueNamePicker'
 
 export function VenueField({
   session,
+  date,
   venueId,
   location,
   onChange
@@ -23,6 +24,7 @@ export function VenueField({
     <div className="venue-field">
       <VenueNamePicker
         session={session}
+        date={date}
         label="場地"
         value={venueId ?? null}
         allowCreate
