@@ -97,6 +97,10 @@ export interface Student {
 export interface LessonPurchase {
   collectionMode?: 'coach' | 'venue'
   venueId?: string | null
+  sourceKind?: 'manual' | 'generated_single'
+  sourceSessionId?: string | null
+  sourceSessionVersion?: number | null
+  sourceVersion?: number | null
   id: string
   purchasedAt: string
   lessonCount: number

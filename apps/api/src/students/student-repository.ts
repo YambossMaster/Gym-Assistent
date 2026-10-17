@@ -61,6 +61,15 @@ export class LessonPurchaseVersionConflictError extends Error {
     this.name = 'LessonPurchaseVersionConflictError'
   }
 }
+export class LessonPurchaseAllocationConflictError extends Error {
+  constructor(
+    readonly currentPurchase: LessonPurchase,
+    readonly sessionIds: string[],
+  ) {
+    super('這筆購課已用於完成的課堂；目前變更會使已固定的堂數來源失效。')
+    this.name = 'LessonPurchaseAllocationConflictError'
+  }
+}
 
 export interface StudentRepository {
   resolveWorkspace(identity: AuthenticatedIdentity): Promise<WorkspaceId>

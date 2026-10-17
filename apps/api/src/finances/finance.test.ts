@@ -71,6 +71,65 @@ const fixture = (): FinanceSnapshot => ({
   ],
 })
 describe('monthly finance authority', () => {
+  it('keeps a completed source fixed when later purchases are added', () => {
+    const snapshot = fixture()
+    snapshot.sessions[0]!.endsAt = '2026-09-01T03:00:00.000Z'
+    snapshot.lessonSources = [{ sessionId: 's1', kind: 'manual', purchaseId: 'p' }]
+    snapshot.purchases.unshift({
+      ...snapshot.purchases[0]!,
+      id: 'later',
+      purchasedOn: '2026-07-01',
+      purchasedAt: '2026-07-01T00:00:00Z',
+    })
+    const balances = deriveFinance(snapshot, '2026-09-24').studentVenueBalances
+    expect(balances.find((balance) => balance.venueId === null)).toMatchObject({
+      purchased: 6,
+      completed: 1,
+      remaining: 5,
+    })
+    expect(venueCourseRecords(snapshot, 'v', '2026-09-24')[0]?.purchaseId).toBe('p')
+  })
+  it('books a generated single lesson as income without granting package capacity or upfront commission', () => {
+    const snapshot = fixture()
+    snapshot.rules = [{ ...rule, kind: 'commission', rate: 20 }]
+    snapshot.purchases = [
+      {
+        ...snapshot.purchases[0]!,
+        id: 'single',
+        lessonCount: 1,
+        amountMinor: 1200,
+        sourceKind: 'generated_single',
+        sourceSessionId: 's1',
+        purchasedOn: '2026-09-01',
+        venueId: 'v',
+      },
+    ]
+    snapshot.lessonSources = [{ sessionId: 's1', kind: 'generated_single', purchaseId: 'single' }]
+    const derived = deriveFinance(snapshot, '2026-09-24')
+    expect(derived.rows.find((row) => row.id === 'purchase:single')).toMatchObject({
+      label: '學生 · 單堂計費',
+      amountMinor: 1200,
+      targetRoute: '/sessions/s1',
+    })
+    expect(derived.rows.some((row) => row.id === 'purchase-commission:single')).toBe(false)
+    expect(derived.studentVenueBalances).toEqual([])
+  })
+  it('keeps pending Student income out of totals while retaining fixed Venue cost', () => {
+    const snapshot = fixture()
+    snapshot.purchases = []
+    snapshot.lessonSources = [{ sessionId: 's1', kind: 'pending', purchaseId: null }]
+    snapshot.rules = [{ ...rule, kind: 'rent', amountMinor: 400, currency: 'TWD' }]
+    const month = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(month.rows.some((row) => row.kind === 'purchase')).toBe(false)
+    expect(month.rows.find((row) => row.id === 'session:s1')?.amountMinor).toBe(400)
+    expect(deriveFinance(snapshot, '2026-09-24').studentVenueBalances).toEqual([])
+    snapshot.rules = [{ ...rule, kind: 'commission', rate: 20 }]
+    const commissionMonth = monthlyFinance(snapshot, '2026-09', '2026-09-24')
+    expect(commissionMonth.rows.some((row) => row.id === 'session:s1')).toBe(false)
+    expect(
+      deriveFinance(snapshot, '2026-09-24').missing.find((item) => item.sessionId === 's1'),
+    ).toMatchObject({ reason: 'price', billingPending: true })
+  })
   it('shows prepaid activation time without changing its booked date or ledger order', () => {
     const snapshot = fixture()
     snapshot.credits[0]!.startsDeductingAt = '2026-09-02T03:30:00.000Z'

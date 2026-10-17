@@ -903,7 +903,10 @@ function Editor({
                   label="學生"
                   value={draft.studentId}
                   onChange={(value) => {
-                    const suggested = suggestedStudentVenue({ venues, purchases }, value)
+                    const suggested = suggestedStudentVenue(
+                      { venues, purchases, studentVenueBalances },
+                      value
+                    )
                     const venueId = !draft.current ? (suggested?.id ?? null) : draft.venueId
                     const location = !draft.current ? (suggested?.name ?? '') : draft.location
                     onChange({ ...draft, studentId: value, venueId, location })

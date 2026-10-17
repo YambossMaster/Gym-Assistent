@@ -1,6 +1,6 @@
 import { PostgresFinanceRepository } from './postgres-finance-repository.js'
 import { randomUUID } from 'node:crypto'
-import type { Pool } from 'pg'
+import type { Pool, PoolClient } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type {
   LessonIncomeSummary,
@@ -14,6 +14,7 @@ import {
   type NewLessonPurchase,
   type UpdatedLessonPurchase,
   LessonPurchaseVersionConflictError,
+  LessonPurchaseAllocationConflictError,
   type StudentRepository,
   StudentVersionConflictError,
   type UpdatedStudent,
@@ -48,6 +49,10 @@ interface StudentRow {
 }
 
 interface LessonPurchaseRow {
+  source_kind: 'manual' | 'generated_single'
+  source_session_id: string | null
+  source_session_version?: number | null
+  source_version?: number | null
   collection_mode: 'coach' | 'venue'
   venue_id: string | null
   id: string
@@ -84,6 +89,34 @@ export class PostgresStudentRepository
 
   constructor(pool: Pool) {
     this.#pool = pool
+  }
+
+  private async purchaseTransaction<T>(
+    workspaceId: string,
+    studentId: string,
+    work: (client: PoolClient) => Promise<T>,
+  ): Promise<T | null> {
+    const client = await this.#pool.connect()
+    try {
+      await client.query('begin')
+      await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
+      const student = await client.query(
+        'select id from app_private.student where workspace_id=$1 and id=$2 for update',
+        [workspaceId, studentId],
+      )
+      if (!student.rowCount) {
+        await client.query('rollback')
+        return null
+      }
+      const result = await work(client)
+      await client.query('commit')
+      return result
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   async resolveWorkspace(identity: AuthenticatedIdentity): Promise<WorkspaceId> {
@@ -140,6 +173,7 @@ export class PostgresStudentRepository
                FROM app_private.lesson_purchase purchase
                WHERE purchase.workspace_id = student.workspace_id
                  AND purchase.student_id = student.id
+                 AND purchase.source_kind = 'manual'
                ORDER BY purchase.purchased_at DESC, purchase.created_at DESC, purchase.id DESC
                LIMIT 1) AS latest_purchase_lesson_count
        FROM app_private.student student
@@ -291,9 +325,12 @@ export class PostgresStudentRepository
         [workspaceId, studentId],
       ),
       this.#pool.query<LessonPurchaseRow>(
-        `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id
-         FROM app_private.lesson_purchase
-         WHERE workspace_id = $1 AND student_id = $2 ORDER BY purchased_at, id`,
+        `SELECT p.id,p.purchased_at,p.lesson_count,p.amount_minor,p.currency,p.private_note,p.version,p.created_at,p.updated_at,p.collection_mode,p.entitlement_venue_id venue_id,p.source_kind,p.source_session_id,
+          s.version source_session_version,a.version source_version
+         FROM app_private.lesson_purchase p
+         LEFT JOIN app_private.course_session s ON s.workspace_id=p.workspace_id AND s.id=p.source_session_id
+         LEFT JOIN app_private.session_lesson_source a ON a.workspace_id=p.workspace_id AND a.session_id=p.source_session_id
+         WHERE p.workspace_id = $1 AND p.student_id = $2 ORDER BY p.purchased_at, p.id`,
         [workspaceId, studentId],
       ),
       this.lessonSummary(workspaceId, studentId),
@@ -375,27 +412,29 @@ export class PostgresStudentRepository
     studentId: string,
     input: NewLessonPurchase,
   ): Promise<LessonPurchase | null> {
-    const result = await this.#pool.query<LessonPurchaseRow>(
-      `INSERT INTO app_private.lesson_purchase (id, workspace_id, student_id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at, collection_mode, entitlement_venue_id)
+    return this.purchaseTransaction(workspaceId, studentId, async (client) => {
+      const result = await client.query<LessonPurchaseRow>(
+        `INSERT INTO app_private.lesson_purchase (id, workspace_id, student_id, purchased_at, lesson_count, amount_minor, currency, private_note, created_at, updated_at, collection_mode, entitlement_venue_id)
        SELECT $3, $1, student.id, $4, $5, $6, $7, $8, $9, $9, $10, $11
        FROM app_private.student AS student WHERE student.workspace_id = $1 AND student.id = $2
-       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id`,
-      [
-        workspaceId,
-        studentId,
-        input.id,
-        input.purchasedAt,
-        input.lessonCount,
-        input.amountMinor,
-        input.currency,
-        input.privateNote,
-        input.now,
-        input.collectionMode ?? 'coach',
-        input.venueId ?? null,
-      ],
-    )
-    const purchase = result.rows[0]
-    return purchase ? mapLessonPurchase(purchase) : null
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id, source_kind, source_session_id`,
+        [
+          workspaceId,
+          studentId,
+          input.id,
+          input.purchasedAt,
+          input.lessonCount,
+          input.amountMinor,
+          input.currency,
+          input.privateNote,
+          input.now,
+          input.collectionMode ?? 'coach',
+          input.venueId ?? null,
+        ],
+      )
+      const purchase = result.rows[0]
+      return purchase ? mapLessonPurchase(purchase) : null
+    })
   }
 
   async updateLessonPurchase(
@@ -404,37 +443,76 @@ export class PostgresStudentRepository
     purchaseId: string,
     input: UpdatedLessonPurchase,
   ): Promise<LessonPurchase | null> {
-    const result = await this.#pool.query<LessonPurchaseRow>(
-      `UPDATE app_private.lesson_purchase
+    return this.purchaseTransaction(workspaceId, studentId, async (client) => {
+      const current = await client.query<LessonPurchaseRow>(
+        `select id,purchased_at,lesson_count,amount_minor,currency,private_note,version,created_at,updated_at,collection_mode,entitlement_venue_id venue_id,source_kind,source_session_id
+       from app_private.lesson_purchase where workspace_id=$1 and student_id=$2 and id=$3 for update`,
+        [workspaceId, studentId, purchaseId],
+      )
+      const previous = current.rows[0]
+      if (!previous) return null
+      if (previous.source_kind !== 'manual' || previous.version !== input.expectedVersion)
+        throw new LessonPurchaseVersionConflictError(mapLessonPurchase(previous))
+      const allocations = await client.query<{
+        count: string
+        earliest_date: string | null
+        venue_ids: string[]
+        no_venue_count: string
+        session_ids: string[]
+      }>(
+        `select count(*)::text count,
+        min((s.ends_at at time zone w.time_zone)::date)::text earliest_date,
+        array_agg(distinct s.venue_id::text) filter (where s.venue_id is not null) venue_ids,
+        count(*) filter (where s.venue_id is null)::text no_venue_count,
+        array_agg(a.session_id::text) session_ids
+       from app_private.session_lesson_source a
+       join app_private.course_session s on s.workspace_id=a.workspace_id and s.id=a.session_id
+       join app_private.workspace w on w.id=a.workspace_id
+       where a.workspace_id=$1 and a.purchase_id=$2 and a.kind='manual' and s.status='completed'`,
+        [workspaceId, purchaseId],
+      )
+      const fixed = allocations.rows[0]
+      const purchaseDay = await client.query<{ day: string }>(
+        'select ($2::timestamptz at time zone time_zone)::date::text day from app_private.workspace where id=$1',
+        [workspaceId, input.purchasedAt],
+      )
+      const nextVenue = input.venueId === undefined ? previous.venue_id : input.venueId
+      if (
+        fixed &&
+        (input.lessonCount < Number(fixed.count) ||
+          (fixed.earliest_date !== null && purchaseDay.rows[0]!.day > fixed.earliest_date) ||
+          (nextVenue !== null &&
+            (Number(fixed.no_venue_count) > 0 ||
+              (fixed.venue_ids ?? []).some((id) => id !== nextVenue))))
+      )
+        throw new LessonPurchaseAllocationConflictError(
+          mapLessonPurchase(previous),
+          fixed.session_ids ?? [],
+        )
+      const result = await client.query<LessonPurchaseRow>(
+        `UPDATE app_private.lesson_purchase
        SET purchased_at = $4, lesson_count = $5, amount_minor = $6, currency = $7, private_note = $8,
            entitlement_venue_id = CASE WHEN $11 THEN $12 ELSE entitlement_venue_id END,
            version = version + 1, updated_at = $9
-       WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $10
-       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id`,
-      [
-        workspaceId,
-        studentId,
-        purchaseId,
-        input.purchasedAt,
-        input.lessonCount,
-        input.amountMinor,
-        input.currency,
-        input.privateNote,
-        input.now,
-        input.expectedVersion,
-        input.venueId !== undefined,
-        input.venueId ?? null,
-      ],
-    )
-    if (result.rows[0]) return mapLessonPurchase(result.rows[0])
-    const current = await this.#pool.query<LessonPurchaseRow>(
-      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id
-       FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3`,
-      [workspaceId, studentId, purchaseId],
-    )
-    if (current.rows[0])
-      throw new LessonPurchaseVersionConflictError(mapLessonPurchase(current.rows[0]))
-    return null
+       WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $10 AND source_kind='manual'
+       RETURNING id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id, source_kind, source_session_id`,
+        [
+          workspaceId,
+          studentId,
+          purchaseId,
+          input.purchasedAt,
+          input.lessonCount,
+          input.amountMinor,
+          input.currency,
+          input.privateNote,
+          input.now,
+          input.expectedVersion,
+          input.venueId !== undefined,
+          input.venueId ?? null,
+        ],
+      )
+      return mapLessonPurchase(result.rows[0]!)
+    })
   }
 
   async deleteLessonPurchase(
@@ -443,26 +521,43 @@ export class PostgresStudentRepository
     purchaseId: string,
     expectedVersion: number,
   ): Promise<boolean> {
-    const result = await this.#pool.query(
-      'DELETE FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $4',
-      [workspaceId, studentId, purchaseId, expectedVersion],
+    return (
+      (await this.purchaseTransaction(workspaceId, studentId, async (client) => {
+        const current = await client.query<LessonPurchaseRow>(
+          `select id,purchased_at,lesson_count,amount_minor,currency,private_note,version,created_at,updated_at,collection_mode,entitlement_venue_id venue_id,source_kind,source_session_id
+       from app_private.lesson_purchase where workspace_id=$1 and student_id=$2 and id=$3 for update`,
+          [workspaceId, studentId, purchaseId],
+        )
+        const previous = current.rows[0]
+        if (!previous) return false
+        if (previous.source_kind !== 'manual' || previous.version !== expectedVersion)
+          throw new LessonPurchaseVersionConflictError(mapLessonPurchase(previous))
+        const allocated = await client.query<{ session_id: string }>(
+          "select session_id from app_private.session_lesson_source where workspace_id=$1 and purchase_id=$2 and kind='manual'",
+          [workspaceId, purchaseId],
+        )
+        if (allocated.rowCount)
+          throw new LessonPurchaseAllocationConflictError(
+            mapLessonPurchase(previous),
+            allocated.rows.map((row) => row.session_id),
+          )
+        const result = await client.query(
+          "DELETE FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3 AND version = $4 AND source_kind='manual'",
+          [workspaceId, studentId, purchaseId, expectedVersion],
+        )
+        return Boolean(result.rowCount)
+      })) ?? false
     )
-    if (result.rowCount) return true
-    const current = await this.#pool.query<LessonPurchaseRow>(
-      `SELECT id, purchased_at, lesson_count, amount_minor, currency, private_note, version, created_at, updated_at, collection_mode, entitlement_venue_id as venue_id
-       FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND id = $3`,
-      [workspaceId, studentId, purchaseId],
-    )
-    if (current.rows[0])
-      throw new LessonPurchaseVersionConflictError(mapLessonPurchase(current.rows[0]))
-    return false
   }
 
   async lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null> {
-    const result = await this.#pool.query<LessonSummary & { student_exists: boolean }>(
+    const result = await this.#pool.query<
+      LessonSummary & { student_exists: boolean; manual_used: number }
+    >(
       `SELECT EXISTS(SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2) AS student_exists,
-              COALESCE((SELECT SUM(lesson_count)::integer FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2), 0) AS purchased,
-              COALESCE((SELECT COUNT(*)::integer FROM app_private.course_session WHERE workspace_id = $1 AND student_id = $2 AND status = 'completed'), 0) AS completed`,
+              COALESCE((SELECT SUM(lesson_count)::integer FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND source_kind='manual'), 0) AS purchased,
+              COALESCE((SELECT COUNT(*)::integer FROM app_private.course_session WHERE workspace_id = $1 AND student_id = $2 AND status = 'completed'), 0) AS completed,
+              COALESCE((SELECT COUNT(*)::integer FROM app_private.session_lesson_source a join app_private.course_session s on s.workspace_id=a.workspace_id and s.id=a.session_id WHERE a.workspace_id=$1 AND a.student_id=$2 AND a.kind in ('manual','legacy_unallocated') AND s.status='completed'),0) AS manual_used`,
       [workspaceId, studentId],
     )
     const row = result.rows[0]
@@ -470,7 +565,7 @@ export class PostgresStudentRepository
       ? {
           purchased: row.purchased,
           completed: row.completed,
-          remaining: row.purchased - row.completed,
+          remaining: row.purchased - row.manual_used,
         }
       : null
   }
@@ -516,6 +611,10 @@ function mapLessonPurchase(row: LessonPurchaseRow): LessonPurchase {
     id: row.id,
     collectionMode: row.collection_mode,
     venueId: row.venue_id,
+    sourceKind: row.source_kind,
+    sourceSessionId: row.source_session_id,
+    sourceSessionVersion: row.source_session_version ?? null,
+    sourceVersion: row.source_version ?? null,
     purchasedAt: row.purchased_at.toISOString(),
     lessonCount: row.lesson_count,
     amountMinor: Number(row.amount_minor),

@@ -13,6 +13,7 @@ import {
   financeKey,
   financeMoney,
   moneyFactor,
+  singleLessonMinor,
   useFinanceMutation,
   type MonthlyFinance
 } from './finance-api'
@@ -75,6 +76,7 @@ function ModifiedFieldMark() {
   return <span className="finance-ledger-field-modified">（已修改）</span>
 }
 export function financeSourceRoute(row: Row, params: URLSearchParams) {
+  if (row.singleLessonSessionId) return row.targetRoute
   if (row.id.startsWith('session:') && row.venueId) {
     const next = new URLSearchParams({
       venue: row.venueId,
@@ -195,7 +197,17 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
         currency,
         privateNote: note
       })
-    else {
+    else if (editor.singleLessonSessionId) {
+      if (!editor.singleLessonSessionVersion || !editor.singleLessonPurchaseVersion) return
+      const correctedMinor = singleLessonMinor(amount, currency)
+      if (correctedMinor === null) return
+      send(`/sessions/${editor.singleLessonSessionId}/single-lesson-price`, 'PATCH', {
+        expectedSessionVersion: editor.singleLessonSessionVersion,
+        expectedPurchaseVersion: editor.singleLessonPurchaseVersion,
+        amountMinor: correctedMinor,
+        currency
+      })
+    } else {
       const displayedWhen = editor.occurredAt
         ? workspaceWallTime(editor.occurredAt, data.timeZone)
         : `${editor.date}T00:00`
@@ -460,37 +472,41 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                 }}
               >
                 <div className="finance-ledger-fields" data-dialog-scroll-region>
-                  <div className="finance-ledger-datetime">
-                    <SeriesDatePicker
-                      label="日期"
-                      labelSuffix={modifiedFields?.date ? <ModifiedFieldMark /> : null}
-                      value={when.slice(0, 10)}
-                      onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
-                    />
-                    <div className="scheduling-time-field">
-                      <span>
-                        <RequiredFieldLabel>時間</RequiredFieldLabel>
-                        {modifiedFields?.time ? <ModifiedFieldMark /> : null}
-                      </span>
-                      <TimeSelect
-                        label="時間"
-                        value={when.slice(11)}
-                        onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                  {!(editor !== 'new' && editor.singleLessonSessionId) && (
+                    <div className="finance-ledger-datetime">
+                      <SeriesDatePicker
+                        label="日期"
+                        labelSuffix={modifiedFields?.date ? <ModifiedFieldMark /> : null}
+                        value={when.slice(0, 10)}
+                        onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
                       />
+                      <div className="scheduling-time-field">
+                        <span>
+                          <RequiredFieldLabel>時間</RequiredFieldLabel>
+                          {modifiedFields?.time ? <ModifiedFieldMark /> : null}
+                        </span>
+                        <TimeSelect
+                          label="時間"
+                          value={when.slice(11)}
+                          onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <label>
-                    <span className="finance-ledger-field-title">
-                      <RequiredFieldLabel>名稱</RequiredFieldLabel>
-                      {modifiedFields?.label && <ModifiedFieldMark />}
-                    </span>
-                    <input
-                      required
-                      maxLength={160}
-                      value={label}
-                      onChange={(event) => setLabel(event.target.value)}
-                    />
-                  </label>
+                  )}
+                  {!(editor !== 'new' && editor.singleLessonSessionId) && (
+                    <label>
+                      <span className="finance-ledger-field-title">
+                        <RequiredFieldLabel>名稱</RequiredFieldLabel>
+                        {modifiedFields?.label && <ModifiedFieldMark />}
+                      </span>
+                      <input
+                        required
+                        maxLength={160}
+                        value={label}
+                        onChange={(event) => setLabel(event.target.value)}
+                      />
+                    </label>
+                  )}
                   <div className={editor === 'new' ? 'finance-ledger-amount-row' : undefined}>
                     {editor === 'new' && (
                       <div className="finance-ledger-direction" role="group" aria-label="方向">
@@ -531,6 +547,21 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                         onChange={(event) => setAmount(event.target.value)}
                       />
                     </label>
+                    {editor !== 'new' && editor.singleLessonSessionId && (
+                      <label>
+                        幣別
+                        <select
+                          value={currency}
+                          onChange={(event) => setCurrency(event.target.value)}
+                        >
+                          <option value="TWD">TWD</option>
+                          <option value="USD">USD</option>
+                          <option value="JPY">JPY</option>
+                          <option value="EUR">EUR</option>
+                          <option value="HKD">HKD</option>
+                        </select>
+                      </label>
+                    )}
                   </div>
                   {editor === 'new' && (
                     <label>

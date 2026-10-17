@@ -809,8 +809,9 @@ export class PostgresTrainingRepository implements TrainingRepository {
   ): Promise<SessionTraining | null> {
     const sessionRows = await queryable.query(
       `select cs.*,s.name student_name,
-        coalesce((select sum(lesson_count)::int from app_private.lesson_purchase lp where lp.workspace_id=cs.workspace_id and lp.student_id=cs.student_id),0) purchased,
+        coalesce((select sum(lesson_count)::int from app_private.lesson_purchase lp where lp.workspace_id=cs.workspace_id and lp.student_id=cs.student_id and lp.source_kind='manual'),0) purchased,
         (select count(*)::int from app_private.course_session x where x.workspace_id=cs.workspace_id and x.student_id=cs.student_id and x.status='completed') completed,
+        (select count(*)::int from app_private.session_lesson_source a join app_private.course_session x on x.workspace_id=a.workspace_id and x.id=a.session_id where a.workspace_id=cs.workspace_id and a.student_id=cs.student_id and a.kind in ('manual','legacy_unallocated') and x.status='completed') package_debits,
         tr.id training_record_id,tr.version training_record_version,
         tr.private_note training_private_note,tr.updated_at training_updated_at,
         coalesce(tp.default_weight_unit,'kg') default_weight_unit, coalesce(tp.default_distance_unit,'km') default_distance_unit
@@ -952,7 +953,8 @@ export class PostgresTrainingRepository implements TrainingRepository {
       }
     })
     const purchased = Number(s.purchased),
-      completed = Number(s.completed)
+      completed = Number(s.completed),
+      packageDebits = Number(s.package_debits)
     return {
       session: {
         id: String(s.id),
@@ -965,7 +967,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         version: Number(s.version),
         isLegacy: false,
       },
-      lessonSummary: { purchased, completed, remaining: purchased - completed },
+      lessonSummary: { purchased, completed, remaining: purchased - packageDebits },
       record: {
         id: record ? String(record.id) : null,
         version: Number(record?.version ?? 0),

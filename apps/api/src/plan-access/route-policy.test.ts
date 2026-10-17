@@ -5,6 +5,8 @@ it('classifies premium reads, recovery actions, and operational writes', () => {
   expect(routePolicy('GET', '/v1/finances/current')).toBe('premium')
   expect(routePolicy('GET', '/v1/students/:studentId/performance')).toBe('premium')
   expect(routePolicy('POST', '/v1/finances/entries')).toBe('premium')
+  expect(routePolicy('GET', '/v1/finances/pending-single-lessons')).toBe('premium')
+  expect(routePolicy('POST', '/v1/finances/pending-single-lessons/settle')).toBe('premium')
   expect(routePolicy('POST', '/v1/students')).toBe('create-student')
   expect(routePolicy('PATCH', '/v1/venues/:venueId')).toBe('update-venue')
   expect(routePolicy('POST', '/v1/sessions/:sessionId/training')).toBe('operational-write')

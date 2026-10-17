@@ -97,12 +97,21 @@ export function studentEligibleVenueIds(
   ]
 }
 export function suggestedStudentVenue(
-  data: Pick<VenueData, 'purchases' | 'venues'> | undefined,
+  data: Pick<VenueData, 'purchases' | 'venues' | 'studentVenueBalances'> | undefined,
   studentId: string
 ) {
-  const allowed = studentEligibleVenueIds(data, studentId)
-  if (!allowed?.length) return null
-  return data?.venues.find((venue) => venue.active && allowed.includes(venue.id)) ?? null
+  return (
+    data?.venues.find(
+      (venue) =>
+        venue.active &&
+        data.studentVenueBalances?.some(
+          (balance) =>
+            balance.studentId === studentId &&
+            balance.remaining > 0 &&
+            (balance.venueId === null || balance.venueId === venue.id)
+        )
+    ) ?? null
+  )
 }
 export function studentVenueLessonLabel(
   data: Pick<VenueData, 'studentVenueBalances'> | undefined,
@@ -151,10 +160,13 @@ export type MonthlyFinance = {
     status?: 'original' | 'modified' | 'manual'
     sourceChanged?: boolean
     sourceRemoved?: boolean
+    singleLessonSessionId?: string
+    singleLessonSessionVersion?: number | null
+    singleLessonPurchaseVersion?: number
   }[]
   deletedCount?: number
   hasManualAdjustments?: boolean
-  missing: { sessionId: string; reason: string; label: string }[]
+  missing: { sessionId: string; reason: string; label: string; billingPending?: boolean }[]
   venues: Venue[]
 }
 export const financeKey = (coachId: string) => ['finances', coachId] as const
@@ -229,6 +241,14 @@ export const moneyFactor = (currency: string) =>
     : 10 **
       new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
         .maximumFractionDigits!
+export function singleLessonMinor(amount: string, currency: string): number | null {
+  const factor = moneyFactor(currency)
+  const decimals = Math.round(Math.log10(factor))
+  const pattern = decimals ? new RegExp(`^\\d+(?:\\.\\d{1,${decimals}})?$`) : /^\d+$/
+  if (!pattern.test(amount.trim())) return null
+  const minor = Math.round(Number(amount) * factor)
+  return Number.isSafeInteger(minor) && minor <= 999_999_999_999 ? minor : null
+}
 export function financeMoney(amount: number, currency: string) {
   return new Intl.NumberFormat('zh-TW', {
     style: 'currency',

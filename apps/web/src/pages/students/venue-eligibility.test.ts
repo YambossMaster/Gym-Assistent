@@ -3,6 +3,7 @@ import {
   studentEligibleVenueIds,
   studentVenueLessonLabel,
   suggestedStudentVenue,
+  singleLessonMinor,
   type VenueData
 } from './finance-api'
 
@@ -12,19 +13,26 @@ const venues = [
   { id: 'c', name: 'C', active: false }
 ] as VenueData['venues']
 
-it('shows only a Student’s purchased Venues, while a general purchase allows any Venue', () => {
+it('suggests only a Venue with usable manual lessons', () => {
   const purchases: NonNullable<VenueData['purchases']> = [
     { studentId: 'student', venueId: 'b', lessonCount: 2 },
     { studentId: 'student', venueId: 'a', lessonCount: 3 },
     { studentId: 'other', venueId: 'c', lessonCount: 1 }
   ]
-  const data: Pick<VenueData, 'venues' | 'purchases'> = {
+  const data: Pick<VenueData, 'venues' | 'purchases' | 'studentVenueBalances'> = {
     venues,
-    purchases
+    purchases,
+    studentVenueBalances: [
+      { studentId: 'student', venueId: 'a', purchased: 3, completed: 1, remaining: 2 }
+    ]
   }
   expect(studentEligibleVenueIds(data, 'student')).toEqual(['b', 'a'])
   expect(suggestedStudentVenue(data, 'student')?.id).toBe('a')
   expect(studentEligibleVenueIds(data, 'none')).toEqual([])
+  data.studentVenueBalances = [
+    { studentId: 'student', venueId: 'a', purchased: 3, completed: 3, remaining: 0 }
+  ]
+  expect(suggestedStudentVenue(data, 'student')).toBeNull()
   purchases.push({ studentId: 'student', venueId: null, lessonCount: 1 })
   expect(studentEligibleVenueIds(data, 'student')).toBeNull()
 })
@@ -42,4 +50,12 @@ it('uses only the selected Venue and general lessons for the scheduling hint', (
   studentVenueBalances[2]!.remaining = 0
   expect(studentVenueLessonLabel(data, 'student', 'b')).toBe('單堂計費')
   expect(studentVenueLessonLabel(data, 'other', 'a')).toBe('單堂計費')
+})
+
+it('keeps absent single-lesson price distinct from zero and rejects fractional minor units', () => {
+  expect(singleLessonMinor('', 'TWD')).toBeNull()
+  expect(singleLessonMinor('0', 'TWD')).toBe(0)
+  expect(singleLessonMinor('1.5', 'TWD')).toBeNull()
+  expect(singleLessonMinor('1.50', 'USD')).toBe(150)
+  expect(singleLessonMinor('1.005', 'USD')).toBeNull()
 })

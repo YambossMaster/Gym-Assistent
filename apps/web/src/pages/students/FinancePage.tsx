@@ -6,6 +6,7 @@ import { request } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
 import { financeKey, financeMoney, financeReadRecovery, type MonthlyFinance } from './finance-api'
 import { FinanceLedger } from './FinanceLedger'
+import { PendingSingleLessons } from './PendingSingleLessons'
 import { usePlanAccess } from '../../beta-admission/usePlanAccess'
 import { PlanLocked } from '../../beta-admission/PlanLocked'
 
@@ -187,22 +188,25 @@ export function FinancePage({ session }: { session: Session }) {
           )
         )}
       </section>
+      <PendingSingleLessons session={session} />
       {data && !query.isPending && (
         <>
-          {data.missing.length > 0 && (
+          {data.missing.some((item) => !item.billingPending) && (
             <section className="finance-missing finance-section-card">
               <h2>待補資料</h2>
-              {data.missing.map((m) => (
-                <Link key={m.sessionId} to={`/sessions/${m.sessionId}`}>
-                  {m.label} ·{' '}
-                  {m.reason === 'price'
-                    ? '尚無可歸屬的購課價格'
-                    : m.reason === 'source'
-                      ? '尚未選擇客源'
-                      : '尚無適用費率'}
-                  <ChevronRight size={16} />
-                </Link>
-              ))}
+              {data.missing
+                .filter((item) => !item.billingPending)
+                .map((m) => (
+                  <Link key={m.sessionId} to={`/sessions/${m.sessionId}`}>
+                    {m.label} ·{' '}
+                    {m.reason === 'price'
+                      ? '尚無可歸屬的購課價格'
+                      : m.reason === 'source'
+                        ? '尚未選擇客源'
+                        : '尚無適用費率'}
+                    <ChevronRight size={16} />
+                  </Link>
+                ))}
             </section>
           )}
           <FinanceLedger key={data.month} session={session} data={data} />

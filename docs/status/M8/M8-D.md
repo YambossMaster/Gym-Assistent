@@ -21,21 +21,22 @@ into this package.
 ## Single-lesson correction local handoff
 
 The 2026-10-17 frozen [`M8-D-SINGLE-LESSON-CONTRACT.md`](../../M8-D-SINGLE-LESSON-CONTRACT.md)
-is carried on local branch `codex/m8d-single-lesson` in an isolated managed worktree. Local changes
-open the active Venue picker, make the Calendar Student hint depend on the selected Venue, and remove
-the package-balance cap from bounded Series planning. Student create/edit now carry an optional
-currency-qualified price, with explicit zero distinct from empty; new manual purchases prefill their
-unit reference price while editing an existing purchase retains its own amount. The private Student
-column migration exists locally but is unapplied. The database still enforces the previous
-purchase-before-scheduling rule; source allocation, generated purchases, pending billing, Finance
-correction and the remaining migration are unimplemented. Do not use this branch as a runnable
-end-to-end single-lesson flow or apply a Production migration. Next: implement the private-schema
-source model and atomic completion/reopen/delete path before enabling unpurchased scheduling, then
-finish the Contract's price and correction operations and present desktop/390px UI for PO inspection.
-Focused scheduling and Venue API/Web Vitest selection passed 13/13 after the known Windows sandbox
-temp-file `EPERM` was resolved by running outside the sandbox. Student price/API and purchase-form
-selection passed another 13/13. API and Web typechecks passed. Live/browser, migration and CI gates
-are unverified.
+is carried on local branch `codex/m8d-single-lesson` in an isolated managed worktree. Local Sol
+now spans active Venue selection, Venue-aware Student hints, balance-independent bounded Series
+planning, optional Student price and manual purchase default. A second private-schema migration
+introduces fixed completed-Session sources, generated single purchases, pending billing and request
+replay records; both migrations remain unapplied. Scheduling's purchase guard is removed by that
+migration. Completion/reopen/delete, manual purchase edit validation, batch settlement,
+generated-price correction and explicit package re-evaluation are implemented as Workspace-scoped
+transactions. Finance and Student/Venue balances read fixed sources; generated purchases cannot
+grant package capacity. The Web exposes pending billing, purchase-history/source links and Finance
+correction. API/Web typechecks and focused source, scheduling, Finance, Student-price and Venue-hint
+tests passed locally (API 40/40 across six focused files; Web 7/7 across three files).
+Database migration comparison, live integration, desktop/390px rendered review,
+full local gate, exact-SHA CI and remote delivery remain unverified. Next: finish focused code and
+UI review, present the local version for Product Owner inspection, apply corrections, and wait for
+explicit approval before the broader verification gate. Do not apply a Production migration or mix
+this branch with M8-E.
 
 ## Binding Beta plan policy
 

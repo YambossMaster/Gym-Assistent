@@ -152,6 +152,7 @@ export type Venue = {
 }
 export type FinancePurchase = {
   purchasedAt?: string
+  version?: number
   id: string
   studentId: string
   studentName: string
@@ -162,6 +163,13 @@ export type FinancePurchase = {
   collectionMode: 'coach' | 'venue'
   venueId: string | null
   customerSource?: 'coach' | 'venue' | null
+  sourceKind?: 'manual' | 'generated_single'
+  sourceSessionId?: string | null
+}
+export type FinanceLessonSource = {
+  sessionId: string
+  purchaseId: string | null
+  kind: 'manual' | 'generated_single' | 'pending' | 'legacy_unallocated'
 }
 export type VenueSalaryRule = {
   id: string
@@ -212,6 +220,7 @@ export type FinanceSnapshot = {
   venues: Venue[]
   rules: FeeRule[]
   purchases: FinancePurchase[]
+  lessonSources?: FinanceLessonSource[]
   sessions: FinanceSession[]
   credits: CreditPurchase[]
   payouts: Payout[]
@@ -240,6 +249,9 @@ export type FinanceRow = {
   sourceChanged?: boolean
   sourceRemoved?: boolean
   sourceFingerprint?: string
+  singleLessonSessionId?: string
+  singleLessonSessionVersion?: number | null
+  singleLessonPurchaseVersion?: number
 }
 export type SessionAdjustment = {
   sessionId: string
@@ -393,6 +405,20 @@ function commissionRate(
   return `${source === 'coach' ? '自帶客' : '場地供客'} ${source === 'coach' ? rule.coachRate : rule.venueRate}%`
 }
 function purchaseAssignments(snapshot: FinanceSnapshot) {
+  if (snapshot.lessonSources) {
+    const completed = snapshot.sessions.filter((s) => s.status === 'completed')
+    const purchases = new Map(snapshot.purchases.map((p) => [p.id, p]))
+    const assigned = new Map<string, FinancePurchase>()
+    const used = new Map<string, number>()
+    for (const source of snapshot.lessonSources) {
+      if (!source.purchaseId) continue
+      const purchase = purchases.get(source.purchaseId)
+      if (!purchase) continue
+      assigned.set(source.sessionId, purchase)
+      if (source.kind === 'manual') used.set(purchase.id, (used.get(purchase.id) ?? 0) + 1)
+    }
+    return { completed, assigned, used }
+  }
   const orderedPurchases = [...snapshot.purchases].sort(
     (a, b) =>
       (a.purchasedAt ?? a.purchasedOn).localeCompare(b.purchasedAt ?? b.purchasedOn) ||
@@ -434,6 +460,7 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
     date: string | null
     reason: 'price' | 'source' | 'rule'
     label: string
+    billingPending?: boolean
   }[] = []
   const venueName = (id: string) => snapshot.venues.find((v) => v.id === id)?.name ?? '場地'
   for (const p of snapshot.purchases)
@@ -442,16 +469,30 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
       date: p.purchasedOn,
       occurredAt: p.purchasedAt ?? null,
       kind: 'purchase',
-      label: `${p.studentName} · 購課`,
-      detail: `購課收入 · +${p.lessonCount} 堂 · ${lessonPrice(p)} · ${p.venueId ? `限 ${venueName(p.venueId)}` : '不限場地'}`,
+      label: `${p.studentName} · ${p.sourceKind === 'generated_single' ? '單堂計費' : '購課'}`,
+      detail:
+        p.sourceKind === 'generated_single'
+          ? `單堂計費 · ${financeAmount(p.amountMinor, p.currency)}`
+          : `購課收入 · +${p.lessonCount} 堂 · ${lessonPrice(p)} · ${p.venueId ? `限 ${venueName(p.venueId)}` : '不限場地'}`,
       amountMinor: p.amountMinor,
       currency: p.currency,
       direction: 'income',
-      targetRoute: `/students/${p.studentId}`,
+      targetRoute: p.sourceSessionId
+        ? `/sessions/${p.sourceSessionId}`
+        : `/students/${p.studentId}`,
+      ...(p.sourceKind === 'generated_single' && p.sourceSessionId
+        ? {
+            singleLessonSessionId: p.sourceSessionId,
+            singleLessonSessionVersion:
+              snapshot.sessions.find((session) => session.id === p.sourceSessionId)?.version ??
+              null,
+            singleLessonPurchaseVersion: p.version,
+          }
+        : {}),
       venueId: p.venueId,
     })
   for (const p of snapshot.purchases) {
-    if (!p.venueId) continue
+    if (!p.venueId || p.sourceKind === 'generated_single') continue
     const rule = applicableRule(snapshot.rules, p.venueId, p.purchasedAt ?? p.purchasedOn)
     if (rule?.kind !== 'commission') continue
     const rate = rule.rate ?? (p.customerSource === 'coach' ? rule.coachRate : rule.venueRate)
@@ -556,7 +597,17 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
     let appliedRate: number | null = null
     if (rule.kind === 'commission') {
       if (!p) {
-        missing.push({ sessionId: s.id, date, reason: 'price', label: s.studentName })
+        missing.push({
+          sessionId: s.id,
+          date,
+          reason: 'price',
+          label: s.studentName,
+          billingPending: Boolean(
+            snapshot.lessonSources?.some(
+              (source) => source.sessionId === s.id && source.kind === 'pending',
+            ),
+          ),
+        })
         continue
       }
       const rate = rule.rate ?? (s.customerSource === 'coach' ? rule.coachRate : rule.venueRate)
@@ -565,7 +616,7 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
         continue
       }
       const originalRule =
-        p.venueId === s.venueId
+        p.sourceKind !== 'generated_single' && p.venueId === s.venueId
           ? applicableRule(snapshot.rules, s.venueId, p.purchasedAt ?? p.purchasedOn)
           : undefined
       const originalRate =
@@ -648,6 +699,7 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
     }
   >()
   for (const purchase of snapshot.purchases) {
+    if (purchase.sourceKind === 'generated_single') continue
     const key = `${purchase.studentId}:${purchase.venueId ?? 'general'}`
     const balance = balanceMap.get(key) ?? {
       studentId: purchase.studentId,

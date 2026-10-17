@@ -8,7 +8,10 @@ import { workspaceInstant, workspaceWallTime } from './pages/students/workspace-
 import { PurchaseCollectionFields } from './pages/students/PurchaseCollectionFields'
 import {
   financeReturnPath,
+  moneyFactor,
+  singleLessonMinor,
   suggestedStudentVenue,
+  useFinanceMutation,
   useVenues,
   type Venue
 } from './pages/students/finance-api'
@@ -740,6 +743,7 @@ export function StudentDetailPage({
           {purchaseRecords.all.length ? (
             <PurchaseLedgerRows
               purchases={purchaseRecords.visible}
+              timeZone={timeZone}
               venues={venueQuery.data?.venues ?? []}
               submitting={submitting}
               onEdit={(item) => {
@@ -777,6 +781,7 @@ export function StudentDetailPage({
           <div className="purchase-history-dialog">
             <PurchaseLedgerRows
               purchases={purchaseRecords.all}
+              timeZone={timeZone}
               venues={venueQuery.data?.venues ?? []}
               submitting={submitting}
               onEdit={(item) => {
@@ -893,9 +898,12 @@ export function StudentDetailPage({
           title="永久刪除購課紀錄？"
           text={
             deletePurchaseMutation.error instanceof ApiError &&
-            deletePurchaseMutation.error.details.currentPurchase
-              ? '這筆購課已在其他裝置變更。請確認後重新輸入 DELETE。'
-              : '這項操作會重新計算學生的剩餘堂數。'
+            deletePurchaseMutation.error.details.error === 'allocation_conflict'
+              ? '這筆購課已有完成課堂使用，不能直接刪除。請先修正來源課堂。'
+              : deletePurchaseMutation.error instanceof ApiError &&
+                  deletePurchaseMutation.error.details.currentPurchase
+                ? '這筆購課已在其他裝置變更。請確認後重新輸入 DELETE。'
+                : '這項操作會重新計算學生的剩餘堂數。'
           }
           confirmation={purchaseConfirmation}
           onConfirmationChange={setPurchaseConfirmation}
@@ -926,51 +934,60 @@ export function StudentDetailPage({
           disabled={submitting}
         />
       )}
-      {purchaseEditor && (
-        <PurchaseEditor
-          session={session}
-          timeZone={timeZone}
-          initialVenueId={purchaseEditor.venueId ?? null}
-          purchase={purchaseEditor}
-          conflict={purchaseConflict}
-          error={updatePurchaseMutation.error ?? saveMutation.error}
-          disabled={submitting}
-          saving={updatePurchaseMutation.isPending}
-          onCancel={() => {
-            setPurchaseEditor(null)
-            setPurchaseConflict(null)
-          }}
-          onSave={(input) => {
-            updatePurchaseMutation.mutate(
-              { purchaseId: purchaseEditor.id, input },
-              {
-                onSuccess: () => {
-                  setPurchaseEditor(null)
-                  setPurchaseConflict(null)
-                },
-                onError: (error) => {
-                  if (error instanceof ApiError && error.details.currentPurchase) {
-                    setPurchaseConflict(error.details.currentPurchase)
-                    setPurchaseEditor(error.details.currentPurchase)
+      {purchaseEditor &&
+        (purchaseEditor.sourceKind === 'generated_single' ? (
+          <GeneratedSingleLessonEditor
+            session={session}
+            purchase={purchaseEditor}
+            onClose={() => setPurchaseEditor(null)}
+          />
+        ) : (
+          <PurchaseEditor
+            session={session}
+            timeZone={timeZone}
+            initialVenueId={purchaseEditor.venueId ?? null}
+            purchase={purchaseEditor}
+            conflict={purchaseConflict}
+            error={updatePurchaseMutation.error ?? saveMutation.error}
+            disabled={submitting}
+            saving={updatePurchaseMutation.isPending}
+            onCancel={() => {
+              setPurchaseEditor(null)
+              setPurchaseConflict(null)
+            }}
+            onSave={(input) => {
+              updatePurchaseMutation.mutate(
+                { purchaseId: purchaseEditor.id, input },
+                {
+                  onSuccess: () => {
+                    setPurchaseEditor(null)
+                    setPurchaseConflict(null)
+                  },
+                  onError: (error) => {
+                    if (error instanceof ApiError && error.details.currentPurchase) {
+                      setPurchaseConflict(error.details.currentPurchase)
+                      setPurchaseEditor(error.details.currentPurchase)
+                    }
                   }
                 }
-              }
-            )
-          }}
-        />
-      )}
+              )
+            }}
+          />
+        ))}
     </section>
   )
 }
 
 function PurchaseLedgerRows({
   purchases,
+  timeZone,
   venues,
   submitting,
   onEdit,
   onDelete
 }: {
   purchases: readonly LessonPurchase[]
+  timeZone: string
   venues: readonly Venue[]
   submitting: boolean
   onEdit: (purchase: LessonPurchase) => void
@@ -979,43 +996,166 @@ function PurchaseLedgerRows({
   return purchases.map((item) => (
     <div className="purchase-ledger-row" key={item.id}>
       <span className="purchase-ledger-date">
-        {new Date(item.purchasedAt).toLocaleDateString('zh-TW')}
+        {new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })}
       </span>
-      <strong>+{item.lessonCount} 堂</strong>
+      <strong>
+        {item.sourceKind === 'generated_single' ? '單堂計費' : `+${item.lessonCount} 堂`}
+      </strong>
       <span className="purchase-ledger-money">
         {formatMoney(item.amountMinor, item.currency)}
-        <small>
-          {item.venueId
-            ? (venues.find((venue) => venue.id === item.venueId)?.name ?? '場地')
-            : '無固定場地'}{' '}
-          · 購課總額 · 每堂
-          {item.amountMinor % item.lessonCount ? '約 ' : ''}
-          {formatMoney(item.amountMinor / item.lessonCount, item.currency)}
-        </small>
+        {item.sourceKind === 'generated_single' ? (
+          <small>
+            單堂計費 ·{' '}
+            {item.sourceSessionId && <Link to={`/sessions/${item.sourceSessionId}`}>查看課堂</Link>}
+          </small>
+        ) : (
+          <small>
+            {item.venueId
+              ? (venues.find((venue) => venue.id === item.venueId)?.name ?? '場地')
+              : '無固定場地'}{' '}
+            · 購課總額 · 每堂
+            {item.amountMinor % item.lessonCount ? '約 ' : ''}
+            {formatMoney(item.amountMinor / item.lessonCount, item.currency)}
+          </small>
+        )}
       </span>
       <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
       <span className="purchase-ledger-actions">
         <button
           type="button"
           className="purchase-ledger-icon"
-          aria-label={`編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
+          aria-label={
+            item.sourceKind === 'generated_single'
+              ? '修正單堂金額'
+              : `編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} 的購課紀錄`
+          }
           onClick={() => onEdit(item)}
           disabled={submitting}
         >
           <Pencil aria-hidden="true" />
         </button>
-        <button
-          className="purchase-ledger-icon danger-button"
-          type="button"
-          aria-label={`刪除 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW')} 的購課紀錄`}
-          onClick={() => onDelete(item)}
-          disabled={submitting}
-        >
-          <XCircle aria-hidden="true" />
-        </button>
+        {item.sourceKind !== 'generated_single' && (
+          <button
+            className="purchase-ledger-icon danger-button"
+            type="button"
+            aria-label={`刪除 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} 的購課紀錄`}
+            onClick={() => onDelete(item)}
+            disabled={submitting}
+          >
+            <XCircle aria-hidden="true" />
+          </button>
+        )}
       </span>
     </div>
   ))
+}
+
+function GeneratedSingleLessonEditor({
+  session,
+  purchase,
+  onClose
+}: {
+  session: Session
+  purchase: LessonPurchase
+  onClose: () => void
+}) {
+  const mutation = useFinanceMutation(session)
+  const [amount, setAmount] = useState(
+    String(purchase.amountMinor / moneyFactor(purchase.currency))
+  )
+  const [currency, setCurrency] = useState(purchase.currency)
+  const [switching, setSwitching] = useState(false)
+  const sourceId = purchase.sourceSessionId
+  const correct = () => {
+    if (!sourceId || !purchase.sourceSessionVersion) return
+    const amountMinor = singleLessonMinor(amount, currency)
+    if (amountMinor === null) return
+    mutation.mutate(
+      {
+        path: `/sessions/${sourceId}/single-lesson-price`,
+        method: 'PATCH',
+        body: {
+          expectedSessionVersion: purchase.sourceSessionVersion,
+          expectedPurchaseVersion: purchase.version,
+          amountMinor,
+          currency
+        }
+      },
+      { onSuccess: onClose }
+    )
+  }
+  const usePackage = () => {
+    if (!sourceId || !purchase.sourceSessionVersion || !purchase.sourceVersion) return
+    mutation.mutate(
+      {
+        path: `/sessions/${sourceId}/billing/re-evaluate`,
+        body: {
+          expectedSessionVersion: purchase.sourceSessionVersion,
+          expectedSourceVersion: purchase.sourceVersion
+        }
+      },
+      { onSuccess: onClose }
+    )
+  }
+  return (
+    <SchedulingDialog title="修正單堂金額" variant="profile" onClose={onClose}>
+      <div className="purchase-create-form">
+        <p>這筆單堂計費來自已完成課堂。修正後，購課紀錄與收支明細會使用同一金額。</p>
+        {sourceId && <Link to={`/sessions/${sourceId}`}>查看來源課堂</Link>}
+        <label>
+          單堂金額
+          <input
+            type="number"
+            min="0"
+            step={1 / moneyFactor(currency)}
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        </label>
+        <label>
+          幣別
+          <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
+            <option value="TWD">TWD</option>
+            <option value="USD">USD</option>
+            <option value="JPY">JPY</option>
+            <option value="EUR">EUR</option>
+            <option value="HKD">HKD</option>
+          </select>
+        </label>
+        {switching && (
+          <p>
+            改用既有堂數後，這筆單堂計費收入會移除，課堂會使用目前可用的購課堂數。若無可用堂數，原紀錄會保留。
+          </p>
+        )}
+        {mutation.isError && (
+          <p role="alert" className="form-notice">
+            紀錄已變更或操作失敗。輸入仍保留；請關閉後重新查看最新紀錄。
+          </p>
+        )}
+        <div className="finance-actions">
+          <button type="button" className="secondary-button" onClick={onClose}>
+            取消
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={mutation.isPending}
+            onClick={() => (switching ? usePackage() : setSwitching(true))}
+          >
+            {switching ? '確認改用既有堂數' : '改用既有堂數'}
+          </button>
+          <button
+            type="button"
+            className="primary-button compact"
+            disabled={mutation.isPending}
+            onClick={correct}
+          >
+            {mutation.isPending ? '儲存中…' : '儲存金額'}
+          </button>
+        </div>
+      </div>
+    </SchedulingDialog>
+  )
 }
 
 export function StudentCourseRecord({
@@ -1616,9 +1756,15 @@ function PurchaseEditor({
         <div className="purchase-edit-fields" data-dialog-scroll-region>
           {conflict ? (
             <p className="form-notice" role="alert">
-              這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
-              {formatMoney(conflict.amountMinor, conflict.currency)}
-              ；你的輸入仍保留，確認後可重新儲存。
+              {error instanceof ApiError && error.details.error === 'allocation_conflict' ? (
+                '這筆購課已有完成課堂使用；目前的堂數、日期或場地變更會使來源失效。請保留已用堂數，或先修正來源課堂。你的輸入仍保留。'
+              ) : (
+                <>
+                  這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
+                  {formatMoney(conflict.amountMinor, conflict.currency)}
+                  ；你的輸入仍保留，確認後可重新儲存。
+                </>
+              )}
             </p>
           ) : error instanceof Error ? (
             <p className="form-notice" role="alert">

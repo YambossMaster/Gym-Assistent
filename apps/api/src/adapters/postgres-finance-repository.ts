@@ -130,7 +130,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
     }))
     const purchases = (
       await c.query(
-        `select p.id,p.purchased_at "purchasedAt",p.student_id "studentId",s.name "studentName",(p.purchased_at at time zone $2)::date::text "purchasedOn",p.lesson_count "lessonCount",p.amount_minor "amountMinor",p.currency,p.collection_mode "collectionMode",p.entitlement_venue_id "venueId",p.entitlement_customer_source "customerSource" from app_private.lesson_purchase p join app_private.student s on s.workspace_id=p.workspace_id and s.id=p.student_id where p.workspace_id=$1 order by p.purchased_at,p.id`,
+        `select p.id,p.version,p.purchased_at "purchasedAt",p.student_id "studentId",s.name "studentName",(p.purchased_at at time zone $2)::date::text "purchasedOn",p.lesson_count "lessonCount",p.amount_minor "amountMinor",p.currency,p.collection_mode "collectionMode",p.entitlement_venue_id "venueId",p.entitlement_customer_source "customerSource",p.source_kind "sourceKind",p.source_session_id "sourceSessionId" from app_private.lesson_purchase p join app_private.student s on s.workspace_id=p.workspace_id and s.id=p.student_id where p.workspace_id=$1 order by p.purchased_at,p.id`,
         [w, timeZone],
       )
     ).rows.map((p) => ({
@@ -138,6 +138,12 @@ export class PostgresFinanceRepository implements FinanceRepository {
       purchasedAt: p.purchasedAt.toISOString(),
       amountMinor: Number(p.amountMinor),
     }))
+    const lessonSources = (
+      await c.query(
+        'select session_id "sessionId",purchase_id "purchaseId",kind from app_private.session_lesson_source where workspace_id=$1',
+        [w],
+      )
+    ).rows
     const sessions = (
       await c.query(
         `select c.id,c.starts_at "startsAt",c.ends_at "endsAt",c.student_id "studentId",s.name "studentName",(c.ends_at at time zone $2)::date::text date,c.status,c.venue_id "venueId",c.fee_rule_id "feeRuleId",c.customer_source "customerSource",c.location,c.version from app_private.course_session c join app_private.student s on s.workspace_id=c.workspace_id and s.id=c.student_id where c.workspace_id=$1 order by c.ends_at nulls first,c.id`,
@@ -220,6 +226,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
       venues,
       rules,
       purchases,
+      lessonSources,
       sessions,
       credits,
       payouts,
@@ -960,6 +967,15 @@ export class PostgresFinanceRepository implements FinanceRepository {
     if (op === 'entry-restore' && source.sourceRemoved)
       throw new FinanceError(409, '來源已移除，請另存為自行新增。', source)
     const input = op === 'entry-edit' ? editEntrySchema.parse(raw) : null
+    if (
+      entryId.startsWith('purchase:') &&
+      op === 'entry-edit' &&
+      snapshot.purchases.some(
+        (purchase) =>
+          `purchase:${purchase.id}` === entryId && purchase.sourceKind === 'generated_single',
+      )
+    )
+      throw new FinanceError(409, '請從單堂計費紀錄修正金額。', row)
     if (input?.amountMinor !== undefined && input.amountMinor < 0 && source.kind !== 'commission')
       throw new FinanceError(400, '只有抽成差額可以是負支出。')
     const hidden =
