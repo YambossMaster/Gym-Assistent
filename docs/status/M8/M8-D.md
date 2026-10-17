@@ -13,7 +13,7 @@ shared action inside `.mobile-route-header-actions`, while Today and subpages re
 routing. A 390 px Chromium computed-style comparison reproduced the route link as 22 × 22,
 transparent and browser-blue before the fix, then 44 × 44 with Today's dark background and light
 icon after it. The Product Owner inspected four corrected header previews and approved Main delivery.
-Local affected checks passed (formatting, diff whitespace and Web typecheck); a focused 390 px / 1440 px browser layout check passed. Remote CI and Production PWA read-back remain pending.
+Local affected checks passed (formatting, diff whitespace and Web typecheck); a focused 390 px / 1440 px browser layout check passed. [PR #39](https://github.com/YambossMaster/Gym-Assistent/pull/39) passed all three required checks and squash-merged as `d54658bbd438981a1afd8c43cec2777eacc85213`. [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770) passed verify/build, browser UI, migration no-op, Production migration preview and exact-SHA Fly deployment/readiness. Independent Production requests returned HTTP 200 for `/api/ready`, `/` and `/login`; the served `/assets/index-Cx1L0ozo.css` contains the corrected selector. Installed-PWA visual recheck remains open.
 
 ## Package position
 
