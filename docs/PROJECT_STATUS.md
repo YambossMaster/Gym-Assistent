@@ -28,7 +28,9 @@ is on isolated `codex/m8d-single-lesson`, separate from the dirty payment checko
 Venue-aware Student hints, balance-independent Series planning, optional Student price, fixed
 completion sources, pending settlement and Finance correction are implemented locally. Both
 private-schema migrations remain unapplied; rendered desktop/390px review and broader gates are
-pending Product Owner inspection. See the active [M8-D status](status/M8/M8-D.md) before
+pending Product Owner inspection. Local 5173 now serves the isolated M8-D Web after the Product
+Owner found it had served the primary checkout; local 3000 API and Development database still lack
+M8-D, so saving the new flow is unverified. See the active [M8-D status](status/M8/M8-D.md) before
 continuing this slice.
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
