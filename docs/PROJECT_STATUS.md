@@ -10,7 +10,7 @@
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                                       |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                         |
-| Current gate                  | **M8-D Beta opening active; purchase-history follow-up Sol local; real-Coach admission open**                                                                         |
+| Current gate                  | **M8-D Beta opening active; purchase-history follow-up PR #37 CI correction; real-Coach admission open**                                                              |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                              |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                              |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                                            |
@@ -41,8 +41,11 @@ The PO's 2026-10-18 post-release finding is now in an isolated follow-up branch:
 completed single lessons were missing from Student purchase history, while a later priced lesson
 appeared. Focused API/Web tests now cover one purchase-history row per completed single lesson,
 the effective Finance amount and the existing one-lesson purchase editor without a currency
-selector. This follow-up remains local pending PO inspection and the later verification gate;
-the released Main and Production still have the reported gap.
+selector. The PO inspected the three-row 5173 preview and authorized Main delivery. Local full
+checks passed (root 36, API 298, Web 373) and both builds passed. PR #37's first verify run
+`39057368440` exposed a new Web test's accidental dependency on local Vite Supabase values;
+the test now mocks that client and passes with those values absent. The released Main and
+Production still have the reported gap until the corrected PR passes and deploys.
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
@@ -117,9 +120,9 @@ startup context.
 
 ## Next handoff
 
-Finish the isolated purchase-history follow-up with focused checks and present its changed UI
-and behavior to the PO for inspection. After explicit readiness for full verification, perform
-the changed-flow Development/browser gate and an authorized remote delivery. Then continue M8-D's
+Complete corrected PR #37's exact-head required checks, merge the PO-authorized change to Main,
+and verify the exact-SHA Production migration preview, automatic deployment and readiness.
+Then continue M8-D's
 real-Coach Beta admission and installed-device checks from
 [`status/M8/M8-D.md`](status/M8/M8-D.md). Keep payment work and the primary checkout isolated.
 

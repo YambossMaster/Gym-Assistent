@@ -11,6 +11,8 @@ import {
   singleLessonPurchaseEditRequest
 } from './coach-workspace'
 
+vi.mock('./supabase', () => ({ supabase: { auth: {} } }))
+
 const purchase = (id: string, sourceSessionId: string, amountMinor: number): LessonPurchase => ({
   id,
   sourceKind: 'pending_single',

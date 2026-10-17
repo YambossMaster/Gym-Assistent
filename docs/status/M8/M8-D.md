@@ -49,7 +49,12 @@ Focused API/Web tests passed 9/9 and both typechecks passed. On 5173, the PO's s
 Student's low-balance notice disappeared after a successful Today refresh; the unrelated reschedule
 notice remained. The Development pool briefly hit its session-connection limit during this check and
 then recovered without changing other running branches or Production.
-Full changed-flow browser verification has not started because the PO requested further adjustments.
+The PO accepted the current 5173 version and explicitly authorized Main CI/deployment. Root
+36/36, API 298/298, Web 373/373 and API/Web builds passed locally. PR #37's first exact-head CI
+run `39057368440` passed `browser-ui` and the migration no-op but failed `verify`: the new Web
+purchase test imported the Supabase client without a mock and depended on local Vite values.
+That test now mocks the client; its four cases passed with Vite values absent, along with Web
+typecheck and changed-file formatting. Re-run exact-head PR CI before merging.
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
