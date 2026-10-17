@@ -1,60 +1,53 @@
-# Project Status system
+# Status ownership for parallel workstreams
 
-This directory preserves milestone evidence without loading the entire project history into every
-agent run. `docs/PROJECT_STATUS.md` is the short router; Roadmap work-package files hold current or
-frozen package state; logs and the legacy archive are conditional evidence.
+`docs/PROJECT_STATUS.md` is the **integrated Main router**: released baseline, known active
+workstreams and their pointers. It is not a global task queue. `docs/ROADMAP.md` remains the
+Product Owner-approved scope, dependency and release-gate contract; its order does not select the
+next task in an unrelated branch.
 
-## Loading contract
+## Start a task
 
-1. Always read `docs/PROJECT_STATUS.md`.
-2. Read its active package file and the named Roadmap sections.
-3. Read a predecessor only when the dashboard or active package declares it as a direct dependency.
-4. Read an older milestone when changing its delivered baseline, investigating a regression or
-   decision, or retrieving exact migration, commit, CI, or acceptance evidence.
-5. Read `DEMO.md` only for direct Demo work or formal-Web convergence against the Demo.
-6. Search logs or the legacy archive for historical evidence; never load them as routine startup
-   context.
+1. Identify the requested workstream and current checkout with `git branch --show-current`,
+   `git rev-parse HEAD`, `git status --short` and `git worktree list`. Check the current Main
+   ref before claiming that a branch's Status describes Production.
+2. Read `docs/PROJECT_STATUS.md` for the integrated baseline, then the selected workstream's
+   Status and its named Roadmap/Contract sections. If the selected Status is absent in this
+   checkout, find its owning branch or create a new uniquely named workstream file; do not take
+   another workstream's `Next`.
+3. Distinguish **released**, **merged but not deployed**, **branch-local**, **proposed** and
+   **historical** evidence. State the commit and environment for every release claim. A workstream
+   may depend on another only when it names the exact interface, commit or gate it needs.
 
-## Layout
+## File ownership
 
-- `../PROJECT_STATUS.md`: current package, blockers, required context and one executable handoff.
-- `M8/M8-D.md`: active package detail. Its permanent milestone path also becomes its frozen record.
-- `M8/M8-C.md`: direct release/admission carry-over needed by M8-D.
-- `DEMO.md`: Demo reference boundary and conditional reading route.
-- `log/YYYY-MM.md`: chronological engineering entries created after this split.
-- `archive/PROJECT_STATUS-legacy-through-2026-10-09.md`: complete LOG-001–LOG-462 and pre-split
-  milestone evidence.
+- One workstream owns one uniquely named Status file, such as `M8/M8-E.md`. If two parallel
+  branches share a Roadmap package, use distinct workstream names and files under its milestone
+  folder. Start from [the workstream template](WORKSTREAM_TEMPLATE.md). Each file contains its own
+  completed/remaining inventory, exact Next, environment, branch/HEAD and evidence. Only that
+  branch edits its file until integration. A new Status filename does not allocate a Roadmap ID;
+  use the approved [identifier convention](../ROADMAP.md#6-sequencing-and-concurrency) when a new
+  package is proposed.
+- A completed package Status becomes a short, frozen release record. Historical iteration detail
+  stays in Git history and the engineering log. It has no executable `Next`.
+- The integration owner alone edits `PROJECT_STATUS.md` after comparing the merged commit,
+  exact-SHA CI, migration and deployment evidence. Branch authors may propose router changes
+  in their branch, but their local snapshot is not Main fact.
+- Parallel branches do not append to the shared monthly log during ordinary work. Keep the
+  dated evidence in the owned workstream Status; the integration owner appends one release entry
+  to `log/YYYY-MM.md` after merge or when an auditable cross-branch decision is made. This
+  removes the shared append hotspot.
 
-Older milestones remain in the legacy archive until a current task needs them. Extract one faithful,
-compact milestone summary at that time instead of eagerly rewriting every historical record.
+## Handoff and integration
 
-## Package-file contract
+Before pausing, update only the owned workstream file with current HEAD, worktree dirt,
+completed and unverified checks, blockers, one exact next action and needed authorization.
+A new conversation resumes that same workstream. It does not jump to an earlier Roadmap package
+because another branch updated the router.
 
-An active package file contains only:
+At integration, compare the workstream with current Main; serialize shared Module interfaces,
+Supabase migrations and Production changes. Preserve unrelated changes. Merge or release through
+the existing Product Owner and exact-SHA gates, then update the integrated router and freeze
+completed workstream records. Never copy a stale branch's entire `PROJECT_STATUS.md` over Main.
 
-- state of its Contract, Sol and CI gates;
-- decisions and invariants still binding on that package;
-- current implementation, environment and verification facts;
-- direct dependencies and conditional historical pointers;
-- blockers, open acceptance and one next handoff.
-
-When a package completes, replace transient iterations with final outcomes, exact delivery evidence
-and unresolved carry-over, then freeze the file. Advance the dashboard pointer to the next Roadmap
-package; do not move the completed file into an `active` or `archive` path.
-
-## Update protocol
-
-After code, schema, config, architecture, product-behaviour or blocker changes:
-
-1. Update the active package file with current facts and exact evidence.
-2. Update the dashboard only if its snapshot, blockers, required context or handoff changed.
-3. Append one entry to the current monthly log with Scope, Outcome, Verification, Known issue and
-   Next.
-4. Record remote commit or run identifiers only after observing them.
-5. Replace superseded active facts instead of retaining every intermediate version.
-6. Preserve detailed historical evidence through the monthly log, milestone summary, Git history or
-   legacy archive; never keep stale `Next` instructions in the dashboard.
-
-Targets rather than content substitutes: keep the dashboard near 150 lines / 20 KB and each active
-package compact enough to read as one working brief. If a file grows because it contains resolved
-iterations, move those iterations down the information hierarchy before adding more.
+Older milestone records and `archive/` are read only when the current work needs their evidence.
+`DEMO.md` remains the route for direct Demo work.

@@ -8,7 +8,8 @@
 
 正式產品位於 [`apps/api/`](apps/api/) 與 [`apps/web/`](apps/web/)。M0–M7 已完成；
 M7.5 Stage 2、M8-A、M8-B、M8-B-Export 與 M8-B-Plan-Choice 已交付；Production internal Alpha
-已建立，目前正進行 M8-D 的 Beta 權限與正式開放準備，尚未接納真實教練。產品目前包含：
+已建立；M8-D Beta（含單堂計費與購課紀錄修正）已由 Product Owner 接受為完成，目前獨立
+進行 M8-E 付費功能。已發布功能與工作分支的差異見 `docs/PROJECT_STATUS.md`。產品目前包含：
 
 - 可替換 Managed Auth 供應商的 OIDC/JWKS 驗證；
 - 一位教練對應一個私有 Workspace；
@@ -19,8 +20,8 @@ M7.5 Stage 2、M8-A、M8-B、M8-B-Export 與 M8-B-Plan-Choice 已交付；Produc
 - 場地與收支管理、可安裝的 Web App manifest，以及不快取 API 的 PWA shell。
 
 目前的本機 Web/PWA 預覽不代表已通過實機驗收，也不是已部署的正式服務。發布順序與
-商業 Beta 的付費方案、60 天進階優惠碼與永久資格規劃見 [`docs/ROADMAP.md`](docs/ROADMAP.md)；實際驗證與
-下一個工作項目見 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)。
+商業 Beta 的付費方案、60 天進階優惠碼與永久資格規劃見 [`docs/ROADMAP.md`](docs/ROADMAP.md)；
+已整合的版本與各工作線入口見 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)。
 
 安裝與檢查：
 
@@ -59,15 +60,15 @@ API 視窗的錯誤。使用期間請保留服務視窗開啟。
 
 每個新工程對話先：
 
-1. 讀 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)：精簡的目前進度、阻擋、必讀路由與下一接手點。
-2. 執行 `git status --short`，保留既有未提交變更。
-3. 按 Status 的 `Required context` 讀取當前工作包與 [`docs/ROADMAP.md`](docs/ROADMAP.md)
-   指定章節；只有在依賴、回歸或歷史證據需要時才讀較早的 Milestone Status。
+1. 記下目前 branch、HEAD、worktree 與 `git status --short`，辨識這段對話所屬工作線。
+2. 讀 [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) 確認已整合的 Main 基線，再讀所選
+   工作線自己的 Status、Roadmap 節與 Contract。另一分支的 `Next` 不會自動變成本分支任務。
+3. 只有在明確依賴、回歸或歷史證據需要時，才讀較早的 Milestone Status。
 
 完成 code、schema、config 或架構變更後，依
-[`docs/status/README.md`](docs/status/README.md) 更新當前工作包，必要時更新 Dashboard，並追加
-當月 Engineering log。完整舊 Status 已封存但不再是每次啟動的必讀內容，因此不同對話仍可從
-repository 接手，不需要依賴某一段聊天記憶。
+[`docs/status/README.md`](docs/status/README.md) 更新所屬工作線；整合者在 merge／release
+證據成立後更新 Main Dashboard 與當月 Engineering log。完整舊 Status 留在 Git 歷史，
+不再是每次啟動的必讀內容。
 
 ## 現有展示版
 
