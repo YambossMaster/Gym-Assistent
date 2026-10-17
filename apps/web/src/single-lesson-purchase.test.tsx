@@ -110,6 +110,10 @@ it('reuses the purchase editor for a single lesson with one locked lesson and no
     expect(
       form.querySelector<HTMLAnchorElement>('.single-lesson-source-link')?.getAttribute('href')
     ).toBe('/sessions/session-1')
+    expect(form.querySelector('.purchase-editor-actions .single-lesson-source-link')).toBeTruthy()
+    expect(
+      form.querySelector('.single-lesson-purchase-source .single-lesson-source-link')
+    ).toBeNull()
     expect(document.body.textContent).not.toContain('FORM / ACTION')
     const packageSwitch = form.querySelector<HTMLInputElement>('[role="switch"]')!
     expect(packageSwitch).toBeTruthy()

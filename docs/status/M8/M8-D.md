@@ -26,7 +26,7 @@ change has been made for this follow-up. Focused API regression reproduced the m
 before the fix and passed afterward; focused Web list/editor checks and both typechecks passed.
 PO UI inspection and the later live/browser/CI gate remain open for this follow-up.
 The subsequent PO review required a quieter editor: static `1 堂` beside the amount, a button
-to view the source Session only inside the editor, no generic eyebrow or boxed source card,
+to view the source Session from the editor's lower-left action area, no generic eyebrow or boxed source card,
 and a `單堂計費` / `扣除已購堂數` switch submitted through the same `儲存` button.
 The purchase-history row no longer links to the Session. An error now appears as a dismissible
 overlay instead of shifting the fields. Focused Web tests 7/7 and Web typecheck passed after this

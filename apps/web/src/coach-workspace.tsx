@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   CalendarClock,
   Check,
   Cloud,
@@ -1759,14 +1760,6 @@ export function PurchaseEditor({
                 <strong>單堂計費</strong>
                 {purchase.priceUnset && <small>尚未設定學生課堂單價</small>}
               </div>
-              {purchase.sourceSessionId && (
-                <Link
-                  className="secondary-button single-lesson-source-link"
-                  to={`/sessions/${purchase.sourceSessionId}`}
-                >
-                  查看課堂 <ArrowRight size={17} aria-hidden="true" />
-                </Link>
-              )}
             </div>
           ) : (
             <>
@@ -1835,6 +1828,14 @@ export function PurchaseEditor({
           )}
         </div>
         <div className="purchase-editor-actions">
+          {single && purchase.sourceSessionId && (
+            <Link
+              className="secondary-button ui-action-general single-lesson-source-link"
+              to={`/sessions/${purchase.sourceSessionId}`}
+            >
+              查看課堂 <ArrowUpRight size={17} aria-hidden="true" />
+            </Link>
+          )}
           <button
             className="secondary-button ui-action-cancel"
             type="button"

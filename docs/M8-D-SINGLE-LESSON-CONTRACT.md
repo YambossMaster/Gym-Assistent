@@ -14,7 +14,8 @@
 > reused with lesson count fixed at one and no currency selector. This supersedes the contrary
 > purchase-history and separate-editor wording below.
 > **Product Owner UI correction, 2026-10-18:** The purchase-history list has no `查看課堂` link;
-> the single-lesson editor alone offers that action as a button. Its fixed `1 堂` is read-only text
+> the single-lesson editor alone offers that action as a basic navigation button at the lower left.
+> Its fixed `1 堂` is read-only text
 > beside the amount, and it omits the generic `FORM / ACTION` eyebrow and decorative source card.
 > The billing-source change uses the existing switch style within the form: off is `單堂計費`,
 > on is `扣除已購堂數`.

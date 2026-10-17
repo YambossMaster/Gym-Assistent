@@ -5671,6 +5671,26 @@ textarea:focus {
   gap: 10px;
   margin-top: 4px;
 }
+.purchase-editor-actions .single-lesson-source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-right: auto;
+  padding: 0 20px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.purchase-editor-actions .single-lesson-source-link:hover {
+  border-color: var(--ink);
+  background: var(--paper-deep);
+}
+.purchase-editor-actions .single-lesson-source-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
 
 .purchase-history-heading {
   margin-bottom: 14px;
@@ -5771,18 +5791,6 @@ textarea:focus {
   flex-basis: 100%;
   color: #687b20;
   font-size: 12px;
-}
-.single-lesson-purchase-source .single-lesson-source-link {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 0 4px;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  text-decoration: none;
 }
 .single-lesson-purchase-money {
   grid-column: 1 / -1;
@@ -20910,5 +20918,22 @@ button:disabled {
     padding: 0 11px;
     gap: 5px;
     font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .single-lesson-purchase-form .purchase-editor-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .single-lesson-purchase-form .purchase-editor-actions .single-lesson-source-link {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .single-lesson-purchase-form .purchase-editor-actions .ui-action-cancel {
+    grid-column: 2;
+  }
+  .single-lesson-purchase-form .purchase-editor-actions .ui-action-save {
+    grid-column: 3;
   }
 }
