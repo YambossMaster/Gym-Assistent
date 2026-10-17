@@ -1,10 +1,11 @@
 # Gym Assistant engineering roadmap
 
 > Baseline: v3 — approved 2026-09-30. M0–M7 remain complete; M7.5 Stage 2 precedes M8.
-> Current progress and the active handoff are recorded in [PROJECT_STATUS.md](PROJECT_STATUS.md).
+> The integrated Main baseline and workstream links are recorded in [PROJECT_STATUS.md](PROJECT_STATUS.md); each workstream owns its active handoff.
 
 This document is the sole source of truth for product scope, delivery order, Module interfaces, and
-completion criteria. Live progress and evidence belong in [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+completion criteria. Branch-local progress and evidence belong in the owned workstream Status;
+[`PROJECT_STATUS.md`](PROJECT_STATUS.md) records verified integration into Main.
 
 ## 1. Product direction
 
@@ -102,7 +103,8 @@ responsive experience, and Product Owner acceptance satisfy the frozen Contract.
 - Run root `npm run check` and `npm run build`.
 - Run milestone-specific live E2E and migration preview/dry-run.
 - Run `git diff --check` and relevant Supabase advisors.
-- Update `PROJECT_STATUS.md` and prepend an Engineering log entry.
+- Update the owned workstream Status with gate evidence. After verified integration, update
+  `PROJECT_STATUS.md` and prepend one Engineering log entry.
 - Create a cohesive milestone or work-package commit, push it to the shared branch, and confirm the
   GitHub Actions verify and migration-dry-run jobs for that commit.
 
@@ -803,7 +805,15 @@ platform as a limitation without claiming it passed. Confirm support contact, di
 alerts, database-size view, and no known release-blocking defect. A successful automatic Fly job or
 explicit migration-release job is the exact-SHA deployment evidence; a Git push alone is not.
 
-#### M8-D — Open real-Coach Beta
+#### M8-D — Open real-Coach Beta — Done
+
+**Completion decision — 2026-10-18:** The Product Owner accepted the delivered M8-D package,
+including the single-lesson correction and its purchase-history follow-up, as complete. PR #35's
+exact-SHA CI and Production migration release and PR #37's exact-SHA Main deployment passed; see
+[`M8-D Status`](status/M8/M8-D.md) for the recorded evidence. Previously reserved admission,
+device and preview items are closed as M8-D package gates by this Product Owner decision; their
+historical observations are not retroactively verification claims. M8-E payment is the next active
+workstream.
 
 **Contract gate:** approve an open real-Coach Beta, optional code distribution, published
 terms/privacy, external feedback channel and criteria to pause new signups. State the 60-day
@@ -928,6 +938,14 @@ their own approved contracts and privacy review.
 Work may proceed in parallel only after its Contract gate freezes shared interfaces. Separate
 worktrees/branches are required for parallel work.
 
+**Parallel-workstream routing — 2026-10-18 Product Owner direction:** the release order below is
+an integration and dependency gate, not a global queue of tasks for every active conversation.
+Each branch owns its implementation, verification and exact Next in a uniquely named workstream
+Status. `PROJECT_STATUS.md` records the integrated Main baseline and links to workstreams;
+only the integration owner updates it after a verified merge or release. A newly added earlier
+Roadmap item is not automatically assigned to an unrelated branch. Cross-branch dependencies must
+name the consuming workstream and the required commit or gate explicitly.
+
 Always serialize:
 
 - Supabase migrations and migration history;
@@ -943,8 +961,37 @@ release gates, with M8-E Sol beginning at M8-D Beta launch; M9
 requires Beta evidence and Product Owner approval, and M10 remains conditional. Production access,
 code distribution, and any paid charging require their own completed gate and release decision.
 
+### Identifier convention for future milestones — approved 2026-10-18
+
+**Legacy boundary:** Every identifier already defined through M10 keeps its existing meaning and
+explicit Roadmap dependencies. In particular, M3.5-A0–A5 and M8-A → M8-E are historical ordered
+packages; their letters must not be read as parallel lanes. Do not rename them or add a newly
+numbered package inside the legacy range. Start this convention with the next newly approved
+top-level milestone after M10 (M11).
+
+For new identifiers from M11 onward:
+
+- `M<number>` is a milestone/integration stage. Increasing numeric stages set integration and
+  release order, while contracted implementation may overlap under the concurrency rules above.
+- `M<number>-<letter>` identifies a separately owned workstream within that stage. Letters are
+  stable identifiers, not ranks or prerequisites: `M17-D` and `M17-F` may proceed in parallel.
+  The milestone Contract lists which workstreams must pass before that stage closes. If one package
+  requires another package's completion, record the dependency explicitly and place the dependent
+  package in a later numeric stage rather than imply order with letters.
+- To insert a newly approved stage before a **not-yet-closed later stage**, use a dot-separated
+  integer, for example `M17.1` between M17 and M18. Compare each numeric component as an integer:
+  `M17.2` precedes `M17.10`. An inserted stage may have its own parallel lettered workstreams.
+  Once a later stage has closed, place subsequent corrections in a new later stage instead of
+  retroactively inserting a gate before it.
+
+Before assigning an identifier, inspect existing Roadmap IDs and dependency edges, confirm the
+proposed scope and stage with the Product Owner, then record the new ID, explicit prerequisites,
+workstream owner and milestone exit criteria here. A Git branch or Status file by itself does not
+create a Roadmap package or change the release order.
+
 ## 7. Roadmap change control
 
 Changes to scope, sequence, dependency, product baseline, role ownership, gate criteria, or a domain
 invariant require explicit Product Owner approval before editing this file. Ordinary progress,
-evidence, blockers, and next actions update only `PROJECT_STATUS.md`.
+evidence, blockers, and next actions update the owned workstream Status. The integration owner
+updates `PROJECT_STATUS.md` and the monthly log when the integrated Main facts change.
