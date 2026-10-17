@@ -6,52 +6,37 @@
 
 ## Current snapshot
 
-| Field                         | Current value                                                                                                                                        |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
-| Current gate                  | **M8-D Beta opening active; single-lesson Sol accepted by PO, CI delivery in progress**                                                              |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
-| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                           |
-| Released code                 | `4f49ca666914d2b8e9cefe30a4cf72e65dbff2ad`; [Main CI #218](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38698764401) passed           |
-| Worktree                      | Landing return-to-top deployed; payment work remains separate                                                                                        |
-| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted                   |
-| Production release            | [Main CI #218](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38698764401) deployed `4f49ca6` and passed readiness; no migration needed |
-| Pending Production migrations | None after release #8; three pre-existing Workspaces remain unmarked                                                                                 |
+| Field                         | Current value                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                                       |
+| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                                         |
+| Current gate                  | **M8-D Beta opening active; single-lesson correction released; real-Coach admission open**                                                                            |
+| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                                              |
+| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                                              |
+| Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                                            |
+| Released code                 | `8090bf80e6740043a5fb22dec1c252d53affba21`; [Main CI #39049692349](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39049692349) passed                    |
+| Worktree                      | M8-D single-lesson correction deployed; payment work remains separate                                                                                                 |
+| Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted                                    |
+| Production release            | [Release #39049953196](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39049953196) applied two M8-D migrations, deployed `8090bf80` and passed readiness |
+| Pending Production migrations | None after M8-D release; both single-lesson migrations read back                                                                                                      |
 
 ## Required context
 
 **M8-D single-lesson correction:** the Product Owner froze
 [`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17.
-The isolated `codex/m8d-single-lesson` branch now has locally verified Student price, unrestricted
-active-Venue scheduling, bounded no-package Series, fixed completion sources, zero-income ledger correction,
-Finance and purchase-history correction, and explicit package re-evaluation. Local 5173 serves this
-branch's Web with API 3001; the unrelated primary checkout and API 3000 remain separate. Only
-the two M8-D migrations were applied to Development after an exact two-file official dry-run;
-Production and M8-E were untouched. Authenticated Development and browser flows passed, and the
-earlier local check passed root 36, API 295, Web 367 plus API/Web build. The PO confirmed that Free
-can complete single lessons while after-the-fact correction waits for Pro or Prime. The PO then
-corrected the missing-price flow: ordinary Finance shows `+$0` with a missing-price note; the Coach
-edits that row and independently sets Student price for future lessons. The separate pending card
-has been removed. Development API and desktop/390px browser checks passed this revised flow;
-Root 36/36, Web 368/368, full API 295/295 with a 120-second local test limit and API/Web build
-passed. The default API run had a PDF export timeout; its isolated file passed 5/5. Synthetic data
-were removed. A subsequent PO correction separated Finance overrides from single-lesson sources,
-added simultaneous zero commission, independent expense reset, same-time income-first ordering,
-Venue cost labels and compact source links. Focused API/Web tests and an isolated Development API
-journey passed; the synthetic Coach and records were removed. The Venue-record follow-up displays
-zero commission and effective single-lesson Finance amounts, identifies no-purchase Sessions as
-`單堂計費`, and uses `不計` as the short untracked label. The PO's 2026-10-18 local happy-path review
-accepted this version and authorized Main, CI and deploy. Root 36/36, API 297/297, Web 369/369
-and API/Web builds pass. Production has not yet applied the two M8-D migrations; the exact-SHA
-CI preview and migration release remain pending. A separate pre-existing
-Development Auth-delete trigger defect is recorded in the active [M8-D
-status](status/M8/M8-D.md).
-PR #35's first Development migration dry-run rejected eight already-applied, Development-only
-M8-E history versions. The isolated history guard now audits those exact versions, fetches their
-SQL only into temporary storage for the dry-run and removes it afterward; the local official
-Development dry-run returned `upToDate:true` without applying anything. PR CI must pass again.
+The PO accepted the revised local happy path on 2026-10-18. [PR #35](https://github.com/YambossMaster/Gym-Assistent/pull/35)
+merged as `8090bf80e6740043a5fb22dec1c252d53affba21`. Root 36/36, API 297/297,
+Web 369/369 and API/Web builds passed locally. [Main CI #39049692349](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39049692349)
+passed verify, browser UI, Development migration dry-run and a Production preview listing only
+`20261017105438` and `20261017110659`. After the PO supplied literal `APPLY`,
+[release #39049953196](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39049953196)
+applied those two versions, deployed the same commit and passed readiness. Independent Production
+`/api/ready`, `/` and `/login` checks returned HTTP 200. Migration history contains both versions;
+4 Workspaces, 8 Students, 4 purchases and 4 Sessions remained, and all 3 completed Sessions have
+a source. No orphan source or generated purchase was found. The separate pre-existing Development
+Auth-delete trigger defect is recorded in the active [M8-D status](status/M8/M8-D.md).
+The isolated branch's CI guard audited eight existing Development-only M8-E migration versions
+without committing or applying them to Production.
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
@@ -126,14 +111,10 @@ startup context.
 
 ## Next handoff
 
-Deliver the accepted single-lesson correction from isolated `codex/m8d-single-lesson` through a
-protected PR into `main`. Confirm exact-SHA CI including the Production migration preview, then
-use the manual migration-release workflow for the same commit and verify readiness and migration
-read-back. The PO authorized Main/CI/deploy on 2026-10-18; the release workflow still requires its
-literal `APPLY` confirmation at dispatch. Do not include M8-E payment work.
-
-The real-Coach Beta admission and installed-device gates remain open in
-[`status/M8/M8-D.md`](status/M8/M8-D.md). Keep payment work and the primary checkout isolated.
+The single-lesson correction is released. Continue M8-D's real-Coach Beta admission and
+changed-flow installed-device checks from [`status/M8/M8-D.md`](status/M8/M8-D.md).
+Observe the first real Coach's account and scheduling flow without adding synthetic Production
+users. Keep payment work and the primary checkout isolated.
 
 ## Status system
 
