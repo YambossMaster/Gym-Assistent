@@ -118,7 +118,14 @@ export function studentVenueLessonLabel(
   studentId: string,
   venueId: string | null
 ): string | null {
-  if (!venueId || !data?.studentVenueBalances) return null
+  if (!data?.studentVenueBalances) return null
+  if (!venueId) {
+    return data.studentVenueBalances.some(
+      (balance) => balance.studentId === studentId && balance.remaining > 0
+    )
+      ? null
+      : '單堂計費'
+  }
   const remaining = data.studentVenueBalances
     .filter(
       (balance) =>

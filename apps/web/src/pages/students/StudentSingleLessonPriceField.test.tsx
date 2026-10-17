@@ -21,6 +21,9 @@ it('keeps absent price distinct from explicit zero and reads saved currency', as
       )
     )
     const form = host.querySelector('form')!
+    expect(host.textContent).toContain('學生課堂單價（TWD，選填）')
+    expect(host.textContent).not.toContain('幣別')
+    expect(host.querySelector('[aria-label="學生課堂單價幣別"]')).toBeNull()
     expect(readSingleLessonPrice(new FormData(form))).toBeNull()
     const input = host.querySelector<HTMLInputElement>('[aria-label="學生課堂單價"]')!
     await act(async () => {
@@ -43,6 +46,7 @@ it('keeps absent price distinct from explicit zero and reads saved currency', as
       amountMinor: 1299,
       currency: 'USD'
     })
+    expect(host.textContent).toContain('學生課堂單價（USD，選填）')
   } finally {
     await act(async () => root.unmount())
     host.remove()

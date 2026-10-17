@@ -35,10 +35,16 @@ tests passed locally (API 40/40 across six focused files; Web 7/7 across three f
 The Product Owner's 5173 screenshots exposed a preview-path mistake: port 5173 was serving the
 unrelated primary checkout. On 2026-10-17 it was switched to this isolated Web worktree; direct
 HTTP source read-back and an authenticated browser check now show the Student price field and the
-Calendar `＋ 新增場地` option. Port 3000 still serves the primary-checkout API. Read-only inspection
+Calendar `＋ 新增場地` option. The Product Owner then rejected the duplicate currency selector on
+Student price and asked for an immediate no-package `單堂計費` hint. The Student form now accepts only
+an amount, shows a fixed currency from Settings (or an existing price's saved currency), and the
+Calendar shows `單堂計費` before Venue selection only when no usable manual balance exists anywhere.
+Focused Web tests passed 4/4 in two files and Web typecheck passed; 5173 browser read-back confirms
+the currency selector is gone. Port 3000 still serves the primary-checkout API. Read-only inspection
 of the configured Development database found neither M8-D migration applied, so saving a price or
 no-purchase Session is not yet a validated local flow. The selected-Venue billing hint remains
-defined by the frozen Contract: before Venue selection, Student names have no billing hint.
+is now defined by the corrected Contract: before Venue selection, a Student with no usable manual
+balance has a single-lesson hint; other Students have no global balance hint.
 Database migration comparison, live integration, desktop/390px rendered review,
 full local gate, exact-SHA CI and remote delivery remain unverified. Next: finish focused code and
 UI review, present the corrected local version for Product Owner inspection, apply corrections, and

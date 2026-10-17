@@ -50,6 +50,11 @@ it('uses only the selected Venue and general lessons for the scheduling hint', (
   studentVenueBalances[2]!.remaining = 0
   expect(studentVenueLessonLabel(data, 'student', 'b')).toBe('單堂計費')
   expect(studentVenueLessonLabel(data, 'other', 'a')).toBe('單堂計費')
+  expect(studentVenueLessonLabel(data, 'other', null)).toBe('單堂計費')
+  expect(studentVenueLessonLabel(undefined, 'other', null)).toBeNull()
+  studentVenueBalances[0]!.remaining = 0
+  studentVenueBalances[2]!.remaining = 0
+  expect(studentVenueLessonLabel(data, 'student', null)).toBe('單堂計費')
 })
 
 it('keeps absent single-lesson price distinct from zero and rejects fractional minor units', () => {

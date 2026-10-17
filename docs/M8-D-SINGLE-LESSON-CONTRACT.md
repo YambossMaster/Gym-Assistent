@@ -23,8 +23,10 @@ unbounded schedule horizon. Student private notes remain private.
 ### Student price and manual package purchases
 
 - `學生課堂單價` is optional on Student create/edit and consists of a nonnegative amount in integer
-  minor units and an ISO currency. The Coach's current Finance currency is the default when entering
-  a new price; changing that preference does not convert an existing Student price or purchase.
+  minor units and an ISO currency. The Student form accepts only the amount; new prices use the
+  Coach's current Finance currency from Settings, with no second currency selector. Changing that
+  preference does not convert an existing Student price or purchase; an existing price retains its
+  saved currency when edited.
 - A saved Student price pre-fills `每堂參考價` **only when creating** a manual package purchase. The
   Coach may override it; `堂數 × 每堂參考價` determines the new purchase total using the existing
   rounding rule. Leaving Student price empty preserves the current blank create form.
@@ -46,7 +48,8 @@ unbounded schedule horizon. Student private notes remain private.
 - Once a Venue is selected, Student options use **that Venue's** currently usable manual-package
   balance (Venue-bound plus general). At zero or below, label the Student `王小明・單堂計費`; otherwise
   show the usable lesson count for that Venue. Changing the Venue updates the labels immediately.
-  Before a Venue is selected, show names without a misleading global-balance billing hint. This is
+  Before a Venue is selected, show `單堂計費` for a Student with no usable manual lessons anywhere;
+  otherwise show the name without a misleading global-balance billing hint. This is
   a scheduling-time hint; the source is decided again at completion. Do not add a second
   billing-source or price field elsewhere in the Session form or Session detail.
 - Existing `NONE`, `1_WEEK`, and `2_WEEKS` Series horizon choices remain. Within the chosen horizon,
@@ -133,7 +136,8 @@ unbounded schedule horizon. Student private notes remain private.
 
 ## UI and feedback
 
-- Student create/edit: optional `學生課堂單價`, with currency and clear empty versus explicit zero.
+- Student create/edit: optional `學生課堂單價`, with the Settings currency displayed as a fixed unit
+  and clear empty versus explicit zero. Do not add a currency control to the Student form.
 - Purchase create: default the unit reference price from Student and preserve manual override.
   Purchase edit: show only the purchase's saved amount-derived reference price until the Coach
   deliberately changes it.
