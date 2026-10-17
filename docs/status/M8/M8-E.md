@@ -15,7 +15,7 @@ inherited by payment.
 
 **Source checkout:** `D:\Programs, Codes, Projects\Projects\Gym Assistent`, branch
 `codex/landing-footer-studio`, HEAD `d249476` when inventoried. It is heavily dirty, behind
-remote Main `d54658b`, and includes payment drafts plus unrelated UI/operations edits. Its
+remote Main `1965d33`, and includes payment drafts plus unrelated UI/operations edits. Its
 `docs/status/M8/M8-E.md` contains the detailed 2026-10-18 payment evidence and an older STOP
 section explicitly superseded by its newer R15 section. Its local engineering log reaches
 LOG-629. Preserve that checkout; do not stage or push it as one diff. Recheck both HEADs at

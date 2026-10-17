@@ -26,11 +26,14 @@
   billing migration or payment activation was part of these releases.
 
 After M8-D acceptance, the Product Owner approved a focused mobile Settings action correction.
-PR #39 merged its two-line CSS fix into Main as `d54658b`, restoring the 44 px dark button on
-Calendar, Students, Settings and Exercise Library. The originating Main Status recorded four PO
-inspected previews, focused 390 px / 1440 px layout checks, Web typecheck and formatting. Its
-exact-SHA remote CI and Production PWA read-back were still marked pending there; this frozen
-M8-D record does not upgrade that observation to a verified release or reopen M8-D.
+[PR #39](https://github.com/YambossMaster/Gym-Assistent/pull/39) passed its three required checks
+and merged as `d54658bbd438981a1afd8c43cec2777eacc85213`, restoring the 44 px dark button
+on Calendar, Students, Settings and Exercise Library. The Product Owner inspected four corrected
+previews; focused 390 px / 1440 px layout, Web typecheck and formatting passed. [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770)
+passed verify/build, browser, migration no-op, Production preview and exact-SHA Fly deployment
+with readiness. Independent `/api/ready`, `/` and `/login` returned HTTP 200; served CSS
+`/assets/index-Cx1L0ozo.css` contained the corrected selector. Installed-PWA visual recheck
+remains unverified. This follow-up does not reopen M8-D.
 
 ## Completion boundary
 
