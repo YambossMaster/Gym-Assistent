@@ -1036,8 +1036,7 @@ export function PurchaseLedgerRows({
         {formatMoney(item.amountMinor, item.currency)}
         {isSingleLessonPurchase(item) ? (
           <small>
-            單堂計費 ·{' '}
-            {item.sourceSessionId && <Link to={`/sessions/${item.sourceSessionId}`}>查看課堂</Link>}
+            單堂計費
             {item.priceUnset && ' · 尚未設定學生課堂單價'}
             {item.amountModified && ` · 已修改（來源 ${formatMoney(0, item.currency)}）`}
           </small>
@@ -1684,15 +1683,26 @@ export function PurchaseEditor({
 }) {
   const [date, setDate] = useState(isoToLocalDateTime(purchase.purchasedAt, timeZone).date)
   const [time, setTime] = useState(isoToLocalDateTime(purchase.purchasedAt, timeZone).time)
-  const [confirmUsePackage, setConfirmUsePackage] = useState(false)
+  const [billingChoice, setBillingChoice] = useState<'single' | 'package'>('single')
+  const [dismissedFeedback, setDismissedFeedback] = useState<unknown>(null)
   const single = isSingleLessonPurchase(purchase)
+  const feedback = conflict ?? (error instanceof Error ? error : null)
   return (
-    <SchedulingDialog title="編輯購課紀錄" variant="profile" onClose={onCancel}>
+    <SchedulingDialog
+      title="編輯購課紀錄"
+      eyebrow={single ? '' : undefined}
+      variant="profile"
+      onClose={onCancel}
+    >
       <form
-        className="purchase-create-form"
+        className={`purchase-create-form${single ? ' single-lesson-purchase-form' : ''}`}
         autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault()
+          if (single && billingChoice === 'package') {
+            onUsePackage?.()
+            return
+          }
           const values = new FormData(event.currentTarget)
           onSave({
             purchasedAt: single
@@ -1710,34 +1720,54 @@ export function PurchaseEditor({
         }}
       >
         <div className="purchase-edit-fields" data-dialog-scroll-region>
-          {conflict ? (
-            <p className="form-notice" role="alert">
-              {error instanceof ApiError && error.details.error === 'allocation_conflict' ? (
-                '這筆購課已有完成課堂使用；目前的堂數、日期或場地變更會使來源失效。請保留已用堂數，或先修正來源課堂。你的輸入仍保留。'
-              ) : (
-                <>
-                  這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
-                  {formatMoney(conflict.amountMinor, conflict.currency)}
-                  ；你的輸入仍保留，確認後可重新儲存。
-                </>
-              )}
-            </p>
-          ) : error instanceof Error ? (
-            <p className="form-notice" role="alert">
-              {error.message}
-            </p>
-          ) : null}
+          {feedback && feedback !== dismissedFeedback && (
+            <div className="purchase-editor-feedback" role="alert">
+              <p>
+                {conflict ? (
+                  error instanceof ApiError && error.details.error === 'allocation_conflict' ? (
+                    '這筆購課已有完成課堂使用；目前的堂數、日期或場地變更會使來源失效。請保留已用堂數，或先修正來源課堂。你的輸入仍保留。'
+                  ) : (
+                    <>
+                      這筆購課已更新為第 {conflict.version} 版。目前為 {conflict.lessonCount} 堂、
+                      {formatMoney(conflict.amountMinor, conflict.currency)}
+                      ；你的輸入仍保留，確認後可重新儲存。
+                    </>
+                  )
+                ) : error instanceof ApiError && error.details.error === 'no_eligible_package' ? (
+                  '目前沒有可扣除的已購堂數；請先新增適用這堂課的購課紀錄。這筆單堂計費紀錄仍保留。'
+                ) : error instanceof ApiError && error.details.error === 'single_lesson_changed' ? (
+                  '這堂課的計費來源已變更。請關閉視窗，重新開啟最新紀錄後再試。'
+                ) : error instanceof Error ? (
+                  error.message
+                ) : null}
+              </p>
+              <button
+                type="button"
+                onClick={() => setDismissedFeedback(feedback)}
+                aria-label="關閉錯誤提示"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+          )}
           {single ? (
-            <p>
-              {new Date(purchase.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} · 單堂計費
+            <div className="single-lesson-purchase-source">
+              <div>
+                <span className="single-lesson-purchase-date">
+                  {new Date(purchase.purchasedAt).toLocaleDateString('zh-TW', { timeZone })}
+                </span>
+                <strong>單堂計費</strong>
+                {purchase.priceUnset && <small>尚未設定學生課堂單價</small>}
+              </div>
               {purchase.sourceSessionId && (
-                <>
-                  {' '}
-                  · <Link to={`/sessions/${purchase.sourceSessionId}`}>查看課堂</Link>
-                </>
+                <Link
+                  className="secondary-button single-lesson-source-link"
+                  to={`/sessions/${purchase.sourceSessionId}`}
+                >
+                  查看課堂 <ArrowRight size={17} aria-hidden="true" />
+                </Link>
               )}
-              {purchase.priceUnset && ' · 尚未設定學生課堂單價'}
-            </p>
+            </div>
           ) : (
             <>
               <SeriesDatePicker label="購買日期" value={date} onChange={setDate} />
@@ -1748,41 +1778,63 @@ export function PurchaseEditor({
               <PurchaseCollectionFields session={session} initialVenueId={initialVenueId} />
             </>
           )}
-          {single && (
-            <label>
-              堂數
-              <input type="number" value={1} disabled />
-            </label>
+          {single ? (
+            <div className="single-lesson-purchase-money">
+              <div className="single-lesson-fixed-count" aria-label="堂數固定為 1 堂">
+                <span>堂數</span>
+                <strong>
+                  1 <small>堂</small>
+                </strong>
+              </div>
+              <PurchaseMoneyFields
+                count={1}
+                amount={purchase.amountMinor}
+                currency={purchase.currency}
+                includeCount={false}
+                showUnitPrice={false}
+                disabled={billingChoice === 'package'}
+                totalLabel="單堂金額"
+              />
+            </div>
+          ) : (
+            <PurchaseMoneyFields
+              count={purchase.lessonCount}
+              amount={purchase.amountMinor}
+              currency={purchase.currency}
+            />
           )}
-          <PurchaseMoneyFields
-            count={purchase.lessonCount}
-            amount={purchase.amountMinor}
-            currency={purchase.currency}
-            includeCount={!single}
-            showUnitPrice={!single}
-            totalLabel={single ? '單堂金額' : '總金額'}
-          />
           {!single && (
             <label>
               教練備註
               <textarea name="privateNote" defaultValue={purchase.privateNote} maxLength={4000} />
             </label>
           )}
-          {confirmUsePackage && (
-            <p>改用既有堂數會移除這筆單堂計費收入；若沒有可用堂數，原紀錄會保留。</p>
+          {onUsePackage && (
+            <div className="single-lesson-billing-choice">
+              <label className="student-series-toggle">
+                計費方式
+                <span>
+                  <strong>{billingChoice === 'package' ? '扣除已購堂數' : '單堂計費'}</strong>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label="扣除已購堂數"
+                    checked={billingChoice === 'package'}
+                    onChange={(event) =>
+                      setBillingChoice(event.target.checked ? 'package' : 'single')
+                    }
+                  />
+                </span>
+              </label>
+              {billingChoice === 'package' && (
+                <p>
+                  儲存後將扣除 1 堂剩餘堂數，並移除這筆單堂計費收入；若無可用堂數，紀錄不會變更。
+                </p>
+              )}
+            </div>
           )}
         </div>
         <div className="purchase-editor-actions">
-          {onUsePackage && (
-            <button
-              className="secondary-button"
-              type="button"
-              disabled={disabled}
-              onClick={() => (confirmUsePackage ? onUsePackage() : setConfirmUsePackage(true))}
-            >
-              {confirmUsePackage ? '確認改用既有堂數' : '改用既有堂數'}
-            </button>
-          )}
           <button
             className="secondary-button ui-action-cancel"
             type="button"

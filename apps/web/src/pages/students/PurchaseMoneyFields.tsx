@@ -11,6 +11,7 @@ export function PurchaseMoneyFields({
   includeCount = true,
   showUnitPrice = true,
   showSummary = true,
+  disabled = false,
   totalLabel = '總金額'
 }: {
   count?: number
@@ -20,6 +21,7 @@ export function PurchaseMoneyFields({
   includeCount?: boolean
   showUnitPrice?: boolean
   showSummary?: boolean
+  disabled?: boolean
   totalLabel?: string
 }) {
   const [lessons, setLessons] = useState(count === undefined ? '' : String(count)),
@@ -73,6 +75,7 @@ export function PurchaseMoneyFields({
             max="10000"
             step="1"
             required
+            disabled={disabled}
             value={lessons}
             onChange={(e) => setLessons(e.target.value)}
           />
@@ -86,6 +89,7 @@ export function PurchaseMoneyFields({
           inputMode="decimal"
           pattern={currencyDecimals ? `[0-9]+(?:[.][0-9]{1,${currencyDecimals}})?` : '[0-9]+'}
           required
+          disabled={disabled}
           value={total}
           placeholder="0"
           onChange={(e) => {
@@ -103,6 +107,7 @@ export function PurchaseMoneyFields({
             inputMode="decimal"
             pattern="[0-9]+(?:[.][0-9]{1,4})?"
             value={unit}
+            disabled={disabled}
             placeholder="0"
             onChange={(e) => {
               setUnitDraft(e.target.value)

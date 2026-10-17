@@ -25,6 +25,16 @@ Finance entry override, so Finance and purchase history share the amount. No sch
 change has been made for this follow-up. Focused API regression reproduced the missing two records
 before the fix and passed afterward; focused Web list/editor checks and both typechecks passed.
 PO UI inspection and the later live/browser/CI gate remain open for this follow-up.
+The subsequent PO review required a quieter editor: static `1 堂` beside the amount, a button
+to view the source Session only inside the editor, no generic eyebrow or boxed source card,
+and a `單堂計費` / `扣除已購堂數` switch submitted through the same `儲存` button.
+The purchase-history row no longer links to the Session. An error now appears as a dismissible
+overlay instead of shifting the fields. Focused Web tests 7/7 and Web typecheck passed after this
+revision. A read-only Development query under Workspace RLS found two pending sources and one
+generated source for the reported Student; this branch's Student detail projection returned all
+three. The first unscoped diagnostic query falsely showed no sources and was discarded. The
+5188/3002 isolated preview is ready for PO review; full changed-flow browser verification has
+not started because the PO requested further adjustments.
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
