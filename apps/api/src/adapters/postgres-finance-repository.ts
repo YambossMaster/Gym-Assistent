@@ -96,8 +96,10 @@ export class PostgresFinanceRepository implements FinanceRepository {
     })
   }
   private async load(c: PoolClient, w: string): Promise<FinanceSnapshot> {
-    const timeZone = (await c.query('select time_zone from app_private.workspace where id=$1', [w]))
-      .rows[0].time_zone as string
+    const workspace = (
+      await c.query('select time_zone,default_currency from app_private.workspace where id=$1', [w])
+    ).rows[0]
+    const timeZone = workspace.time_zone as string
     const venues = (
       await c.query(
         `select v.id,v.name,v.address,v.active,v.version,v.low_occurrence "lowOccurrence",v.low_occurred_at "lowOccurredAt",
@@ -130,7 +132,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
     }))
     const purchases = (
       await c.query(
-        `select p.id,p.purchased_at "purchasedAt",p.student_id "studentId",s.name "studentName",(p.purchased_at at time zone $2)::date::text "purchasedOn",p.lesson_count "lessonCount",p.amount_minor "amountMinor",p.currency,p.collection_mode "collectionMode",p.entitlement_venue_id "venueId",p.entitlement_customer_source "customerSource" from app_private.lesson_purchase p join app_private.student s on s.workspace_id=p.workspace_id and s.id=p.student_id where p.workspace_id=$1 order by p.purchased_at,p.id`,
+        `select p.id,p.version,p.purchased_at "purchasedAt",p.student_id "studentId",s.name "studentName",(p.purchased_at at time zone $2)::date::text "purchasedOn",p.lesson_count "lessonCount",p.amount_minor "amountMinor",p.currency,p.collection_mode "collectionMode",p.entitlement_venue_id "venueId",p.entitlement_customer_source "customerSource",p.source_kind "sourceKind",p.source_session_id "sourceSessionId" from app_private.lesson_purchase p join app_private.student s on s.workspace_id=p.workspace_id and s.id=p.student_id where p.workspace_id=$1 order by p.purchased_at,p.id`,
         [w, timeZone],
       )
     ).rows.map((p) => ({
@@ -138,6 +140,12 @@ export class PostgresFinanceRepository implements FinanceRepository {
       purchasedAt: p.purchasedAt.toISOString(),
       amountMinor: Number(p.amountMinor),
     }))
+    const lessonSources = (
+      await c.query(
+        'select session_id "sessionId",purchase_id "purchaseId",kind from app_private.session_lesson_source where workspace_id=$1',
+        [w],
+      )
+    ).rows
     const sessions = (
       await c.query(
         `select c.id,c.starts_at "startsAt",c.ends_at "endsAt",c.student_id "studentId",s.name "studentName",(c.ends_at at time zone $2)::date::text date,c.status,c.venue_id "venueId",c.fee_rule_id "feeRuleId",c.customer_source "customerSource",c.location,c.version from app_private.course_session c join app_private.student s on s.workspace_id=c.workspace_id and s.id=c.student_id where c.workspace_id=$1 order by c.ends_at nulls first,c.id`,
@@ -217,9 +225,11 @@ export class PostgresFinanceRepository implements FinanceRepository {
     }))
     return {
       timeZone,
+      defaultCurrency: workspace.default_currency,
       venues,
       rules,
       purchases,
+      lessonSources,
       sessions,
       credits,
       payouts,

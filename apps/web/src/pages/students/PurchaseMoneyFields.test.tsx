@@ -4,6 +4,33 @@ import { createRoot } from 'react-dom/client'
 import { expect, it, vi } from 'vitest'
 import { PurchaseMoneyFields } from './PurchaseMoneyFields'
 
+it('prefills only a newly created manual purchase from the Student price', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <form>
+          <PurchaseMoneyFields currency="USD" defaultUnitPrice={1250} />
+        </form>
+      )
+    )
+    const count = host.querySelector<HTMLInputElement>('[name="lessonCount"]')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(count, '3')
+      count.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(new FormData(host.querySelector('form')!).get('amountMinor')).toBe('3750')
+    expect(host.querySelector<HTMLInputElement>('[aria-label="每堂參考價"]')!.value).toBe('12.5')
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('preserves an indivisible exact total and exposes its approximate unit price', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const host = document.createElement('div')

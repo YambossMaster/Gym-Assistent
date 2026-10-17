@@ -1,21 +1,116 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-15. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-18. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
 
-| Gate      | State                                                                                              |
-| --------- | -------------------------------------------------------------------------------------------------- |
-| Contract  | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
-| Sol       | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
-| CI        | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
-| Admission | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
+| Gate                     | State                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Contract                 | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding             |
+| Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed              |
+| CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                                     |
+| Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                              |
+| Single-lesson correction | PO accepted local UI; full local check/build passed; protected PR, exact-SHA CI and Production release pending |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
 completed [`M8-C.md`](M8-C.md) for Alpha evidence. M8-E owns paid checkout and must not be pulled
 into this package.
+
+## Single-lesson correction local handoff
+
+The frozen 2026-10-17 [Contract](../../M8-D-SINGLE-LESSON-CONTRACT.md) is implemented on
+isolated branch `codex/m8d-single-lesson`. Port 5173 serves this branch's Web through its local
+API on 3001; the primary checkout and API on 3000 remain separate. Student create/edit stores
+optional price in Settings currency without another currency control. Desktop phone, age range and
+price share one row; the 390px layout wraps cleanly. Calendar shows total remaining manual lessons
+before Venue selection and that Venue's usable lessons afterward, falling back to `單堂計費`.
+Any active Venue, including an in-context new Venue, is available without a purchase. One-off
+and bounded Series scheduling no longer require a package. Completion fixes Venue-aware manual
+capacity first, otherwise creates a linked single purchase or an annotated zero-income row. Finance,
+purchase history, reopen/delete, settlement, correction and explicit re-evaluation use
+Workspace-scoped server sources. Free can schedule and complete; after-the-fact zero-row correction
+and generated-price correction are Pro/Prime-only on both API and UI, as confirmed by the PO.
+The focused Finance test now directly checks a generated single lesson against percentage commission,
+fixed per-Session rent and prepaid Venue-credit consumption. All 22 Finance tests pass locally.
+The later PO correction keeps Finance edits separate from purchase/zero-income sources. Unpriced
+commission Sessions now show income `+$0` and expense `-$0` together; an income ledger override
+recalculates commission, while an independently overridden expense stays fixed until reset. Finance
+rows retain their original source explanation, `已修改` marker, `取消修改`, and the Student price link.
+Calendar and Session Venue choices show the selected date's short cost kind in parentheses; income
+precedes expense for the same time, and the two source links share a desktop row. Focused Finance
+23/23 and affected Web interaction 16/16 tests plus API/Web typechecks passed. The isolated
+Development API test verified zero source, zero commission, income 600 to commission 420, a manual
+expense of 100 staying fixed after income moved to 800, and expense reset to 560. The exact test
+Sessions, Venue and synthetic Coach were removed. The revised UI still awaits PO inspection;
+exact-SHA CI and Production remain unverified and unauthorized.
+The latest Venue-record correction shows zero commission as a calculated `$0` expense, identifies
+`單堂計費` without claiming a missing purchase source, and reads effective Finance income/expense
+after ledger edits while retaining the original missing-price explanation. The Venue dropdown's
+untracked label is shortened to `不計`. Focused Venue-record and Calendar tests passed 9/9;
+Finance tests passed 23/23 and both API/Web typechecks passed.
+On 2026-10-18 the PO reviewed the local happy path, accepted the version and authorized Main,
+CI and deploy. The full local gate passed root 36/36, API 297/297 and Web 369/369; API and Web
+builds passed. Production currently has 4 Workspaces, 8 Students, 4 purchases and 3 completed
+Sessions; neither M8-D migration is applied there. The release uses a protected PR, exact-SHA
+Production migration preview, manual migration apply and same-SHA Fly deployment. The Production
+release workflow requires a literal `APPLY` at dispatch. PR #35 is open; Main merge and
+Production release have not completed.
+PR #35 first exposed a Development CI history-guard mismatch: eight M8-E versions had already
+been applied there but were absent from this isolated branch. The guard now accepts only those
+exact versions, fetches them into temporary storage for the official dry-run, and cleans up all
+copies. Local root guard tests and the real Development dry-run passed with no pending migration;
+the first PR migration job failure remains historical evidence until fresh CI succeeds.
+Reopen/delete now clears the affected Session's income and expense entry-state overrides in the
+existing scheduling transaction so re-completion cannot revive an old manual amount; the focused
+Finance plus scheduling-adapter checks passed 27/27.
+
+Development project `yvhijxhtelujfsaplzpi` applied only M8-D migrations `20261017105438`
+and `20261017110659`. The project had eight applied remote-only M8-E versions, so a temporary
+external history audit fetched all 61 applied migrations and staged only these two M8-D files.
+The official CLI dry-run listed exactly these two files, and remote migration history then
+confirmed both applied. No M8-E file entered the isolated branch. Existing counts stayed 16
+Students, 23 purchases, 158 Sessions and 8 Venues. Backfill created 139 fixed sources (132
+manual, 7 legacy-unallocated); old and new remaining-balance formulas matched all 16 Students.
+No live negative-balance Student existed. Underlying purchases and aggregate amount were unchanged;
+a pre-migration monthly Finance snapshot was not captured.
+
+Authenticated Development tests passed: Free priced no-purchase Session save/completion; Prime
+two-item missing-price settlement including zero, stale all-or-nothing, replay and changed retry;
+Venue-bound/general allocation priority; no-package two-week Series generation and idempotent
+reconciliation; Prime 500-to-750 generated-price correction matching Finance, backdated manual
+purchase without silent rewrite, explicit re-evaluation, reopen, re-completion and deletion.
+Two concurrent completion requests returned one 200 and one 409 with one generated purchase;
+a second Workspace received 404 for both Session read and completion.
+Free pending read, settlement and generated correction API calls returned 403. Browser review on
+5173 checked Student create, desktop and 390px layout, Calendar hints, in-context Venue creation,
+no-purchase Session save and persisted Calendar display. A synthetic Prime browser pass settled a
+pending item for 500, observed its removal and the matching Finance income, corrected it to 750
+from Finance and then to 800 from purchase history, and read back the same 800 in both surfaces.
+The earlier pending form and save control were visually checked at 390px without horizontal overflow.
+Exact synthetic data and accounts were removed; Development aggregate counts returned to baseline.
+
+Final `npm run check` passed root 36/36, API 295/295 and Web 367/367; `npm run build` passed.
+The final local fixes add Student price to the Fastify HTTP schema, correct a PostgreSQL date alias
+that caused a live completion 500, and enforce the Pro/Prime correction gate. Focused regressions,
+typechecks and `git diff --check` passed. Exact-SHA remote CI, Production migration and release
+remain unverified; the branch has not been pushed.
+
+The earlier zero-income ledger iteration removed the separate pending card and passed Development
+and desktop/390px checks. Its settlement-based row edit was superseded by the PO's later requirement
+to preserve source and use an ordinary Finance override; see LOG-603 and LOG-605 for exact evidence.
+The earlier root 36/36, Web 368/368, API 295/295 and API/Web build checks preceded the latest
+correction; the latest scoped checks and live API result are recorded above. Exact-SHA remote CI and
+Production remain unverified; there has been no push.
+
+Known separate defect: deleting a Development Auth user with Venue-linked financial records can
+fail in the existing `app_private.refresh_changed_venue_balance()` trigger because
+`supabase_auth_admin` lacks private-schema access. Exact synthetic records were removed via
+versioned API operations first, after which account cleanup passed. This account-deletion path
+is outside the frozen single-lesson scope and was not changed. Next: PO inspection of the corrected
+local UI and separate remote-delivery authorization. Keep
+M8-E and Production untouched.
 
 ## Binding Beta plan policy
 

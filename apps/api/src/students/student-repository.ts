@@ -18,14 +18,17 @@ export interface NewStudent {
   privateNote: string
   ageRange: Student['ageRange']
   defaultVenueId: string | null
+  singleLessonPrice: Student['singleLessonPrice']
   active: boolean
   lineLinked: boolean
   now: Date
 }
 
-export interface UpdatedStudent extends Omit<NewStudent, 'id' | 'ageRange' | 'defaultVenueId'> {
+export interface UpdatedStudent
+  extends Omit<NewStudent, 'id' | 'ageRange' | 'defaultVenueId' | 'singleLessonPrice'> {
   ageRange?: Student['ageRange'] | undefined
   defaultVenueId?: string | null | undefined
+  singleLessonPrice?: Student['singleLessonPrice'] | undefined
   expectedVersion: number
 }
 
@@ -56,6 +59,15 @@ export class LessonPurchaseVersionConflictError extends Error {
       'Lesson Purchase was changed on another device. Reload it before choosing the next change.',
     )
     this.name = 'LessonPurchaseVersionConflictError'
+  }
+}
+export class LessonPurchaseAllocationConflictError extends Error {
+  constructor(
+    readonly currentPurchase: LessonPurchase,
+    readonly sessionIds: string[],
+  ) {
+    super('這筆購課已用於完成的課堂；目前變更會使已固定的堂數來源失效。')
+    this.name = 'LessonPurchaseAllocationConflictError'
   }
 }
 

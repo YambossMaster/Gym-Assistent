@@ -3,21 +3,11 @@ import type { CourseSession, ScheduleSeries } from './scheduling.js'
 /** Pure planning step; persistence owns atomic insertion and retry locking. */
 export function planSeriesReconciliation(input: {
   series: ScheduleSeries
-  remainingLessons: number
   sessions: CourseSession[]
   now: Date
   timeZone?: string
 }) {
-  if (!input.series.active || input.remainingLessons <= 0) return []
-  const futureScheduled = input.sessions.filter(
-    (session) =>
-      !session.isLegacy &&
-      session.status === 'scheduled' &&
-      session.startsAt !== null &&
-      new Date(session.startsAt) > input.now,
-  )
-  const deficit = Math.max(0, input.remainingLessons - futureScheduled.length)
-  if (!deficit) return []
+  if (!input.series.active) return []
   const ownStarts = input.sessions
     .filter((session) => session.seriesId === input.series.id && session.startsAt !== null)
     .map((session) => new Date(session.startsAt!))
@@ -46,7 +36,8 @@ export function planSeriesReconciliation(input: {
         )
       : addWeeks(next, input.series.intervalWeeks)
   }
-  for (let index = 0; index < deficit && next <= horizonEnd; index += 1) {
+  // The horizon bounds generation; a package balance never limits future Sessions.
+  for (let index = 0; index < 16 && next <= horizonEnd; index += 1) {
     result.push(next)
     next = monthly
       ? monthlyOccurrence(

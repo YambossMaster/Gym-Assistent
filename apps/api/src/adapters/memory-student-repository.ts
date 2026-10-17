@@ -151,6 +151,7 @@ export class MemoryStudentRepository
       privateNote: input.privateNote,
       ageRange: input.ageRange,
       defaultVenueId: input.defaultVenueId,
+      singleLessonPrice: input.singleLessonPrice,
       active: input.active,
       lineLinked: input.lineLinked,
       version: 1,
@@ -240,6 +241,8 @@ export class MemoryStudentRepository
       ageRange: input.ageRange === undefined ? current.ageRange : input.ageRange,
       defaultVenueId:
         input.defaultVenueId === undefined ? current.defaultVenueId : input.defaultVenueId,
+      singleLessonPrice:
+        input.singleLessonPrice === undefined ? current.singleLessonPrice : input.singleLessonPrice,
       active: input.active,
       lineLinked: input.lineLinked,
       version: current.version + 1,

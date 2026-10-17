@@ -11,6 +11,12 @@ export const studentAgeRangeSchema = z.enum([
 ])
 export type StudentAgeRange = z.infer<typeof studentAgeRangeSchema>
 
+export const singleLessonPriceSchema = z.object({
+  amountMinor: z.number().int().min(0).max(999_999_999_999),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+})
+export type SingleLessonPrice = z.infer<typeof singleLessonPriceSchema>
+
 export const createStudentSchema = z.object({
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40).default(''),
@@ -18,6 +24,7 @@ export const createStudentSchema = z.object({
   privateNote: z.string().trim().max(4000).default(''),
   ageRange: studentAgeRangeSchema.nullable().default(null),
   defaultVenueId: z.uuid().nullable().default(null),
+  singleLessonPrice: singleLessonPriceSchema.nullable().default(null),
   active: z.boolean().default(true),
   lineLinked: z.boolean().default(false),
 })
@@ -25,6 +32,7 @@ export const createStudentSchema = z.object({
 export const updateStudentSchema = createStudentSchema.extend({
   ageRange: studentAgeRangeSchema.nullable().optional(),
   defaultVenueId: z.uuid().nullable().optional(),
+  singleLessonPrice: singleLessonPriceSchema.nullable().optional(),
   version: z.number().int().positive(),
 })
 
@@ -54,6 +62,7 @@ export interface Student {
   privateNote: string
   ageRange: StudentAgeRange | null
   defaultVenueId: string | null
+  singleLessonPrice: SingleLessonPrice | null
   active: boolean
   lineLinked: boolean
   version: number
@@ -64,6 +73,10 @@ export interface Student {
 export interface LessonPurchase {
   collectionMode?: 'coach' | 'venue'
   venueId?: string | null
+  sourceKind?: 'manual' | 'generated_single'
+  sourceSessionId?: string | null
+  sourceSessionVersion?: number | null
+  sourceVersion?: number | null
   id: string
   purchasedAt: string
   lessonCount: number

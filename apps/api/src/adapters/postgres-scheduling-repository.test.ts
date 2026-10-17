@@ -47,15 +47,114 @@ it('checks Series version before deletion and leaves existing Sessions to the FK
 })
 
 it('permits explicit deletion of a completed temporal Session', async () => {
+  const calls: string[] = []
   const query = vi.fn(async (sql: string) => {
-    if (sql.startsWith('delete from app_private.course_session')) return { rows: [], rowCount: 1 }
-    throw new Error(`Unexpected query: ${sql}`)
+    calls.push(sql)
+    if (sql.startsWith('select student_id from app_private.course_session'))
+      return { rows: [{ student_id: 'student-1' }], rowCount: 1 }
+    if (sql.startsWith('select student_id,status,version,is_legacy,series_id'))
+      return {
+        rows: [
+          {
+            student_id: 'student-1',
+            status: 'completed',
+            version: 4,
+            is_legacy: false,
+            series_id: null,
+          },
+        ],
+        rowCount: 1,
+      }
+    if (sql.includes('from app_private.session_lesson_source'))
+      return { rows: [{ kind: 'generated_single', purchase_id: 'purchase-1' }], rowCount: 1 }
+    return { rows: [], rowCount: 1 }
   })
-  const repository = new PostgresSchedulingRepository({ query } as unknown as Pool)
+  const repository = new PostgresSchedulingRepository({
+    connect: async () => ({ query, release: vi.fn() }),
+  } as unknown as Pool)
 
   await expect(repository.deleteSession('workspace-1', 'session-1', 4)).resolves.toBe(true)
 
-  expect(query.mock.calls[0]?.[0]).toContain("status in ('scheduled','completed')")
+  expect(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.finance_entry_state')),
+  ).toBeLessThan(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.session_lesson_source')),
+  )
+  expect(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.session_lesson_source')),
+  ).toBeLessThan(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.lesson_purchase')),
+  )
+  expect(
+    calls.findIndex((sql) => sql.startsWith('delete from app_private.lesson_purchase')),
+  ).toBeLessThan(calls.findIndex((sql) => sql.startsWith('delete from app_private.course_session')))
+  expect(calls.at(-1)).toBe('commit')
+})
+
+it('locks the Student and fixes an eligible manual source within completion', async () => {
+  const calls: string[] = []
+  const query = vi.fn(async (sql: string) => {
+    calls.push(sql)
+    if (sql.startsWith('select student_id from app_private.course_session'))
+      return { rows: [{ student_id: 'student-1' }], rowCount: 1 }
+    if (sql.startsWith('select student_id,version,status,venue_id,ends_at,is_legacy'))
+      return {
+        rows: [
+          {
+            student_id: 'student-1',
+            version: 2,
+            status: 'scheduled',
+            venue_id: 'venue-1',
+            ends_at: new Date('2026-09-01T03:00:00Z'),
+            is_legacy: false,
+          },
+        ],
+        rowCount: 1,
+      }
+    if (sql.startsWith('select ($2::timestamptz'))
+      return { rows: [{ local_day: '2026-09-01' }], rowCount: 1 }
+    if (sql.startsWith('select p.id from app_private.lesson_purchase'))
+      return { rows: [{ id: 'manual-1' }], rowCount: 1 }
+    if (sql.startsWith('update app_private.course_session set status='))
+      return {
+        rows: [
+          {
+            id: 'session-1',
+            student_id: 'student-1',
+            student_name: '學生',
+            series_id: null,
+            starts_at: new Date('2026-09-01T02:00:00Z'),
+            ends_at: new Date('2026-09-01T03:00:00Z'),
+            venue_id: 'venue-1',
+            customer_source: null,
+            fee_rule_id: null,
+            location: '場地',
+            status: 'completed',
+            completed_at: new Date(),
+            version: 3,
+            is_legacy: false,
+          },
+        ],
+        rowCount: 1,
+      }
+    return { rows: [], rowCount: 1 }
+  })
+  const repository = new PostgresSchedulingRepository({
+    connect: async () => ({ query, release: vi.fn() }),
+  } as unknown as Pool)
+  await expect(
+    repository.transitionSession('workspace-1', 'session-1', 'complete', 2, new Date()),
+  ).resolves.toMatchObject({ status: 'completed', version: 3 })
+  expect(
+    calls.findIndex((sql) => sql.startsWith('select id from app_private.student')),
+  ).toBeLessThan(
+    calls.findIndex((sql) => sql.startsWith('select p.id from app_private.lesson_purchase')),
+  )
+  expect(
+    calls.some((sql) => sql.includes("kind,purchase_id,decided_at) values($1,$2,$3,'manual'")),
+  ).toBe(true)
+  expect(calls.some((sql) => sql.startsWith('insert into app_private.lesson_purchase'))).toBe(false)
+  expect(calls.at(-1)).toBe('commit')
 })
 
 it('allows a scheduled Series occurrence to change Student without changing its Series', async () => {

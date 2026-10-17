@@ -856,6 +856,15 @@ consumer entry with two independent Settings-only functions and retain click-tri
 Training/performance export choices are deferred. Contract → Sol → CI, existing admission gates
 and separate Production/remote delivery authorization remain required.
 
+**Approved M8-D Beta scheduling and single-lesson correction — 2026-10-17:** the Product Owner
+froze [`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md). Every active Venue is
+schedulable without a prior purchase. Completion allocates an eligible manual package lesson first;
+otherwise it creates one Session-linked single-lesson purchase and income from the optional Student
+price, or leaves a completed Session pending billing. Venue-aware hints, bounded Series generation,
+stable historical sources, explicit correction and atomic batch settlement belong to this slice.
+Preserve M3/M4/M7.5 and follow Contract → Sol → CI, Product Owner UI inspection, and separate
+migration, Production and remote delivery checkpoints. This does not activate M8-E checkout.
+
 #### M8-E — Paid checkout before first offer expiry
 
 **Approved early development and release hold — 2026-10-14:** PO authorized the scoped payment

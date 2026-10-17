@@ -1,4 +1,5 @@
-import type { Pool } from 'pg'
+import type { Pool, PoolClient } from 'pg'
+import { PostgresFinanceRepository } from './postgres-finance-repository.js'
 import { randomUUID } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { LessonSummary } from '../students/student.js'
@@ -51,12 +52,24 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
     )
   }
   async lessonSummary(workspaceId: string, studentId: string): Promise<LessonSummary | null> {
-    const row = await this.pool.query<{ purchased: number; completed: number }>(
-      `select coalesce((select sum(lesson_count)::int from app_private.lesson_purchase where workspace_id=$1 and student_id=$2),0) purchased, coalesce((select count(*)::int from app_private.course_session where workspace_id=$1 and student_id=$2 and status='completed'),0) completed`,
-      [workspaceId, studentId],
+    const row = await new PostgresFinanceRepository(this.pool).scoped(workspaceId, (client) =>
+      client.query<{
+        purchased: number
+        completed: number
+        manual_used: number
+      }>(
+        `select coalesce((select sum(lesson_count)::int from app_private.lesson_purchase where workspace_id=$1 and student_id=$2 and source_kind='manual'),0) purchased, coalesce((select count(*)::int from app_private.course_session where workspace_id=$1 and student_id=$2 and status='completed'),0) completed, coalesce((select count(*)::int from app_private.session_lesson_source a join app_private.course_session s on s.workspace_id=a.workspace_id and s.id=a.session_id where a.workspace_id=$1 and a.student_id=$2 and a.kind in ('manual','legacy_unallocated') and s.status='completed'),0) manual_used`,
+        [workspaceId, studentId],
+      ),
     )
     const value = row.rows[0]
-    return value ? { ...value, remaining: value.purchased - value.completed } : null
+    return value
+      ? {
+          purchased: value.purchased,
+          completed: value.completed,
+          remaining: value.purchased - value.manual_used,
+        }
+      : null
   }
   async listSessions(workspaceId: string, start: Date, end: Date) {
     const rows = await this.pool.query(
@@ -122,24 +135,172 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
     const next =
       action === 'complete' ? 'completed' : action === 'reopen' ? 'scheduled' : 'cancelled'
     const completed = action === 'complete' ? now : null
-    const row = await this.pool.query(
-      `update app_private.course_session set status=$4,completed_at=$5,version=version+1,updated_at=$6 where workspace_id=$1 and id=$2 and version=$3 and not is_legacy and ((status='scheduled' and $4 in ('completed','cancelled')) or (status='completed' and $4='scheduled')) returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
-      [workspaceId, id, version, next, completed, now],
-    )
-    if (row.rows[0]) return mapSession(row.rows[0])
-    const current = await this.getSession(workspaceId, id)
-    if (current) throw new SchedulingVersionConflictError(current)
-    return null
+    const client = await this.pool.connect()
+    try {
+      await client.query('begin')
+      await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
+      const candidate = await client.query<{ student_id: string }>(
+        'select student_id from app_private.course_session where workspace_id=$1 and id=$2',
+        [workspaceId, id],
+      )
+      if (!candidate.rows[0]) {
+        await client.query('rollback')
+        return null
+      }
+      await client.query(
+        'select id from app_private.student where workspace_id=$1 and id=$2 for update',
+        [workspaceId, candidate.rows[0].student_id],
+      )
+      const locked = await client.query<{
+        student_id: string
+        version: number
+        status: string
+        venue_id: string | null
+        ends_at: Date | null
+        is_legacy: boolean
+      }>(
+        'select student_id,version,status,venue_id,ends_at,is_legacy from app_private.course_session where workspace_id=$1 and id=$2 for update',
+        [workspaceId, id],
+      )
+      const current = locked.rows[0]
+      if (
+        !current ||
+        current.student_id !== candidate.rows[0].student_id ||
+        current.version !== version ||
+        current.is_legacy ||
+        (action === 'reopen' ? current.status !== 'completed' : current.status !== 'scheduled')
+      ) {
+        await client.query('rollback')
+        const latest = await this.getSession(workspaceId, id)
+        if (latest) throw new SchedulingVersionConflictError(latest)
+        return null
+      }
+      if (action === 'reopen') await removeSessionLessonSource(client, workspaceId, id)
+      if (action === 'complete') {
+        const localDate = await client.query<{ local_day: string }>(
+          'select ($2::timestamptz at time zone time_zone)::date::text as local_day from app_private.workspace where id=$1',
+          [workspaceId, current.ends_at],
+        )
+        const chosen = await client.query<{ id: string }>(
+          `select p.id from app_private.lesson_purchase p
+           where p.workspace_id=$1 and p.student_id=$2 and p.source_kind='manual'
+             and (p.entitlement_venue_id is null or p.entitlement_venue_id=$3)
+             and (p.purchased_at at time zone (select time_zone from app_private.workspace where id=$1))::date <= $4::date
+             and (select count(*) from app_private.session_lesson_source a
+                  where a.workspace_id=$1 and a.kind='manual' and a.purchase_id=p.id) < p.lesson_count
+           order by (p.entitlement_venue_id is not null) desc,p.purchased_at,p.id limit 1`,
+          [workspaceId, current.student_id, current.venue_id, localDate.rows[0]?.local_day],
+        )
+        if (chosen.rows[0]) {
+          await client.query(
+            "insert into app_private.session_lesson_source(workspace_id,session_id,student_id,kind,purchase_id,decided_at) values($1,$2,$3,'manual',$4,$5)",
+            [workspaceId, id, current.student_id, chosen.rows[0].id, now],
+          )
+        } else {
+          const price = await client.query<{
+            single_lesson_amount_minor: string | null
+            single_lesson_currency: string | null
+          }>(
+            'select single_lesson_amount_minor,single_lesson_currency from app_private.student where workspace_id=$1 and id=$2',
+            [workspaceId, current.student_id],
+          )
+          const value = price.rows[0]
+          if (value && value.single_lesson_amount_minor !== null && value.single_lesson_currency) {
+            const purchaseId = randomUUID()
+            await client.query(
+              `insert into app_private.lesson_purchase
+               (id,workspace_id,student_id,purchased_at,lesson_count,amount_minor,currency,private_note,created_at,updated_at,collection_mode,entitlement_venue_id,source_kind,source_session_id)
+               values($1,$2,$3,$4,1,$5,$6,'',$7,$7,'coach',null,'generated_single',$8)`,
+              [
+                purchaseId,
+                workspaceId,
+                current.student_id,
+                current.ends_at,
+                value.single_lesson_amount_minor,
+                value.single_lesson_currency,
+                now,
+                id,
+              ],
+            )
+            await client.query(
+              "insert into app_private.session_lesson_source(workspace_id,session_id,student_id,kind,purchase_id,decided_at) values($1,$2,$3,'generated_single',$4,$5)",
+              [workspaceId, id, current.student_id, purchaseId, now],
+            )
+          } else {
+            await client.query(
+              "insert into app_private.session_lesson_source(workspace_id,session_id,student_id,kind,decided_at) values($1,$2,$3,'pending',$4)",
+              [workspaceId, id, current.student_id, now],
+            )
+          }
+        }
+      }
+      const row = await client.query(
+        `update app_private.course_session set status=$4,completed_at=$5,version=version+1,updated_at=$6 where workspace_id=$1 and id=$2 and version=$3 returning id,student_id,(select name from app_private.student where workspace_id=$1 and id=student_id) student_name,series_id,starts_at,ends_at,venue_id,customer_source,fee_rule_id,location,status,completed_at,version,is_legacy`,
+        [workspaceId, id, version, next, completed, now],
+      )
+      await client.query('commit')
+      return mapSession(row.rows[0])
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
   }
   async deleteSession(workspaceId: string, id: string, version: number) {
-    const result = await this.pool.query(
-      `delete from app_private.course_session where workspace_id=$1 and id=$2 and version=$3 and status in ('scheduled','completed') and not is_legacy and (status='completed' or series_id is null)`,
-      [workspaceId, id, version],
-    )
-    if (result.rowCount) return true
-    const current = await this.getSession(workspaceId, id)
-    if (current) throw new SchedulingVersionConflictError(current)
-    return false
+    const client = await this.pool.connect()
+    try {
+      await client.query('begin')
+      await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
+      const candidate = await client.query<{ student_id: string }>(
+        'select student_id from app_private.course_session where workspace_id=$1 and id=$2',
+        [workspaceId, id],
+      )
+      if (!candidate.rows[0]) {
+        await client.query('rollback')
+        return false
+      }
+      await client.query(
+        'select id from app_private.student where workspace_id=$1 and id=$2 for update',
+        [workspaceId, candidate.rows[0].student_id],
+      )
+      const locked = await client.query<{
+        student_id: string
+        status: string
+        version: number
+        is_legacy: boolean
+        series_id: string | null
+      }>(
+        'select student_id,status,version,is_legacy,series_id from app_private.course_session where workspace_id=$1 and id=$2 for update',
+        [workspaceId, id],
+      )
+      const current = locked.rows[0]
+      if (
+        !current ||
+        current.student_id !== candidate.rows[0].student_id ||
+        current.version !== version ||
+        current.is_legacy ||
+        !['scheduled', 'completed'].includes(current.status) ||
+        (current.status !== 'completed' && current.series_id !== null)
+      ) {
+        await client.query('rollback')
+        const latest = await this.getSession(workspaceId, id)
+        if (latest) throw new SchedulingVersionConflictError(latest)
+        return false
+      }
+      if (current.status === 'completed') await removeSessionLessonSource(client, workspaceId, id)
+      await client.query('delete from app_private.course_session where workspace_id=$1 and id=$2', [
+        workspaceId,
+        id,
+      ])
+      await client.query('commit')
+      return true
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
   }
   async listSeries(workspaceId: string, studentId: string) {
     const rows = await this.pool.query(
@@ -349,16 +510,11 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       await client.query('select pg_advisory_xact_lock(hashtext($1))', [
         `schedule-series:${workspaceId}:${studentId}`,
       ])
-      const [seriesRows, summaryRows, sessionRows] = await Promise.all([
+      const [seriesRows, sessionRows] = await Promise.all([
         client.query(
           `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
             interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version from app_private.schedule_series
            where workspace_id=$1 and student_id=$2 and active order by anchor_starts_at,id`,
-          [workspaceId, studentId],
-        ),
-        client.query<{ purchased: number; completed: number }>(
-          `select coalesce((select sum(lesson_count)::int from app_private.lesson_purchase where workspace_id=$1 and student_id=$2),0) purchased,
-            coalesce((select count(*)::int from app_private.course_session where workspace_id=$1 and student_id=$2 and status='completed'),0) completed`,
           [workspaceId, studentId],
         ),
         client.query(
@@ -368,16 +524,13 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           [workspaceId, studentId],
         ),
       ])
-      const summary = summaryRows.rows[0]!
       const timeZone = await this.getTimeZone(workspaceId)
-      const remainingLessons = summary.purchased - summary.completed
       const sessions = sessionRows.rows.map(mapSession)
       const generated: CourseSession[] = []
       for (const seriesRow of seriesRows.rows) {
         const series = mapSeries(seriesRow)
         const starts = planSeriesReconciliation({
           series,
-          remainingLessons,
           sessions,
           now,
           timeZone,
@@ -651,6 +804,41 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
     }
   }
 }
+async function removeSessionLessonSource(
+  client: PoolClient,
+  workspaceId: string,
+  sessionId: string,
+) {
+  const source = await client.query<{ kind: string; purchase_id: string | null }>(
+    'select kind,purchase_id from app_private.session_lesson_source where workspace_id=$1 and session_id=$2 for update',
+    [workspaceId, sessionId],
+  )
+  await client.query(
+    `delete from app_private.finance_entry_state
+     where workspace_id=$1 and entry_id = any($2::text[])`,
+    [
+      workspaceId,
+      [
+        `session:${sessionId}`,
+        `single-lesson:${sessionId}`,
+        ...(source.rows[0]?.kind === 'generated_single' && source.rows[0].purchase_id
+          ? [`purchase:${source.rows[0].purchase_id}`]
+          : []),
+      ],
+    ],
+  )
+  await client.query(
+    'delete from app_private.session_lesson_source where workspace_id=$1 and session_id=$2',
+    [workspaceId, sessionId],
+  )
+  if (source.rows[0]?.kind === 'generated_single' && source.rows[0].purchase_id) {
+    await client.query(
+      'delete from app_private.lesson_purchase where workspace_id=$1 and id=$2 and source_session_id=$3',
+      [workspaceId, source.rows[0].purchase_id, sessionId],
+    )
+  }
+}
+
 function mapSession(row: any): CourseSession {
   return {
     id: row.id,

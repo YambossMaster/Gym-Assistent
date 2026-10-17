@@ -40,6 +40,7 @@ describe('StudentModule', () => {
       privateNote: '',
       ageRange: null,
       defaultVenueId: null,
+      singleLessonPrice: null,
       active: true,
       lineLinked: false,
       version: 1,
@@ -126,6 +127,29 @@ describe('StudentModule', () => {
       version: renamed!.version,
     })
     expect(cleared?.ageRange).toBeNull()
+  })
+
+  it('distinguishes an absent Student price from zero and preserves it on unrelated edits', async () => {
+    const students = new StudentModule({ repository: new MemoryStudentRepository() })
+    const created = await students.create(coachA, { name: 'Alice' })
+    expect(created.singleLessonPrice).toBeNull()
+    const priced = await students.update(coachA, created.id, {
+      name: 'Alice',
+      version: created.version,
+      singleLessonPrice: { amountMinor: 0, currency: 'TWD' },
+    })
+    expect(priced?.singleLessonPrice).toEqual({ amountMinor: 0, currency: 'TWD' })
+    const renamed = await students.update(coachA, created.id, {
+      name: 'Alice Chen',
+      version: priced!.version,
+    })
+    expect(renamed?.singleLessonPrice).toEqual({ amountMinor: 0, currency: 'TWD' })
+    const cleared = await students.update(coachA, created.id, {
+      name: 'Alice Chen',
+      version: renamed!.version,
+      singleLessonPrice: null,
+    })
+    expect(cleared?.singleLessonPrice).toBeNull()
   })
 
   it('returns roster summaries and rejects stale lesson-purchase corrections', async () => {

@@ -17,7 +17,9 @@ export function routePolicy(method: string, route: string | undefined): RoutePol
     route === '/v1/finances/months' ||
     route === '/v1/finances/months/:month' ||
     route === '/v1/finances/deleted' ||
+    route.startsWith('/v1/finances/pending-single-lessons') ||
     route.startsWith('/v1/finances/entries') ||
+    route === '/v1/sessions/:sessionId/single-lesson-price' ||
     route === '/v1/students/:studentId/performance' ||
     route === '/v1/students/:studentId/performance/:definitionId'
   )

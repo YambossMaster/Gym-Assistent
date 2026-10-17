@@ -115,11 +115,13 @@ export class FinanceModule {
         salaryRules: snapshot.salaryRules ?? [],
         coachSuppliedStudents: snapshot.coachSuppliedStudents ?? [],
         sessions: snapshot.sessions,
-        purchases: snapshot.purchases.map((purchase) => ({
-          studentId: purchase.studentId,
-          venueId: purchase.venueId,
-          lessonCount: purchase.lessonCount,
-        })),
+        purchases: snapshot.purchases
+          .filter((purchase) => purchase.sourceKind !== 'generated_single')
+          .map((purchase) => ({
+            studentId: purchase.studentId,
+            venueId: purchase.venueId,
+            lessonCount: purchase.lessonCount,
+          })),
         series: snapshot.series ?? [],
       }
     if (kind === 'months') {

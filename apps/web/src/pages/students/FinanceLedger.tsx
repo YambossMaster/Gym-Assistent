@@ -75,6 +75,7 @@ function ModifiedFieldMark() {
   return <span className="finance-ledger-field-modified">（已修改）</span>
 }
 export function financeSourceRoute(row: Row, params: URLSearchParams) {
+  if (row.singleLessonSessionId) return row.targetRoute
   if (row.id.startsWith('session:') && row.venueId) {
     const next = new URLSearchParams({
       venue: row.venueId,
@@ -102,7 +103,9 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
   const ascending = (a: Row, b: Row) =>
     `${a.date}T${a.occurredAt ? workspaceWallTime(a.occurredAt, data.timeZone).slice(11) : '00:00'}`.localeCompare(
       `${b.date}T${b.occurredAt ? workspaceWallTime(b.occurredAt, data.timeZone).slice(11) : '00:00'}`
-    ) || a.id.localeCompare(b.id)
+    ) ||
+    Number(b.direction === 'income') - Number(a.direction === 'income') ||
+    a.id.localeCompare(b.id)
   const mutation = useFinanceMutation(session)
   const [editor, setEditor] = useState<Row | 'new' | null>(null)
   const modifiedFields =
@@ -384,6 +387,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
             editor !== 'new' &&
             data.rows.some((r) => r.id === editor.id) &&
             !confirm &&
+            !editor.singleLessonPriceUnset &&
             !mutation.isPending
               ? () => setConfirm('delete')
               : undefined
@@ -460,37 +464,41 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                 }}
               >
                 <div className="finance-ledger-fields" data-dialog-scroll-region>
-                  <div className="finance-ledger-datetime">
-                    <SeriesDatePicker
-                      label="日期"
-                      labelSuffix={modifiedFields?.date ? <ModifiedFieldMark /> : null}
-                      value={when.slice(0, 10)}
-                      onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
-                    />
-                    <div className="scheduling-time-field">
-                      <span>
-                        <RequiredFieldLabel>時間</RequiredFieldLabel>
-                        {modifiedFields?.time ? <ModifiedFieldMark /> : null}
-                      </span>
-                      <TimeSelect
-                        label="時間"
-                        value={when.slice(11)}
-                        onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                  {!(editor !== 'new' && editor.singleLessonSessionId) && (
+                    <div className="finance-ledger-datetime">
+                      <SeriesDatePicker
+                        label="日期"
+                        labelSuffix={modifiedFields?.date ? <ModifiedFieldMark /> : null}
+                        value={when.slice(0, 10)}
+                        onChange={(date) => setWhen(`${date}T${when.slice(11) || '00:00'}`)}
                       />
+                      <div className="scheduling-time-field">
+                        <span>
+                          <RequiredFieldLabel>時間</RequiredFieldLabel>
+                          {modifiedFields?.time ? <ModifiedFieldMark /> : null}
+                        </span>
+                        <TimeSelect
+                          label="時間"
+                          value={when.slice(11)}
+                          onChange={(time) => setWhen(`${when.slice(0, 10)}T${time}`)}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <label>
-                    <span className="finance-ledger-field-title">
-                      <RequiredFieldLabel>名稱</RequiredFieldLabel>
-                      {modifiedFields?.label && <ModifiedFieldMark />}
-                    </span>
-                    <input
-                      required
-                      maxLength={160}
-                      value={label}
-                      onChange={(event) => setLabel(event.target.value)}
-                    />
-                  </label>
+                  )}
+                  {!(editor !== 'new' && editor.singleLessonSessionId) && (
+                    <label>
+                      <span className="finance-ledger-field-title">
+                        <RequiredFieldLabel>名稱</RequiredFieldLabel>
+                        {modifiedFields?.label && <ModifiedFieldMark />}
+                      </span>
+                      <input
+                        required
+                        maxLength={160}
+                        value={label}
+                        onChange={(event) => setLabel(event.target.value)}
+                      />
+                    </label>
+                  )}
                   <div className={editor === 'new' ? 'finance-ledger-amount-row' : undefined}>
                     {editor === 'new' && (
                       <div className="finance-ledger-direction" role="group" aria-label="方向">
@@ -551,14 +559,29 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                       <pre className="finance-ledger-source-display">
                         {sourceExplanation(editor)}
                       </pre>
-                      {editor.targetRoute && (
-                        <Link
-                          className="finance-ledger-source-link ui-action-general"
-                          to={financeSourceRoute(editor, params)}
-                        >
-                          前往來源紀錄 <ArrowUpRight aria-hidden="true" />
-                        </Link>
-                      )}
+                      <div className="finance-ledger-source-links">
+                        {editor.targetRoute && (
+                          <Link
+                            className="finance-ledger-source-link ui-action-general"
+                            to={financeSourceRoute(editor, params)}
+                          >
+                            前往來源紀錄 <ArrowUpRight aria-hidden="true" />
+                          </Link>
+                        )}
+                        {editor.singleLessonPriceUnset && editor.studentPriceRoute && (
+                          <Link
+                            className="finance-ledger-source-link ui-action-general"
+                            to={`${editor.studentPriceRoute}?${new URLSearchParams({
+                              from: 'finances',
+                              edit: 'price',
+                              ...(params.get('month') ? { month: params.get('month')! } : {}),
+                              entry: editor.id
+                            })}`}
+                          >
+                            前往學生資料設定單價 <ArrowUpRight aria-hidden="true" />
+                          </Link>
+                        )}
+                      </div>
                     </section>
                   )}
                 </div>
@@ -572,15 +595,17 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                       {editor.sourceRemoved ? '另存為自行新增' : '恢復明細'}
                     </button>
                   )}
-                  {editor !== 'new' && data.rows.some((r) => r.id === editor.id) && (
-                    <button
-                      type="button"
-                      className="danger-outline-button ui-action-delete"
-                      onClick={() => setConfirm('delete')}
-                    >
-                      刪除
-                    </button>
-                  )}
+                  {editor !== 'new' &&
+                    !editor.singleLessonPriceUnset &&
+                    data.rows.some((r) => r.id === editor.id) && (
+                      <button
+                        type="button"
+                        className="danger-outline-button ui-action-delete"
+                        onClick={() => setConfirm('delete')}
+                      >
+                        刪除
+                      </button>
+                    )}
                   {editor !== 'new' && editor.status === 'modified' && !editor.sourceRemoved && (
                     <button
                       type="button"

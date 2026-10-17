@@ -6,6 +6,7 @@ import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 export function PurchaseMoneyFields({
   count,
   amount,
+  defaultUnitPrice,
   currency = 'TWD',
   includeCount = true,
   showSummary = true,
@@ -13,6 +14,7 @@ export function PurchaseMoneyFields({
 }: {
   count?: number
   amount?: number
+  defaultUnitPrice?: number
   currency?: string
   includeCount?: boolean
   showSummary?: boolean
@@ -22,8 +24,12 @@ export function PurchaseMoneyFields({
     [totalDraft, setTotalDraft] = useState(
       amount === undefined ? '' : String(amount / moneyFactor(currency))
     ),
-    [unitDraft, setUnitDraft] = useState(''),
-    [editedField, setEditedField] = useState<'total' | 'unit'>('total')
+    [unitDraft, setUnitDraft] = useState(
+      defaultUnitPrice === undefined ? '' : String(defaultUnitPrice / moneyFactor(currency))
+    ),
+    [editedField, setEditedField] = useState<'total' | 'unit'>(
+      defaultUnitPrice === undefined ? 'total' : 'unit'
+    )
   const code = currency
   const factor = moneyFactor(code),
     n = Number(lessons)

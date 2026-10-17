@@ -6,8 +6,17 @@ import { FormSelect } from '../../shared/FormSelect'
 import { RequiredFieldMark } from '../../shared/FormFieldLabel'
 import { useFinanceMutation, useVenues, type Venue } from './finance-api'
 
+const venueCostLabel = {
+  untracked: '不計',
+  prepaid: '預購',
+  rent: '單次',
+  commission: '抽成',
+  free: '免費'
+} as const
+
 export function VenueNamePicker({
   session,
+  date,
   label,
   value,
   optional = false,
@@ -17,6 +26,7 @@ export function VenueNamePicker({
   onSelect
 }: {
   session: Session
+  date?: string
   label: string
   value: string | null
   optional?: boolean
@@ -30,6 +40,16 @@ export function VenueNamePicker({
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const costLabel = (venue: Venue) => {
+    const rule = date
+      ? venues.data?.rules
+          .filter((item) => item.venueId === venue.id && item.effectiveFrom <= date)
+          .sort((a, b) =>
+            (b.effectiveAt ?? b.effectiveFrom).localeCompare(a.effectiveAt ?? a.effectiveFrom)
+          )[0]
+      : venue.currentRule
+    return venueCostLabel[rule?.kind ?? 'untracked']
+  }
   const visibleVenues = venues.data?.venues.filter((venue, _index, all) => {
     if (allowedIds && !allowedIds.includes(venue.id) && venue.id !== value) return false
     if (!venue.active && venue.id !== value) return false
@@ -142,7 +162,10 @@ export function VenueNamePicker({
           required={!optional}
           options={[
             { value: '', label: optional ? '無固定場地' : '選擇場地' },
-            ...(visibleVenues?.map((venue) => ({ value: venue.id, label: venue.name })) ?? []),
+            ...(visibleVenues?.map((venue) => ({
+              value: venue.id,
+              label: date ? `${venue.name}（${costLabel(venue)}）` : venue.name
+            })) ?? []),
             ...(allowCreate ? [{ value: '__add', label: '＋ 新增場地' }] : [])
           ]}
           onChange={(next) => {

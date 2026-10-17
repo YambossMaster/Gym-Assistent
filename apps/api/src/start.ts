@@ -1,4 +1,5 @@
 import { FinanceModule } from './finances/finance-module.js'
+import { SingleLessonBillingModule } from './finances/single-lesson-billing.js'
 import { PostgresFinanceRepository } from './adapters/postgres-finance-repository.js'
 import { Pool } from 'pg'
 import { CheckoutModule } from './billing/checkout.js'
@@ -88,6 +89,9 @@ const server = buildServer({
     config.CALENDAR_SUBSCRIPTION_SECRET,
   ),
   finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
+  singleLessons: new SingleLessonBillingModule(pool, (identity) =>
+    repository.resolveWorkspace(identity),
+  ),
   identityVerifier,
   students: new StudentModule({ repository }),
   today: new TodayModule(repository),

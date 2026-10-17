@@ -32,6 +32,84 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+it('edits an unset-price zero income from the ordinary ledger without a separate pending section', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const data = {
+    month: '2026-09',
+    timeZone: 'Asia/Taipei',
+    coverage: 'complete',
+    totals: [{ currency: 'TWD', incomeMinor: 0, expenseMinor: 0, differenceMinor: 0 }],
+    missing: [],
+    venues: [],
+    rows: [
+      {
+        id: 'single-lesson:session-1',
+        date: '2026-09-04',
+        occurredAt: '2026-09-04T04:00:00.000Z',
+        kind: 'purchase',
+        label: '學生 · 單堂計費',
+        detail: '尚未設定學生課堂單價',
+        direction: 'income',
+        amountMinor: 0,
+        currency: 'TWD',
+        targetRoute: '/sessions/session-1',
+        studentPriceRoute: '/students/student-1',
+        singleLessonSessionId: 'session-1',
+        singleLessonSessionVersion: 3,
+        singleLessonPriceUnset: true
+      }
+    ]
+  } satisfies MonthlyFinance
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>
+            <FinanceLedger
+              session={{ access_token: 'test', user: { id: 'coach' } } as Session}
+              data={data}
+            />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    )
+    expect(host.querySelector('.finance-ledger-row')?.textContent).toContain('尚未設定學生課堂單價')
+    expect(host.querySelector('.finance-ledger-income')?.textContent).toContain('+$0')
+    await act(async () => host.querySelector<HTMLButtonElement>('.finance-ledger-row')!.click())
+    expect(host.querySelector('.finance-ledger-editor')?.textContent).toContain(
+      '前往學生資料設定單價'
+    )
+    expect(host.querySelectorAll('.finance-ledger-source-links a')).toHaveLength(2)
+    expect(host.querySelector('.finance-ledger-footer .ui-action-delete')).toBeNull()
+    const amountInput = host.querySelector<HTMLInputElement>('input[type="number"]')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(
+        amountInput,
+        '650'
+      )
+      amountInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () =>
+      host.querySelector<HTMLFormElement>('.finance-ledger-editor form')!.requestSubmit()
+    )
+    expect(mutation.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: '/finances/entries/single-lesson%3Asession-1',
+        method: 'PATCH',
+        body: { version: 0, label: '學生 · 單堂計費', amountMinor: 650 }
+      }),
+      expect.any(Object)
+    )
+  } finally {
+    await act(async () => root.unmount())
+    queryClient.clear()
+  }
+})
+
 it('uses the Settings currency for a new ledger entry without a currency field', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const host = document.createElement('div')

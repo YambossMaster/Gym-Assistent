@@ -41,6 +41,14 @@ type RecordRow = {
   remainingAfterDeduction: number | null
   purchaseId: string | null
   purchaseRoute: string | null
+  singleLesson: {
+    entryId: string
+    priceUnset: boolean
+    amountMinor: number
+    originalAmountMinor: number
+    currency: string
+    modified: boolean
+  } | null
   purchase: {
     purchasedOn: string
     amountMinor: number
@@ -56,7 +64,12 @@ type RecordRow = {
     originalRate: number | null
     appliedRate: number | null
   } | null
-  expense: { amountMinor: number; currency: string } | null
+  expense: {
+    amountMinor: number
+    originalAmountMinor?: number
+    currency: string
+    status?: 'original' | 'modified' | 'manual'
+  } | null
   adjustment: { mode: string; amountMinor: number | null; rate: number | null } | null
   targetRoute: string
 }
@@ -131,9 +144,11 @@ export function VenueCourseRecords({
     if (highlightedLoaded) highlightedRef.current?.scrollIntoView({ block: 'center' })
   }, [highlightedLoaded])
   const record = records.find((item) => item.sessionId === selected)
-  const purchaseSummary = record?.purchase
-    ? `${record.purchase.purchasedOn} · ${record.purchase.lessonCount} 堂 · 整包 ${financeMoney(record.purchase.amountMinor, record.purchase.currency)}（每堂 ${record.purchase.amountMinor % record.purchase.lessonCount === 0 ? financeMoney(record.purchase.amountMinor / record.purchase.lessonCount, record.purchase.currency) : `${financeMoney(record.purchase.amountMinor, record.purchase.currency)} ÷ ${record.purchase.lessonCount}`}）`
-    : '這堂課尚無可對應的學生購課紀錄'
+  const purchaseSummary = record?.singleLesson
+    ? `單堂計費 · ${record.singleLesson.priceUnset ? '尚未設定學生課堂單價 · ' : ''}收入明細 +${financeMoney(record.singleLesson.amountMinor, record.singleLesson.currency)}${record.singleLesson.modified ? `（已修改；來源 ${financeMoney(record.singleLesson.originalAmountMinor, record.singleLesson.currency)}）` : ''}`
+    : record?.purchase
+      ? `${record.purchase.purchasedOn} · ${record.purchase.lessonCount} 堂 · 整包 ${financeMoney(record.purchase.amountMinor, record.purchase.currency)}（每堂 ${record.purchase.amountMinor % record.purchase.lessonCount === 0 ? financeMoney(record.purchase.amountMinor / record.purchase.lessonCount, record.purchase.currency) : `${financeMoney(record.purchase.amountMinor, record.purchase.currency)} ÷ ${record.purchase.lessonCount}`}）`
+      : '這堂課尚未連結學生計費來源'
   const displayTime = (instant: string, options: Intl.DateTimeFormatOptions) =>
     formatVenueRecordDateTime(instant, timeZone, options)
   const recordMonth = (instant: string) => workspaceWallTime(instant, timeZone).slice(0, 7)
@@ -149,14 +164,20 @@ export function VenueCourseRecords({
     value === 'coach' ? '自帶客' : value === 'venue' ? '場地供客' : '客源未記錄'
   const rate = (row: RecordRow, original = false) => {
     const calc = row.calculation
-    if (!calc) return ''
-    const value = original ? calc.originalRate : calc.appliedRate
+    const value = original
+      ? (calc?.originalRate ?? null)
+      : row.adjustment?.mode === 'rate'
+        ? row.adjustment.rate
+        : (calc?.appliedRate ??
+          row.rule?.rate ??
+          (row.customerSource === 'coach' ? row.rule?.coachRate : row.rule?.venueRate) ??
+          null)
     if (value === null) return '未記錄抽成'
     if (!original && row.adjustment?.mode === 'rate') return `本堂調整 ${value}%`
-    const fixed = original ? calc.originalRateMode === 'fixed' : row.rule?.rate != null
+    const fixed = original ? calc?.originalRateMode === 'fixed' : row.rule?.rate != null
     return fixed
       ? `固定抽成 ${value}%`
-      : `${source(original ? calc.originalCustomerSource : row.customerSource)} ${value}%`
+      : `${source(original ? (calc?.originalCustomerSource ?? null) : row.customerSource)} ${value}%`
   }
   const rateTransition = (row: RecordRow) => {
     const original = rate(row, true)
@@ -202,12 +223,17 @@ export function VenueCourseRecords({
     if (row.expense && row.rule?.kind === 'rent')
       return {
         title: `場地租用 · ${financeMoney(row.expense.amountMinor, row.expense.currency)}`,
-        detail: `單次計價${row.adjustment?.mode === 'amount' ? ' · 本堂金額已調整' : ''}`
+        detail: `單次計價${row.adjustment?.mode === 'amount' ? ' · 本堂金額已調整' : ''}${row.expense.status === 'modified' ? ' · 支出明細已修改' : ''}`
+      }
+    if (row.expense && row.rule?.kind === 'commission' && row.singleLesson)
+      return {
+        title: `${row.expense.amountMinor < 0 ? '沖減抽成' : '逐堂抽成'} · ${financeMoney(Math.abs(row.expense.amountMinor), row.expense.currency)}`,
+        detail: `${rate(row)} · 依收入明細 ${financeMoney(row.singleLesson.amountMinor, row.singleLesson.currency)} 計算${row.singleLesson.priceUnset ? ' · 學生單價未設定' : ''}${row.expense.status === 'modified' ? ` · 支出明細已修改（計算值 ${financeMoney(row.expense.originalAmountMinor ?? row.expense.amountMinor, row.expense.currency)}）` : ''}`
       }
     if (row.expense && row.calculation)
       return {
         title: `${row.calculation.originalRate === null ? '逐堂抽成' : row.expense.amountMinor < 0 ? '沖減抽成差額' : '補扣抽成差額'} · ${financeMoney(Math.abs(row.expense.amountMinor), row.expense.currency)}`,
-        detail: `${row.calculation.originalRate === null ? rate(row) : rateTransition(row)} · 購課 ${price(row)}`
+        detail: `${row.calculation.originalRate === null ? rate(row) : rateTransition(row)} · 購課 ${price(row)}${row.expense.status === 'modified' ? ' · 支出明細已修改' : ''}`
       }
     return { title: '待補資料', detail: '請查看這堂課的來源與規則' }
   }
@@ -293,7 +319,7 @@ export function VenueCourseRecords({
                         起扣 · 本堂扣 1 堂 · 目前此批剩餘 {record.credit.remainingLessons} 堂
                       </p>
                     )}
-                    {record.calculation && (
+                    {record.calculation && !record.singleLesson && (
                       <p>
                         購課時 {rate(record, true)}，這堂課 {rate(record)}；依購課 {price(record)}{' '}
                         計算。
@@ -301,7 +327,19 @@ export function VenueCourseRecords({
                     )}
                   </div>
                 </details>
-                {record.purchaseRoute ? (
+                {record.singleLesson ? (
+                  <Link
+                    className="venue-course-purchase"
+                    to={`/students/finances?month=${recordMonth(record.endsAt)}&entry=${encodeURIComponent(record.singleLesson.entryId)}`}
+                    aria-label={`查看${record.studentName}的單堂計費收入明細：${purchaseSummary}`}
+                  >
+                    <span>
+                      <small>學生計費來源</small>
+                      <span>{purchaseSummary}</span>
+                    </span>
+                    <ChevronRight size={19} aria-hidden="true" />
+                  </Link>
+                ) : record.purchaseRoute ? (
                   <Link
                     className="venue-course-purchase"
                     to={`${record.purchaseRoute}#purchase-history`}

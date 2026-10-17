@@ -1,4 +1,8 @@
 import { FinanceModule } from '../finances/finance-module.js'
+import {
+  SingleLessonBillingModule,
+  SingleLessonConflict,
+} from '../finances/single-lesson-billing.js'
 import { BillingError, type CheckoutModule } from '../billing/checkout.js'
 import { BillingPolicyError } from '../billing/policy.js'
 import { checkoutRoutes } from '../billing/routes.js'
@@ -26,6 +30,7 @@ import { TodayModule } from '../today/today-module.js'
 import { TodayNotificationModule } from '../today/today-notifications.js'
 import {
   LessonPurchaseVersionConflictError,
+  LessonPurchaseAllocationConflictError,
   StudentVersionConflictError,
 } from '../students/student-repository.js'
 import { WorkspaceVersionConflictError } from '../workspace/workspace-repository.js'
@@ -78,6 +83,7 @@ export interface ServerDependencies {
   training?: TrainingModule
   publicAccess?: PublicAccessModule
   finances?: FinanceModule
+  singleLessons?: SingleLessonBillingModule
   exports?: ExportModule
   financeReport?: FinanceReportModule
   calendarIntegration?: Pick<PostgresCalendarIntegration, 'get' | 'change' | 'download' | 'feed'>
@@ -117,6 +123,20 @@ const createStudentBodySchema = {
     privateNote: { type: 'string', maxLength: 4000 },
     ageRange: studentAgeRangeBodySchema,
     defaultVenueId: { type: ['string', 'null'], format: 'uuid' },
+    singleLessonPrice: {
+      anyOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['amountMinor', 'currency'],
+          properties: {
+            amountMinor: { type: 'integer', minimum: 0, maximum: 999999999999 },
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+          },
+        },
+        { type: 'null' },
+      ],
+    },
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
   },
@@ -133,6 +153,20 @@ const updateStudentBodySchema = {
     privateNote: { type: 'string', maxLength: 4000 },
     ageRange: studentAgeRangeBodySchema,
     defaultVenueId: { type: ['string', 'null'], format: 'uuid' },
+    singleLessonPrice: {
+      anyOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['amountMinor', 'currency'],
+          properties: {
+            amountMinor: { type: 'integer', minimum: 0, maximum: 999999999999 },
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+          },
+        },
+        { type: 'null' },
+      ],
+    },
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
     version: { type: 'integer', minimum: 1 },
@@ -227,6 +261,7 @@ export function buildServer({
   requireLegalAcceptance = false,
   planAccess,
   finances,
+  singleLessons,
   exports,
   financeReport,
   calendarIntegration,
@@ -440,7 +475,37 @@ export function buildServer({
         },
       })
   }
+  if (singleLessons) {
+    server.get('/v1/finances/pending-single-lessons', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return singleLessons.pending(identity, (request.query as { cursor?: string }).cursor)
+    })
+    server.post('/v1/finances/pending-single-lessons/settle', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return singleLessons.settle(identity, request.body)
+    })
+    server.patch('/v1/sessions/:sessionId/single-lesson-price', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return singleLessons.correctPrice(
+        identity,
+        (request.params as { sessionId: string }).sessionId,
+        request.body,
+      )
+    })
+    server.post('/v1/sessions/:sessionId/billing/re-evaluate', async (request) => {
+      const identity = await identityVerifier.verify(request.headers.authorization)
+      return singleLessons.reEvaluate(
+        identity,
+        (request.params as { sessionId: string }).sessionId,
+        request.body,
+      )
+    })
+  }
   server.setErrorHandler((error, _request, reply) => {
+    if (error instanceof SingleLessonConflict)
+      return reply
+        .status(409)
+        .send({ error: error.code, affectedIds: error.affectedIds, current: error.current })
     if (error instanceof BillingError)
       return reply
         .header('Cache-Control', 'no-store, private')
@@ -528,6 +593,14 @@ export function buildServer({
         reason: 'lesson_purchase_version_conflict',
         message: error.message,
         currentPurchase: error.currentPurchase,
+      })
+    }
+    if (error instanceof LessonPurchaseAllocationConflictError) {
+      return reply.status(409).send({
+        error: 'allocation_conflict',
+        message: error.message,
+        currentPurchase: error.currentPurchase,
+        sessionIds: error.sessionIds,
       })
     }
     if (error instanceof SchedulingVersionConflictError) {

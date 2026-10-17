@@ -283,6 +283,44 @@ describe('Beta admission HTTP boundary', () => {
 })
 
 describe('student HTTP interface', () => {
+  it('accepts optional Student single-lesson price on create and edit, including zero and clear', async () => {
+    const server = createServer()
+    const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
+    const created = await server.inject({
+      method: 'POST',
+      url: '/v1/students',
+      headers,
+      payload: { name: 'Alice', singleLessonPrice: { amountMinor: 0, currency: 'TWD' } },
+    })
+    expect(created.statusCode).toBe(201)
+    const student = created.json().student as {
+      id: string
+      version: number
+      singleLessonPrice: { amountMinor: number; currency: string } | null
+    }
+    expect(student.singleLessonPrice).toEqual({ amountMinor: 0, currency: 'TWD' })
+
+    const invalid = await server.inject({
+      method: 'PATCH',
+      url: `/v1/students/${student.id}`,
+      headers,
+      payload: {
+        name: 'Alice',
+        version: student.version,
+        singleLessonPrice: { amountMinor: 100, currency: 'TWD', extra: 'rejected' },
+      },
+    })
+    expect(invalid.statusCode).toBe(400)
+
+    const cleared = await server.inject({
+      method: 'PATCH',
+      url: `/v1/students/${student.id}`,
+      headers,
+      payload: { name: 'Alice', version: student.version, singleLessonPrice: null },
+    })
+    expect(cleared.statusCode).toBe(200)
+    expect(cleared.json().student.singleLessonPrice).toBeNull()
+  })
   it('accepts an age range and allows clearing it without accepting arbitrary ages', async () => {
     const server = createServer()
     const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
