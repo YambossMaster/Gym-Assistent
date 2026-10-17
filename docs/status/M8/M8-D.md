@@ -5,13 +5,13 @@
 
 ## Package position
 
-| Gate                     | State                                                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Contract                 | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding             |
-| Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed              |
-| CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                                     |
-| Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                              |
-| Single-lesson correction | PO accepted local UI; full local check/build passed; protected PR, exact-SHA CI and Production release pending |
+| Gate                     | State                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| Contract                 | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
+| Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
+| CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
+| Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
+| Single-lesson correction | PO accepted local UI; PR #35, exact-SHA Main CI and Production migration release passed            |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
@@ -52,16 +52,25 @@ untracked label is shortened to `不計`. Focused Venue-record and Calendar test
 Finance tests passed 23/23 and both API/Web typechecks passed.
 On 2026-10-18 the PO reviewed the local happy path, accepted the version and authorized Main,
 CI and deploy. The full local gate passed root 36/36, API 297/297 and Web 369/369; API and Web
-builds passed. Production currently has 4 Workspaces, 8 Students, 4 purchases and 3 completed
-Sessions; neither M8-D migration is applied there. The release uses a protected PR, exact-SHA
-Production migration preview, manual migration apply and same-SHA Fly deployment. The Production
-release workflow requires a literal `APPLY` at dispatch. PR #35 is open; Main merge and
-Production release have not completed.
-PR #35 first exposed a Development CI history-guard mismatch: eight M8-E versions had already
-been applied there but were absent from this isolated branch. The guard now accepts only those
-exact versions, fetches them into temporary storage for the official dry-run, and cleans up all
-copies. Local root guard tests and the real Development dry-run passed with no pending migration;
-the first PR migration job failure remains historical evidence until fresh CI succeeds.
+builds passed. [PR #35](https://github.com/YambossMaster/Gym-Assistent/pull/35) passed its final
+verify, browser UI and Development migration dry-run jobs, then merged as
+`8090bf80e6740043a5fb22dec1c252d53affba21`.
+[Main CI #39049692349](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39049692349)
+passed verify, browser UI and migration dry-run; Production preview listed only M8-D versions
+`20261017105438` and `20261017110659`. The PO supplied literal `APPLY` for that exact preview.
+[Production release #39049953196](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39049953196)
+applied both versions, deployed the same SHA and passed readiness. Production migration-history
+read-back confirms both versions. Existing aggregates remained 4 Workspaces, 8 Students, 4
+purchases and 4 Sessions; all 3 completed Sessions have a source, with zero orphan sources and
+zero generated purchases. Independent `/api/ready`, `/` and `/login` checks returned HTTP 200.
+The release gate for this correction is complete. M8-D real-Coach admission and installed-device
+checks remain open; this release alone does not close the overall package.
+
+PR #35's first Development CI history guard rejected eight already-applied Development-only M8-E
+versions. The corrected guard accepts only those exact versions, fetches their historical SQL
+into temporary storage for the official dry-run and removes it afterward. Local guard tests and
+the real Development dry-run passed with no pending migration; the final PR CI passed. No M8-E
+migration was committed or applied to Production.
 Reopen/delete now clears the affected Session's income and expense entry-state overrides in the
 existing scheduling transaction so re-completion cannot revive an old manual amount; the focused
 Finance plus scheduling-adapter checks passed 27/27.
