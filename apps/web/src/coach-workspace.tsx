@@ -619,7 +619,7 @@ export function StudentDetailPage({
                     autoComplete="off"
                   />
                 </label>
-                <div className="field-row">
+                <div className="field-row student-profile-core-row">
                   <label>
                     電話
                     <input
@@ -638,6 +638,10 @@ export function StudentDetailPage({
                       defaultValue={detail.student.ageRange ?? ''}
                     />
                   </label>
+                  <StudentSingleLessonPriceField
+                    initial={detail.student.singleLessonPrice}
+                    defaultCurrency={defaultFinanceCurrency}
+                  />
                 </div>
                 <label>
                   學生簡介
@@ -649,10 +653,6 @@ export function StudentDetailPage({
                     placeholder="例如：設計師、晨型人、喜歡跑步"
                   />
                 </label>
-                <StudentSingleLessonPriceField
-                  initial={detail.student.singleLessonPrice}
-                  defaultCurrency={defaultFinanceCurrency}
-                />
                 <label>
                   備註
                   <textarea
@@ -2203,7 +2203,7 @@ function CreateStudentDialog({
             <RequiredFieldLabel>姓名</RequiredFieldLabel>
             <input name="name" required maxLength={120} autoComplete="off" />
           </label>
-          <div className="field-row">
+          <div className="field-row student-profile-core-row">
             <label>
               電話
               <input name="phone" maxLength={40} autoComplete="off" />
@@ -2212,8 +2212,8 @@ function CreateStudentDialog({
               年齡區間
               <FormSelect label="年齡區間" name="ageRange" options={studentAgeRangeOptions} />
             </label>
+            <StudentSingleLessonPriceField defaultCurrency={defaultFinanceCurrency} />
           </div>
-          <StudentSingleLessonPriceField defaultCurrency={defaultFinanceCurrency} />
           <label>
             學生簡介
             <input

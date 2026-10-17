@@ -30,8 +30,9 @@ completion sources, pending settlement and Finance correction are implemented lo
 private-schema migrations remain unapplied; rendered desktop/390px review and broader gates are
 pending Product Owner inspection. Local 5173 now serves the isolated M8-D Web after the Product
 Owner found it had served the primary checkout; local 3000 API and Development database still lack
-M8-D, so saving the new flow is unverified. The Student currency selector was removed; no-balance
-Students now show `單堂計費` before Venue selection. See the active [M8-D status](status/M8/M8-D.md) before
+M8-D, so saving the new flow is unverified. The Student price uses Settings currency without a
+second control or currency label and shares a row with phone and age range; no-balance Students show
+`單堂計費` before Venue selection. See the active [M8-D status](status/M8/M8-D.md) before
 continuing this slice.
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend

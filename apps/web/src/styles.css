@@ -11310,6 +11310,26 @@ body.is-reordering-exercise * {
   font-size: 12px;
   font-weight: 700;
 }
+.student-detail-profile-form .student-profile-core-row {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.student-detail-profile-form .student-profile-core-row > label {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .student-detail-profile-form .student-profile-core-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+  .student-detail-profile-form .student-profile-core-row > label:last-of-type {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 360px) {
+  .student-detail-profile-form .student-profile-core-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .student-detail-profile-form input::placeholder {
   color: #969a92;
   opacity: 1;

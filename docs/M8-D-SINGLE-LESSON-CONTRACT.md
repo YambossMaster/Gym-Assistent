@@ -136,8 +136,9 @@ unbounded schedule horizon. Student private notes remain private.
 
 ## UI and feedback
 
-- Student create/edit: optional `學生課堂單價`, with the Settings currency displayed as a fixed unit
-  and clear empty versus explicit zero. Do not add a currency control to the Student form.
+- Student create/edit: optional `學生課堂單價`, with clear empty versus explicit zero. Use the
+  Settings currency without adding a currency control or repeated currency label to the Student
+  form. On wide dialogs, align phone, age range and price in one row.
 - Purchase create: default the unit reference price from Student and preserve manual override.
   Purchase edit: show only the purchase's saved amount-derived reference price until the Coach
   deliberately changes it.

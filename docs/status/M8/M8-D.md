@@ -39,8 +39,11 @@ Calendar `＋ 新增場地` option. The Product Owner then rejected the duplicat
 Student price and asked for an immediate no-package `單堂計費` hint. The Student form now accepts only
 an amount, shows a fixed currency from Settings (or an existing price's saved currency), and the
 Calendar shows `單堂計費` before Venue selection only when no usable manual balance exists anywhere.
+The Product Owner further removed repeated currency text and moved Student price beside phone and
+age range. The create and edit forms share a compact three-column desktop row with responsive wrap.
 Focused Web tests passed 4/4 in two files and Web typecheck passed; 5173 browser read-back confirms
-the currency selector is gone. Port 3000 still serves the primary-checkout API. Read-only inspection
+the currency selector/text is gone and the three fields align. Port 3000 still serves the
+primary-checkout API. Read-only inspection
 of the configured Development database found neither M8-D migration applied, so saving a price or
 no-purchase Session is not yet a validated local flow. The selected-Venue billing hint remains
 is now defined by the corrected Contract: before Venue selection, a Student with no usable manual
