@@ -1,12 +1,10 @@
 import type { Session } from '@supabase/supabase-js'
-import { studentEligibleVenueIds, useVenues } from './finance-api'
 import { VenueNamePicker } from './VenueNamePicker'
 
 export function VenueField({
   session,
   venueId,
   location,
-  studentId,
   onChange
 }: {
   session: Session
@@ -21,16 +19,13 @@ export function VenueField({
     customerSource: 'coach' | 'venue' | null
   }) => void
 }) {
-  const query = useVenues(session)
-  const allowedIds = studentId ? studentEligibleVenueIds(query.data, studentId) : null
   return (
     <div className="venue-field">
       <VenueNamePicker
         session={session}
         label="場地"
         value={venueId ?? null}
-        allowedIds={allowedIds}
-        allowCreate={allowedIds === null}
+        allowCreate
         onSelect={(venue) =>
           onChange({
             venueId: venue?.id ?? null,

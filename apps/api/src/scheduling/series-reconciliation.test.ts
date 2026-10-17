@@ -34,16 +34,15 @@ const anchor: CourseSession = {
 }
 
 describe('planSeriesReconciliation', () => {
-  it('only fills the future entitlement deficit after the latest Series occurrence', () => {
+  it('fills the selected horizon after the latest Series occurrence even with zero lessons', () => {
     const plan = planSeriesReconciliation({
       series,
-      remainingLessons: 3,
       sessions: [anchor],
       now: new Date('2026-09-13T00:00:00.000Z'),
     })
     expect(plan.map((value) => value.toISOString())).toEqual(['2026-09-21T02:00:00.000Z'])
   })
-  it('counts manual future Sessions, never backfills, and is idempotent after planned rows exist', () => {
+  it('leaves manual future Sessions intact, never backfills, and is idempotent', () => {
     const manual = {
       ...anchor,
       id: 'manual',
@@ -53,7 +52,6 @@ describe('planSeriesReconciliation', () => {
     }
     const first = planSeriesReconciliation({
       series,
-      remainingLessons: 3,
       sessions: [anchor, manual],
       now: new Date('2026-09-13T00:00:00.000Z'),
     })
@@ -67,7 +65,6 @@ describe('planSeriesReconciliation', () => {
     expect(
       planSeriesReconciliation({
         series,
-        remainingLessons: 3,
         sessions: [anchor, manual, generated],
         now: new Date('2026-09-13T00:00:00.000Z'),
       }),
@@ -77,7 +74,6 @@ describe('planSeriesReconciliation', () => {
     expect(
       planSeriesReconciliation({
         series: { ...series, active: false },
-        remainingLessons: 4,
         sessions: [anchor],
         now: new Date('2026-09-13T00:00:00.000Z'),
       }),
@@ -98,7 +94,6 @@ describe('planSeriesReconciliation', () => {
     }
     const plan = planSeriesReconciliation({
       series: monthlySeries,
-      remainingLessons: 4,
       sessions: [{ ...anchor, startsAt: monthly, endsAt: '2026-01-31T03:00:00.000Z' }],
       now: new Date('2026-02-17T00:00:00.000Z'),
       timeZone: 'Asia/Taipei',
@@ -125,7 +120,6 @@ describe('planSeriesReconciliation', () => {
       expect(
         planSeriesReconciliation({
           series: { ...series, autoScheduleHorizon },
-          remainingLessons: 12,
           sessions: [anchor],
           now: new Date('2026-09-13T00:00:00.000Z'),
         }),

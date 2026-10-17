@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-15. This is the always-read current-state dashboard. Approved scope and
+> Last verified: 2026-10-17. This is the always-read current-state dashboard. Approved scope and
 > gates live in [`ROADMAP.md`](ROADMAP.md); package detail and history are loaded only through the
 > pointers below.
 
@@ -10,7 +10,7 @@
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
-| Current gate                  | **M8-C internal Alpha accepted; M8-D Beta opening remains active, with real-Coach admission open**                                                   |
+| Current gate                  | **M8-D Beta opening active; single-lesson Contract frozen, isolated Sol in progress**                                                                |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                           |
@@ -21,6 +21,13 @@
 | Pending Production migrations | None after release #8; three pre-existing Workspaces remain unmarked                                                                                 |
 
 ## Required context
+
+**M8-D single-lesson correction:** the Product Owner froze
+[`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17. Its local Sol work
+is on isolated `codex/m8d-single-lesson`, separate from the dirty payment checkout. Venue picker,
+Venue-aware Student hint and balance-independent Series planning are local work in progress. The
+database still rejects no-purchase scheduling; completion source transactions and migration are
+pending. See the active [M8-D status](status/M8/M8-D.md) before continuing this slice.
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.

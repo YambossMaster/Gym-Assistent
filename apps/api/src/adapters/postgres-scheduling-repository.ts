@@ -349,16 +349,11 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       await client.query('select pg_advisory_xact_lock(hashtext($1))', [
         `schedule-series:${workspaceId}:${studentId}`,
       ])
-      const [seriesRows, summaryRows, sessionRows] = await Promise.all([
+      const [seriesRows, sessionRows] = await Promise.all([
         client.query(
           `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
             interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version from app_private.schedule_series
            where workspace_id=$1 and student_id=$2 and active order by anchor_starts_at,id`,
-          [workspaceId, studentId],
-        ),
-        client.query<{ purchased: number; completed: number }>(
-          `select coalesce((select sum(lesson_count)::int from app_private.lesson_purchase where workspace_id=$1 and student_id=$2),0) purchased,
-            coalesce((select count(*)::int from app_private.course_session where workspace_id=$1 and student_id=$2 and status='completed'),0) completed`,
           [workspaceId, studentId],
         ),
         client.query(
@@ -368,16 +363,13 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           [workspaceId, studentId],
         ),
       ])
-      const summary = summaryRows.rows[0]!
       const timeZone = await this.getTimeZone(workspaceId)
-      const remainingLessons = summary.purchased - summary.completed
       const sessions = sessionRows.rows.map(mapSession)
       const generated: CourseSession[] = []
       for (const seriesRow of seriesRows.rows) {
         const series = mapSeries(seriesRow)
         const starts = planSeriesReconciliation({
           series,
-          remainingLessons,
           sessions,
           now,
           timeZone,

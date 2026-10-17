@@ -39,6 +39,7 @@ import { Confirmation } from '../../shared/primitives'
 import { useStudentsRouteQuery } from '../students/queries'
 import {
   suggestedStudentVenue,
+  studentVenueLessonLabel,
   useVenues,
   type Venue,
   type VenueData
@@ -433,6 +434,7 @@ export function CalendarPage({
           students={students}
           venues={venueQuery.data?.venues ?? []}
           purchases={venueQuery.data?.purchases ?? []}
+          studentVenueBalances={venueQuery.data?.studentVenueBalances}
           timeZone={timeZone}
           mutations={mutations}
           initialError={draftError}
@@ -458,6 +460,7 @@ function Editor({
   students,
   venues,
   purchases,
+  studentVenueBalances,
   timeZone,
   mutations,
   initialError,
@@ -471,6 +474,7 @@ function Editor({
   students: Student[]
   venues: Venue[]
   purchases: NonNullable<VenueData['purchases']>
+  studentVenueBalances: VenueData['studentVenueBalances']
   timeZone: string
   mutations: ReturnType<typeof useSchedulingMutations>
   initialError: string
@@ -909,9 +913,14 @@ function Editor({
                     { value: '', label: '選擇學生' },
                     ...students.map((student) => ({
                       value: student.id,
-                      label: student.lessonSummary
-                        ? `${student.name}・剩餘 ${student.lessonSummary.remaining} 堂`
-                        : student.name
+                      label: (() => {
+                        const billing = studentVenueLessonLabel(
+                          { studentVenueBalances },
+                          student.id,
+                          draft.venueId ?? null
+                        )
+                        return billing ? `${student.name}・${billing}` : student.name
+                      })()
                     }))
                   ]}
                 />
@@ -937,7 +946,6 @@ function Editor({
                 ) : null}
                 <VenueField
                   session={session}
-                  studentId={draft.studentId}
                   date={draft.date}
                   venueId={draft.venueId}
                   customerSource={draft.customerSource}

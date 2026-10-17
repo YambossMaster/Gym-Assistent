@@ -104,6 +104,20 @@ export function suggestedStudentVenue(
   if (!allowed?.length) return null
   return data?.venues.find((venue) => venue.active && allowed.includes(venue.id)) ?? null
 }
+export function studentVenueLessonLabel(
+  data: Pick<VenueData, 'studentVenueBalances'> | undefined,
+  studentId: string,
+  venueId: string | null
+): string | null {
+  if (!venueId || !data?.studentVenueBalances) return null
+  const remaining = data.studentVenueBalances
+    .filter(
+      (balance) =>
+        balance.studentId === studentId && (balance.venueId === null || balance.venueId === venueId)
+    )
+    .reduce((total, balance) => total + balance.remaining, 0)
+  return remaining > 0 ? `剩餘 ${remaining} 堂` : '單堂計費'
+}
 export type MonthlyFinance = {
   month: string
   timeZone: string

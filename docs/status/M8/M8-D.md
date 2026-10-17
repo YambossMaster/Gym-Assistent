@@ -1,21 +1,37 @@
 # M8-D status — Open real-Coach Beta
 
-> State: active. Last verified: 2026-10-15. This is the working brief for M8-D; approved scope and
+> State: active. Last verified: 2026-10-17. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
 ## Package position
 
-| Gate      | State                                                                                              |
-| --------- | -------------------------------------------------------------------------------------------------- |
-| Contract  | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
-| Sol       | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
-| CI        | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
-| Admission | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
+| Gate                     | State                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| Contract                 | Two-code Beta plan-access correction is frozen; admission, backup and restore gates remain binding |
+| Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
+| CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
+| Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
+| Single-lesson correction | Contract frozen; isolated Sol work in progress, CI not started                                     |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
 completed [`M8-C.md`](M8-C.md) for Alpha evidence. M8-E owns paid checkout and must not be pulled
 into this package.
+
+## Single-lesson correction local handoff
+
+The 2026-10-17 frozen [`M8-D-SINGLE-LESSON-CONTRACT.md`](../../M8-D-SINGLE-LESSON-CONTRACT.md)
+is carried on local branch `codex/m8d-single-lesson` in an isolated managed worktree. Local changes
+open the active Venue picker, make the Calendar Student hint depend on the selected Venue, and remove
+the package-balance cap from bounded Series planning. The database still enforces the previous
+purchase-before-scheduling rule; source allocation, generated purchases, pending billing, Student
+price, Finance correction and migration remain unimplemented. Do not use this branch as a runnable
+end-to-end single-lesson flow or apply a Production migration. Next: implement the private-schema
+source model and atomic completion/reopen/delete path before enabling unpurchased scheduling, then
+finish the Contract's price and correction operations and present desktop/390px UI for PO inspection.
+Focused API/Web Vitest selection passed 13/13 after the known Windows sandbox temp-file `EPERM` was
+resolved by running outside the sandbox. API and Web typechecks passed. Live/browser, migration and
+CI gates are unverified.
 
 ## Binding Beta plan policy
 
