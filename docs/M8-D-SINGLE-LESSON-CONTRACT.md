@@ -48,8 +48,9 @@ unbounded schedule horizon. Student private notes remain private.
 - Once a Venue is selected, Student options use **that Venue's** currently usable manual-package
   balance (Venue-bound plus general). At zero or below, label the Student `王小明・單堂計費`; otherwise
   show the usable lesson count for that Venue. Changing the Venue updates the labels immediately.
-  Before a Venue is selected, show `單堂計費` for a Student with no usable manual lessons anywhere;
-  otherwise show the name without a misleading global-balance billing hint. This is
+  Before a Venue is selected, show the Student's total remaining manual lessons across Venues,
+  or `單堂計費` when none remain. After Venue selection, immediately replace this overview with
+  that Venue's usable balance (including general lessons). This is
   a scheduling-time hint; the source is decided again at completion. Do not add a second
   billing-source or price field elsewhere in the Session form or Session detail.
 - Existing `NONE`, `1_WEEK`, and `2_WEEKS` Series horizon choices remain. Within the chosen horizon,

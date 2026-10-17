@@ -44,7 +44,7 @@ it('uses only the selected Venue and general lessons for the scheduling hint', (
     { studentId: 'student', venueId: null, purchased: 1, completed: 0, remaining: 1 }
   ]
   const data = { studentVenueBalances }
-  expect(studentVenueLessonLabel(data, 'student', null)).toBeNull()
+  expect(studentVenueLessonLabel(data, 'student', null)).toBe('剩餘 3 堂')
   expect(studentVenueLessonLabel(data, 'student', 'a')).toBe('剩餘 3 堂')
   expect(studentVenueLessonLabel(data, 'student', 'b')).toBe('剩餘 1 堂')
   studentVenueBalances[2]!.remaining = 0
@@ -52,6 +52,10 @@ it('uses only the selected Venue and general lessons for the scheduling hint', (
   expect(studentVenueLessonLabel(data, 'other', 'a')).toBe('單堂計費')
   expect(studentVenueLessonLabel(data, 'other', null)).toBe('單堂計費')
   expect(studentVenueLessonLabel(undefined, 'other', null)).toBeNull()
+  studentVenueBalances[2]!.remaining = -1
+  expect(studentVenueLessonLabel(data, 'student', null)).toBe('剩餘 2 堂')
+  expect(studentVenueLessonLabel(data, 'student', 'a')).toBe('剩餘 2 堂')
+  expect(studentVenueLessonLabel(data, 'student', 'b')).toBe('單堂計費')
   studentVenueBalances[0]!.remaining = 0
   studentVenueBalances[2]!.remaining = 0
   expect(studentVenueLessonLabel(data, 'student', null)).toBe('單堂計費')

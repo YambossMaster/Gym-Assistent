@@ -31,9 +31,11 @@ private-schema migrations remain unapplied; rendered desktop/390px review and br
 pending Product Owner inspection. Local 5173 now serves the isolated M8-D Web after the Product
 Owner found it had served the primary checkout; local 3000 API and Development database still lack
 M8-D, so saving the new flow is unverified. The Student price uses Settings currency without a
-second control or currency label and shares a row with phone and age range; no-balance Students show
-`單堂計費` before Venue selection. See the active [M8-D status](status/M8/M8-D.md) before
-continuing this slice.
+second control or currency label and shares a row with phone and age range. The Calendar shows each
+Student's total remaining lessons or `單堂計費` before Venue selection. Saving a no-purchase
+Session still hits the old API/database purchase guard; the two M8-D Development migrations and
+isolated API switch remain gated after Product Owner review. See the active [M8-D
+status](status/M8/M8-D.md) before continuing this slice.
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.

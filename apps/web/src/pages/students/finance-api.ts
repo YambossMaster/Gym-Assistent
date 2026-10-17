@@ -120,18 +120,17 @@ export function studentVenueLessonLabel(
 ): string | null {
   if (!data?.studentVenueBalances) return null
   if (!venueId) {
-    return data.studentVenueBalances.some(
-      (balance) => balance.studentId === studentId && balance.remaining > 0
-    )
-      ? null
-      : '單堂計費'
+    const remaining = data.studentVenueBalances
+      .filter((balance) => balance.studentId === studentId)
+      .reduce((total, balance) => total + Math.max(0, balance.remaining), 0)
+    return remaining > 0 ? `剩餘 ${remaining} 堂` : '單堂計費'
   }
   const remaining = data.studentVenueBalances
     .filter(
       (balance) =>
         balance.studentId === studentId && (balance.venueId === null || balance.venueId === venueId)
     )
-    .reduce((total, balance) => total + balance.remaining, 0)
+    .reduce((total, balance) => total + Math.max(0, balance.remaining), 0)
   return remaining > 0 ? `剩餘 ${remaining} 堂` : '單堂計費'
 }
 export type MonthlyFinance = {
