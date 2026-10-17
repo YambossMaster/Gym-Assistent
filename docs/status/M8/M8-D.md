@@ -54,7 +54,12 @@ The PO accepted the current 5173 version and explicitly authorized Main CI/deplo
 run `39057368440` passed `browser-ui` and the migration no-op but failed `verify`: the new Web
 purchase test imported the Supabase client without a mock and depended on local Vite values.
 That test now mocks the client; its four cases passed with Vite values absent, along with Web
-typecheck and changed-file formatting. Re-run exact-head PR CI before merging.
+typecheck and changed-file formatting. Corrected PR run `39057739156` passed all three required
+checks and merged as `aaa5a929a8e7e2b5543dd3ee93d3f20b18d729d0`. Main CI `39058008147`
+passed verify, browser UI, migration no-op and Production history comparison with no pending
+versions, then deployed the exact commit to Fly and passed readiness. Independent requests to the
+Production custom domain returned HTTP 200 for `/api/ready`, `/` and `/login`. This follow-up
+introduced no schema migration or payment change; installed-device acceptance remains open.
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
