@@ -114,21 +114,57 @@ describe('monthly finance authority', () => {
     expect(derived.rows.some((row) => row.id === 'purchase-commission:single')).toBe(false)
     expect(derived.studentVenueBalances).toEqual([])
   })
-  it('keeps pending Student income out of totals while retaining fixed Venue cost', () => {
+  it('shows a missing Student price as an editable zero-income ledger row alongside fixed Venue cost', () => {
     const snapshot = fixture()
+    snapshot.sessions[0]!.endsAt = '2026-09-01T03:00:00.000Z'
     snapshot.purchases = []
     snapshot.lessonSources = [{ sessionId: 's1', kind: 'pending', purchaseId: null }]
     snapshot.rules = [{ ...rule, kind: 'rent', amountMinor: 400, currency: 'TWD' }]
     const month = monthlyFinance(snapshot, '2026-09', '2026-09-24')
-    expect(month.rows.some((row) => row.kind === 'purchase')).toBe(false)
+    expect(month.rows.find((row) => row.id === 'single-lesson:s1')).toMatchObject({
+      kind: 'purchase',
+      amountMinor: 0,
+      direction: 'income',
+      detail: '尚未設定學生課堂單價',
+      singleLessonPriceUnset: true,
+      singleLessonSessionVersion: 1,
+      studentPriceRoute: '/students/s',
+    })
+    expect(month.totals.find((total) => total.currency === 'TWD')).toMatchObject({
+      incomeMinor: 0,
+      expenseMinor: 400,
+    })
     expect(month.rows.find((row) => row.id === 'session:s1')?.amountMinor).toBe(400)
     expect(deriveFinance(snapshot, '2026-09-24').studentVenueBalances).toEqual([])
     snapshot.rules = [{ ...rule, kind: 'commission', rate: 20 }]
     const commissionMonth = monthlyFinance(snapshot, '2026-09', '2026-09-24')
     expect(commissionMonth.rows.some((row) => row.id === 'session:s1')).toBe(false)
+    expect(commissionMonth.rows.some((row) => row.id === 'single-lesson:s1')).toBe(true)
     expect(
       deriveFinance(snapshot, '2026-09-24').missing.find((item) => item.sessionId === 's1'),
     ).toMatchObject({ reason: 'price', billingPending: true })
+    snapshot.lessonSources = [{ sessionId: 's1', kind: 'generated_single', purchaseId: 'single' }]
+    snapshot.purchases = [
+      {
+        id: 'single',
+        studentId: 's',
+        studentName: '學生',
+        purchasedOn: '2026-09-01',
+        lessonCount: 1,
+        amountMinor: 0,
+        currency: 'TWD',
+        collectionMode: 'coach',
+        venueId: 'v',
+        sourceKind: 'generated_single',
+        sourceSessionId: 's1',
+        version: 1,
+      },
+    ]
+    const explicitZero = monthlyFinance(snapshot, '2026-09', '2026-09-24').rows
+    expect(explicitZero.some((row) => row.id === 'single-lesson:s1')).toBe(false)
+    const bookedZero = explicitZero.find((row) => row.id === 'purchase:single')
+    expect(bookedZero?.amountMinor).toBe(0)
+    expect(bookedZero?.singleLessonPriceUnset).toBeUndefined()
   })
   it('shows prepaid activation time without changing its booked date or ledger order', () => {
     const snapshot = fixture()

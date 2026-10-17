@@ -6,7 +6,6 @@ import { request } from '../../api'
 import { FormSelect } from '../../shared/FormSelect'
 import { financeKey, financeMoney, financeReadRecovery, type MonthlyFinance } from './finance-api'
 import { FinanceLedger } from './FinanceLedger'
-import { PendingSingleLessons } from './PendingSingleLessons'
 import { usePlanAccess } from '../../beta-admission/usePlanAccess'
 import { PlanLocked } from '../../beta-admission/PlanLocked'
 
@@ -188,7 +187,6 @@ export function FinancePage({ session }: { session: Session }) {
           )
         )}
       </section>
-      <PendingSingleLessons session={session} />
       {data && !query.isPending && (
         <>
           {data.missing.some((item) => !item.billingPending) && (

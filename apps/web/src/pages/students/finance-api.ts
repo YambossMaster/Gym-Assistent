@@ -169,6 +169,8 @@ export type MonthlyFinance = {
     singleLessonSessionId?: string
     singleLessonSessionVersion?: number | null
     singleLessonPurchaseVersion?: number
+    singleLessonPriceUnset?: boolean
+    studentPriceRoute?: string
   }[]
   deletedCount?: number
   hasManualAdjustments?: boolean

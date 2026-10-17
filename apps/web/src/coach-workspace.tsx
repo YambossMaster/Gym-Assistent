@@ -431,6 +431,13 @@ export function StudentDetailPage({
   const [purchaseConflict, setPurchaseConflict] = useState<LessonPurchase | null>(null)
   const detailQuery = useStudentDetailRouteQuery(session, studentId)
   useEffect(() => {
+    const params = new URLSearchParams(search)
+    if (params.get('edit') !== 'price' || !detailQuery.data) return
+    setProfileEditing(true)
+    params.delete('edit')
+    navigate({ search: params.toString() }, { replace: true })
+  }, [search, detailQuery.data, navigate])
+  useEffect(() => {
     if (hash !== '#purchase-history' || !detailQuery.data) return
     const frame = requestAnimationFrame(() =>
       document.getElementById('purchase-history')?.scrollIntoView({ block: 'start' })

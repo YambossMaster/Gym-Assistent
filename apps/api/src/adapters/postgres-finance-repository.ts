@@ -96,8 +96,10 @@ export class PostgresFinanceRepository implements FinanceRepository {
     })
   }
   private async load(c: PoolClient, w: string): Promise<FinanceSnapshot> {
-    const timeZone = (await c.query('select time_zone from app_private.workspace where id=$1', [w]))
-      .rows[0].time_zone as string
+    const workspace = (
+      await c.query('select time_zone,default_currency from app_private.workspace where id=$1', [w])
+    ).rows[0]
+    const timeZone = workspace.time_zone as string
     const venues = (
       await c.query(
         `select v.id,v.name,v.address,v.active,v.version,v.low_occurrence "lowOccurrence",v.low_occurred_at "lowOccurredAt",
@@ -223,6 +225,7 @@ export class PostgresFinanceRepository implements FinanceRepository {
     }))
     return {
       timeZone,
+      defaultCurrency: workspace.default_currency,
       venues,
       rules,
       purchases,

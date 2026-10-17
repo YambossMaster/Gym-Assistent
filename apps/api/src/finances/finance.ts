@@ -205,6 +205,7 @@ export type Payout = z.output<typeof payoutSchema> & {
   version: number
 }
 export type FinanceSnapshot = {
+  defaultCurrency?: string
   sessionAdjustments?: SessionAdjustment[]
   entryStates?: EntryState[]
   manualEntries?: ManualEntry[]
@@ -252,6 +253,8 @@ export type FinanceRow = {
   singleLessonSessionId?: string
   singleLessonSessionVersion?: number | null
   singleLessonPurchaseVersion?: number
+  singleLessonPriceUnset?: boolean
+  studentPriceRoute?: string
 }
 export type SessionAdjustment = {
   sessionId: string
@@ -491,6 +494,33 @@ export function deriveFinance(snapshot: FinanceSnapshot, today: string) {
         : {}),
       venueId: p.venueId,
     })
+  const completedById = new Map(
+    snapshot.sessions
+      .filter((session) => session.status === 'completed')
+      .map((session) => [session.id, session]),
+  )
+  for (const source of snapshot.lessonSources ?? []) {
+    if (source.kind !== 'pending') continue
+    const session = completedById.get(source.sessionId)
+    if (!session?.endsAt) continue
+    rows.push({
+      id: `single-lesson:${session.id}`,
+      date: localDate(session.endsAt, snapshot.timeZone),
+      occurredAt: session.endsAt,
+      kind: 'purchase',
+      label: `${session.studentName} · 單堂計費`,
+      detail: '尚未設定學生課堂單價',
+      amountMinor: 0,
+      currency: snapshot.defaultCurrency ?? 'TWD',
+      direction: 'income',
+      targetRoute: `/sessions/${session.id}`,
+      studentPriceRoute: `/students/${session.studentId}`,
+      singleLessonSessionId: session.id,
+      singleLessonSessionVersion: session.version,
+      singleLessonPriceUnset: true,
+      venueId: session.venueId,
+    })
+  }
   for (const p of snapshot.purchases) {
     if (!p.venueId || p.sourceKind === 'generated_single') continue
     const rule = applicableRule(snapshot.rules, p.venueId, p.purchasedAt ?? p.purchasedOn)

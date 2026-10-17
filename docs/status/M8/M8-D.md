@@ -11,7 +11,7 @@
 | Sol                      | Two-code correction is deployed; Production User-JWT red lines and isolated backup restore passed  |
 | CI                       | Exact-SHA CI, release, `main` backup/restore and required PR checks passed                         |
 | Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
-| Single-lesson correction | Contract frozen; isolated Sol work in progress, CI not started                                     |
+| Single-lesson correction | PO-corrected Contract; isolated Sol, Development and browser checks passed; remote CI not started  |
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
@@ -28,9 +28,9 @@ price share one row; the 390px layout wraps cleanly. Calendar shows total remain
 before Venue selection and that Venue's usable lessons afterward, falling back to `單堂計費`.
 Any active Venue, including an in-context new Venue, is available without a purchase. One-off
 and bounded Series scheduling no longer require a package. Completion fixes Venue-aware manual
-capacity first, otherwise creates a linked single purchase or pending billing item. Finance,
+capacity first, otherwise creates a linked single purchase or an annotated zero-income row. Finance,
 purchase history, reopen/delete, settlement, correction and explicit re-evaluation use
-Workspace-scoped server sources. Free can schedule and complete; after-the-fact pending settlement
+Workspace-scoped server sources. Free can schedule and complete; after-the-fact zero-row correction
 and generated-price correction are Pro/Prime-only on both API and UI, as confirmed by the PO.
 
 Development project `yvhijxhtelujfsaplzpi` applied only M8-D migrations `20261017105438`
@@ -55,7 +55,7 @@ Free pending read, settlement and generated correction API calls returned 403. B
 no-purchase Session save and persisted Calendar display. A synthetic Prime browser pass settled a
 pending item for 500, observed its removal and the matching Finance income, corrected it to 750
 from Finance and then to 800 from purchase history, and read back the same 800 in both surfaces.
-The pending form and save control were visually checked at 390px without horizontal overflow.
+The earlier pending form and save control were visually checked at 390px without horizontal overflow.
 Exact synthetic data and accounts were removed; Development aggregate counts returned to baseline.
 
 Final `npm run check` passed root 36/36, API 295/295 and Web 367/367; `npm run build` passed.
@@ -64,12 +64,31 @@ that caused a live completion 500, and enforce the Pro/Prime correction gate. Fo
 typechecks and `git diff --check` passed. Exact-SHA remote CI, Production migration and release
 remain unverified; the branch has not been pushed.
 
+The PO then corrected the missing-price behavior: a completed single lesson must immediately appear
+in ordinary `收支明細` as `收入 +$0` with `尚未設定學生課堂單價`; there must be no separate
+`待處理單堂紀錄` area. The historical zero row is edited directly, while Student price is set
+separately for future lessons. The Contract and isolated Sol branch now reflect this correction.
+The API projects the internal unpriced source into the monthly ledger and totals using Settings'
+Finance currency; the Web removed the pending card and its styles, routes the row editor through the
+versioned single-Session settlement command, and links directly to the Student profile editor.
+Development authenticated flow verified zero income plus Venue expense in the same month, no
+retroactive change after setting Student price, later priced completion, correction from 0 to 500,
+total income of 1400 and same-request replay. Desktop and 390px browser checks on local 5173
+confirmed the ordinary zero row, annotation, editor and Student link. A version conflict in the
+zero-row editor now retains the entered amount when the source is still unpriced. Focused API and Web
+tests passed. The exact synthetic Session, Venue and account were removed. Root 36/36 and Web 368/368
+passed. The default 60-second API suite had one newly added assertion error (fixed) and one
+pre-existing PDF export timeout; that export file then passed 5/5 alone, and the full API suite
+passed 295/295 with a 120-second local per-test limit. API/Web build passed. The final Web editor
+change passed typecheck and 4/4 focused tests. Exact-SHA remote CI and Production remain unverified;
+there has been no push.
+
 Known separate defect: deleting a Development Auth user with Venue-linked financial records can
 fail in the existing `app_private.refresh_changed_venue_balance()` trigger because
 `supabase_auth_admin` lacks private-schema access. Exact synthetic records were removed via
 versioned API operations first, after which account cleanup passed. This account-deletion path
-is outside the frozen single-lesson scope and was not changed. Next: PO inspection of the
-verified local UI, corrections if needed, then separate remote-delivery authorization. Keep
+is outside the frozen single-lesson scope and was not changed. Next: PO inspection of the corrected
+local UI and separate remote-delivery authorization. Keep
 M8-E and Production untouched.
 
 ## Binding Beta plan policy

@@ -10,7 +10,7 @@
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
-| Current gate                  | **M8-D Beta opening active; single-lesson Sol locally verified, PO review pending**                                                                  |
+| Current gate                  | **M8-D Beta opening active; corrected single-lesson Sol verified locally, PO review pending**                                                        |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                           |
@@ -25,14 +25,19 @@
 **M8-D single-lesson correction:** the Product Owner froze
 [`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17.
 The isolated `codex/m8d-single-lesson` branch now has locally verified Student price, unrestricted
-active-Venue scheduling, bounded no-package Series, fixed completion sources, pending settlement,
+active-Venue scheduling, bounded no-package Series, fixed completion sources, zero-income ledger correction,
 Finance and purchase-history correction, and explicit package re-evaluation. Local 5173 serves this
 branch's Web with API 3001; the unrelated primary checkout and API 3000 remain separate. Only
 the two M8-D migrations were applied to Development after an exact two-file official dry-run;
 Production and M8-E were untouched. Authenticated Development and browser flows passed, and the
-final local check passed root 36, API 295, Web 367 plus API/Web build. The PO confirmed that Free
-can complete single lessons while after-the-fact pending settlement/correction waits for Pro or
-Prime. Synthetic data were removed. PO review of this verified version is next; remote push,
+earlier local check passed root 36, API 295, Web 367 plus API/Web build. The PO confirmed that Free
+can complete single lessons while after-the-fact correction waits for Pro or Prime. The PO then
+corrected the missing-price flow: ordinary Finance shows `+$0` with a missing-price note; the Coach
+edits that row and independently sets Student price for future lessons. The separate pending card
+has been removed. Development API and desktop/390px browser checks passed this revised flow;
+Root 36/36, Web 368/368, full API 295/295 with a 120-second local test limit and API/Web build
+passed. The default API run had a PDF export timeout; its isolated file passed 5/5. Synthetic data
+were removed. PO review follows; remote push,
 exact-SHA CI and Production migration/release are not yet authorized. A separate pre-existing
 Development Auth-delete trigger defect is recorded in the active [M8-D
 status](status/M8/M8-D.md).
