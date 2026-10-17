@@ -22,6 +22,10 @@
 
 ## Required context
 
+The Product Owner approved a focused mobile Settings-button correction for Main on 2026-10-18.
+The isolated Main-based change and four header previews are recorded in M8-D Status and LOG-617;
+local affected checks passed; remote CI and Production read-back remain pending.
+
 **M8-D single-lesson correction:** the Product Owner froze
 [`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17.
 The PO accepted the revised local happy path on 2026-10-18. [PR #35](https://github.com/YambossMaster/Gym-Assistent/pull/35)

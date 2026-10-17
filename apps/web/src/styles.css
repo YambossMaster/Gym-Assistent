@@ -6347,7 +6347,7 @@ textarea:focus {
     width: auto;
     height: 44px;
   }
-  .mobile-header nav > a {
+  .mobile-header :is(nav, .mobile-route-header-actions) > a {
     width: 44px;
     height: 44px;
     display: grid;

@@ -3,6 +3,18 @@
 > State: active. Last verified: 2026-10-18. This is the working brief for M8-D; approved scope and
 > completion criteria remain in `docs/ROADMAP.md` and the frozen Contract documents.
 
+## Mobile Settings action correction — 2026-10-18
+
+The Product Owner reported that the Settings gear lost its dark 44 px button shape on Calendar,
+Students, Settings and Exercise Library in the installed PWA and local mobile preview. Commit
+`8e5ab15` narrowed the header rule to `.mobile-header nav > a`; those four pages render the
+shared action inside `.mobile-route-header-actions`, while Today and subpages render it inside
+`nav`. The isolated Main-based correction covers both action containers without changing their
+routing. A 390 px Chromium computed-style comparison reproduced the route link as 22 × 22,
+transparent and browser-blue before the fix, then 44 × 44 with Today's dark background and light
+icon after it. The Product Owner inspected four corrected header previews and approved Main delivery.
+Local affected checks passed (formatting, diff whitespace and Web typecheck); a focused 390 px / 1440 px browser layout check passed. Remote CI and Production PWA read-back remain pending.
+
 ## Package position
 
 | Gate                     | State                                                                                              |
