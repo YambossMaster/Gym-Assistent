@@ -80,6 +80,7 @@ const student = (overrides: Partial<Student> = {}): Student => ({
   privateNote: '',
   ageRange: null,
   defaultVenueId: null,
+  singleLessonPrice: null,
   lineLinked: false,
   active: true,
   version: 1,

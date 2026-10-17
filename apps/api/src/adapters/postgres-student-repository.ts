@@ -36,6 +36,8 @@ interface StudentRow {
   private_note: string
   age_range: Student['ageRange']
   default_venue_id: string | null
+  single_lesson_amount_minor: string | number | null
+  single_lesson_currency: string | null
   active: boolean
   line_linked: boolean
   version: number
@@ -125,7 +127,7 @@ export class PostgresStudentRepository
 
   async listStudents(workspaceId: WorkspaceId) {
     const result = await this.#pool.query<StudentRow>(
-      `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version,
+      `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version,
               created_at, updated_at,
               (SELECT MIN(session.starts_at)
                FROM app_private.course_session session
@@ -252,10 +254,10 @@ export class PostgresStudentRepository
     const result = await this.#pool.query<StudentRow>(
       `INSERT INTO app_private.student (
          id, workspace_id, name, phone, goal, private_note, active, line_linked,
-         age_range, default_venue_id,
+         age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency,
          created_at, updated_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $9, $9)
-       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version,
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, $13, $9, $9)
+       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version,
                  created_at, updated_at`,
       [
         input.id,
@@ -269,6 +271,8 @@ export class PostgresStudentRepository
         input.now,
         input.ageRange,
         input.defaultVenueId,
+        input.singleLessonPrice?.amountMinor ?? null,
+        input.singleLessonPrice?.currency ?? null,
       ],
     )
     const student = result.rows[0]
@@ -282,7 +286,7 @@ export class PostgresStudentRepository
   ): Promise<StudentDetail | null> {
     const [studentResult, purchasesResult, summary] = await Promise.all([
       this.#pool.query<StudentRow>(
-        `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version, created_at, updated_at
+        `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at
          FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
         [workspaceId, studentId],
       ),
@@ -313,9 +317,11 @@ export class PostgresStudentRepository
        SET name = $3, phone = $4, goal = $5, private_note = $6, active = $7, line_linked = $8,
            age_range = CASE WHEN $11 THEN $12 ELSE age_range END,
            default_venue_id = CASE WHEN $14 THEN $13 ELSE default_venue_id END,
+           single_lesson_amount_minor = CASE WHEN $15 THEN $16 ELSE single_lesson_amount_minor END,
+           single_lesson_currency = CASE WHEN $15 THEN $17 ELSE single_lesson_currency END,
            version = version + 1, updated_at = $9
        WHERE workspace_id = $1 AND id = $2 AND version = $10
-       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, active, line_linked, version, created_at, updated_at`,
+       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at`,
       [
         workspaceId,
         studentId,
@@ -331,6 +337,9 @@ export class PostgresStudentRepository
         input.ageRange ?? null,
         input.defaultVenueId,
         input.defaultVenueId !== undefined,
+        input.singleLessonPrice !== undefined,
+        input.singleLessonPrice?.amountMinor ?? null,
+        input.singleLessonPrice?.currency ?? null,
       ],
     )
     const student = result.rows[0]
@@ -487,6 +496,13 @@ function mapStudent(row: StudentRow): Student {
     privateNote: row.private_note,
     ageRange: row.age_range,
     defaultVenueId: row.default_venue_id,
+    singleLessonPrice:
+      row.single_lesson_amount_minor === null || row.single_lesson_currency === null
+        ? null
+        : {
+            amountMinor: Number(row.single_lesson_amount_minor),
+            currency: row.single_lesson_currency,
+          },
     active: row.active,
     lineLinked: row.line_linked,
     version: row.version,

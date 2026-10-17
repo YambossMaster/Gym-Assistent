@@ -83,6 +83,7 @@ export interface Student {
   privateNote: string
   ageRange: StudentAgeRange | null
   defaultVenueId: string | null
+  singleLessonPrice: { amountMinor: number; currency: string } | null
   active: boolean
   lineLinked: boolean
   version: number
@@ -238,6 +239,7 @@ export interface CreateStudentInput {
   privateNote?: string
   ageRange?: StudentAgeRange | null
   defaultVenueId?: string | null
+  singleLessonPrice?: { amountMinor: number; currency: string } | null
 }
 
 export interface WorkspaceSettings {

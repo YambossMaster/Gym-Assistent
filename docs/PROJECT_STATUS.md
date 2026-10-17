@@ -25,9 +25,10 @@
 **M8-D single-lesson correction:** the Product Owner froze
 [`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17. Its local Sol work
 is on isolated `codex/m8d-single-lesson`, separate from the dirty payment checkout. Venue picker,
-Venue-aware Student hint and balance-independent Series planning are local work in progress. The
-database still rejects no-purchase scheduling; completion source transactions and migration are
-pending. See the active [M8-D status](status/M8/M8-D.md) before continuing this slice.
+Venue-aware Student hint, balance-independent Series planning, optional Student price and manual
+purchase default are local work in progress. The Student-column migration is unapplied. The
+database still rejects no-purchase scheduling; completion source transactions and remaining
+migration are pending. See the active [M8-D status](status/M8/M8-D.md) before continuing this slice.
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.

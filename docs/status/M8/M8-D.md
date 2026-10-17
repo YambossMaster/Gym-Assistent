@@ -23,15 +23,19 @@ into this package.
 The 2026-10-17 frozen [`M8-D-SINGLE-LESSON-CONTRACT.md`](../../M8-D-SINGLE-LESSON-CONTRACT.md)
 is carried on local branch `codex/m8d-single-lesson` in an isolated managed worktree. Local changes
 open the active Venue picker, make the Calendar Student hint depend on the selected Venue, and remove
-the package-balance cap from bounded Series planning. The database still enforces the previous
-purchase-before-scheduling rule; source allocation, generated purchases, pending billing, Student
-price, Finance correction and migration remain unimplemented. Do not use this branch as a runnable
+the package-balance cap from bounded Series planning. Student create/edit now carry an optional
+currency-qualified price, with explicit zero distinct from empty; new manual purchases prefill their
+unit reference price while editing an existing purchase retains its own amount. The private Student
+column migration exists locally but is unapplied. The database still enforces the previous
+purchase-before-scheduling rule; source allocation, generated purchases, pending billing, Finance
+correction and the remaining migration are unimplemented. Do not use this branch as a runnable
 end-to-end single-lesson flow or apply a Production migration. Next: implement the private-schema
 source model and atomic completion/reopen/delete path before enabling unpurchased scheduling, then
 finish the Contract's price and correction operations and present desktop/390px UI for PO inspection.
-Focused API/Web Vitest selection passed 13/13 after the known Windows sandbox temp-file `EPERM` was
-resolved by running outside the sandbox. API and Web typechecks passed. Live/browser, migration and
-CI gates are unverified.
+Focused scheduling and Venue API/Web Vitest selection passed 13/13 after the known Windows sandbox
+temp-file `EPERM` was resolved by running outside the sandbox. Student price/API and purchase-form
+selection passed another 13/13. API and Web typechecks passed. Live/browser, migration and CI gates
+are unverified.
 
 ## Binding Beta plan policy
 

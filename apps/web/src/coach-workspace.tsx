@@ -1,4 +1,8 @@
 import { PurchaseMoneyFields } from './pages/students/PurchaseMoneyFields'
+import {
+  readSingleLessonPrice,
+  StudentSingleLessonPriceField
+} from './pages/students/StudentSingleLessonPriceField'
 import { useDefaultFinanceCurrency } from './pages/settings/finance-currency'
 import { workspaceInstant, workspaceWallTime } from './pages/students/workspace-time'
 import { PurchaseCollectionFields } from './pages/students/PurchaseCollectionFields'
@@ -472,6 +476,7 @@ export function StudentDetailPage({
         goal: String(values.get('goal') || '').trim(),
         privateNote: String(values.get('privateNote') || '').trim(),
         ageRange: (String(values.get('ageRange') || '') || null) as StudentAgeRange | null,
+        singleLessonPrice: readSingleLessonPrice(values),
         defaultVenueId: detail.student.defaultVenueId,
         active: detail.student.active,
         lineLinked: detail.student.lineLinked,
@@ -514,6 +519,7 @@ export function StudentDetailPage({
       goal: detail.student.goal,
       privateNote: detail.student.privateNote,
       ageRange: detail.student.ageRange,
+      singleLessonPrice: detail.student.singleLessonPrice,
       defaultVenueId: detail.student.defaultVenueId,
       active,
       lineLinked: detail.student.lineLinked,
@@ -640,6 +646,10 @@ export function StudentDetailPage({
                     placeholder="例如：設計師、晨型人、喜歡跑步"
                   />
                 </label>
+                <StudentSingleLessonPriceField
+                  initial={detail.student.singleLessonPrice}
+                  defaultCurrency={defaultFinanceCurrency}
+                />
                 <label>
                   備註
                   <textarea
@@ -824,7 +834,10 @@ export function StudentDetailPage({
                   <TimeSelect label="購買時間" value={purchaseTime} onChange={setPurchaseTime} />
                 </div>
               </div>
-              <PurchaseMoneyFields currency={defaultFinanceCurrency} />
+              <PurchaseMoneyFields
+                currency={detail.student.singleLessonPrice?.currency ?? defaultFinanceCurrency}
+                defaultUnitPrice={detail.student.singleLessonPrice?.amountMinor}
+              />
               <label>
                 教練備註
                 <textarea name="purchaseNote" maxLength={4000} />
@@ -2013,6 +2026,7 @@ function CreateStudentDialog({
   onClose: () => void
   onCreated: (student: Student) => void
 }) {
+  const defaultFinanceCurrency = useDefaultFinanceCurrency()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -2026,7 +2040,8 @@ function CreateStudentDialog({
           phone: String(values.get('phone') || '').trim(),
           goal: String(values.get('goal') || '').trim(),
           privateNote: String(values.get('privateNote') || '').trim(),
-          ageRange: (String(values.get('ageRange') || '') || null) as StudentAgeRange | null
+          ageRange: (String(values.get('ageRange') || '') || null) as StudentAgeRange | null,
+          singleLessonPrice: readSingleLessonPrice(values)
         })
       )
     } catch (reason) {
@@ -2052,6 +2067,7 @@ function CreateStudentDialog({
               <FormSelect label="年齡區間" name="ageRange" options={studentAgeRangeOptions} />
             </label>
           </div>
+          <StudentSingleLessonPriceField defaultCurrency={defaultFinanceCurrency} />
           <label>
             學生簡介
             <input

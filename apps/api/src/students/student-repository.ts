@@ -18,14 +18,17 @@ export interface NewStudent {
   privateNote: string
   ageRange: Student['ageRange']
   defaultVenueId: string | null
+  singleLessonPrice: Student['singleLessonPrice']
   active: boolean
   lineLinked: boolean
   now: Date
 }
 
-export interface UpdatedStudent extends Omit<NewStudent, 'id' | 'ageRange' | 'defaultVenueId'> {
+export interface UpdatedStudent
+  extends Omit<NewStudent, 'id' | 'ageRange' | 'defaultVenueId' | 'singleLessonPrice'> {
   ageRange?: Student['ageRange'] | undefined
   defaultVenueId?: string | null | undefined
+  singleLessonPrice?: Student['singleLessonPrice'] | undefined
   expectedVersion: number
 }
 
