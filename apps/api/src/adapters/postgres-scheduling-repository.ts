@@ -1,4 +1,5 @@
 import type { Pool, PoolClient } from 'pg'
+import { PostgresFinanceRepository } from './postgres-finance-repository.js'
 import { randomUUID } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import type { LessonSummary } from '../students/student.js'
@@ -51,13 +52,15 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
     )
   }
   async lessonSummary(workspaceId: string, studentId: string): Promise<LessonSummary | null> {
-    const row = await this.pool.query<{
-      purchased: number
-      completed: number
-      manual_used: number
-    }>(
-      `select coalesce((select sum(lesson_count)::int from app_private.lesson_purchase where workspace_id=$1 and student_id=$2 and source_kind='manual'),0) purchased, coalesce((select count(*)::int from app_private.course_session where workspace_id=$1 and student_id=$2 and status='completed'),0) completed, coalesce((select count(*)::int from app_private.session_lesson_source a join app_private.course_session s on s.workspace_id=a.workspace_id and s.id=a.session_id where a.workspace_id=$1 and a.student_id=$2 and a.kind in ('manual','legacy_unallocated') and s.status='completed'),0) manual_used`,
-      [workspaceId, studentId],
+    const row = await new PostgresFinanceRepository(this.pool).scoped(workspaceId, (client) =>
+      client.query<{
+        purchased: number
+        completed: number
+        manual_used: number
+      }>(
+        `select coalesce((select sum(lesson_count)::int from app_private.lesson_purchase where workspace_id=$1 and student_id=$2 and source_kind='manual'),0) purchased, coalesce((select count(*)::int from app_private.course_session where workspace_id=$1 and student_id=$2 and status='completed'),0) completed, coalesce((select count(*)::int from app_private.session_lesson_source a join app_private.course_session s on s.workspace_id=a.workspace_id and s.id=a.session_id where a.workspace_id=$1 and a.student_id=$2 and a.kind in ('manual','legacy_unallocated') and s.status='completed'),0) manual_used`,
+        [workspaceId, studentId],
+      ),
     )
     const value = row.rows[0]
     return value

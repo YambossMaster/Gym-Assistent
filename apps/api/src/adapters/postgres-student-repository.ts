@@ -324,14 +324,16 @@ export class PostgresStudentRepository
          FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
         [workspaceId, studentId],
       ),
-      this.#pool.query<LessonPurchaseRow>(
-        `SELECT p.id,p.purchased_at,p.lesson_count,p.amount_minor,p.currency,p.private_note,p.version,p.created_at,p.updated_at,p.collection_mode,p.entitlement_venue_id venue_id,p.source_kind,p.source_session_id,
+      new PostgresFinanceRepository(this.#pool).scoped(workspaceId, (client) =>
+        client.query<LessonPurchaseRow>(
+          `SELECT p.id,p.purchased_at,p.lesson_count,p.amount_minor,p.currency,p.private_note,p.version,p.created_at,p.updated_at,p.collection_mode,p.entitlement_venue_id venue_id,p.source_kind,p.source_session_id,
           s.version source_session_version,a.version source_version
          FROM app_private.lesson_purchase p
          LEFT JOIN app_private.course_session s ON s.workspace_id=p.workspace_id AND s.id=p.source_session_id
          LEFT JOIN app_private.session_lesson_source a ON a.workspace_id=p.workspace_id AND a.session_id=p.source_session_id
          WHERE p.workspace_id = $1 AND p.student_id = $2 ORDER BY p.purchased_at, p.id`,
-        [workspaceId, studentId],
+          [workspaceId, studentId],
+        ),
       ),
       this.lessonSummary(workspaceId, studentId),
     ])
@@ -551,14 +553,14 @@ export class PostgresStudentRepository
   }
 
   async lessonSummary(workspaceId: WorkspaceId, studentId: string): Promise<LessonSummary | null> {
-    const result = await this.#pool.query<
-      LessonSummary & { student_exists: boolean; manual_used: number }
-    >(
-      `SELECT EXISTS(SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2) AS student_exists,
+    const result = await new PostgresFinanceRepository(this.#pool).scoped(workspaceId, (client) =>
+      client.query<LessonSummary & { student_exists: boolean; manual_used: number }>(
+        `SELECT EXISTS(SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2) AS student_exists,
               COALESCE((SELECT SUM(lesson_count)::integer FROM app_private.lesson_purchase WHERE workspace_id = $1 AND student_id = $2 AND source_kind='manual'), 0) AS purchased,
               COALESCE((SELECT COUNT(*)::integer FROM app_private.course_session WHERE workspace_id = $1 AND student_id = $2 AND status = 'completed'), 0) AS completed,
               COALESCE((SELECT COUNT(*)::integer FROM app_private.session_lesson_source a join app_private.course_session s on s.workspace_id=a.workspace_id and s.id=a.session_id WHERE a.workspace_id=$1 AND a.student_id=$2 AND a.kind in ('manual','legacy_unallocated') AND s.status='completed'),0) AS manual_used`,
-      [workspaceId, studentId],
+        [workspaceId, studentId],
+      ),
     )
     const row = result.rows[0]
     return row?.student_exists
