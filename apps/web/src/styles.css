@@ -5820,6 +5820,42 @@ textarea:focus {
 .single-lesson-purchase-money .finance-money-fields {
   display: block;
 }
+.single-lesson-purchase-form
+  :is(
+    .single-lesson-fixed-count > span,
+    .single-lesson-purchase-money .finance-money-fields label,
+    .single-lesson-billing-choice .student-series-toggle
+  ) {
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.single-lesson-purchase-form
+  :is(
+    .single-lesson-fixed-count strong,
+    .single-lesson-fixed-count small,
+    .single-lesson-purchase-money .finance-money-fields input,
+    .single-lesson-billing-choice .student-series-toggle strong
+  ) {
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.single-lesson-purchase-form .single-lesson-fixed-count strong {
+  align-items: center;
+}
+.single-lesson-purchase-form
+  .single-lesson-purchase-source
+  :is(strong, .single-lesson-purchase-date) {
+  font-size: 14px;
+  line-height: 1.5;
+}
 .single-lesson-billing-choice {
   grid-column: 1 / -1;
   min-width: 0;

@@ -38,6 +38,9 @@ Web but still proxied to an older API; the PO's refreshed screen therefore showe
 After restarting Vite with `API_PROXY_TARGET=http://127.0.0.1:3002`, the isolated API logged the
 authenticated Student detail request and the PO confirmed the screen shows all three records
 ($1,500, $60 corrected from an original $0, and $0). The unused 5188 preview was stopped.
+The subsequent editor typography correction follows the existing Settings dialog scale: the three
+field labels are 14px/700, and the fixed count, amount and billing state are 14px/500. Computed
+styles and the rendered dialog were checked on 5173 at desktop and 390px; no data behavior changed.
 Full changed-flow browser verification has not started because the PO requested further adjustments.
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
