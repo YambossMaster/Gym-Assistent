@@ -578,7 +578,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                               entry: editor.id
                             })}`}
                           >
-                            前往學生資料設定單價 <ArrowUpRight aria-hidden="true" />
+                            設定單價 <ArrowUpRight aria-hidden="true" />
                           </Link>
                         )}
                       </div>

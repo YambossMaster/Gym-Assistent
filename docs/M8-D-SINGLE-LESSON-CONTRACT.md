@@ -7,6 +7,22 @@
 > **Product Owner correction, 2026-10-17:** Missing Student price is represented by an annotated
 > zero-income row in the ordinary Finance ledger, edited there. This supersedes the earlier
 > separate pending-record UI wording.
+> **Product Owner correction, 2026-10-18:** Every completed single lesson appears as one row in
+> the existing Student purchase history, including lessons completed before the Student price was
+> set. An unpriced lesson begins at $0; Finance and purchase-history amount edits share its effective
+> ledger amount while preserving the original missing-price source. The existing purchase editor is
+> reused with lesson count fixed at one and no currency selector. This supersedes the contrary
+> purchase-history and separate-editor wording below.
+> **Product Owner UI correction, 2026-10-18:** The purchase-history list has no `查看課堂` link;
+> the single-lesson editor alone offers that action as a basic navigation button at the lower left.
+> Its fixed `1 堂` is read-only text
+> beside the amount, and it omits the generic `FORM / ACTION` eyebrow and decorative source card.
+> The billing-source change uses the existing switch style within the form: off is `單堂計費`,
+> on is `扣除已購堂數`.
+> Selecting the latter disables amount editing, explains that one remaining lesson is consumed and
+> single-lesson income removed, and the same `儲存` action submits that choice. Errors appear in a
+> dismissible overlay that does not move the form fields. This supersedes separate re-evaluation
+> button wording and the history-row source link below.
 
 ## Coach job and scope
 
@@ -89,14 +105,16 @@ unbounded schedule horizon. Student private notes remain private.
 - If Student price is absent, completion still succeeds and the ordinary Finance ledger immediately
   shows `收入 +$0` for that Session, annotated `尚未設定學生課堂單價`. The row uses the Workspace Finance
   currency and the Session's local date. It appears in the month's rows and zero-valued totals;
-  there is no separate `待處理單堂紀錄` card or Coach-facing billing queue. An internal source marker
-  distinguishes absent price from an explicitly set zero price. This does not ask whether payment
-  was received.
+  there is no separate `待處理單堂紀錄` card or Coach-facing billing queue. The same completed Session
+  appears as a one-lesson row in Student purchase history even when no physical purchase row exists.
+  An internal source marker distinguishes absent price from an explicitly set zero price. This does
+  not ask whether payment was received.
 - The Coach may edit that exact zero-income **Finance row** using the established versioned ledger
-  override. This changes only the displayed historical amount; its source remains zero and marked
-  `尚未設定學生課堂單價`. The row remains `已修改`, shows the original zero in source explanation, supports
-  `取消修改`, and retains its Student-profile link. Setting `學生課堂單價` on that profile affects future
-  lessons only. Neither action silently rewrites the other.
+  override, either from Finance or the corresponding Student purchase-history row. Both views show
+  the same effective amount after either edit. Its original source remains zero and marked
+  `尚未設定學生課堂單價`; the Finance row remains `已修改`, shows the original zero in source explanation,
+  supports `取消修改`, and retains its Student-profile link. Setting `學生課堂單價` on that profile affects
+  future lessons only. Neither action silently rewrites the Student price.
 - Editing a generated single-lesson Finance income row likewise creates an independent ledger
   override, never a purchase/source price update. Purchase-history source correction remains a
   separate explicit command; existing Finance overrides survive later source changes and identify
@@ -152,11 +170,13 @@ unbounded schedule horizon. Student private notes remain private.
   `姓名・單堂計費` at zero or below. Venue picker shows all active Venues, including in-context create,
   and appends a short fee-rule kind in parentheses (`不計`, `預購`, `單次`, `抽成`, `免費`).
   Do not add a separate billing-source or price line to the Session form or Session detail.
-- Purchase history: distinguish manual packages from generated `單堂計費`, show source Course Session
-  link. Finance income starts from the same source label, amount, currency and link, while later
-  Finance edits remain separate overrides. A completed Session
-  missing a price appears directly in `收支明細` as `+$0` with `尚未設定學生課堂單價` and can be edited
-  there. Its Student link leads to the profile where future-lesson price can be set separately.
+- Purchase history: distinguish manual packages from `單堂計費` and show one row per completed single
+  lesson, including an unpriced `+$0` lesson. Show the source Course Session link and original
+  missing-price note. Its effective amount reflects a Finance ledger override. Reuse the existing
+  purchase editor with count fixed at one, source date and Venue fixed, and no currency selector;
+  an unpriced amount edit calls the ordinary Finance override. A completed Session missing a price
+  also appears directly in `收支明細` as `+$0` with `尚未設定學生課堂單價`. Its Student link leads to the
+  profile where future-lesson price can be set separately.
 - Venue course records distinguish the Venue expense from the Student billing source. A completed
   single lesson shows `單堂計費` and its effective Finance income, including an edited amount while
   preserving the original missing-price explanation. A zero commission is shown as a calculated
@@ -178,8 +198,10 @@ unbounded schedule horizon. Student private notes remain private.
   having the Web compose a Session mutation followed by a purchase mutation. Database uniqueness and
   tenant-qualified foreign keys defend replay and cross-Workspace writes.
 - Finance row edits use the existing versioned, Workspace-scoped entry-state command and leave
-  source records intact. Generated purchase source amounts remain authoritative in purchase history;
-  Finance rows may carry independent overrides with `已修改`, immutable source explanation and reset.
+  source records intact. For an unpriced Session, Student purchase history shows that Finance
+  entry's effective amount and original missing-price state. Generated priced-purchase source amounts
+  remain authoritative in purchase history; Finance rows may carry independent overrides with
+  `已修改`, immutable source explanation and reset.
 - Package balance is manual package grants minus completed Sessions explicitly allocated to those
   grants. Generated single-lesson purchases and unpriced Sessions never contribute package
   capacity or Venue eligibility. Venue-specific balance and commission allocation use explicit
@@ -193,7 +215,10 @@ unbounded schedule horizon. Student private notes remain private.
   transaction; the Web must not follow it with a separate purchase write.
 - The monthly Finance projection includes the unpriced Session as an ordinary zero-income row with
   its Session version, Student profile route and missing-price annotation. No private Student note is
-  included. The earlier pending-list API may remain for compatibility but has no Coach-facing UI.
+  included. The Student detail projection also includes that completed Session as a one-lesson
+  purchase-history row using the current Finance entry-state amount and version. It does not grant
+  package capacity or create an additional income source. The earlier pending-list API may remain
+  for compatibility but has no Coach-facing UI.
 - `POST /v1/finances/pending-single-lessons/settle` accepts `{ requestId, items }`, where `requestId`
   is a client-generated UUID and `items` contains 1–50 unique
   `{ sessionId, expectedVersion, amountMinor, currency }` entries. The server resolves Workspace from

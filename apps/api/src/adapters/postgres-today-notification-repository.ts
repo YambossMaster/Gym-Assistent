@@ -22,10 +22,15 @@ export class PostgresTodayNotificationRepository implements TodayNotificationRep
       const balances = studentIds.length
         ? await client.query<{ id: string; changed_at: Date }>(
             `select s.id, greatest(s.created_at,
-                coalesce((select max(lp.updated_at) from app_private.lesson_purchase lp
-                  where lp.workspace_id=s.workspace_id and lp.student_id=s.id),s.created_at),
-                coalesce((select max(cs.completed_at) from app_private.course_session cs
-                  where cs.workspace_id=s.workspace_id and cs.student_id=s.id
+                coalesce((select max(lp.created_at) from app_private.lesson_purchase lp
+                  where lp.workspace_id=s.workspace_id and lp.student_id=s.id
+                    and lp.source_kind='manual'),s.created_at),
+                coalesce((select max(cs.completed_at)
+                  from app_private.session_lesson_source source
+                  join app_private.course_session cs on cs.workspace_id=source.workspace_id
+                    and cs.id=source.session_id
+                  where source.workspace_id=s.workspace_id and source.student_id=s.id
+                    and source.kind in ('manual','legacy_unallocated')
                     and cs.status='completed'),s.created_at)) changed_at
              from app_private.student s where s.workspace_id=$1 and s.id=any($2::uuid[])`,
             [workspaceId, studentIds],

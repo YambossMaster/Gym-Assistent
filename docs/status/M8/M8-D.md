@@ -13,6 +13,49 @@
 | Admission                | No real Coach admitted; the two dedicated Production synthetic users were deleted                  |
 | Single-lesson correction | PO accepted local UI; PR #35, exact-SHA Main CI and Production migration release passed            |
 
+The PO reported a post-release purchase-history gap on 2026-10-18: two completed lessons without
+a Student price were absent from purchase history, while a third priced lesson appeared. The PO
+also directed that either the purchase record or Finance amount edit update both effective views,
+without changing the original missing-price source or Student default price. The follow-up Sol is
+in isolated `codex/m8d-single-purchase-records`, based on released Main. Student detail now projects
+each completed unpriced source as a one-lesson purchase-history row with the effective Finance
+entry-state amount and version. The existing purchase editor handles both priced and unpriced
+single lessons, locks count to one and omits the currency control. Unpriced edits use the ordinary
+Finance entry override, so Finance and purchase history share the amount. No schema or Production
+change has been made for this follow-up. Focused API regression reproduced the missing two records
+before the fix and passed afterward; focused Web list/editor checks and both typechecks passed.
+PO UI inspection and the later live/browser/CI gate remain open for this follow-up.
+The subsequent PO review required a quieter editor: static `1 堂` beside the amount, a button
+to view the source Session from the editor's lower-left action area, no generic eyebrow or boxed source card,
+and a `單堂計費` / `扣除已購堂數` switch submitted through the same `儲存` button.
+The purchase-history row no longer links to the Session. An error now appears as a dismissible
+overlay instead of shifting the fields. Focused Web tests 7/7 and Web typecheck passed after this
+revision. A read-only Development query under Workspace RLS found two pending sources and one
+generated source for the reported Student; this branch's Student detail projection returned all
+three. The first unscoped diagnostic query falsely showed no sources and was discarded. The
+5173 now serves this isolated branch's latest Web through API 3002. Initially, 5173 served the new
+Web but still proxied to an older API; the PO's refreshed screen therefore showed only one record.
+After restarting Vite with `API_PROXY_TARGET=http://127.0.0.1:3002`, the isolated API logged the
+authenticated Student detail request and the PO confirmed the screen shows all three records
+($1,500, $60 corrected from an original $0, and $0). The unused 5188 preview was stopped.
+The subsequent editor typography correction follows the existing Settings dialog scale: the three
+field labels are 14px/700, and the fixed count, amount and billing state are 14px/500. Computed
+styles and the rendered dialog were checked on 5173 at desktop and 390px; no data behavior changed.
+The next local follow-up excludes Students with no manual Lesson Purchases from low-lesson attention
+and bases the notice event time on manual purchases and manual lesson use only, so single-lesson
+record edits do not reissue the notice. Mobile notification links no longer inherit the header icon
+link size, and the Finance source buttons use `前往來源紀錄` and `設定單價` on one line at 390px.
+Focused API/Web tests passed 9/9 and both typechecks passed. On 5173, the PO's single-lesson-only
+Student's low-balance notice disappeared after a successful Today refresh; the unrelated reschedule
+notice remained. The Development pool briefly hit its session-connection limit during this check and
+then recovered without changing other running branches or Production.
+The PO accepted the current 5173 version and explicitly authorized Main CI/deployment. Root
+36/36, API 298/298, Web 373/373 and API/Web builds passed locally. PR #37's first exact-head CI
+run `39057368440` passed `browser-ui` and the migration no-op but failed `verify`: the new Web
+purchase test imported the Supabase client without a mock and depended on local Vite values.
+That test now mocks the client; its four cases passed with Vite values absent, along with Web
+typecheck and changed-file formatting. Re-run exact-head PR CI before merging.
+
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
 delivered baselines. M8-D owns the real-Coach Beta opening and its remaining checks; see the
 completed [`M8-C.md`](M8-C.md) for Alpha evidence. M8-E owns paid checkout and must not be pulled

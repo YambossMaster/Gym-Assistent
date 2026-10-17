@@ -36,6 +36,7 @@ describe('TodayModule', () => {
     })
     const alice = await students.create(coach, { name: 'Alice' })
     const twoLessons = await students.create(coach, { name: 'Two lessons' })
+    await students.create(coach, { name: 'Single lessons only' })
     const archived = await students.create(coach, { name: 'Archived' })
     await students.update(coach, archived.id, {
       name: 'Archived',
@@ -69,7 +70,7 @@ describe('TodayModule', () => {
       date: '2026-09-10',
       timeZone: 'Asia/Taipei',
       summary: {
-        activeStudents: 2,
+        activeStudents: 3,
         incomePeriod: { startsOn: '2026-09-01', endsOn: '2026-10-01' },
         incomeByCurrency: [
           { currency: 'TWD', amountMinor: 4000 },

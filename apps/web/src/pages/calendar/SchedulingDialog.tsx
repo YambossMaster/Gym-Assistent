@@ -87,7 +87,7 @@ export function SchedulingDialog({
       >
         <header>
           <div>
-            <span className="eyebrow dark">{eyebrow}</span>
+            {eyebrow && <span className="eyebrow dark">{eyebrow}</span>}
             {titleAction ? (
               <div className="scheduling-dialog-title-line">
                 <h2 id="scheduling-dialog-title">{title}</h2>
