@@ -45,9 +45,14 @@ passed. The 390px layout remains unverified.
 The no-purchase Venue save still receives the old `venue_not_purchased` error because port 3000
 serves the primary-checkout API and read-only Development schema inspection found neither M8-D
 Student price nor Session source object. Saving a price or no-purchase Session is not yet a validated
-local flow. Migration comparison, live integration, full local gate, exact-SHA CI and remote delivery
-remain unverified. Next: present the corrected local version for Product Owner inspection, apply
-corrections, then obtain explicit approval before Development migration and broader verification.
+local flow. The Product Owner authorized Development validation on 2026-10-17, but the required
+Development history guard stopped the dry-run: the linked project has eight additional remote-only
+M8-E migration versions beyond this isolated branch's approved overlay. The guard did not run a
+push; both M8-D migrations remain unapplied. Docker/Podman is unavailable for an isolated local
+Supabase stack. Focused API scheduling/source tests passed 19/19. Do not reconcile the history by
+copying or replaying active M8-E migrations into this branch. Next: preserve this reviewable M8-D
+branch and resume Development migration and real no-purchase save verification once the shared
+history has an approved, exact matching baseline. Exact-SHA CI and remote delivery remain unverified.
 Keep Production and M8-E untouched.
 
 ## Binding Beta plan policy

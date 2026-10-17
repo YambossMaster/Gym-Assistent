@@ -34,7 +34,9 @@ M8-D, so saving the new flow is unverified. The Student price uses Settings curr
 second control or currency label and shares a row with phone and age range. The Calendar shows each
 Student's total remaining lessons or `單堂計費` before Venue selection. Saving a no-purchase
 Session still hits the old API/database purchase guard; the two M8-D Development migrations and
-isolated API switch remain gated after Product Owner review. See the active [M8-D
+isolated API switch remain open. Product Owner approved Development validation, but its guarded
+dry-run stopped on eight remote-only M8-E migrations in the shared Development project; no M8-D
+migration was applied. See the active [M8-D
 status](status/M8/M8-D.md) before continuing this slice.
 
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
