@@ -177,8 +177,8 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
       }
       if (action === 'reopen') await removeSessionLessonSource(client, workspaceId, id)
       if (action === 'complete') {
-        const localDate = await client.query<{ day: string }>(
-          'select ($2::timestamptz at time zone time_zone)::date::text day from app_private.workspace where id=$1',
+        const localDate = await client.query<{ local_day: string }>(
+          'select ($2::timestamptz at time zone time_zone)::date::text as local_day from app_private.workspace where id=$1',
           [workspaceId, current.ends_at],
         )
         const chosen = await client.query<{ id: string }>(
@@ -189,7 +189,7 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
              and (select count(*) from app_private.session_lesson_source a
                   where a.workspace_id=$1 and a.kind='manual' and a.purchase_id=p.id) < p.lesson_count
            order by (p.entitlement_venue_id is not null) desc,p.purchased_at,p.id limit 1`,
-          [workspaceId, current.student_id, current.venue_id, localDate.rows[0]?.day],
+          [workspaceId, current.student_id, current.venue_id, localDate.rows[0]?.local_day],
         )
         if (chosen.rows[0]) {
           await client.query(

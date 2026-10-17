@@ -407,6 +407,7 @@ export function StudentDetailPage({
   defaultSessionMinutes?: number
 }) {
   const { studentId = '' } = useParams()
+  const plan = usePlanAccess(session)
   const defaultFinanceCurrency = useDefaultFinanceCurrency()
   const { hash, search } = useLocation()
   const navigate = useNavigate()
@@ -746,6 +747,7 @@ export function StudentDetailPage({
               timeZone={timeZone}
               venues={venueQuery.data?.venues ?? []}
               submitting={submitting}
+              canCorrectSingle={plan.data?.tier === 'basic' || plan.data?.tier === 'advanced'}
               onEdit={(item) => {
                 setPurchaseConflict(null)
                 setPurchaseEditor(item)
@@ -784,6 +786,7 @@ export function StudentDetailPage({
               timeZone={timeZone}
               venues={venueQuery.data?.venues ?? []}
               submitting={submitting}
+              canCorrectSingle={plan.data?.tier === 'basic' || plan.data?.tier === 'advanced'}
               onEdit={(item) => {
                 setPurchaseHistoryOpen(false)
                 setPurchaseConflict(null)
@@ -983,6 +986,7 @@ function PurchaseLedgerRows({
   timeZone,
   venues,
   submitting,
+  canCorrectSingle,
   onEdit,
   onDelete
 }: {
@@ -990,6 +994,7 @@ function PurchaseLedgerRows({
   timeZone: string
   venues: readonly Venue[]
   submitting: boolean
+  canCorrectSingle: boolean
   onEdit: (purchase: LessonPurchase) => void
   onDelete: (purchase: LessonPurchase) => void
 }) {
@@ -1021,19 +1026,21 @@ function PurchaseLedgerRows({
       </span>
       <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
       <span className="purchase-ledger-actions">
-        <button
-          type="button"
-          className="purchase-ledger-icon"
-          aria-label={
-            item.sourceKind === 'generated_single'
-              ? '修正單堂金額'
-              : `編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} 的購課紀錄`
-          }
-          onClick={() => onEdit(item)}
-          disabled={submitting}
-        >
-          <Pencil aria-hidden="true" />
-        </button>
+        {(item.sourceKind !== 'generated_single' || canCorrectSingle) && (
+          <button
+            type="button"
+            className="purchase-ledger-icon"
+            aria-label={
+              item.sourceKind === 'generated_single'
+                ? '修正單堂金額'
+                : `編輯 ${new Date(item.purchasedAt).toLocaleDateString('zh-TW', { timeZone })} 的購課紀錄`
+            }
+            onClick={() => onEdit(item)}
+            disabled={submitting}
+          >
+            <Pencil aria-hidden="true" />
+          </button>
+        )}
         {item.sourceKind !== 'generated_single' && (
           <button
             className="purchase-ledger-icon danger-button"

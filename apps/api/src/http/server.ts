@@ -123,6 +123,20 @@ const createStudentBodySchema = {
     privateNote: { type: 'string', maxLength: 4000 },
     ageRange: studentAgeRangeBodySchema,
     defaultVenueId: { type: ['string', 'null'], format: 'uuid' },
+    singleLessonPrice: {
+      anyOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['amountMinor', 'currency'],
+          properties: {
+            amountMinor: { type: 'integer', minimum: 0, maximum: 999999999999 },
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+          },
+        },
+        { type: 'null' },
+      ],
+    },
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
   },
@@ -139,6 +153,20 @@ const updateStudentBodySchema = {
     privateNote: { type: 'string', maxLength: 4000 },
     ageRange: studentAgeRangeBodySchema,
     defaultVenueId: { type: ['string', 'null'], format: 'uuid' },
+    singleLessonPrice: {
+      anyOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['amountMinor', 'currency'],
+          properties: {
+            amountMinor: { type: 'integer', minimum: 0, maximum: 999999999999 },
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+          },
+        },
+        { type: 'null' },
+      ],
+    },
     active: { type: 'boolean' },
     lineLinked: { type: 'boolean' },
     version: { type: 'integer', minimum: 1 },

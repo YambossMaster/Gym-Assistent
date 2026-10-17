@@ -107,7 +107,7 @@ it('locks the Student and fixes an eligible manual source within completion', as
         rowCount: 1,
       }
     if (sql.startsWith('select ($2::timestamptz'))
-      return { rows: [{ day: '2026-09-01' }], rowCount: 1 }
+      return { rows: [{ local_day: '2026-09-01' }], rowCount: 1 }
     if (sql.startsWith('select p.id from app_private.lesson_purchase'))
       return { rows: [{ id: 'manual-1' }], rowCount: 1 }
     if (sql.startsWith('update app_private.course_session set status='))

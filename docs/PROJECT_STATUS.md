@@ -10,7 +10,7 @@
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                      |
 | Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                        |
-| Current gate                  | **M8-D Beta opening active; single-lesson Contract frozen, isolated Sol in progress**                                                                |
+| Current gate                  | **M8-D Beta opening active; single-lesson Sol locally verified, PO review pending**                                                                  |
 | Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                             |
 | Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                             |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                           |
@@ -23,22 +23,19 @@
 ## Required context
 
 **M8-D single-lesson correction:** the Product Owner froze
-[`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17. Its local Sol work
-is on isolated `codex/m8d-single-lesson`, separate from the dirty payment checkout. Venue selection,
-Venue-aware Student hints, balance-independent Series planning, optional Student price, fixed
-completion sources, pending settlement and Finance correction are implemented locally. Both
-private-schema migrations remain unapplied; rendered desktop/390px review and broader gates are
-pending Product Owner inspection. Local 5173 now serves the isolated M8-D Web after the Product
-Owner found it had served the primary checkout; local 3000 API and Development database still lack
-M8-D, so saving the new flow is unverified. The Student price uses Settings currency without a
-second control or currency label and shares a row with phone and age range. The Calendar shows each
-Student's total remaining lessons or `單堂計費` before Venue selection. Saving a no-purchase
-Session still hits the old API/database purchase guard; the two M8-D Development migrations and
-isolated API switch remain open. Product Owner approved Development validation, but its guarded
-dry-run stopped on eight remote-only M8-E migrations in the shared Development project; no M8-D
-migration was applied. See the active [M8-D
-status](status/M8/M8-D.md) before continuing this slice.
-
+[`M8-D-SINGLE-LESSON-CONTRACT.md`](M8-D-SINGLE-LESSON-CONTRACT.md) on 2026-10-17.
+The isolated `codex/m8d-single-lesson` branch now has locally verified Student price, unrestricted
+active-Venue scheduling, bounded no-package Series, fixed completion sources, pending settlement,
+Finance and purchase-history correction, and explicit package re-evaluation. Local 5173 serves this
+branch's Web with API 3001; the unrelated primary checkout and API 3000 remain separate. Only
+the two M8-D migrations were applied to Development after an exact two-file official dry-run;
+Production and M8-E were untouched. Authenticated Development and browser flows passed, and the
+final local check passed root 36, API 295, Web 367 plus API/Web build. The PO confirmed that Free
+can complete single lessons while after-the-fact pending settlement/correction waits for Pro or
+Prime. Synthetic data were removed. PO review of this verified version is next; remote push,
+exact-SHA CI and Production migration/release are not yet authorized. A separate pre-existing
+Development Auth-delete trigger defect is recorded in the active [M8-D
+status](status/M8/M8-D.md).
 Payment development/release hold: PO narrowed payment delivery to backend only. No payment frontend
 changes were included in the welcome-notice release. API billing startup is hard-closed.
 The planned NT$115/145 catalog and frontend integration remain local, not deployed by this release.
@@ -113,84 +110,14 @@ startup context.
 
 ## Next handoff
 
-The Product Owner-approved desktop Students/Exercise Library scroll shortcut was delivered through
-[PR #29](https://github.com/YambossMaster/Gym-Assistent/pull/29) as `d3d5b287`, with all required
-[Main CI checks](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38678469173),
-same-SHA Fly deployment and independent HTTP 200 for `/api/ready`, `/` and `/login`. No migration
-was included. Continue M8-D real-Coach Beta opening and separately approved handoffs; keep the
-primary checkout's payment, operations and other Web changes outside this release.
+Present the verified local M8-D single-lesson and unrestricted-Venue flows on port 5173 to the
+Product Owner for inspection. Apply any reported correction in the isolated branch and repeat its
+focused check. Development migrations and authenticated/browser validation have passed; no remote
+push, exact-SHA CI, Production migration or release has been authorized. Before a remote action,
+report the final diff, tests and exact target, then obtain separate delivery authorization.
 
-The Product Owner-approved mobile PWA scroll shortcut is delivered through [PR
-#25](https://github.com/YambossMaster/Gym-Assistent/pull/25), Main CI and same-SHA Fly deployment.
-No migration was included. Continue M8-D real-Coach Beta opening and the separately approved
-handoffs; the primary checkout's payment, operations and other local Web changes remain outside
-this release. Installed-device acceptance of this shortcut remains unobserved.
-
-[PR #2](https://github.com/YambossMaster/Gym-Assistent/pull/2) merged as `809dd164` after all
-required checks passed. [Main CI
-#153](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38079958383) passed no-pending
-Production preview, exact-SHA Fly deployment and readiness. [Backup
-#10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38080005792) produced the first
-encrypted `main` artifact and passed network-isolated restore with Auth/Workspace/migration
-read-back. The Product Owner's installed-iPhone Coach Notes recheck passed. Fly's Production App
-showed one running Tokyo Machine; Billing was in Good Standing with a US$0.74 upcoming invoice,
-and Cost Explorer showed the same 2026-10-05–11 estimated spend. No custom Fly spend-alert control
-was visible in inspected settings; Supabase Free spend cap and capacity views were verified. M8-C
-internal Alpha acceptance is complete. Monitor daily backups and 48-hour freshness operationally.
-Observe the first real Coach after Beta admission as the M8-D Beta gate;
-do not repeat the Product Owner's Alpha Happy Path test.
-The local PWA update and loading screen remain separately pending Product Owner review.
-
-Release [#5](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38064919971) used the
-Product Owner's `APPLY`, re-previewed and applied only `20261010110051`, deployed exact SHA
-`d12edc70942a96e7c73e8c7d86e3135de2b66ba0`, and passed readiness. Production history and
-aggregate tester-code/grant read-back agree. The Product Owner-authorized two-account Production
-User-JWT red-line smoke passed cross-account denial and Free-plan boundaries. Both synthetic Auth
-accounts and exact Student/Workspace fixtures were cleaned and read back as zero. The local
-[recovery and PR/CI test](M8-D-RECOVERY-REVIEWER-TEST.md) now specifies daily encrypted logical
-dumps, a seven-day artifact, separate recovery passphrase, isolated restore and `pg_net` isolation.
-GitHub's active `main` ruleset and PR behavior passed with three required CI checks. The backup
-workflow is active on `main`; M8-D remains open for admission and other listed gates.
-
-Release-workflow hardening is delivered at exact SHA `8f8c480`. [CI #146](https://github.com/YambossMaster/Gym-Assistent/actions/runs/38047027072)
-passed verify/build, browser UI, development migration dry-run, a fresh no-pending Production
-preview, runtime-secret preflight, Fly deployment and readiness. Independent external checks then
-returned 200 for `/api/ready`, root and `/login`; readiness returned `{"status":"ready"}`. The new
-flow keeps literal `APPLY` for schema migrations, permits checked release-gate/Fly configuration
-changes to deploy their own exact SHA, captures redacted Fly diagnostics on failure and prevents
-empty commits from deploying.
-
-GitHub's job record corrects the incident narrative: CI #143 for `e2e275f` did run and pass
-`deploy-production` plus readiness. The empty `6073cf1` commit was pushed while CI #143 was still in
-progress and was not required by the safeguard. Future release handling must wait for the exact-SHA
-job to complete before deciding whether a new commit or rerun is needed.
-
-Configure one stable, independently generated 256-bit `CALENDAR_SUBSCRIPTION_SECRET` in Fly
-Production. This is an application secret, not a Supabase access token. The resulting Fly restart
-must retain `/api/ready`, root and `/login` availability; then verify authenticated Calendar
-subscription create, recover and reset behavior without exposing the secret or private URLs.
-
-Release #4 applied only `20261010054011` but its first Fly deploy left the existing machine stopped.
-CI #142 diagnostics proved the machine had not started because `auto_start_machines` was false. The
-deployment config now enables auto-start, and exact-SHA CI #144 deployed `6073cf1` successfully.
-Independent browser-equivalent checks returned 200 for root and `/login`; `/api/ready` returned
-`{"status":"ready"}`. Missing `CALENDAR_SUBSCRIPTION_SECRET` was not the outage cause: the API now
-starts fail-closed without it, preserves existing feed reads, and returns 503 only for secret-
-dependent create/reset/recovery operations.
-
-PO approved the Google-compatible 256-bit private subscription path and accepted Fly upstream
-request-path log residual risk. Google fetched the synthetic private path and displayed its event;
-Apple initial ICS compatibility was also observed. Prime expiry returns one notice, not schedules.
-See [security design](CALENDAR-SUBSCRIPTION-SECURITY.md). Exact-SHA CI #137 and joint Production
-Release #3 passed; only `20261009171747` was applied, and the same `ef347c4` was deployed. Public
-readiness is 200; an invalid private feed is 404 with `no-store, private`. Production security advisor
-has no new calendar-table finding; its existing leaked-password-protection warning is separate.
-The three disposable Google subscriptions were removed and the synthetic probe/tunnel stopped.
-Next: PO tests Finance export and Calendar download/subscription on installed PWA, including Prime
-expiry behavior. External subscription refresh cadence remains client-controlled and unverified.
-See [engineering contract](SETTINGS-DATA-IMPLEMENTATION.md) for scope.
-The remaining M8-D admission and changed-flow device gates, legal-migration provenance audit note
-and old-PAT authorization remain separate. Recovery and PR/CI reviewer gates have passed.
+The real-Coach Beta admission and installed-device gates remain open in
+[`status/M8/M8-D.md`](status/M8/M8-D.md). Keep payment work and the primary checkout isolated.
 
 ## Status system
 

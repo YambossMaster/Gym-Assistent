@@ -20,40 +20,57 @@ into this package.
 
 ## Single-lesson correction local handoff
 
-The 2026-10-17 frozen [`M8-D-SINGLE-LESSON-CONTRACT.md`](../../M8-D-SINGLE-LESSON-CONTRACT.md)
-is carried on local branch `codex/m8d-single-lesson` in an isolated managed worktree. Local Sol
-now spans active Venue selection, Venue-aware Student hints, balance-independent bounded Series
-planning, optional Student price and manual purchase default. A second private-schema migration
-introduces fixed completed-Session sources, generated single purchases, pending billing and request
-replay records; both migrations remain unapplied. Scheduling's purchase guard is removed by that
-migration. Completion/reopen/delete, manual purchase edit validation, batch settlement,
-generated-price correction and explicit package re-evaluation are implemented as Workspace-scoped
-transactions. Finance and Student/Venue balances read fixed sources; generated purchases cannot
-grant package capacity. The Web exposes pending billing, purchase-history/source links and Finance
-correction. API/Web typechecks and focused source, scheduling, Finance, Student-price and Venue-hint
-tests passed locally (API 40/40 across six focused files; Web 7/7 across three files).
-The Product Owner's 5173 screenshots exposed a preview-path mistake: port 5173 was serving the
-unrelated primary checkout. On 2026-10-17 it was switched to this isolated Web worktree; direct
-HTTP source read-back and an authenticated browser check now show the Student price field and the
-Calendar `＋ 新增場地` option. Product Owner corrections removed the duplicate currency control and
-label from Student create/edit; phone, age range and price share a compact desktop row with
-responsive wrap. The Calendar picker now shows total positive manual lessons before Venue selection
-or `單堂計費` when none remain. After selection it shows that Venue's usable lessons or
-`單堂計費`. Focused Web hint tests passed 3/3; Web typecheck and the changed desktop form read-back
-passed. The 390px layout remains unverified.
+The frozen 2026-10-17 [Contract](../../M8-D-SINGLE-LESSON-CONTRACT.md) is implemented on
+isolated branch `codex/m8d-single-lesson`. Port 5173 serves this branch's Web through its local
+API on 3001; the primary checkout and API on 3000 remain separate. Student create/edit stores
+optional price in Settings currency without another currency control. Desktop phone, age range and
+price share one row; the 390px layout wraps cleanly. Calendar shows total remaining manual lessons
+before Venue selection and that Venue's usable lessons afterward, falling back to `單堂計費`.
+Any active Venue, including an in-context new Venue, is available without a purchase. One-off
+and bounded Series scheduling no longer require a package. Completion fixes Venue-aware manual
+capacity first, otherwise creates a linked single purchase or pending billing item. Finance,
+purchase history, reopen/delete, settlement, correction and explicit re-evaluation use
+Workspace-scoped server sources. Free can schedule and complete; after-the-fact pending settlement
+and generated-price correction are Pro/Prime-only on both API and UI, as confirmed by the PO.
 
-The no-purchase Venue save still receives the old `venue_not_purchased` error because port 3000
-serves the primary-checkout API and read-only Development schema inspection found neither M8-D
-Student price nor Session source object. Saving a price or no-purchase Session is not yet a validated
-local flow. The Product Owner authorized Development validation on 2026-10-17, but the required
-Development history guard stopped the dry-run: the linked project has eight additional remote-only
-M8-E migration versions beyond this isolated branch's approved overlay. The guard did not run a
-push; both M8-D migrations remain unapplied. Docker/Podman is unavailable for an isolated local
-Supabase stack. Focused API scheduling/source tests passed 19/19. Do not reconcile the history by
-copying or replaying active M8-E migrations into this branch. Next: preserve this reviewable M8-D
-branch and resume Development migration and real no-purchase save verification once the shared
-history has an approved, exact matching baseline. Exact-SHA CI and remote delivery remain unverified.
-Keep Production and M8-E untouched.
+Development project `yvhijxhtelujfsaplzpi` applied only M8-D migrations `20261017105438`
+and `20261017110659`. The project had eight applied remote-only M8-E versions, so a temporary
+external history audit fetched all 61 applied migrations and staged only these two M8-D files.
+The official CLI dry-run listed exactly these two files, and remote migration history then
+confirmed both applied. No M8-E file entered the isolated branch. Existing counts stayed 16
+Students, 23 purchases, 158 Sessions and 8 Venues. Backfill created 139 fixed sources (132
+manual, 7 legacy-unallocated); old and new remaining-balance formulas matched all 16 Students.
+No live negative-balance Student existed. Underlying purchases and aggregate amount were unchanged;
+a pre-migration monthly Finance snapshot was not captured.
+
+Authenticated Development tests passed: Free priced no-purchase Session save/completion; Prime
+two-item missing-price settlement including zero, stale all-or-nothing, replay and changed retry;
+Venue-bound/general allocation priority; no-package two-week Series generation and idempotent
+reconciliation; Prime 500-to-750 generated-price correction matching Finance, backdated manual
+purchase without silent rewrite, explicit re-evaluation, reopen, re-completion and deletion.
+Two concurrent completion requests returned one 200 and one 409 with one generated purchase;
+a second Workspace received 404 for both Session read and completion.
+Free pending read, settlement and generated correction API calls returned 403. Browser review on
+5173 checked Student create, desktop and 390px layout, Calendar hints, in-context Venue creation,
+no-purchase Session save and persisted Calendar display. A synthetic Prime browser pass settled a
+pending item for 500, observed its removal and the matching Finance income, corrected it to 750
+from Finance and then to 800 from purchase history, and read back the same 800 in both surfaces.
+The pending form and save control were visually checked at 390px without horizontal overflow.
+Exact synthetic data and accounts were removed; Development aggregate counts returned to baseline.
+
+Final `npm run check` passed root 36/36, API 295/295 and Web 367/367; `npm run build` passed.
+The final local fixes add Student price to the Fastify HTTP schema, correct a PostgreSQL date alias
+that caused a live completion 500, and enforce the Pro/Prime correction gate. Focused regressions,
+typechecks and `git diff --check` passed. Exact-SHA remote CI, Production migration and release
+remain unverified; the branch has not been pushed.
+
+Known separate defect: deleting a Development Auth user with Venue-linked financial records can
+fail in the existing `app_private.refresh_changed_venue_balance()` trigger because
+`supabase_auth_admin` lacks private-schema access. Exact synthetic records were removed via
+versioned API operations first, after which account cleanup passed. This account-deletion path
+is outside the frozen single-lesson scope and was not changed. Next: PO inspection of the
+verified local UI, corrections if needed, then separate remote-delivery authorization. Keep
+M8-E and Production untouched.
 
 ## Binding Beta plan policy
 
