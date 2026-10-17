@@ -28,7 +28,12 @@ export interface TodayProjection {
 
 export function selectTodayAttention(students: StudentRosterItem[]): TodayProjection['attention'] {
   return students
-    .filter((student) => student.active && student.lessonSummary.remaining <= 1)
+    .filter(
+      (student) =>
+        student.active &&
+        student.lessonSummary.purchased > 0 &&
+        student.lessonSummary.remaining <= 1,
+    )
     .sort(
       (left, right) =>
         left.lessonSummary.remaining - right.lessonSummary.remaining ||

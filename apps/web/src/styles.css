@@ -6347,7 +6347,7 @@ textarea:focus {
     width: auto;
     height: 44px;
   }
-  .mobile-header a {
+  .mobile-header nav > a {
     width: 44px;
     height: 44px;
     display: grid;
@@ -13505,6 +13505,18 @@ a.venue-course-purchase:focus-visible {
 .finance-ledger-source .finance-ledger-source-link svg {
   width: 15px;
   height: 15px;
+}
+@media (max-width: 640px) {
+  .finance-ledger-source-links {
+    gap: 8px;
+  }
+  .finance-ledger-source .finance-ledger-source-link {
+    min-height: 44px;
+    padding: 0 12px;
+    gap: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
 }
 .finance-ledger-footer .danger-outline-button,
 .finance-ledger-footer .finance-ledger-restore {

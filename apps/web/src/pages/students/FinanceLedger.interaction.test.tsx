@@ -80,9 +80,7 @@ it('edits an unset-price zero income from the ordinary ledger without a separate
     expect(host.querySelector('.finance-ledger-row')?.textContent).toContain('尚未設定學生課堂單價')
     expect(host.querySelector('.finance-ledger-income')?.textContent).toContain('+$0')
     await act(async () => host.querySelector<HTMLButtonElement>('.finance-ledger-row')!.click())
-    expect(host.querySelector('.finance-ledger-editor')?.textContent).toContain(
-      '前往學生資料設定單價'
-    )
+    expect(host.querySelector('.finance-ledger-editor')?.textContent).toContain('設定單價')
     expect(host.querySelectorAll('.finance-ledger-source-links a')).toHaveLength(2)
     expect(host.querySelector('.finance-ledger-footer .ui-action-delete')).toBeNull()
     const amountInput = host.querySelector<HTMLInputElement>('input[type="number"]')!

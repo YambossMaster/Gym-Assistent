@@ -41,6 +41,14 @@ authenticated Student detail request and the PO confirmed the screen shows all t
 The subsequent editor typography correction follows the existing Settings dialog scale: the three
 field labels are 14px/700, and the fixed count, amount and billing state are 14px/500. Computed
 styles and the rendered dialog were checked on 5173 at desktop and 390px; no data behavior changed.
+The next local follow-up excludes Students with no manual Lesson Purchases from low-lesson attention
+and bases the notice event time on manual purchases and manual lesson use only, so single-lesson
+record edits do not reissue the notice. Mobile notification links no longer inherit the header icon
+link size, and the Finance source buttons use `前往來源紀錄` and `設定單價` on one line at 390px.
+Focused API/Web tests passed 9/9 and both typechecks passed. On 5173, the PO's single-lesson-only
+Student's low-balance notice disappeared after a successful Today refresh; the unrelated reschedule
+notice remained. The Development pool briefly hit its session-connection limit during this check and
+then recovered without changing other running branches or Production.
 Full changed-flow browser verification has not started because the PO requested further adjustments.
 
 M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha are protected
