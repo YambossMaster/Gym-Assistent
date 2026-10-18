@@ -1038,7 +1038,7 @@ export function PurchaseLedgerRows({
         {isSingleLessonPurchase(item) ? (
           <small>
             單堂計費
-            {item.priceUnset && ' · 尚未設定學生課堂單價'}
+            {item.priceUnset && ' · 尚未設定學生課堂單價（學生基本資料）'}
             {item.amountModified && ` · 已修改（來源 ${formatMoney(0, item.currency)}）`}
           </small>
         ) : (
@@ -1758,7 +1758,7 @@ export function PurchaseEditor({
                   {new Date(purchase.purchasedAt).toLocaleDateString('zh-TW', { timeZone })}
                 </span>
                 <strong>單堂計費</strong>
-                {purchase.priceUnset && <small>尚未設定學生課堂單價</small>}
+                {purchase.priceUnset && <small>尚未設定學生課堂單價（學生基本資料）</small>}
               </div>
             </div>
           ) : (

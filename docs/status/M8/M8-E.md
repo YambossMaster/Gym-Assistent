@@ -8,6 +8,14 @@
 > 真實交易細節另見 [`M8-E-LOCAL-CHECKOUT.md`](../../M8-E-LOCAL-CHECKOUT.md) 和
 > [`2026-10 月工程日誌`](../log/2026-10.md)。歷史說法不得覆蓋本頁的最新決定。
 
+## 2026-10-18 最新 Main 整合與 R15 現場核對
+
+- **影響／判準：** 若付款分支蓋過已發布的單堂購課與工作線路由，上線會使既有功能或交付狀態倒退；通過判準是以最新遠端 Main 為基底完成本地合併，受影響的 Web 流程與型別仍通過。
+- **本地整合：** 遠端 `main` 於本輪讀回 `e7a20c7421facc8f5c678f50eb8f44b406f675f9`（PR #43）。隔離付款分支原 HEAD `d123ff4`，已合併該 Main；Main 的整合 router／平行工作線規則與最新 M8-E R01–R17 清單各自保留。合併只在本地，尚未推送、部署或更動付款設定。
+- **聚焦證據：** 合併後單堂購課、CheckoutPage、PlansPage 三檔 17/17；Web `typecheck` 通過；合併文件 Prettier 與 Git whitespace 檢查通過。這不替代 PO 對付款同版 UI／條款的審閱，也不是完整 Web 或 CI Gate。
+- **R15 現場核對：** Supabase connector 讀回 Production `febunjhpruqlywjfvuaq` 為 `ACTIVE_HEALTHY`，migration history 仍無 `20261017181022`。正式 SQL 套用、加密 artifact 真正下載／隔離還原、≤48 小時恢復點與 Production 角色驗證仍未做，R15 保持部分。正式 Live 商店商品／webhook 本輪未取得新讀回；瀏覽器重新導向後無法穩定讀取頁面，因此 R02 仍沿用上次的未驗狀態。
+- **下一步：** 先讓 PO 檢視此整合版付款流程與同版條款，再依核准範圍完成 R02 Live 商店與 R15 真還原／migration Gate；R09 真自然扣款及 R16／R17 沿固定清單處理。Production 支付保持 hard-off，遠端推送、Production migration、正式密鑰與 Live 真付款各遵守原授權界線。
+
 ## 2026-10-18 PO 最終支付規格重置
 
 - **生效規格：** Pro／Prime 月繳、年繳四個 Lemon 方案都設定原生 30 天或 1 個月試用；

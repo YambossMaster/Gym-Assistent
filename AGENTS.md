@@ -10,12 +10,15 @@ route structure, visual language, and responsive experience.
 
 Before planning, changing, or reporting formal-product work:
 
-1. Read `README.md` and the short router `docs/PROJECT_STATUS.md`.
-2. Run `git status --short`; reconcile the worktree with Status and preserve unrelated changes.
-3. Follow the router's Required context: read the active package Status and named `ROADMAP.md`
-   sections. Load a predecessor or older milestone only when the router/package declares it or the
-   task needs its delivered baseline, decision, migration, regression, or exact evidence. Do not
-   cache a current milestone or gate in this file.
+1. Identify this checkout with `git branch --show-current`, `git rev-parse HEAD`,
+   `git status --short` and `git worktree list`; preserve unrelated changes. Read `README.md`
+   and the integrated Main router `docs/PROJECT_STATUS.md`.
+2. Select the user-requested workstream, then read its owned Status and named `ROADMAP.md`
+   sections. A different branch's Next is not an assignment. Check Main or release evidence before
+   treating a local Status as current Production fact. Follow `docs/status/README.md` for ownership.
+3. Load a predecessor or older milestone only when the selected workstream names an unmet
+   dependency or the task needs its delivered baseline, decision, migration, regression or exact
+   evidence. Do not cache a current milestone or gate in this file.
 4. Read `CONTEXT.md`, `docs/ARCHITECTURE.md`, and applicable `docs/adr/` files before changing domain
    language, Module interfaces, authorization, data ownership, or deployment shape.
 5. Inspect the matching `demo/src/pages/` route and reusable Demo components before defining or
@@ -43,8 +46,8 @@ Before planning, changing, or reporting formal-product work:
 ## Sources of truth
 
 - `docs/ROADMAP.md`: approved scope, sequence, dependencies, gate contracts, and completion.
-- `docs/PROJECT_STATUS.md`: short current-state router, blockers and one executable Next handoff.
-- `docs/status/<package>.md`: active or frozen Roadmap-package state and carried evidence.
+- `docs/PROJECT_STATUS.md`: integrated Main router and workstream pointers; no global Next.
+- `docs/status/<workstream>.md`: branch-owned active state or frozen release evidence.
 - `docs/status/log/`: chronological evidence, searched on demand rather than loaded at startup.
 - `docs/ARCHITECTURE.md`: authority, runtime, frontend, Module, projection, and deployment boundaries.
 - `CONTEXT.md`: canonical product language.
@@ -53,7 +56,9 @@ Before planning, changing, or reporting formal-product work:
 
 Roadmap scope, sequence, dependency, baseline, role ownership, or completion criteria change only
 after explicit Product Owner approval. Record progress and evidence in Status without changing the
-Roadmap.
+Roadmap. When assigning an approved future package ID, follow `docs/ROADMAP.md` Section 6's
+identifier convention and legacy boundary. Read explicit dependency edges; never infer order from
+a letter or reinterpret an existing M0–M10 identifier under the new convention.
 
 ## Product and engineering boundaries
 
@@ -105,6 +110,11 @@ does not authorize the full gate.
 Agents may proactively use available project-relevant Skills, plugins, apps, connectors, MCP tools,
 CLIs, and browser surfaces. The user does not need to mention or invoke them again when their use is
 within the active task and materially improves accuracy, verification, or completion.
+
+Before introducing or running a tool that generates local artifacts, check its output paths against
+`.gitignore`. Add precise ignore rules for disposable caches, build output and test artifacts first;
+then verify with `git status --short` and `git check-ignore` that the outputs stay out of Git while
+source files and intentional evidence remain visible.
 
 Chrome, Supabase, and GitHub may appear through different capability types in different sessions; use
 the best available mechanism and fall back cleanly when one is unavailable.
@@ -194,18 +204,20 @@ Owner explicitly preauthorized remote delivery for this package, proceed without
 After an authorized push, confirm exact-commit GitHub Actions, update Status, and report the result.
 Record the precise resume point while waiting for authorization or resolving a blocker.
 
-After completing each Roadmap step, inspect the approved Next handoff and continue directly to the
-next step when it is not a milestone boundary, its required Contract and prior gates are complete,
-and it needs no new authorization, external permission, or Product Owner decision. The remote
-delivery checkpoint above applies to each package unless the Product Owner explicitly preauthorized
-that package's delivery. Complete one
-step and its applicable evidence before beginning the next; this automatic handoff never skips,
-combines, or reorders the Contract -> Sol -> CI gates. Stop at a milestone completion or
-when an unexpected problem, missing authority, external dependency, or required decision makes
-continuation unsafe; record the exact handoff and blocking condition in Status.
+After completing each Roadmap step, inspect the **selected workstream's** approved Next. Continue
+within that workstream when it is not a milestone boundary, its required Contract and prior gates
+are complete, and it needs no new authorization, external permission, or Product Owner decision.
+The remote delivery checkpoint above applies to each package unless the Product Owner explicitly
+preauthorized that package's delivery. Complete one step and its applicable evidence before
+beginning the next; this automatic handoff never skips, combines, or reorders the Contract -> Sol ->
+CI gates. An earlier Roadmap item added in another branch is not an automatic handoff. Stop at a
+milestone completion or when an unexpected problem,
+missing authority, external dependency, or required decision makes continuation unsafe; record
+the exact handoff and blocking condition in Status.
 
 After code, schema, config, architecture, product behaviour, or blocker changes, follow the Status
-update protocol in `docs/status/README.md`: update the active package, change the dashboard only when
-its current facts changed, and append the monthly engineering log. A formal package is complete only
-when its required gates and remote evidence are complete. A Demo-only change is complete when its
-affected flow is locally testable and the Demo typecheck, tests, and release-facing build pass.
+update protocol in `docs/status/README.md`: update the owned workstream Status; the integration
+owner updates the Main router and monthly engineering log after verified integration. A formal
+package is complete only when its required gates and remote evidence are complete. A Demo-only
+change is complete when its affected flow is locally testable and the Demo typecheck, tests, and
+release-facing build pass.

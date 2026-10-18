@@ -33,17 +33,18 @@ verified external identity              due account deletion only
 
 ## 2. Sources of authority
 
-| Concern                                        | Authority                                           |
-| ---------------------------------------------- | --------------------------------------------------- |
-| Product behaviour and presentation target      | Demo plus the approved Roadmap Contract gate        |
-| Scope, order, dependencies, and completion     | `docs/ROADMAP.md`                                   |
-| Current work, evidence, risks, and next action | `docs/PROJECT_STATUS.md`                            |
-| Domain vocabulary                              | `CONTEXT.md`                                        |
-| Durable architectural decisions                | `docs/adr/`                                         |
-| Current implementation fact                    | Git worktree, tests, linked development environment |
+| Concern                                            | Authority                                           |
+| -------------------------------------------------- | --------------------------------------------------- |
+| Product behaviour and presentation target          | Demo plus the approved Roadmap Contract gate        |
+| Scope, order, dependencies, and completion         | `docs/ROADMAP.md`                                   |
+| Integrated Main release state and workstream links | `docs/PROJECT_STATUS.md`                            |
+| Branch-local work, evidence, risks, and one Next   | Owned `docs/status/<workstream>.md`                 |
+| Domain vocabulary                                  | `CONTEXT.md`                                        |
+| Durable architectural decisions                    | `docs/adr/`                                         |
+| Current implementation fact                        | Git worktree, tests, linked development environment |
 
 If these disagree, do not silently choose one. Preserve working assets, record the discrepancy in
-Status, and return scope or interface changes to the Contract gate.
+the owning workstream Status, and return scope or interface changes to the Contract gate.
 
 ## 3. Authority boundary
 
