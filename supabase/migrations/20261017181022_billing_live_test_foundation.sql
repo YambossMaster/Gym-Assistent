@@ -463,5 +463,3 @@ create policy billing_refund_case_owner on app_private.billing_refund_case
 create policy billing_refund_application_owner on app_private.billing_refund_case_application
   for select to gym_assistant_api
   using (workspace_id = nullif(current_setting('app.current_workspace_id', true), '')::uuid);
-
-
