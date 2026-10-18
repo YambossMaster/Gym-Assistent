@@ -91,5 +91,7 @@ export function liveBillingConfiguration(
       advanced_year: variantIds[3]!,
     },
   }
-  return { environment: 'live', checkout, secret: secret!, workerDatabaseUrl: workerDatabaseUrl! }
+  const workerUrl = new URL(workerDatabaseUrl!)
+  workerUrl.searchParams.set('sslmode', 'verify-full')
+  return { environment: 'live', checkout, secret: secret!, workerDatabaseUrl: workerUrl.href }
 }

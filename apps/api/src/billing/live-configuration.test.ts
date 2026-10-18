@@ -28,10 +28,12 @@ it('keeps Production billing off without its explicit switch', () => {
 })
 
 it('binds Live mode, store, provider values and both database connections', () => {
-  expect(liveBillingConfiguration(production)).toMatchObject({
+  const config = liveBillingConfiguration(production)
+  expect(config).toMatchObject({
     environment: 'live',
     checkout: { environment: 'live', storeId: '11', variants: { basic_month: '21' } },
   })
+  expect(new URL(config!.workerDatabaseUrl).searchParams.get('sslmode')).toBe('verify-full')
   for (const change of [
     { NODE_ENV: 'development' },
     { DATABASE_URL: 'postgresql://api@db.yvhijxhtelujfsaplzpi.supabase.co:5432/postgres' },
