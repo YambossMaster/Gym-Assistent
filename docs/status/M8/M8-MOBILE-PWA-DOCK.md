@@ -1,4 +1,4 @@
-# Mobile PWA bottom navigation regression — deployed, device follow-up received
+# Mobile PWA bottom navigation regression — deployed and accepted on device
 
 > Owner: Main `d4b9a49af18cba04ca6d706c572c05e9469e99d0` via PR #47.
 > This correction is separate from M8-E payment work and does not reopen the completed M8-D package.
@@ -52,11 +52,11 @@ asset `index-CR4K_Dcw.css` contains both the mobile dock `will-change:auto` and 
 `local-1792321674482`, so the public build ID alone does not prove the Git SHA; the release
 workflow's same-SHA deploy and served CSS establish the current release evidence.
 
-The Product Owner's 2026-10-18 follow-up says the installed PWA appears fixed. The supplied 19:18
-recording shows the bottom dock aligned with the visible edge while navigating through Finance,
-Exercise Library, Calendar and Today. It does not separately demonstrate every route at both
-elastic-scroll edges or the Students auto-hide transition; keep those cases in the ongoing PWA
-release check rather than claiming they were shown in this recording. The incident has no further
-reported symptom. The general existing-behavior impact check now has an entry in `AGENTS.md`, with
-its detailed matrix in `docs/VERIFICATION_WORKFLOW.md`. Aligning public build IDs with deployment
-SHA is a separate release-traceability improvement.
+The Product Owner tested the installed iPhone PWA and confirmed on 2026-10-18 that the bottom dock
+is fixed. The supplied 19:18 recording is real-device acceptance evidence for this reported
+regression: the dock stays aligned with the visible edge while navigating through Finance,
+Exercise Library, Calendar and Today. Together with the focused checks and deployed-CSS read-back
+above, this correction is accepted and closed. Future changes to other PWA routes and scroll states
+follow the general existing-behavior impact check in `AGENTS.md` and
+`docs/VERIFICATION_WORKFLOW.md`; they are not an open acceptance gate for this correction. Aligning
+public build IDs with deployment SHA is a separate release-traceability improvement.
