@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MissingBillingEventRecovery } from './missing-event-recovery.js'
+import { ReconciliationError } from './resources.js'
 import type { BillingNotification } from './event-inbox.js'
 import type { InvoiceResource, SubscriptionResource } from './resources.js'
 
@@ -48,8 +49,8 @@ describe('missing billing event recovery', () => {
       subscriptionInvoices: vi.fn(async (id: string) => [invoice(`${id}1`, id)]),
     }
     const recovery = new MissingBillingEventRecovery(repository, provider, '491074')
-    expect(await recovery.scanBatch(1)).toEqual({ scanned: 1, resources: 2 })
-    expect(await recovery.scanBatch(1)).toEqual({ scanned: 1, resources: 2 })
+    expect(await recovery.scanBatch(1)).toEqual({ scanned: 1, resources: 2, skipped: 0 })
+    expect(await recovery.scanBatch(1)).toEqual({ scanned: 1, resources: 2, skipped: 0 })
     expect(received.map((row) => [row.kind, row.resourceId, row.intentId])).toEqual([
       ['subscriptions', '10', intentId],
       ['subscription-invoices', '101', intentId],
@@ -59,6 +60,45 @@ describe('missing billing event recovery', () => {
     expect(received.every((row) => /^[a-f0-9]{64}$/.test(row.digest))).toBe(true)
     expect(repository.boundSubscriptionsAfter).toHaveBeenNthCalledWith(1, '491074', null, 1)
     expect(repository.boundSubscriptionsAfter).toHaveBeenNthCalledWith(2, '491074', '10', 1)
+  })
+
+  it('skips a removed variant without blocking later owner-bound subscriptions', async () => {
+    const received: BillingNotification[] = []
+    const recovery = new MissingBillingEventRecovery(
+      {
+        boundSubscriptionsAfter: async () => ['10', '11', '12'].map((id) => ({ id, intentId })),
+        receive: async (notification) => {
+          received.push(notification)
+        },
+      },
+      {
+        get: async (_kind, id) => {
+          if (id === '11') throw new ReconciliationError('unknown_variant')
+          return subscription(id)
+        },
+        subscriptionInvoices: async () => [],
+      },
+      '491074',
+    )
+    expect(await recovery.scanBatch()).toEqual({ scanned: 3, resources: 2, skipped: 1 })
+    expect(received.map((row) => row.resourceId)).toEqual(['10', '12'])
+  })
+
+  it('does not skip an unknown variant in Live recovery', async () => {
+    const receive = vi.fn()
+    const recovery = new MissingBillingEventRecovery(
+      { boundSubscriptionsAfter: async () => [{ id: '11', intentId }], receive },
+      {
+        get: async () => {
+          throw new ReconciliationError('unknown_variant')
+        },
+        subscriptionInvoices: async () => [],
+      },
+      '491074',
+      'live',
+    )
+    await expect(recovery.scanBatch()).rejects.toThrow('unknown_variant')
+    expect(receive).not.toHaveBeenCalled()
   })
 
   it('refuses a foreign customer invoice before enqueuing any resource for that subscription', async () => {
