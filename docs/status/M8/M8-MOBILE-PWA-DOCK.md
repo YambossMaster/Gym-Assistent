@@ -1,6 +1,6 @@
-# Mobile PWA bottom navigation regression — local correction
+# Mobile PWA bottom navigation regression — deployed, device acceptance pending
 
-> Owner: isolated `mobile-bottom-nav-stability` worktree, rebased onto Main `a38ca6f`.
+> Owner: Main `d4b9a49af18cba04ca6d706c572c05e9469e99d0` via PR #47.
 > This correction is separate from M8-E payment work and does not reopen the completed M8-D package.
 
 ## User impact and evidence
@@ -42,13 +42,18 @@ after the recording and is excluded as its cause.
 
 ## Current state and next action
 
-The Product Owner explicitly authorized full verification and deployment on 2026-10-18. The local
-correction is on current Main and local full checks have passed. Main `0318cb4` merged M8-E
-payment code after the recording. A separately authorized release run 39119563394 applied its
-foundation migration and deployed that exact commit. Main `a38ca6f` later changed only the
-isolated backup workflow and payment Status; [Main CI #249](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39120996344)
-found no pending Production migrations and deployed `a38ca6f` with readiness. This correction's
-exact-SHA remote CI and installed iPhone PWA acceptance are still unverified. After deployment,
-reload/reopen the installed PWA and test Today, Students and Calendar at both scroll edges; confirm
-the visible bottom gap remains zero and the intended Students auto-hide still works. If it still
-drifts, capture the installed build ID and a new short recording before changing the scroll owner.
+The Product Owner authorized full verification and deployment on 2026-10-18. PR #47 passed its
+three required CI checks at `c461667`, then squash-merged as Main `d4b9a49`. [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121728371)
+passed verify/build, browser UI, development migration selection, Production migration preview,
+and the same-SHA Fly deployment and readiness. Independent public read-back returned HTTP 200 for
+`/api/ready`, `/` and `/login` (SPA routes requested with `Accept: text/html`). The served CSS
+asset `index-CR4K_Dcw.css` contains both the mobile dock `will-change:auto` and pinned dock
+`transition:none` rules. `app-version.json` returned HTTP 200 with build ID
+`local-1792321674482`, so the public build ID alone does not prove the Git SHA; the release
+workflow's same-SHA deploy and served CSS establish the current release evidence.
+
+Installed iPhone PWA edge-bounce acceptance is still open. Reload/reopen the installed PWA and
+test Today, Students and Calendar at both scroll edges; confirm the visible bottom gap remains
+zero and the intended Students auto-hide still works. If it still drifts, capture the installed
+build ID and a new short recording before changing the scroll owner. Aligning public build IDs
+with deployment SHA is a separate release-traceability improvement, not part of this CSS fix.

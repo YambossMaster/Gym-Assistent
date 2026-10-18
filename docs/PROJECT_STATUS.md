@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-18 against remote `origin/main` at
-> `a38ca6fc2bad2cd92824be64c59bc553b7869fda` and the Product Owner's M8-D completion decision.
+> `d4b9a49af18cba04ca6d706c572c05e9469e99d0` and the Product Owner's M8-D completion decision.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -14,7 +14,7 @@
 | Migration    | Production release applied M8-D versions `20261017105438` and `20261017110659`. Later purchase-history and mobile Settings releases had no new migration; Production preview reports none pending.                                                                                                                                                                                                  |
 | Verification | PR #37 corrected PR CI and Main CI #39058008147 passed for `aaa5a929`. PR #39 required checks passed; [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770) deployed `d54658b` with readiness. Independent `/api/ready`, `/` and `/login` returned HTTP 200; served CSS contained the corrected mobile selector. Installed-PWA visual recheck remains unverified. |
 | Beta ops     | Latest Main Status recorded 0 real Coaches, 3 test accounts and two unused Beta codes. This is a historical snapshot, not a fresh Production count.                                                                                                                                                                                                                                                 |
-| Payment      | Production billing remains hard-off. No M8-E payment code or draft billing migration is established as released by this Main evidence.                                                                                                                                                                                                                                                              |
+| Payment      | M8-E foundation code and migration are deployed. Production billing remains hard-off; Live payment gates remain open.                                                                                                                                                                                                                                                                               |
 
 The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
 merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
@@ -33,12 +33,10 @@ separate task.
 | ------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). The foundation migration and code are deployed; Live payments remain hard-off and their separate gates remain open. |
 
-The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) has a
-Main-based local CSS fix and focused browser evidence. The Product Owner authorized full
-verification and deployment. [Main CI #249](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39120996344)
-deployed `a38ca6f` after the separately authorized M8-E foundation migration release; its
-Production preview found no pending migrations. Installed iPhone PWA acceptance, this correction's
-exact-SHA CI and remote delivery remain open.
+The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) merged as
+PR #47 / `d4b9a49`. [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121728371)
+passed and deployed the same commit with readiness; public CSS contains the fix. Installed iPhone
+PWA edge-scroll acceptance remains open.
 
 This router records integrated facts and points to workstreams. It does not assign a global Next
 across parallel branches. Select the user-requested workstream first; then read that workstream's
