@@ -1,5 +1,21 @@
 # M8-E local implementation contract
 
+## Release timing decision — Product Owner 2026-10-18
+
+The Product Owner directed continued development and Live release even if R09's naturally timed
+Test Mode first-charge or renewal result has not arrived. Preserve R09's original pass criterion
+and reconcile its later provider invoice, signed webhook or documented recovery, original Coach,
+verified period and access after the event. The existing short-interval Test Mode diagnostic
+proves only the behavior it actually exercises; its one-day period mapped to a local month quote
+does not prove the production month/year schedule or native one-month trial first charge.
+
+This is a sequencing exception to the earlier complete-Test-Mode-before-Live instruction, not a
+claim that R09 passed. Before opening paid checkout to all Coaches, still establish Live merchant/catalog/webhook
+readiness, displayed-versus-actual charge and consent, environment/tenant isolation, encrypted
+restore, a bounded controlled Live transaction and exact-commit deployment/health evidence. An
+observed failure affecting charges or entitlements requires containment and correction. Remote
+delivery, Production secret changes and the real payment retain their explicit action approvals.
+
 2026-10-14: PO authorized starting development/design after reviewing the policies. This freezes
 the independent local checkout/UI and provider-boundary foundation below. It does not freeze the
 remaining subscription/event persistence, provider change execution or live-activation contracts.

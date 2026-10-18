@@ -877,6 +877,18 @@ migration, Production and remote delivery checkpoints. This does not activate M8
 
 #### M8-E — Paid checkout before first offer expiry
 
+**PO launch-timing decision — 2026-10-18 (supersedes only the wait for calendar-time R09 evidence):**
+Continue M8-E development, Live preparation and release without waiting for the original one-month
+Test Mode trial to reach its natural first charge or for a monthly subscription to renew. Keep R09
+open and record the later real provider invoice, webhook, owner ledger, verified period and access
+result when each event occurs. A short-interval diagnostic can exercise the same reconciliation
+path, but cannot be labelled proof of the production monthly/annual interval or first-trial end.
+If later evidence fails, contain the affected paid entry point and correct it; do not relabel a
+failed or missing result as passed. This changes **sequence**, not the R01–R17 criteria or the
+requirement for accurate prices, owner-bound access, signed webhook intake, recoverable data,
+merchant readiness, exact-SHA release evidence and a separately authorized controlled Live charge.
+The CI gate below is read with this explicit R09 timing exception; no other gate is waived.
+
 **PO correction — 2026-10-18 (controls this package):** Pro and Prime monthly and annual variants
 use Lemon Squeezy's native **30-day or one-month free trial only for the account's first paid
 subscription**. A later subscription has no second trial and is charged at checkout; the API
