@@ -5,7 +5,9 @@ import { Pool } from 'pg'
 import { CheckoutModule } from './billing/checkout.js'
 import { PostgresCheckoutRepository } from './billing/postgres-checkout.js'
 import { LemonTestCheckoutProvider, localBillingConfiguration } from './billing/lemon-checkout.js'
-import { createLocalLifecycle } from './billing/local-lifecycle.js'
+import { createBillingLifecycle, createLocalLifecycle } from './billing/local-lifecycle.js'
+import { liveBillingConfiguration } from './billing/live-configuration.js'
+import { PostgresVerifiedBillingAccess } from './billing/postgres-access-source.js'
 import { billingDevelopmentEnabled } from './billing/release-gate.js'
 import { PostgresStudentRepository } from './adapters/postgres-student-repository.js'
 import { loadConfig } from './config.js'
@@ -44,8 +46,9 @@ import { LegalAcceptanceModule } from './legal-acceptance/legal-acceptance.js'
 import { PostgresLegalAcceptanceRepository } from './legal-acceptance/postgres-legal-acceptance-repository.js'
 
 const config = loadConfig()
-const billingEnabled = billingDevelopmentEnabled()
+const billingEnabled = billingDevelopmentEnabled(process.env)
 const billingConfig = billingEnabled ? localBillingConfiguration(process.env) : null
+const liveBilling = liveBillingConfiguration(process.env)
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
   max: 10,
@@ -53,7 +56,14 @@ const pool = new Pool({
   connectionTimeoutMillis: 10_000,
 })
 const repository = new PostgresStudentRepository(pool)
-const billingLifecycle = billingEnabled ? createLocalLifecycle(process.env, pool) : null
+const billingLifecycle = liveBilling
+  ? createBillingLifecycle(liveBilling, pool)
+  : billingEnabled
+    ? createLocalLifecycle(process.env, pool)
+    : null
+const verifiedBilling = billingLifecycle
+  ? new PostgresVerifiedBillingAccess(pool, undefined, billingLifecycle.environment)
+  : undefined
 if (!config.SUPABASE_SECRET_KEY || !config.BETA_ADMISSION_SECRET) {
   throw new Error('M8-D requires SUPABASE_SECRET_KEY and BETA_ADMISSION_SECRET')
 }
@@ -68,13 +78,15 @@ const server = buildServer({
     ? {
         billingInbox: billingLifecycle.billingInbox,
         billingManagement: billingLifecycle.billingManagement,
+        trialChange: billingLifecycle.trialChange,
+        paidChange: billingLifecycle.paidChange,
       }
     : {}),
-  ...(billingEnabled && process.env.BILLING_LOCAL_CHECKOUT === 'true'
+  ...(billingLifecycle && (billingConfig || liveBilling)
     ? {
         checkout: new CheckoutModule(
-          new PostgresCheckoutRepository(pool),
-          new LemonTestCheckoutProvider(billingConfig),
+          new PostgresCheckoutRepository(pool, billingLifecycle.environment),
+          new LemonTestCheckoutProvider(liveBilling?.checkout ?? billingConfig),
         ),
       }
     : {}),
@@ -85,7 +97,7 @@ const server = buildServer({
   calendarIntegration: new PostgresCalendarIntegration(
     pool,
     (identity) => repository.resolveWorkspace(identity),
-    new PlanAccessModule(new PostgresPlanAccessRepository(pool)),
+    new PlanAccessModule(new PostgresPlanAccessRepository(pool), undefined, verifiedBilling),
     config.CALENDAR_SUBSCRIPTION_SECRET,
   ),
   finances: new FinanceModule(repository, new PostgresFinanceRepository(pool)),
@@ -120,11 +132,19 @@ const server = buildServer({
     config.CAPABILITY_RATE_LIMIT_SECRET ?? config.SUPABASE_SECRET_KEY ?? config.DATABASE_URL,
   ),
   betaAdmission: new BetaAdmissionModule(
-    new PostgresBetaAdmissionRepository(pool, config.BETA_ADMISSION_SECRET),
+    new PostgresBetaAdmissionRepository(
+      pool,
+      config.BETA_ADMISSION_SECRET,
+      billingLifecycle?.environment ?? null,
+    ),
     new SupabaseVerifiedCoachEmail(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY),
     config.BETA_ADMISSION_SECRET,
   ),
-  planAccess: new PlanAccessModule(new PostgresPlanAccessRepository(pool)),
+  planAccess: new PlanAccessModule(
+    new PostgresPlanAccessRepository(pool),
+    undefined,
+    verifiedBilling,
+  ),
   exports: new ExportModule({
     workspace: new WorkspaceModule({ repository }),
     students: new StudentModule({ repository }),
@@ -168,8 +188,15 @@ if (config.NODE_ENV === 'production') {
   ) as {
     supabaseUrl: string
     internalAlpha: boolean
+    billingLiveEnabled?: boolean
   }
-  assertProductionBoundary(config, publicConfig.supabaseUrl, publicConfig.internalAlpha)
+  assertProductionBoundary(
+    config,
+    publicConfig.supabaseUrl,
+    publicConfig.internalAlpha,
+    publicConfig.billingLiveEnabled === true,
+    liveBilling !== null,
+  )
   await server.listen({ host: '127.0.0.1', port: 0 })
   const address = server.server.address()
   if (!address || typeof address === 'string') throw new Error('Internal API did not start')

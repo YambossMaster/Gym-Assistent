@@ -14,10 +14,13 @@ export default defineConfig(({ mode }) => ({
       generateBundle(_options, bundle) {
         const publicUrl = loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL ?? ''
         const internalAlpha = loadEnv(mode, process.cwd(), 'VITE_').VITE_INTERNAL_ALPHA === 'true'
+        const billingLiveEnabled =
+          mode === 'production' &&
+          loadEnv(mode, process.cwd(), 'VITE_').VITE_BILLING_LIVE === 'true'
         this.emitFile({
           type: 'asset',
           fileName: 'deployment-config.json',
-          source: JSON.stringify({ supabaseUrl: publicUrl, internalAlpha })
+          source: JSON.stringify({ supabaseUrl: publicUrl, internalAlpha, billingLiveEnabled })
         })
         this.emitFile({
           type: 'asset',

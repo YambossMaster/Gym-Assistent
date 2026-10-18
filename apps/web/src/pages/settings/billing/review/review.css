@@ -1,0 +1,67 @@
+.billing-review-toolbar {
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 32px);
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--white);
+  box-shadow: 0 3px 12px #0001;
+  font-size: 11px;
+}
+.billing-review-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.billing-review-toolbar select,
+.billing-review-toolbar button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px 7px;
+}
+.billing-review-shell .main-content {
+  padding-bottom: 120px;
+}
+.billing-review-toolbar small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+.billing-review-hint {
+  position: fixed;
+  bottom: 60px;
+  right: 16px;
+  max-width: 320px;
+  padding: 8px 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  z-index: 90;
+}
+.billing-review-shell .settings-category-nav button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (max-width: 720px) {
+  .billing-review-toolbar {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .billing-review-hint {
+    display: none;
+  }
+}

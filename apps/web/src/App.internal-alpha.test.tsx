@@ -9,7 +9,11 @@ const auth = vi.hoisted(() => ({
   onAuthStateChange: vi.fn()
 }))
 
-vi.mock('./config', () => ({ isInternalAlpha: () => entry.alpha }))
+vi.mock('./config', () => ({
+  isInternalAlpha: () => entry.alpha,
+  localBillingEnabled: false,
+  billingLiveBuildEnabled: false
+}))
 vi.mock('./supabase', () => ({
   supabase: { auth },
   initialRecoveryPending: false,

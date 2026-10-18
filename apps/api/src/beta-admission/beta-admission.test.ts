@@ -38,16 +38,12 @@ describe('Beta admission', () => {
     expect(repository.usageForTest(codeDigest(code))).toBe(0)
   })
 
-  it('grants exactly 60 days and returns to free at expiry', async () => {
-    const { module, code, setClock } = setup()
-    const grant = await module.redeem(first, '127.0.0.1', { code })
-    expect(grant).toEqual({
-      state: 'promotional',
-      startedAt: '2026-10-03T02:00:00.000Z',
-      endsAt: '2026-12-02T02:00:00.000Z',
+  it('rejects new card-free Promotional redemptions without consuming the code', async () => {
+    const { module, repository, code } = setup()
+    await expect(module.redeem(first, '127.0.0.1', { code })).rejects.toMatchObject({
+      reason: 'promotion_unavailable',
     })
-    setClock(new Date('2026-12-02T02:00:00.000Z'))
-    expect(await module.status(first)).toMatchObject({ state: 'free' })
+    expect(repository.usageForTest(codeDigest(code))).toBe(0)
   })
 
   it('redeems a single-use permanent code once and keeps an identical retry idempotent', async () => {
@@ -72,7 +68,9 @@ describe('Beta admission', () => {
   })
 
   it('does not let one Workspace redeem a second code', async () => {
-    const { module, repository, code } = setup()
+    const { module, repository } = setup()
+    const code = 'first-permanent-code'
+    repository.issueForTest(codeDigest(code), 1, new Date('2026-10-10T00:00:00.000Z'), 'permanent')
     const permanentCode = 'another-permanent-code'
     repository.issueForTest(
       codeDigest(permanentCode),
@@ -86,40 +84,6 @@ describe('Beta admission', () => {
     })
     expect(repository.usageForTest(codeDigest(code))).toBe(1)
     expect(repository.usageForTest(codeDigest(permanentCode))).toBe(0)
-  })
-
-  it('allows an uncapped promotional code while keeping one redemption per verified Email', async () => {
-    const { module, repository, emails } = setup()
-    const code = 'shared-beta-code'
-    repository.issueForTest(codeDigest(code), null, new Date('2026-10-10T00:00:00.000Z'))
-    for (let index = 0; index < 12; index += 1) {
-      const identity = { userId: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}` }
-      emails.set(identity.userId, `coach-${index}@example.com`)
-      await expect(
-        module.redeem(identity, `127.0.0.${index + 1}`, { code }),
-      ).resolves.toMatchObject({
-        state: 'promotional',
-      })
-    }
-    expect(repository.usageForTest(codeDigest(code))).toBe(12)
-  })
-
-  it('never restores a consumed seat or permits same-Email reuse after deletion', async () => {
-    const { module, repository, code, emails } = setup()
-    await module.redeem(first, '127.0.0.1', { code })
-    repository.deleteUserForTest(first.userId)
-    const replacement = { userId: '22222222-2222-4222-8222-222222222222' }
-    emails.set(replacement.userId, 'coach@example.com')
-    await expect(module.redeem(replacement, '127.0.0.2', { code })).rejects.toMatchObject({
-      reason: 'already_used',
-    })
-    expect(repository.usageForTest(codeDigest(code))).toBe(1)
-    const other = { userId: '33333333-3333-4333-8333-333333333333' }
-    emails.set(other.userId, 'other@example.com')
-    await expect(module.redeem(other, '127.0.0.3', { code })).resolves.toMatchObject({
-      state: 'promotional',
-    })
-    expect(repository.usageForTest(codeDigest(code))).toBe(2)
   })
 
   it('limits malformed redemption requests per identity and returns retry timing', async () => {

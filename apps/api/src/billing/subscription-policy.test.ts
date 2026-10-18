@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { BillingSelection } from './policy.js'
 import {
-  failedRenewalAccess,
+  recoveredRenewalPeriod,
   subscriptionChangePolicy,
+  trialSubscriptionChangePolicy,
   upgradeSettlementReference,
 } from './subscription-policy.js'
 
@@ -23,21 +24,63 @@ describe('subscription changes', () => {
     ['proYear', 'proYear', 'unchanged'],
     ['proYear', 'primeMonth', 'unavailable'],
     ['proYear', 'primeYear', 'immediate'],
-    ['primeMonth', 'proMonth', 'at_period_end'],
-    ['primeMonth', 'proYear', 'at_period_end'],
+    ['primeMonth', 'proMonth', 'unavailable'],
+    ['primeMonth', 'proYear', 'unavailable'],
     ['primeMonth', 'primeMonth', 'unchanged'],
     ['primeMonth', 'primeYear', 'immediate'],
     ['primeYear', 'proMonth', 'unavailable'],
-    ['primeYear', 'proYear', 'at_period_end'],
+    ['primeYear', 'proYear', 'unavailable'],
     ['primeYear', 'primeMonth', 'unavailable'],
     ['primeYear', 'primeYear', 'unchanged'],
   ])('%s → %s is %s', (from, to, kind) => {
     const result = subscriptionChangePolicy(selections[from]!, selections[to]!)
     expect(result.kind).toBe(kind)
     if (kind === 'immediate') {
-      expect(result).toEqual({ kind, creditUnusedTime: true, restartPeriod: true })
+      expect(result).toEqual({ kind })
     }
-    if (kind === 'unavailable') expect(result).toEqual({ kind, reason: 'annual_to_monthly' })
+    if (kind === 'unavailable') expect(result).toEqual({ kind, reason: 'downgrade_unavailable' })
+  })
+})
+
+describe('trial subscription changes', () => {
+  const end = '2026-11-15T09:09:08.000Z'
+  const now = new Date('2026-10-15T09:09:08.000Z')
+  it.each([
+    ['proMonth', 'proMonth', 'unchanged'],
+    ['proMonth', 'proYear', 'same_subscription'],
+    ['proMonth', 'primeMonth', 'same_subscription'],
+    ['proMonth', 'primeYear', 'same_subscription'],
+    ['proYear', 'proMonth', 'unavailable'],
+    ['proYear', 'proYear', 'unchanged'],
+    ['proYear', 'primeMonth', 'unavailable'],
+    ['proYear', 'primeYear', 'same_subscription'],
+    ['primeMonth', 'proMonth', 'unavailable'],
+    ['primeMonth', 'proYear', 'unavailable'],
+    ['primeMonth', 'primeMonth', 'unchanged'],
+    ['primeMonth', 'primeYear', 'same_subscription'],
+    ['primeYear', 'proMonth', 'unavailable'],
+    ['primeYear', 'proYear', 'unavailable'],
+    ['primeYear', 'primeMonth', 'unavailable'],
+    ['primeYear', 'primeYear', 'unchanged'],
+  ])('%s → %s stays on the first trial: %s', (from, to, kind) => {
+    const result = trialSubscriptionChangePolicy(selections[from]!, selections[to]!, end, now)
+    expect(result.kind).toBe(kind)
+    if (kind === 'same_subscription')
+      expect(result).toEqual({ kind, trialEndsAt: end, chargeNowMinor: 0 })
+    if (kind === 'unavailable') expect(result).toEqual({ kind, reason: 'downgrade_unavailable' })
+  })
+  it('fails closed at and after the original deadline or without a valid deadline', () => {
+    expect(
+      trialSubscriptionChangePolicy(
+        selections.proMonth!,
+        selections.primeYear!,
+        end,
+        new Date(end),
+      ),
+    ).toEqual({ kind: 'unavailable', reason: 'trial_ended' })
+    expect(
+      trialSubscriptionChangePolicy(selections.proMonth!, selections.primeYear!, 'invalid', now),
+    ).toEqual({ kind: 'unavailable', reason: 'invalid_trial_boundary' })
   })
 })
 
@@ -49,6 +92,17 @@ const settlement = {
   changeAt: new Date('2026-04-16T00:00:00Z'),
 }
 describe('upgrade settlement reference (not a provider charge)', () => {
+  it('tracks the observed Prime monthly-to-annual charge while remaining only an estimate', () => {
+    const estimate = upgradeSettlementReference({
+      creditablePaid: { currency: 'TWD', amountMinor: 11489 + 3018 },
+      newPeriodPrice: { currency: 'TWD', amountMinor: 145000 },
+      periodStartedAt: new Date('2026-10-17T07:06:27Z'),
+      periodEndsAt: new Date('2026-11-17T07:06:26Z'),
+      changeAt: new Date('2026-10-17T08:21:42Z'),
+    })
+    expect(estimate.dueNowMinor).toBe(130517)
+    expect(130528 - estimate.dueNowMinor).toBe(11)
+  })
   it('credits half the paid month against a full new period, not just the remaining-price difference', () => {
     expect(upgradeSettlementReference(settlement)).toEqual({
       currency: 'TWD',
@@ -140,60 +194,37 @@ describe('upgrade settlement reference (not a provider charge)', () => {
   })
 })
 
-const due = new Date('2026-10-14T04:00:00Z')
-const deadline = new Date('2026-10-21T04:00:00Z')
-describe('failed-renewal access source', () => {
-  it('uses one fixed deadline through retries and delayed processing', () => {
-    for (const daysAfterDue of [0, 1, 3, 6]) {
-      expect(
-        failedRenewalAccess({
-          status: 'past_due',
-          originalDueAt: due,
-          now: new Date(due.getTime() + daysAfterDue * 86400000),
-        }),
-      ).toEqual({ kind: 'grace', until: deadline.toISOString() })
-    }
-  })
-  it('ends exactly at seven days, even if no later webhook arrives', () => {
+it('keeps the original renewal anchor after a late payment and rejects a restarted period', () => {
+  const originalDueAt = new Date('2026-10-15T00:00:00Z')
+  const scheduledEndsAt = new Date('2026-11-15T00:00:00Z')
+  for (const day of [15, 16, 20, 21]) {
+    const paidAt = new Date(`2026-10-${day}T00:00:00Z`)
     expect(
-      failedRenewalAccess({
-        status: 'past_due',
-        originalDueAt: due,
-        now: new Date(deadline.getTime() - 1),
-      }).kind,
-    ).toBe('grace')
-    for (const now of [deadline, new Date('2026-11-01')]) {
-      expect(failedRenewalAccess({ status: 'past_due', originalDueAt: due, now })).toEqual({
-        kind: 'ended',
-        reason: 'grace_elapsed',
-      })
-    }
-  })
-  it.each(['unpaid', 'expired'] as const)(
-    'ends immediately on verified %s without needing a due date',
-    (status) => {
-      expect(failedRenewalAccess({ status, originalDueAt: null, now: due })).toEqual({
-        kind: 'ended',
-        reason: 'provider_ended',
-      })
-    },
-  )
-  it('cannot extend access using missing, invalid or future invoice timestamps', () => {
-    for (const originalDueAt of [null, new Date('invalid'), new Date(due.getTime() + 1)]) {
-      expect(failedRenewalAccess({ status: 'past_due', originalDueAt, now: due }).kind).toBe(
-        'reconcile',
-      )
-    }
-    expect(
-      failedRenewalAccess({ status: 'past_due', originalDueAt: due, now: new Date('invalid') })
-        .kind,
-    ).toBe('reconcile')
-    expect(
-      failedRenewalAccess({
-        status: 'past_due',
-        originalDueAt: new Date(8640000000000000),
-        now: new Date(8640000000000000),
-      }).kind,
-    ).toBe('reconcile')
-  })
+      recoveredRenewalPeriod({
+        originalDueAt,
+        scheduledEndsAt,
+        paidAt,
+        verifiedStartsAt: originalDueAt,
+        verifiedEndsAt: scheduledEndsAt,
+      }),
+    ).toEqual({ startsAt: originalDueAt, endsAt: scheduledEndsAt })
+  }
+  expect(
+    recoveredRenewalPeriod({
+      originalDueAt,
+      scheduledEndsAt,
+      paidAt: new Date('2026-10-20'),
+      verifiedStartsAt: new Date('2026-10-20'),
+      verifiedEndsAt: new Date('2026-11-20'),
+    }),
+  ).toBeNull()
+  expect(
+    recoveredRenewalPeriod({
+      originalDueAt,
+      scheduledEndsAt,
+      paidAt: new Date('invalid'),
+      verifiedStartsAt: originalDueAt,
+      verifiedEndsAt: scheduledEndsAt,
+    }),
+  ).toBeNull()
 })

@@ -125,6 +125,11 @@ jobs:
           tar -C "$RUNNER_TEMP/restore-input" -xzf "$RUNNER_TEMP/restore-input.tar.gz"
           cd "$RUNNER_TEMP/restore-input"
           sha256sum --check SHA256SUMS
+          created_epoch="$(date -u -d "$(cat created-at-utc.txt)" +%s)"
+          age_seconds="$(( $(date -u +%s) - created_epoch ))"
+          test "$age_seconds" -ge 0
+          test "$age_seconds" -le 172800
+          echo 'PASS source recovery point is within 48 hours.'
           # The local CLI postgres role cannot replay the managed grant on a
           # logging parameter. Preserve the source artifact and omit only that
           # grant from this disposable restore copy after checksum verification.
@@ -161,6 +166,8 @@ jobs:
           echo 'PASS restore container has no Docker network attached.'
           docker exec "$container" mkdir -p /tmp/m8d-backup
           docker cp "$RUNNER_TEMP/restore-input/." "$container:/tmp/m8d-backup/"
+          docker cp "$GITHUB_WORKSPACE/scripts/r15-billing-paid-restore-fixture.sql" \
+            "$container:/tmp/m8d-backup/r15-billing-paid-restore-fixture.sql"
           docker exec "$container" psql -U postgres -d postgres --single-transaction \
             --variable ON_ERROR_STOP=1 \
             --file /tmp/m8d-backup/restore-roles.sql \
@@ -177,6 +184,47 @@ jobs:
           test "$auth_count" -ge 1
           test "$workspace_count" -ge 1
           test "$migration_count" -eq 1
+          billing_version="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from supabase_migrations.schema_migrations where version = '20261017181022'")"
+          if [ "$billing_version" -eq 1 ]; then
+            billing_tables="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from pg_tables where schemaname = 'app_private' and tablename in ('billing_checkout_account','billing_checkout_quote','billing_checkout_intent','billing_event_inbox','billing_subscription_ledger','billing_invoice_ledger','billing_cancellation','billing_verified_period','billing_trial_change','billing_paid_upgrade_evidence','billing_paid_change','billing_refund_case','billing_refund_case_application')")"
+            test "$billing_tables" -eq 13
+            billing_orphans="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from app_private.billing_invoice_ledger i left join app_private.billing_subscription_ledger s on s.environment=i.environment and s.store_id=i.store_id and s.provider_id=i.subscription_id and s.workspace_id=i.workspace_id where s.provider_id is null")"
+            test "$billing_orphans" -eq 0
+            period_orphans="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from app_private.billing_verified_period p left join app_private.billing_subscription_ledger s on s.environment=p.environment and s.store_id=p.store_id and s.provider_id=p.subscription_id and s.workspace_id=p.workspace_id where s.provider_id is null")"
+            test "$period_orphans" -eq 0
+            fixture_workspace="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select w.id from app_private.workspace w where not exists (select 1 from app_private.billing_checkout_account a where a.workspace_id=w.id and a.environment='test') order by w.id limit 1")"
+            test -n "$fixture_workspace"
+            docker exec "$container" psql -U postgres -d postgres --single-transaction \
+              --variable ON_ERROR_STOP=1 --variable "fixture_workspace=$fixture_workspace" \
+              --file /tmp/m8d-backup/r15-billing-paid-restore-fixture.sql
+            tables=(billing_checkout_account billing_checkout_quote billing_checkout_intent billing_subscription_ledger billing_invoice_ledger billing_verified_period)
+            filters=("workspace_id='$fixture_workspace' and environment='test'" \
+              "id='f1500000-0000-4000-8000-000000000001'" \
+              "id='f1500000-0000-4000-8000-000000000002'" \
+              "environment='test' and store_id='r15-restore-fixture' and provider_id='r15-paid-subscription'" \
+              "environment='test' and store_id='r15-restore-fixture' and provider_id='r15-paid-invoice'" \
+              "environment='test' and store_id='r15-restore-fixture' and subscription_id='r15-paid-subscription'")
+            for index in "${!tables[@]}"; do
+              docker exec "$container" psql -U postgres -d postgres --variable ON_ERROR_STOP=1 \
+                --command "copy (select * from app_private.${tables[$index]} where ${filters[$index]}) to '/tmp/r15-${tables[$index]}.csv' with (format csv, header true)"
+            done
+            docker exec "$container" psql -U postgres -d postgres --variable ON_ERROR_STOP=1 \
+              --command "delete from app_private.billing_checkout_account where workspace_id='$fixture_workspace' and environment='test'"
+            fixture_remaining="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from app_private.billing_subscription_ledger where environment='test' and store_id='r15-restore-fixture'")"
+            test "$fixture_remaining" -eq 0
+            restore_args=()
+            for table in "${tables[@]}"; do
+              restore_args+=(--command "copy app_private.$table from '/tmp/r15-$table.csv' with (format csv, header true)")
+            done
+            docker exec "$container" psql -U postgres -d postgres --single-transaction \
+              --variable ON_ERROR_STOP=1 "${restore_args[@]}"
+            paid_join="$(docker exec "$container" psql -U postgres -d postgres -Atqc "select count(*) from app_private.billing_checkout_account a join app_private.billing_checkout_quote q on q.workspace_id=a.workspace_id and q.environment=a.environment join app_private.billing_checkout_intent c on c.quote_id=q.id and c.workspace_id=a.workspace_id and c.environment=a.environment join app_private.billing_subscription_ledger s on s.intent_id=c.id and s.workspace_id=a.workspace_id and s.environment=a.environment join app_private.billing_invoice_ledger i on i.subscription_id=s.provider_id and i.workspace_id=s.workspace_id and i.environment=s.environment and i.store_id=s.store_id join app_private.billing_verified_period p on p.invoice_id=i.provider_id and p.subscription_id=s.provider_id and p.workspace_id=s.workspace_id and p.environment=s.environment and p.store_id=s.store_id where s.environment='test' and s.store_id='r15-restore-fixture' and s.provider_id='r15-paid-subscription' and a.workspace_id='$fixture_workspace'")"
+            test "$paid_join" -eq 1
+            echo 'PASS restored R15 tables and synthetic paid checkout/subscription/invoice/period owner join after offline CSV round-trip.'
+          else
+            test "$billing_version" -eq 0
+            echo 'R15 billing migration absent from source backup; paid-ledger restore gate remains open.'
+          fi
           printf 'Restored aggregate counts: Auth users=%s, Workspaces=%s, latest migration=%s.\n' \
             "$auth_count" "$workspace_count" "$migration_count"
           echo 'PASS downloaded artifact decrypt, checksum, isolated restore and data read-back.'

@@ -9,7 +9,6 @@ const facts = (): BillingAccessFacts => ({
   status: 'active',
   period: { tier: 'basic', origin: 'payment', startsAt: start, endsAt: end },
   cancellationEndsAt: null,
-  failedRenewalDueAt: null,
   accessRevoked: false,
 })
 it('requires period evidence and never extrapolates a paid renewal from active status', () => {
@@ -29,20 +28,22 @@ it('limits cancellation to the earlier of the paid/trial boundary and confirmed 
   cancelled.cancellationEndsAt = during
   expect(billingAccessSource(cancelled, during)).toBeNull()
 })
-it('permits only a paid renewal to use the fixed seven-day grace', () => {
-  const failed = { ...facts(), status: 'past_due' as const, failedRenewalDueAt: end }
-  const deadline = new Date('2026-11-08T00:00:00Z')
-  expect(billingAccessSource(failed, end)?.endsAt).toEqual(deadline)
-  expect(billingAccessSource(failed, deadline)).toBeNull()
+it('keeps paid access only until its verified end while renewal payment is pending', () => {
+  const failed = { ...facts(), status: 'past_due' as const }
+  expect(billingAccessSource(failed, during)).toEqual({ tier: 'basic', endsAt: end })
+  expect(billingAccessSource(failed, end)).toBeNull()
   expect(
-    billingAccessSource({ ...failed, period: { ...failed.period!, origin: 'trial' } }, end),
+    billingAccessSource({ ...failed, period: { ...failed.period!, origin: 'trial' } }, during),
   ).toBeNull()
-  expect(
-    billingAccessSource(
-      { ...failed, failedRenewalDueAt: new Date(+end + 86400000) },
-      new Date(+end + 86400000),
-    ),
-  ).toBeNull()
+})
+it('does not extend a verified renewal after a later failed payment', () => {
+  const failed: BillingAccessFacts = {
+    ...facts(),
+    status: 'past_due',
+    period: { tier: 'advanced', origin: 'renewal', startsAt: start, endsAt: end },
+  }
+  expect(billingAccessSource(failed, during)).toEqual({ tier: 'advanced', endsAt: end })
+  expect(billingAccessSource(failed, end)).toBeNull()
 })
 it.each(['unpaid', 'expired'] as const)(
   'ends a source on %s even before its cached paid-through date',
@@ -103,3 +104,20 @@ it.each(['permanent', 'promotional'] as const)(
     expect(billing.get).not.toHaveBeenCalled()
   },
 )
+
+it('rejects a recovery period moved to the payment date and preserves the original renewal end', () => {
+  const recovery = { originalDueAt: start, scheduledEndsAt: end, paidAt: new Date('2026-10-05') }
+  expect(billingAccessSource({ ...facts(), renewalRecovery: recovery }, during)?.endsAt).toEqual(
+    end,
+  )
+  expect(
+    billingAccessSource(
+      {
+        ...facts(),
+        renewalRecovery: recovery,
+        period: { ...facts().period!, startsAt: recovery.paidAt, endsAt: new Date('2026-11-05') },
+      },
+      during,
+    ),
+  ).toBeNull()
+})

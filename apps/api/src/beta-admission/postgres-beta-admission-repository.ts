@@ -1,6 +1,7 @@
 import { createHmac, randomUUID } from 'node:crypto'
 import type { Pool, PoolClient } from 'pg'
 import type { BetaAdmissionRepository, BetaGrant, RedemptionFailure } from './beta-admission.js'
+import type { BillingEnvironment } from '../billing/billing-sql.js'
 
 interface GrantRow {
   kind: 'promotional' | 'permanent'
@@ -23,6 +24,7 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
   constructor(
     private readonly pool: Pool,
     private readonly secret: string,
+    private readonly billingEnvironment: BillingEnvironment | null = null,
   ) {}
 
   async grant(userId: string): Promise<BetaGrant> {
@@ -44,12 +46,16 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
     verifiedEmail: string
     codeDigest: string
     now: Date
-    endsAt: Date
   }): Promise<BetaGrant | RedemptionFailure> {
     const client = await this.pool.connect()
     try {
       await client.query('begin')
       await client.query('select pg_advisory_xact_lock(hashtext($1))', [input.userId])
+      if (
+        this.billingEnvironment &&
+        (await hasBillingCommitment(client, input.userId, this.billingEnvironment))
+      )
+        return await decline(client, 'already_eligible')
       const existing = await grantForUser(client, input.userId)
       if (existing) {
         await client.query('commit')
@@ -64,6 +70,7 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
         )
       ).rows[0]
       if (!code) return await decline(client, 'invalid_code')
+      if (code.code_kind === 'promotional') return await decline(client, 'promotion_unavailable')
       if (code.revoked_at || code.closes_at <= input.now)
         return await decline(client, 'code_closed')
       if (code.redemption_limit !== null && code.redemption_count >= code.redemption_limit)
@@ -86,26 +93,14 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
         `insert into app_private.beta_grant
           (workspace_id,code_id,kind,started_at,ends_at)
          values ($1,$2,$3,$4,$5)`,
-        [
-          workspaceId,
-          code.id,
-          code.code_kind,
-          input.now,
-          code.code_kind === 'promotional' ? input.endsAt : null,
-        ],
+        [workspaceId, code.id, code.code_kind, input.now, null],
       )
       await client.query(
         'update app_private.beta_code set redemption_count=redemption_count+1 where id=$1',
         [code.id],
       )
       await client.query('commit')
-      return code.code_kind === 'promotional'
-        ? {
-            state: 'promotional',
-            startedAt: input.now.toISOString(),
-            endsAt: input.endsAt.toISOString(),
-          }
-        : { state: code.code_kind, startedAt: input.now.toISOString() }
+      return { state: 'permanent', startedAt: input.now.toISOString() }
     } catch (error) {
       await client.query('rollback')
       throw error
@@ -136,6 +131,44 @@ export class PostgresBetaAdmissionRepository implements BetaAdmissionRepository 
       retryAfter: Math.max(1, Math.ceil((startedAt.getTime() + bucketMs - now.getTime()) / 1000)),
     }
   }
+}
+
+async function hasBillingCommitment(
+  client: PoolClient,
+  userId: string,
+  environment: BillingEnvironment,
+): Promise<boolean> {
+  const workspace = await client.query<{ id: string }>(
+    'select id from app_private.workspace where owner_user_id=$1',
+    [userId],
+  )
+  const id = workspace.rows[0]?.id
+  if (!id) return false
+  await client.query("select set_config('app.current_workspace_id',$1,true)", [id])
+  await client.query(
+    'insert into app_private.billing_checkout_account(workspace_id,environment) values($1,$2) on conflict do nothing',
+    [id, environment],
+  )
+  await client.query(
+    'select workspace_id from app_private.billing_checkout_account where workspace_id=$1 and environment=$2 for update',
+    [id, environment],
+  )
+  const result = await client.query<{ committed: boolean }>(
+    `select
+       exists(select 1 from app_private.billing_checkout_intent i
+         where i.workspace_id=$1 and i.environment=$2
+           and i.status in ('creating','open','pending'))
+       or exists(select 1 from app_private.billing_subscription_ledger s
+         where s.workspace_id=$1 and s.environment=$2
+           and coalesce(s.resource#>>'{attributes,status}','')<>'expired'
+           and (nullif(s.resource#>>'{attributes,ends_at}','') is null
+             or (s.resource#>>'{attributes,ends_at}')::timestamptz>now()))
+       or exists(select 1 from app_private.billing_verified_period p
+         where p.workspace_id=$1 and p.environment=$2 and p.superseded_at is null
+           and p.ends_at>now()) as committed`,
+    [id, environment],
+  )
+  return Boolean(result.rows[0]?.committed)
 }
 
 async function grantForUser(client: PoolClient, userId: string): Promise<GrantRow | undefined> {

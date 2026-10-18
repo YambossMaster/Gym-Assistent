@@ -8,6 +8,8 @@ import { BillingPolicyError } from '../billing/policy.js'
 import { checkoutRoutes } from '../billing/routes.js'
 import { billingWebhookRoutes, type BillingEventInbox } from '../billing/event-inbox.js'
 import { billingManagementRoutes, type BillingManagementModule } from '../billing/management.js'
+import { trialChangeRoutes, type TrialChangeModule } from '../billing/trial-change.js'
+import { paidChangeRoutes, type PaidChangeModule } from '../billing/paid-change.js'
 import type { FinanceReportModule } from '../exports/finance-report.js'
 import type { PostgresCalendarIntegration } from '../calendar-integration/postgres-calendar.js'
 import { CalendarError } from '../calendar-integration/calendar.js'
@@ -72,6 +74,8 @@ export interface ServerDependencies {
   checkout?: CheckoutModule
   billingInbox?: BillingEventInbox
   billingManagement?: BillingManagementModule
+  trialChange?: TrialChangeModule
+  paidChange?: PaidChangeModule
   identityVerifier: IdentityVerifier
   students: StudentModule
   today: TodayModule
@@ -244,6 +248,8 @@ export function buildServer({
   checkout,
   billingInbox,
   billingManagement,
+  trialChange,
+  paidChange,
   identityVerifier,
   students,
   today,
@@ -1617,6 +1623,8 @@ export function buildServer({
   if (checkout) checkoutRoutes(server, identityVerifier, checkout)
   if (billingInbox) billingWebhookRoutes(server, billingInbox)
   if (billingManagement) billingManagementRoutes(server, identityVerifier, billingManagement)
+  if (trialChange) trialChangeRoutes(server, identityVerifier, trialChange)
+  if (paidChange) paidChangeRoutes(server, identityVerifier, paidChange)
   return server
 }
 

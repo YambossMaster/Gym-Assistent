@@ -1,8 +1,6 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 
-const PERIOD_MS = 60 * 24 * 60 * 60 * 1000
-
 export type BetaGrant =
   | { state: 'promotional'; startedAt: string; endsAt: string }
   | { state: 'free'; startedAt?: string; endsAt?: string }
@@ -14,6 +12,7 @@ export type RedemptionFailure =
   | 'code_exhausted'
   | 'already_used'
   | 'already_eligible'
+  | 'promotion_unavailable'
 
 export class BetaAdmissionError extends Error {
   constructor(
@@ -37,7 +36,6 @@ export interface BetaAdmissionRepository {
     verifiedEmail: string
     codeDigest: string
     now: Date
-    endsAt: Date
   }): Promise<BetaGrant | RedemptionFailure>
   consumeRateLimit(
     kind: 'identity' | 'ip',
@@ -81,7 +79,6 @@ export class BetaAdmissionModule {
       verifiedEmail: email.trim().toLowerCase(),
       codeDigest: codeDigest(input.code),
       now,
-      endsAt: new Date(now.getTime() + PERIOD_MS),
     })
     if (typeof result === 'string') throw new BetaAdmissionError(result)
     return result

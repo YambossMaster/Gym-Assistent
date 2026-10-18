@@ -4,10 +4,15 @@ export function assertProductionBoundary(
   config: AppConfig,
   builtSupabaseUrl: string,
   builtInternalAlpha: boolean,
+  builtBillingLiveEnabled = false,
+  serverBillingLiveEnabled = false,
 ) {
   if (config.DEPLOYMENT_TARGET !== 'production') return
   if (config.NODE_ENV !== 'production') throw new Error('Production requires NODE_ENV=production')
   if (builtInternalAlpha) throw new Error('Production Web must expose public Auth entry')
+  if (builtBillingLiveEnabled !== serverBillingLiveEnabled) {
+    throw new Error('Production billing Web/API switch mismatch')
+  }
   const ref = config.EXPECTED_SUPABASE_PROJECT_REF
   if (!ref) throw new Error('Production project reference is missing')
   const expectedUrl = `https://${ref}.supabase.co`

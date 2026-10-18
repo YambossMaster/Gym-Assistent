@@ -10,7 +10,7 @@ export function verifyLemonSignature(
   return timingSafeEqual(expected, Buffer.from(signature, 'hex'))
 }
 
-/** Only a trusted server quote may select the preconfigured variant and skip-trial flag. */
+/** Only a trusted server quote may select the preconfigured variant. */
 export function lemonCheckoutPayload(input: {
   storeId: string
   variantId: string
@@ -45,8 +45,24 @@ export function lemonCheckoutPayload(input: {
       attributes: {
         test_mode: input.testMode,
         expires_at: input.expiresAt,
-        checkout_options: { embed: true, skip_trial: input.skipTrial, discount: false },
-        checkout_data: { email: input.email, custom: { intent_id: input.intentId } },
+        checkout_options: {
+          embed: true,
+          skip_trial: input.skipTrial,
+          discount: true,
+          locale: 'zh-CN',
+          background_color: '#f7f8f5',
+          headings_color: '#18211d',
+          primary_text_color: '#18211d',
+          secondary_text_color: '#52645a',
+          button_color: '#18211d',
+          button_text_color: '#ffffff',
+        },
+        checkout_data: {
+          email: input.email,
+          custom: {
+            intent_id: input.intentId,
+          },
+        },
         product_options: {
           enabled_variants: [Number(input.variantId)],
           redirect_url: input.returnUrl,

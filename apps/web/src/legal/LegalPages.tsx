@@ -1,3 +1,4 @@
+import { paidTermsChinese, paidTermsEnglish } from './billing-legal-draft'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useLayoutEffect, type ReactNode } from 'react'
@@ -5,14 +6,18 @@ import { Brand } from '../shared/primitives'
 
 const LAST_UPDATED = '2026-10-08'
 
-function LegalLayout({
+export function LegalLayout({
   title,
   englishTitle,
-  children
+  children,
+  draft = false,
+  billingLive = false
 }: {
   title: string
   englishTitle: string
   children: ReactNode
+  draft?: boolean
+  billingLive?: boolean
 }) {
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
@@ -30,7 +35,11 @@ function LegalLayout({
         </Link>
       </header>
       <article>
-        <span className="eyebrow legal-eyebrow">最後更新 · Last updated · {LAST_UPDATED}</span>
+        <span className="eyebrow legal-eyebrow">
+          {draft
+            ? '付款上線修訂稿 · 尚未生效'
+            : `最後更新 · Last updated · ${billingLive ? '2026-10-18' : LAST_UPDATED}`}
+        </span>
         <h1>{title}</h1>
         <p className="legal-english-title" lang="en">
           {englishTitle}
@@ -56,9 +65,17 @@ function LanguageDivider({ label }: { label: string }) {
   )
 }
 
-export function TermsPage() {
+export function TermsPage({
+  billingDraft = false,
+  billingLive = false
+}: { billingDraft?: boolean; billingLive?: boolean } = {}) {
   return (
-    <LegalLayout title="使用條款" englishTitle="Terms of Service">
+    <LegalLayout
+      title="使用條款"
+      englishTitle="Terms of Service"
+      draft={billingDraft}
+      billingLive={billingLive}
+    >
       <section aria-labelledby="terms-zh">
         <h2 id="terms-zh">中文版</h2>
 
@@ -80,16 +97,21 @@ export function TermsPage() {
         </p>
 
         <h3>4. 方案、付款、取消與退款</h3>
-        <p>
-          免費或免信用卡優惠到期後不會自動開始收費。付費服務啟用後，方案、計費週期、自動續訂、稅額與最終價格會在結帳前顯示，付款則由結帳頁指定的
-          Merchant of Record 處理。我們不會取得或儲存完整信用卡號。
-        </p>
-        <p>
-          您可以隨時取消訂閱，以停止未來續訂；除非取消時另有說明，付費功能可使用至目前計費週期結束。除法律另有規定、重複或錯誤扣款，或
-          Merchant of Record
-          決定退款外，已開始提供的訂閱服務原則上不退款。取消訂閱或退款不會自動刪除帳號與既有資料。
-        </p>
-
+        {billingDraft || billingLive ? (
+          paidTermsChinese.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+        ) : (
+          <>
+            <p>
+              免費或免信用卡優惠到期後不會自動開始收費。付費服務啟用後，方案、計費週期、自動續訂、稅額與最終價格會在結帳前顯示，付款則由結帳頁指定的
+              Merchant of Record 處理。我們不會取得或儲存完整信用卡號。
+            </p>
+            <p>
+              您可以隨時取消訂閱，以停止未來續訂；除非取消時另有說明，付費功能可使用至目前計費週期結束。除法律另有規定、重複或錯誤扣款，或
+              Merchant of Record
+              決定退款外，已開始提供的訂閱服務原則上不退款。取消訂閱或退款不會自動刪除帳號與既有資料。
+            </p>
+          </>
+        )}
         <h3>5. 合理使用</h3>
         <p>使用本服務時，您同意不會：</p>
         <ul>
@@ -143,21 +165,26 @@ export function TermsPage() {
         </p>
 
         <h3>4. Plans, Payments, Cancellation, and Refunds</h3>
-        <p>
-          A free or card-free promotion will not automatically become a paid subscription. When paid
-          service becomes available, the plan, billing period, renewal, applicable tax, and final
-          price will be shown before purchase. Payments will be handled by the Merchant of Record
-          named at checkout. We do not receive or store your complete card number.
-        </p>
-        <p>
-          You may cancel at any time to stop future renewals. Unless stated otherwise when you
-          cancel, paid access continues until the end of the current billing period. Payments are
-          generally non-refundable once subscription service has begun, except where required by
-          law, for a duplicate or incorrect charge, or when the Merchant of Record decides to issue
-          a refund. Cancellation or a refund does not automatically delete your account or existing
-          records.
-        </p>
-
+        {billingDraft || billingLive ? (
+          paidTermsEnglish.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+        ) : (
+          <>
+            <p>
+              A free or card-free promotion will not automatically become a paid subscription. When
+              paid service becomes available, the plan, billing period, renewal, applicable tax, and
+              final price will be shown before purchase. Payments will be handled by the Merchant of
+              Record named at checkout. We do not receive or store your complete card number.
+            </p>
+            <p>
+              You may cancel at any time to stop future renewals. Unless stated otherwise when you
+              cancel, paid access continues until the end of the current billing period. Payments
+              are generally non-refundable once subscription service has begun, except where
+              required by law, for a duplicate or incorrect charge, or when the Merchant of Record
+              decides to issue a refund. Cancellation or a refund does not automatically delete your
+              account or existing records.
+            </p>
+          </>
+        )}
         <h3>5. Acceptable Use</h3>
         <p>You agree not to:</p>
         <ul>
@@ -189,9 +216,17 @@ export function TermsPage() {
   )
 }
 
-export function PrivacyPage() {
+export function PrivacyPage({
+  billingDraft = false,
+  billingLive = false
+}: { billingDraft?: boolean; billingLive?: boolean } = {}) {
   return (
-    <LegalLayout title="隱私權政策" englishTitle="Privacy Policy">
+    <LegalLayout
+      title="隱私權政策"
+      englishTitle="Privacy Policy"
+      draft={billingDraft}
+      billingLive={billingLive}
+    >
       <section aria-labelledby="privacy-zh">
         <h2 id="privacy-zh">中文版</h2>
 
@@ -219,8 +254,9 @@ export function PrivacyPage() {
           <li>Brevo：寄送驗證及服務信件。</li>
         </ul>
         <p>
-          付費服務啟用後，付款與訂閱資料會由結帳頁指定的 Merchant of Record
-          處理，我們也會在本政策中列出該供應商。上述服務商可能在其營運地區處理提供服務所必要的資料。
+          {billingDraft || billingLive
+            ? 'Lemon Squeezy 處理付款、訂閱、帳單與退款；相關資料包括交易金額、幣別、付款與退款狀態及客服申請紀錄。上述服務商可能在其營運地區處理提供服務所必要的資料。'
+            : '付費服務啟用後，付款與訂閱資料會由結帳頁指定的 Merchant of Record 處理，我們也會在本政策中列出該供應商。上述服務商可能在其營運地區處理提供服務所必要的資料。'}
         </p>
 
         <h3>4. Cookie 與本機儲存</h3>
@@ -300,9 +336,9 @@ export function PrivacyPage() {
           <li>Brevo for verification and service email.</li>
         </ul>
         <p>
-          When paid service becomes available, payments and subscriptions will be processed by the
-          Merchant of Record named at checkout, and we will add that provider to this Policy. These
-          providers may process necessary information in the regions where they operate.
+          {billingDraft || billingLive
+            ? 'Lemon Squeezy processes payments, subscriptions, invoices and refunds, including transaction amounts, currencies, payment and refund status and support request records. These providers may process necessary information in the regions where they operate.'
+            : 'When paid service becomes available, payments and subscriptions will be processed by the Merchant of Record named at checkout, and we will add that provider to this Policy. These providers may process necessary information in the regions where they operate.'}
         </p>
 
         <h3>4. Cookies and Local Storage</h3>

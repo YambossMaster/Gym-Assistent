@@ -58,13 +58,13 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
     verifiedEmail: string
     codeDigest: string
     now: Date
-    endsAt: Date
   }): Promise<BetaGrant | RedemptionFailure> {
     const existing = await this.grant(input.userId)
     if (this.grants.has(input.userId))
       return this.grantCodes.get(input.userId) === input.codeDigest ? existing : 'already_eligible'
     const code = this.codes.get(input.codeDigest)
     if (!code) return 'invalid_code'
+    if (code.kind === 'promotional') return 'promotion_unavailable'
     if (code.revoked || code.closesAt <= input.now) return 'code_closed'
     if (code.limit !== null && code.used >= code.limit) return 'code_exhausted'
     const fingerprint = createHmac('sha256', this.secret)
@@ -73,14 +73,7 @@ export class MemoryBetaAdmissionRepository implements BetaAdmissionRepository {
     if (this.redeemed.has(fingerprint)) return 'already_used'
     this.redeemed.add(fingerprint)
     code.used += 1
-    const grant: BetaGrant =
-      code.kind === 'promotional'
-        ? {
-            state: 'promotional',
-            startedAt: input.now.toISOString(),
-            endsAt: input.endsAt.toISOString(),
-          }
-        : { state: code.kind, startedAt: input.now.toISOString() }
+    const grant: BetaGrant = { state: 'permanent', startedAt: input.now.toISOString() }
     this.grants.set(input.userId, grant)
     this.grantCodes.set(input.userId, input.codeDigest)
     return grant

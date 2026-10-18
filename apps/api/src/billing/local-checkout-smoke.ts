@@ -11,6 +11,7 @@ import { TodayModule } from '../today/today-module.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { AccountLifecycleModule } from '../account-lifecycle/account-lifecycle-module.js'
 import { supabaseAdminHeaders } from '../supabase-admin-headers.js'
+import { LemonTestCheckoutProvider, localBillingConfiguration } from './lemon-checkout.js'
 
 // Bounded Development-only integration check. No merchant request, email or Production mutation.
 const developmentRef = 'yvhijxhtelujfsaplzpi'
@@ -35,10 +36,22 @@ const users: string[] = []
 const reservedEmails: string[] = []
 const studentRepository = new PostgresStudentRepository(pool)
 let dispatched = 0
+const realProvider =
+  process.env.BILLING_REAL_PROVIDER_SMOKE === 'true'
+    ? new LemonTestCheckoutProvider(
+        localBillingConfiguration({
+          ...process.env,
+          BILLING_LOCAL_CHECKOUT: 'true',
+          BILLING_PROVIDER_TESTS_APPROVED: 'true',
+        }),
+      )
+    : null
 const provider = {
-  ready: () => true,
-  create: async () => {
+  ready: (quote: Parameters<LemonTestCheckoutProvider['ready']>[0]) =>
+    realProvider?.ready(quote) ?? true,
+  create: async (input: Parameters<LemonTestCheckoutProvider['create']>[0]) => {
     dispatched++
+    if (realProvider) return realProvider.create(input)
     return { id: randomUUID(), url: 'https://isolated.lemonsqueezy.com/checkout/fixture' }
   },
 }
@@ -129,6 +142,11 @@ try {
   const ids = new Set(concurrent.map((r) => r.json().id))
   assert.equal(ids.size, 1, 'one durable intent across concurrent HTTP requests')
   assert.equal(dispatched, 1, 'one provider call')
+  if (realProvider) {
+    const view = concurrent[0]!.json() as { status: string; url?: string }
+    assert.equal(view.status, 'open', 'real Test Mode checkout created')
+    assert.ok(view.url?.startsWith('https://'), 'hosted checkout URL')
+  }
   const intentId = String([...ids][0])
   assert.equal(
     (await request(b.token, `/checkouts/${intentId}`)).statusCode,

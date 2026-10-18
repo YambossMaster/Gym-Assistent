@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
 import { loadConfig } from '../config.js'
-import { codeDigest, newBetaCode } from './beta-admission.js'
+import { codeDigest } from './beta-admission.js'
 
 const config = loadConfig()
 const pool = new Pool({ connectionString: config.DATABASE_URL })
@@ -9,38 +9,11 @@ const pool = new Pool({ connectionString: config.DATABASE_URL })
 async function main(args: string[]) {
   const [action, ...values] = args
   if (action === 'issue') {
-    const [limitText, closesText, actor, ...reasonWords] = values
-    const limit = Number(limitText)
-    const closesAt = new Date(closesText ?? '')
-    const reason = reasonWords.join(' ').trim()
-    if (
-      !Number.isInteger(limit) ||
-      limit < 1 ||
-      !Number.isFinite(closesAt.getTime()) ||
-      closesAt <= new Date() ||
-      !actor ||
-      !reason
-    )
-      throw new Error('Usage: issue <positive-limit> <future-ISO-close> <actor> <reason>')
-    const code = newBetaCode()
-    const id = randomUUID()
-    await transaction(async (client) => {
-      await client.query(
-        `insert into app_private.beta_code
-          (id,code_digest,redemption_limit,closes_at) values ($1,$2,$3,$4)`,
-        [id, codeDigest(code), limit, closesAt],
-      )
-      await client.query(
-        `insert into app_private.beta_operator_event
-          (id,action,actor,code_id,reason) values ($1,'issue_code',$2,$3,$4)`,
-        [randomUUID(), actor, id, reason],
-      )
-    })
-    process.stdout.write(`Code ID: ${id}\nCode (shown once): ${code}\n`)
-    return
+    throw new Error('Promotional codes are unavailable')
   }
   if (action === 'issue-named') {
     const [kind, code, limitText, closesText, actor, ...reasonWords] = values
+    if (kind === 'promotional') throw new Error('Promotional codes are unavailable')
     const limit = limitText === 'unlimited' ? null : Number(limitText)
     const closesAt = new Date(closesText ?? '')
     const reason = reasonWords.join(' ').trim()

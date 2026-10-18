@@ -15,7 +15,6 @@ export const selectionSchema = z
   .object({
     tier: z.enum(['basic', 'advanced']),
     interval: z.enum(['month', 'year']),
-    code: z.string().trim().max(128).optional(),
   })
   .strict()
 const beginSchema = z.object({ quoteId: z.uuid(), termsVersion: z.string().max(80) }).strict()
@@ -27,15 +26,17 @@ export type CheckoutQuote = {
   interval: BillingSelection['interval']
   today: { amount: number; currency: 'TWD' }
   renewal: { amount: number; currency: 'TWD' }
-  trial: 'month' | '60_days' | null
-  chargeAt: string
-  promotion: string | null
+  trial: 'one_month' | null
+  chargeAt: string | null
 }
-export type StoredQuote = CheckoutQuote & { eligibilityVersion: number }
+export type StoredQuote = CheckoutQuote & {
+  eligibilityVersion: number
+}
 export type StoredIntent = {
   id: string
   quoteId: string
-  status: 'creating' | 'open' | 'pending'
+  status: 'creating' | 'open' | 'pending' | 'confirmed'
+  activation?: 'trial' | 'paid' | null
   url: string | null
   providerId: string | null
   createdAt: string
@@ -44,6 +45,7 @@ export type StoredIntent = {
 export type IntentView =
   | { id: string; status: 'pending' }
   | { id: string; status: 'open'; url: string }
+  | { id: string; status: 'confirmed'; activation: 'trial' | 'paid' }
 export type AccountFacts = BillingFacts & { eligibilityVersion: number; hasLegacyOffer: boolean }
 export interface CheckoutTransaction {
   facts(): Promise<AccountFacts>
@@ -69,23 +71,23 @@ export interface CheckoutProvider {
   }): Promise<{ id: string; url: string }>
 }
 
-/** Clamp calendar months at month-end rather than JS Date's overflow into the next month. */
-export function nextBillingDate(now: Date, months: number): string {
-  // The product's billing calendar is Asia/Taipei (UTC+08, no daylight saving).
-  const offset = 8 * 60 * 60 * 1000
-  const result = new Date(now.getTime() + offset)
-  const day = result.getUTCDate()
-  result.setUTCDate(1)
-  result.setUTCMonth(result.getUTCMonth() + months)
-  const last = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate()
-  result.setUTCDate(Math.min(day, last))
-  return new Date(result.getTime() - offset).toISOString()
-}
 function publicQuote({ eligibilityVersion: _version, ...quote }: StoredQuote): CheckoutQuote {
   return quote
 }
+/** Display estimate only. Lemon's confirmed subscription remains the billing authority. */
+function estimatedFirstChargeAt(now: Date): string {
+  const next = new Date(now)
+  const day = next.getUTCDate()
+  next.setUTCDate(1)
+  next.setUTCMonth(next.getUTCMonth() + 1)
+  const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate()
+  next.setUTCDate(Math.min(day, lastDay))
+  return next.toISOString()
+}
 function view(intent: StoredIntent, now: Date): IntentView {
   // Expiry alone cannot prove an external checkout did not create a subscription.
+  if (intent.status === 'confirmed' && intent.activation)
+    return { id: intent.id, status: 'confirmed', activation: intent.activation }
   return intent.status === 'open' && intent.url && Date.parse(intent.expiresAt) > now.getTime()
     ? { id: intent.id, status: 'open', url: intent.url }
     : { id: intent.id, status: 'pending' }
@@ -94,7 +96,7 @@ export class CheckoutModule {
   constructor(
     private readonly repository: CheckoutRepository,
     private readonly provider: CheckoutProvider,
-    private readonly termsVersion = 'billing-local-2026-10-14',
+    private readonly termsVersion = 'billing-first-trial-2026-10-18',
     private readonly now = () => new Date(),
   ) {}
   async quote(identity: AuthenticatedIdentity, raw: unknown): Promise<CheckoutQuote> {
@@ -102,10 +104,8 @@ export class CheckoutModule {
     return this.repository.transaction(identity, async (tx) => {
       const facts = await tx.facts()
       if (facts.hasLegacyOffer) throw new BillingError(409, 'existing_offer')
-      // Legacy no-card codes cannot be silently converted into payment-authorized campaigns.
-      if (selection.code) throw new BillingError(400, 'invalid_code')
-      const price = checkoutPolicy(selection, facts)
       const now = this.now()
+      const price = checkoutPolicy(selection, facts)
       const quote: StoredQuote = {
         id: randomUUID(),
         expiresAt: new Date(now.getTime() + 300_000).toISOString(),
@@ -114,9 +114,8 @@ export class CheckoutModule {
         interval: price.interval,
         today: { amount: price.dueNowMinor, currency: 'TWD' },
         renewal: { amount: price.recurringMinor, currency: 'TWD' },
-        trial: price.trial ? 'month' : null,
-        chargeAt: nextBillingDate(now, price.trial || price.interval === 'month' ? 1 : 12),
-        promotion: null,
+        trial: price.trial,
+        chargeAt: price.trial ? estimatedFirstChargeAt(now) : now.toISOString(),
         eligibilityVersion: facts.eligibilityVersion,
       }
       await tx.saveQuote(quote)
@@ -144,7 +143,8 @@ export class CheckoutModule {
       if (
         facts.eligibilityVersion !== quote.eligibilityVersion ||
         price.dueNowMinor !== quote.today.amount ||
-        price.recurringMinor !== quote.renewal.amount
+        price.recurringMinor !== quote.renewal.amount ||
+        quote.trial !== price.trial
       )
         throw new BillingError(409, 'quote_expired')
       if (!this.provider.ready(quote)) throw new BillingError(503, 'billing_unavailable')

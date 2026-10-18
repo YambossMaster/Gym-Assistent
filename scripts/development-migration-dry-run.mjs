@@ -23,6 +23,7 @@ export const fetchedDevelopmentHistory = [
   '20261017074143_billing_paid_upgrade_evidence.sql',
   '20261017082340_billing_paid_annual_switch.sql',
   '20261017085708_billing_paid_change_command.sql',
+  '20261017164829_billing_refund_case_decision.sql',
 ]
 const expectedHistory = [...developmentHistory, ...fetchedDevelopmentHistory]
 

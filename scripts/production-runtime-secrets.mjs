@@ -10,7 +10,7 @@ const secretName = (entry) => {
   return typeof name === 'string' && name.length > 0 ? name : null
 }
 
-export function inspectProductionRuntimeSecrets(inventory, contract) {
+export function inspectProductionRuntimeSecrets(inventory, contract, billingLive = false) {
   if (!Array.isArray(inventory)) throw new Error('Invalid Fly secret inventory')
   if (!contract || !Array.isArray(contract.required) || !Array.isArray(contract.featureRequired)) {
     throw new Error('Invalid Production runtime secret contract')
@@ -20,6 +20,15 @@ export function inspectProductionRuntimeSecrets(inventory, contract) {
   const missingRequired = contract.required.filter((name) => !available.has(name))
   if (missingRequired.length > 0) {
     throw new Error(`Missing required Production runtime secrets: ${missingRequired.join(', ')}`)
+  }
+  if (billingLive) {
+    if (!Array.isArray(contract.liveBillingRequired)) {
+      throw new Error('Invalid Live billing secret contract')
+    }
+    const missingLive = contract.liveBillingRequired.filter((name) => !available.has(name))
+    if (missingLive.length > 0) {
+      throw new Error(`Missing Live billing runtime secrets: ${missingLive.join(', ')}`)
+    }
   }
 
   return {
@@ -36,7 +45,11 @@ export function inspectProductionRuntimeSecrets(inventory, contract) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const inventory = JSON.parse(readFileSync(0, 'utf8'))
   const contract = JSON.parse(readFileSync(contractPath, 'utf8'))
-  const result = inspectProductionRuntimeSecrets(inventory, contract)
+  const result = inspectProductionRuntimeSecrets(
+    inventory,
+    contract,
+    process.env.VITE_BILLING_LIVE === 'true',
+  )
   console.log(
     `Production runtime secret preflight passed (${result.required.length} required names).`,
   )
