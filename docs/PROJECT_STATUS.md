@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-18 against remote `origin/main` at
-> `d4b9a49af18cba04ca6d706c572c05e9469e99d0` and the Product Owner's M8-D completion decision.
+> `206e115862a4f8ebae5dcfb3834c04d477d7eede` after PR #51 Main CI and release verification.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -14,7 +14,7 @@
 | Migration    | Production release applied M8-D versions `20261017105438` and `20261017110659`. Later purchase-history and mobile Settings releases had no new migration; Production preview reports none pending.                                                                                                                                                                                                  |
 | Verification | PR #37 corrected PR CI and Main CI #39058008147 passed for `aaa5a929`. PR #39 required checks passed; [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770) deployed `d54658b` with readiness. Independent `/api/ready`, `/` and `/login` returned HTTP 200; served CSS contained the corrected mobile selector. Installed-PWA visual recheck remains unverified. |
 | Beta ops     | Latest Main Status recorded 0 real Coaches, 3 test accounts and two unused Beta codes. This is a historical snapshot, not a fresh Production count.                                                                                                                                                                                                                                                 |
-| Payment      | M8-E foundation code and migration are deployed. Production billing remains hard-off; Live payment gates remain open.                                                                                                                                                                                                                                                                               |
+| Payment      | M8-E billing migration and encrypted offline restore passed. PR #51 Test Mode recovery fix is deployed as Main `206e115`; [CI #260](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39126354923) and same-SHA Fly readiness passed. Public billing flag remains false. Full Test Mode scenarios, Live setup and controlled real charge remain open.                                     |
 
 The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
 merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
@@ -29,9 +29,9 @@ separate task.
 
 ## Active workstreams
 
-| Workstream   | Owns                                                                         | State and entry                                                                                                                                           |
-| ------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). The foundation migration and code are deployed; Live payments remain hard-off and their separate gates remain open. |
+| Workstream   | Owns                                                                         | State and entry                                                                                                                                                |
+| ------------ | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). R12/R15 passed; PR #51 is deployed with billing off. R09 natural first charge and renewal remain before any Live charge. |
 
 The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) merged as
 PR #47 / `d4b9a49`. [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121728371)
@@ -46,12 +46,20 @@ workstream explicitly names an unmet dependency.
 
 ## M8-E boundary at this snapshot
 
-The payment workstream reports eight R items passed (R04–R07, R10–R13), R08 conditionally closed,
-and R01–R03, R09, R14–R17 partial or unverified. Its R15 candidate migration passed isolated
-PostgreSQL/RLS checks and an exact Supabase CLI **dry-run**; an actual encrypted backup artifact
-restore and a measured Production recovery point remain unverified. These are local workstream
-claims, not Main release evidence. Production migration, secret changes, remote delivery and Live
-payment each retain their separate authorization gate.
+PR #45 released the payment foundation and Production migration `20261017181022` with billing
+closed; PR #46 corrected the encrypted backup's isolated CSV restore. The successful
+[backup run](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121153840)
+downloaded its seven-day encrypted artifact, restored the Production schema in a disconnected
+database, checked the ≤48-hour recovery point and round-tripped synthetic paid data.
+
+PR #51's Test Mode missed-event recovery fix merged as `206e115`.
+[Main CI #260](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39126354923)
+passed exact-SHA verify, Production migration history with no pending migration, Fly deploy and
+readiness. Independent `/api/ready`, `/`, `/login` returned HTTP 200;
+`/deployment-config.json` reported `billingLiveEnabled:false`. Post-fix Test Mode missed-event
+recovery passed in Development; natural first charge/renewal and final Test Mode acceptance remain
+open before any controlled Live transaction. Live merchant configuration, real charge and activation retain
+their separate gates. See [M8-E Status](status/M8/M8-E.md).
 
 ## Handoff rule
 
