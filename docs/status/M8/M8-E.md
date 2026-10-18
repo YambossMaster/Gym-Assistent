@@ -11,7 +11,7 @@
 ## 2026-10-18 PR #45 與同版 CI
 
 - **遠端交付：** PO 明確允許推送付款分支並建立 PR；Draft PR #45 以 `763eeff` 對 Main `3faee94` 建立，未合併或部署。首輪 Actions #244／run 39118267500：`verify`（格式、型別、完整測試及 production build）成功；`migration-dry-run` 因 Development 已有 `20261017164829_billing_refund_case_decision`，本分支的已知遠端 migration 清單漏列而失敗；`browser-ui` 因測試仍期待舊版頁名、年費與不可選方案而失敗。Production migration preview 與 deploy 在 PR 上依設計跳過。
-- **聚焦修復：** 只將已存在的 Development migration 納入允許清單，不改寫遠端歷史；`node --test scripts/development-migration-dry-run.test.mjs` 2/2 通過。方案瀏覽器斷言改對應已審定的「比較方案與價格」、年費 NT$1,150／1,450 及「查看 Pro／Prime 訂閱」；`npm run test:browser -- apps/web/e2e/plan-choice.spec.ts` 的 1440px、390px 2/2 通過，無方案 mutation。尚待推送此修正並取得新 exact-SHA CI 全綠；PR 的 CI 不是正式 Supabase migration、Live webhook 或部署證據。
+- **聚焦修復：** 只將已存在的 Development migration 納入允許清單，不改寫遠端歷史；`node --test scripts/development-migration-dry-run.test.mjs` 2/2 通過。方案瀏覽器斷言改對應已審定的「比較方案與價格」、年費 NT$1,150／1,450 及「查看 Pro／Prime 訂閱」；`npm run test:browser -- apps/web/e2e/plan-choice.spec.ts` 的 1440px、390px 2/2 通過，無方案 mutation。修正已推至 `078f2dc`；Actions #245／run 39118646045 的 `verify`、`browser-ui`、`migration-dry-run` 均成功。PR 上的 Production migration preview 與 deploy 按設計跳過；此 CI 不證正式 Supabase migration、Live webhook 或部署。
 
 ## 2026-10-18 接續後的實際上線進度
 
@@ -23,8 +23,8 @@
 - **R02 Live 商店：** Lemon 後台已建立未發布、未顯示於 storefront 的商品草稿 1449729（FORM Coach Desk 訂閱），含四個明確 variant：Pro 月繳 2262960／NT$115 每月、Pro 年繳 2262966／NT$1,150 每年、Prime 月繳 2262967／NT$145 每月、Prime 年繳 2262969／NT$1,450 每年。各 variant 在編輯頁設原生 1 個月試用及 SaaS business-use 稅務類別；商品詳情讀回四項價／週期、Draft 及 storefront 關閉。這是目錄草稿，不代表已發布或可收款。Live Webhooks 清單仍空；建立表單已核對 callback URL、簽章 secret 與 11 個程式接受的訂閱事件選項，未儲存新 hook；General 仍提示 Activate your store to accept live sales。操作後 Test Mode 開關已恢復開啟。
 - **R09 自然續扣：** Test Mode 診斷用日繳訂閱 2609055 的供應商已出現 billing_reason=renewal 的已付發票 8754514（NT$115，2026-10-18 08:17:47 UTC）；舊 tunnel webhook 收到 HTTP 400。該 merchant-side 訂閱不綁任何 Development Coach；Development 訂閱／發票 ledger 對這兩個 provider ID 均為 0，不能據此宣稱 app owner、權益或期間驗收通過。R09 仍部分。
 - **R15 正式資料與備份：** Production Supabase ref febunjhpruqlywjfvuaq 仍未套用 20261017181022 付款 migration。2026-10-18 手動 GitHub 備份／隔離還原 run 39116375185 在 Main 3faee94 成功：本次加密 artifact 12132487635 已於 runner 下載、解密、校驗；斷開資料庫所有 Docker 網路後還原並讀回 Auth 4、Workspace 4 與既有 migration。這證明正式基線的真 artifact 還原，不證付款帳本：當次 Main 無付款 migration，且該版本未含 R15 的付費 fixture 與 48 小時斷言。新 artifact 建立於 2026-10-18 09:44:41 UTC；正式付款 schema、角色與付款資料還原 Gate 仍未完成。
-- **R16／R17：** 尚未建立 Live webhook／完成 Live 啟用與受控真實交易；PR 首輪 exact-SHA CI 有兩項失敗，尚無全綠 CI、正式部署及 readiness／首批交易觀察。Production 付款開關保持 hard-off；付款分支已合併 Main 3faee94 並推送 Draft PR #45，尚未合併或部署。
-- **下一步：** 先推送 PR #45 的聚焦 CI 修正並確認新 exact-SHA CI，再準備正式 webhook／設定與 R15 可執行交付；正式 migration、正式密鑰、Live 實付及合併／部署留在各自授權點。固定 R01–R17 計數維持 8 通過、R08 條件結案、8 部分／未驗；以下較早的 Live 商品全空或要求重看付款頁的記錄已被本段取代。
+- **R16／R17：** 尚未建立 Live webhook／完成 Live 啟用與受控真實交易；PR #45 在 `078f2dc` 的三個適用 CI 工作均成功，但尚無 Main 的正式 migration preview、正式部署及 readiness／首批交易觀察。Production 付款開關保持 hard-off；付款分支已合併 Main 3faee94 並推送 Draft PR #45，尚未合併或部署。
+- **下一步：** PR #45 的聚焦 CI 修正已驗，下一步準備正式 webhook／設定與 R15 可執行交付；正式 migration、正式密鑰、Live 實付及合併／部署留在各自授權點。固定 R01–R17 計數維持 8 通過、R08 條件結案、8 部分／未驗；以下較早的 Live 商品全空或要求重看付款頁的記錄已被本段取代。
 
 ## 2026-10-18 先前 Main 整合與 R15 現場核對（以首段接續進度為準）
 
