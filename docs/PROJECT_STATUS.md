@@ -35,9 +35,9 @@ separate task.
 
 The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) merged as
 PR #47 / `d4b9a49`. [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121728371)
-passed and deployed the same commit with readiness; public CSS contains the fix. The Product Owner's
-installed-iPhone follow-up reports that the dock appears fixed; see the correction Status for the
-recording's observed scope. The cross-cutting release check is now routed from `AGENTS.md`.
+passed and deployed the same commit with readiness; public CSS contains the fix. The Product Owner
+tested the installed iPhone PWA, provided the 19:18 recording, and accepted the correction as fixed.
+The cross-cutting release check is now routed from `AGENTS.md`.
 
 This router records integrated facts and points to workstreams. It does not assign a global Next
 across parallel branches. Select the user-requested workstream first; then read that workstream's
