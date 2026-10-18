@@ -3,6 +3,7 @@ import { createServer, type Server } from 'node:http'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { createHmac } from 'node:crypto'
 import { createSiteServer } from './site-server.js'
 
 const servers: Server[] = []
@@ -43,6 +44,19 @@ async function fixture(onSlowRequest?: (response: import('node:http').ServerResp
       let body = ''
       for await (const chunk of request) body += chunk
       return response.end(JSON.stringify({ body, authorized: !!request.headers.authorization }))
+    }
+    if (request.url === '/hooks/lemonsqueezy' && request.method === 'POST') {
+      const chunks: Buffer[] = []
+      for await (const chunk of request) chunks.push(Buffer.from(chunk))
+      const body = Buffer.concat(chunks)
+      const expected = createHmac('sha256', 'synthetic-secret').update(body).digest('hex')
+      return response.end(
+        JSON.stringify({
+          signatureValid: request.headers['x-signature'] === expected,
+          body: body.toString('base64'),
+          contentType: request.headers['content-type'],
+        }),
+      )
     }
     response.statusCode = 404
     response.end('{"error":"not_found"}')
@@ -105,6 +119,24 @@ describe('same-origin site server', () => {
     })
     expect(write.status).toBe(200)
     expect(await write.json()).toEqual({ body: '{"example":true}', authorized: true })
+  })
+
+  it('preserves raw signed webhook bytes and signature on the public callback path', async () => {
+    const origin = await fixture()
+    const payload = Buffer.from('{"event":"subscription_created", "buyer":"測試"}\n')
+    const signature = createHmac('sha256', 'synthetic-secret').update(payload).digest('hex')
+    const response = await fetch(origin + '/api/hooks/lemonsqueezy', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-signature': signature },
+      body: payload,
+    })
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(await response.json()).toEqual({
+      signatureValid: true,
+      body: payload.toString('base64'),
+      contentType: 'application/json',
+    })
   })
 
   it('replaces a client-supplied internal IP header with the socket peer', async () => {
