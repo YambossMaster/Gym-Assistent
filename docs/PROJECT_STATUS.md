@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-18 against remote `origin/main` at
-> `1965d33c99e7d61b74959ca0896b855c31ef777a` and the Product Owner's M8-D completion decision.
+> `e7a20c7421facc8f5c678f50eb8f44b406f675f9` and the Product Owner's M8-D completion decision.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -15,6 +15,12 @@
 | Verification | PR #37 corrected PR CI and Main CI #39058008147 passed for `aaa5a929`. PR #39 required checks passed; [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770) deployed `d54658b` with readiness. Independent `/api/ready`, `/` and `/login` returned HTTP 200; served CSS contained the corrected mobile selector. Installed-PWA visual recheck remains unverified. |
 | Beta ops     | Latest Main Status recorded 0 real Coaches, 3 test accounts and two unused Beta codes. This is a historical snapshot, not a fresh Production count.                                                                                                                                                                                                                                                 |
 | Payment      | Production billing remains hard-off. No M8-E payment code or draft billing migration is established as released by this Main evidence.                                                                                                                                                                                                                                                              |
+
+The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
+merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
+passed all required jobs and deployed the same commit. Production returned HTTP 200 for
+`/api/ready`, `/` and `/login`; its served JavaScript includes the revised unpriced purchase hint.
+No migration was added. See the [frozen follow-up record](status/M8/M8-D-PURCHASE-PRICE-HINT.md).
 
 The Product Owner closed the remaining M8-D package reservations. Historical limitations and
 operational observations in [M8-D Status](status/M8/M8-D.md) are evidence, not an open M8-D Next.
