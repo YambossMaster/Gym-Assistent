@@ -28,6 +28,8 @@ COPY scripts/install-hooks.mjs scripts/install-hooks.mjs
 RUN npm ci --omit=dev
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/web/dist apps/web/dist
+COPY deploy/certs/supabase-prod-ca-2021.crt /app/deploy/certs/supabase-prod-ca-2021.crt
+ENV NODE_EXTRA_CA_CERTS=/app/deploy/certs/supabase-prod-ca-2021.crt
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 DEPLOYMENT_TARGET=production
 EXPOSE 3000
 CMD ["node", "apps/api/dist/start.js"]

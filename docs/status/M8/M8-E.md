@@ -10,6 +10,24 @@
 
 ## 2026-10-18 PO 上線時序決定與目前總清單
 
+### 2026-10-18 23:31 R02／R16 正式首筆試用的 webhook 500 事故（修復候選未發布）
+
+- **使用者症狀與供應商事實：** PO 親自在 Lemon 完成最後卡片／開始試用動作後，本站 `/settings/checkout/status` 數分鐘持續顯示「付款尚未完成」。Lemon Live 訂閱 `2617697` 是 `On trial`，Pro 年繳 NT$1,150，原生試用至 2026-11-18；首筆 invoice `8757694` 為 `Paid NT$0.00`，目前沒有正額收入證據。訂閱事件帶原隔離 Coach 的 intent `a399cebe-f9eb-4d0d-9a8c-f5eef412f0b2`。不要再次按「繼續付款」或重填卡片。PO 表示先處理眼下狀態，取消續訂可稍後處理；目前**未取消**，未來續扣仍可能發生。
+- **決定性根因：** Lemon Live webhook 最近三筆訂閱事件送往 `https://formcoachdesk.com/api/hooks/lemonsqueezy`，其中付款成功事件回 HTTP 500；Fly 正式日誌在 webhook `PostgresBillingInbox.receive` 報 `SELF_SIGNED_CERT_IN_CHAIN`，背景 worker 持續 `billing_worker_unavailable`。正式 worker URL 指向正確 Production Supabase pooler，帶 `sslmode=require` 但未指定 root CA。Production Live inbox 0、subscription ledger 0、原 checkout intent 仍 `open`；因此 UI 持續讀到未完成。本站權益尚未確認，不能僅憑供應商試用宣稱已開通。缺漏事件補償只掃已綁定訂閱，無法從零帳本救回首筆綁定；修復 TLS 後須補送供應商原簽章事件。此事故歸入原 R02／R16／R17，未新增 Roadmap 工作項；固定計數仍為 9 通過、R08 條件結案、7 部分／未驗。
+- **本地修復候選：** 隔離分支從 Supabase Dashboard 的官方下載連結取得公開 `prod-ca-2021.crt`（SHA-256 `700723581420DD1AC98FD7E9AC529F0EF210EADCAF87FC868A3AD7D114C2F3B7`），Docker runtime 設 `NODE_EXTRA_CA_CERTS`，Live worker URL 明確改 `sslmode=verify-full`，不關閉憑證驗證。正式 Fly 機器只在 `/tmp` 放 CA 進行唯讀實證：同一 worker 身分以 `verify-full` 成功 `SELECT 1`，未改服務或資料。聚焦 Vitest `live-configuration`／`lifecycle` 29/29 通過（首次合跑因載入延遲有一個 5 秒 timeout，15 秒時限重跑全過）；`git diff --check` 通過。Docker 映像、遠端 CI、正式發布與 webhook 補送均**未執行**。
+- **安全及授權停點：** 目前 GitHub 正式付款變數仍為 `true`，公開新付款入口仍開；原 Main 為 `d9e1777`、正式程式為 `26c9cca6`。Agent 嘗試依先前文件的回退授權修改 GitHub 變數時，**自動核准審查拒絕**：判定這次排查授權不足以涵蓋正式設定變更。沒有修改變數或繞道操作。PO 回覆傾向趁已完成這筆付款直接修復／對帳，避免重刷卡；本輪保持付款開關現況，不再嘗試回退。下一步將此修復候選交 PO 檢視；依專案規則取得正式完整驗證、遠端 push／發布授權後，走精確 SHA CI／部署，補送原 `subscription_created`、`subscription_updated`、`subscription_payment_success`，再核對 Live inbox／唯一 owner 綁定／invoice／verified period／意圖 confirmed／Coach 頁面。之後按 PO 原意取消續訂並向 Lemon 讀回 `cancelled` 與原終止日；不能把關閉入口當成取消訂閱。
+
+### 2026-10-18 23:16 R16 Live 結帳已備妥，待 PO 最後動作
+
+- PO 明確授權只恢復既有隔離帳戶密碼、在獨立瀏覽器登入；Production Auth ID／Email 與 `account_class=test`、`test_kind=automation` 先獨立核對。僅該帳戶的隨機密碼已重設，存於 Git 忽略 `node_modules/.cache/m8e-prod-coach.json`，未輸出值。現有獨立 IAB 會話確實為該隔離帳戶，沒有觸碰一般 Chrome Coach。
+- 正式 Pro 年繳確認頁桌機與 390px 讀回 NT$1,150／年、首次訂閱 1 個月體驗、今天 NT$0、預估 11/18 首扣 NT$1,150；PO 另行授權後，僅替隔離帳戶勾選本站付款條款同意並建立 Live checkout。Production 唯一 Live checkout intent `a399cebe-f9eb-4d0d-9a8c-f5eef412f0b2` 為 `open`，訂閱 ledger 仍 0。Lemon Live 最後頁顯示小計 NT$0.00、免費體驗 1 個月、之後每年 NT$1,150.00，卡片欄位空白、開始試用未按。已把頁面保留給 PO 親自輸入付款資料及執行最後金融動作；卡片可能有暫時授權，不能保證零暫扣。若 PO 完成，第一優先立即取消該供應商訂閱續訂並讀回確認，再查 webhook／帳本；若 PO 停止，保持無訂閱並關閉／放棄 open intent。R01–R17 計數仍為 9 通過、R08 條件結案、7 部分／未驗。
+- **23:20 隱私停點：** PO 詢問卡號保密與信任後，Agent 停止讀取／截取結帳 UI，明確請 PO 暫勿按最後動作，直到其自行決定。Agent 未接收、讀取或保存卡號；隔離 Lemon checkout 保留但卡資料及 `Start trial` 均未由 Agent 操作。Production Live 訂閱 ledger 再讀回 0。若 PO 選擇完成試用，需先確認實際 provider 訂閱並立即取消續訂；若停止，保持無訂閱並結束 open intent。
+
+### 2026-10-18 23:09 接續讀回：R16 隔離登入待恢復
+
+- 從本地提交 `ee44543` 的乾淨工作樹接續；遠端 Main 唯讀讀回仍為 `d9e1777`。正式 `/deployment-config.json` 目前公開 `billingLiveEnabled:true`。Production `app_private` 的 Live checkout intent、subscription ledger、invoice ledger、webhook inbox、cancellation 均為 0；Lemon 後台 Live 近 30 天顯示新訂閱 0，檢視後已恢復 Test Mode。這些是目前無首筆交易的直接讀回，不證商家真收款能力；R02／R16／R17 狀態不變。
+- 上輪建立的隔離 Coach `m8e-live-20261018-01@example.invalid` 仍見於 Status，但原 Git 忽略憑證 manifest `node_modules/.cache/m8e-prod-coach.json` 已不存在。一般 Chrome 登入屬其他 Coach，僅確認身分後立即關閉新分頁，沒有讀取或修改其付款資料。不可在一般帳戶做 R16。須安全恢復隔離帳戶登入或建立新的明確授權測試 fixture，再重讀正式確認頁與 Lemon 最終頁的 NT$0、未來扣款日；真實試用最後動作由 PO 親自執行，建立後立即先取消續訂並以 Lemon 讀回。現未建立 checkout、未填卡、未交易、未取消；7 項剩餘數量不變。
+
 ### 下一個對話從此處接續（2026-10-18 22:55 台北）
 
 - **現場與版本：** 工作樹 `C:/Users/User/.codex/worktrees/m8e-payment-integration/Gym Assistent`，分支 `codex/m8e-live-release-prep`；這輪僅在本地更新文件，沒有新的遠端 push／PR／Main 合併。Main 整合基底 `d9e1777`；Production 實際程式 SHA `26c9cca6cf45af1659a7fce3f23fc11bd31b7deb`、[release #11](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39136398548) 已成功。最新已核公開 `billingLiveEnabled:true`、ready 200；**入口向一般正式 Coach 開放**，並非只有測試帳戶可見。商家真收款能力仍沒有交易證據。
