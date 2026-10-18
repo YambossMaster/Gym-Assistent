@@ -35,7 +35,7 @@ export class MissingBillingEventRecovery {
     private readonly environment: BillingEnvironment = 'test',
   ) {}
 
-  async scanBatch(limit = 20): Promise<{ scanned: number; resources: number }> {
+  async scanBatch(limit = 20): Promise<{ scanned: number; resources: number; skipped: number }> {
     assert.ok(Number.isSafeInteger(limit) && limit > 0 && limit <= 100)
     let ids = await this.repository.boundSubscriptionsAfter(this.storeId, this.cursor, limit)
     if (ids.length === 0 && this.cursor !== null) {
@@ -43,13 +43,30 @@ export class MissingBillingEventRecovery {
       ids = await this.repository.boundSubscriptionsAfter(this.storeId, null, limit)
     }
     let resources = 0
+    let skipped = 0
     for (const { id, intentId } of ids) {
       assert.match(
         intentId,
         /^[a-f0-9-]{36}$/,
         'only an existing intent-bound subscription can be scanned',
       )
-      const subscription = await this.provider.get('subscriptions', id)
+      let subscription: BillingResource
+      try {
+        subscription = await this.provider.get('subscriptions', id)
+      } catch (error) {
+        // Old test subscriptions can refer to a variant that is no longer in the
+        // configured catalogue. Keep them fail-closed without starving newer IDs.
+        if (
+          this.environment === 'test' &&
+          error instanceof ReconciliationError &&
+          error.code === 'unknown_variant'
+        ) {
+          skipped++
+          this.cursor = id
+          continue
+        }
+        throw error
+      }
       if (
         subscription.type !== 'subscriptions' ||
         subscription.id !== id ||
@@ -83,6 +100,6 @@ export class MissingBillingEventRecovery {
         await put('subscription-invoices', invoice.id, invoice.attributes.updated_at)
       this.cursor = id
     }
-    return { scanned: ids.length, resources }
+    return { scanned: ids.length, resources, skipped }
   }
 }

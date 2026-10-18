@@ -109,7 +109,9 @@ export function createBillingLifecycle(config: BillingLifecycleConfiguration, ow
         recoveryRunning = missingEventRecovery
           .scanBatch()
           .then((result) => {
-            server.log.info(result, 'billing_missing_event_recovery_scanned')
+            if (result.skipped > 0)
+              server.log.warn(result, 'billing_missing_event_recovery_skipped_unknown_variant')
+            else server.log.info(result, 'billing_missing_event_recovery_scanned')
           })
           .catch((error: unknown) => {
             const code = error instanceof ReconciliationError ? error.code : 'recovery_failed'
