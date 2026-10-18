@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ArrowRight, KeyRound } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { isRegistrationEmailTaken } from './api'
 import {
@@ -28,7 +28,7 @@ import {
   supabase
 } from './supabase'
 import { CoachLocalStore } from './local-resilience'
-import { isInternalAlpha } from './config'
+import { billingLiveBuildEnabled, isInternalAlpha, localBillingEnabled } from './config'
 import { LegalGate } from './legal/LegalGate'
 import { PrivacyPage, TermsPage } from './legal/LegalPages'
 import { LandingPage } from './landing/LandingPage'
@@ -36,16 +36,93 @@ import { AppUpdateCoordinator } from './app-update'
 
 type Mode = 'signin' | 'signup' | 'reset' | 'verify'
 
+// The review harness is excluded from production routing and its lazy import is DEV-only.
+const BillingReview =
+  import.meta.env.DEV && localBillingEnabled
+    ? lazy(() => import('./pages/settings/billing/review/BillingReview'))
+    : null
+const LocalCheckout = localBillingEnabled
+  ? lazy(() => import('./pages/settings/billing/LocalCheckoutPage'))
+  : null
+const LocalPaymentNotice = localBillingEnabled
+  ? lazy(() =>
+      import('./pages/settings/billing/PaymentNoticePage').then((module) => ({
+        default: module.PaymentNoticePage
+      }))
+    )
+  : null
+
 export function App() {
   return (
     <BrowserRouter>
       <AppUpdateCoordinator />
       <Routes>
+        {!localBillingEnabled && (
+          <>
+            <Route
+              path="/settings/checkout"
+              element={<Navigate to="/settings?category=plans" replace />}
+            />
+            <Route
+              path="/settings/checkout/status"
+              element={<Navigate to="/settings?category=plans" replace />}
+            />
+            <Route
+              path="/__review/payments/*"
+              element={<Navigate to="/settings?category=plans" replace />}
+            />
+            <Route
+              path="/payment-notice"
+              element={<Navigate to="/settings?category=plans" replace />}
+            />
+            <Route path="/billing/*" element={<Navigate to="/settings?category=plans" replace />} />
+          </>
+        )}
+        {BillingReview && (
+          <Route
+            path="/__review/payments/*"
+            element={
+              <Suspense fallback={<AppLoadingScreen />}>
+                <BillingReview />
+              </Suspense>
+            }
+          />
+        )}
         <Route path="/" element={<RootEntry />} />
         <Route path="/t/:token" element={<PublicCapabilityApp purpose="training" />} />
         <Route path="/r/:token" element={<PublicCapabilityApp purpose="reschedule" />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage billingLive={billingLiveBuildEnabled} />} />
+        <Route path="/privacy" element={<PrivacyPage billingLive={billingLiveBuildEnabled} />} />
+        {LocalPaymentNotice && (
+          <>
+            <Route
+              path="/payment-notice"
+              element={
+                <Suspense fallback={<AppLoadingScreen />}>
+                  <LocalPaymentNotice />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/billing/terms"
+              element={
+                <TermsPage
+                  billingDraft={!billingLiveBuildEnabled}
+                  billingLive={billingLiveBuildEnabled}
+                />
+              }
+            />
+            <Route
+              path="/billing/privacy"
+              element={
+                <PrivacyPage
+                  billingDraft={!billingLiveBuildEnabled}
+                  billingLive={billingLiveBuildEnabled}
+                />
+              }
+            />
+          </>
+        )}
         <Route path="*" element={<AuthenticatedApp />} />
       </Routes>
     </BrowserRouter>
@@ -172,12 +249,28 @@ function AuthenticatedApp() {
       {internalAlpha || import.meta.env.PROD ? (
         <LegalGate session={session}>
           <BetaGate session={session}>
-            <CoachWorkspace key={session.user.id} session={session} />
+            {LocalCheckout &&
+            localBillingEnabled &&
+            location.pathname.startsWith('/settings/checkout') ? (
+              <Suspense fallback={<AppLoadingScreen />}>
+                <LocalCheckout session={session} />
+              </Suspense>
+            ) : (
+              <CoachWorkspace key={session.user.id} session={session} />
+            )}
           </BetaGate>
         </LegalGate>
       ) : (
         <BetaGate session={session}>
-          <CoachWorkspace key={session.user.id} session={session} />
+          {LocalCheckout &&
+          localBillingEnabled &&
+          location.pathname.startsWith('/settings/checkout') ? (
+            <Suspense fallback={<AppLoadingScreen />}>
+              <LocalCheckout session={session} />
+            </Suspense>
+          ) : (
+            <CoachWorkspace key={session.user.id} session={session} />
+          )}
         </BetaGate>
       )}
     </QueryClientProvider>

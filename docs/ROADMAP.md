@@ -867,17 +867,182 @@ migration, Production and remote delivery checkpoints. This does not activate M8
 
 #### M8-E — Paid checkout before first offer expiry
 
-**Approved early development and release hold — 2026-10-14:** PO authorized the scoped payment
-frontend/backend preparation and its commit/Main/CI/deployment with all payment entry closed while
-merchant approval is pending. Planned catalog is Pro NT$115/month or NT$1,150/year and Prime
-NT$145/month or NT$1,450/year. Existing grants remain protected. Payment activation, Production
-payment schema and merchant verification are not authorized by this release. The implementation
-Contract and payment-design documents record the agreed first-subscription trials, 45-day refund
-request window, upgrade/downgrade policies and remaining integration work. M8-D/M8-E completion
-criteria and release sequencing remain unchanged.
-PO then narrowed this delivery to backend only: frontend changes and the planned catalog remain
-local; the existing Production frontend is preserved. Ship only disabled backend foundations and
-the Development migration-history correction through the authorized release flow.
+**PO correction — 2026-10-18 (controls this package):** Pro and Prime monthly and annual variants
+use Lemon Squeezy's native **30-day or one-month free trial only for the account's first paid
+subscription**. A later subscription has no second trial and is charged at checkout; the API
+uses the verified subscription history and Lemon's `skip_trial` checkout option. The buyer sets up
+a payment method at checkout; first-subscription due today is zero. Lemon owns the actual trial
+deadline, first collection, renewal and discount calculation. A pre-checkout date is explicitly
+an estimate for display; confirmed provider dates and invoices govern access and billing. No
+60-day paid promotional checkout is created.
+The app confirmation page has no code input or code validation. Any applicable code is entered on
+Lemon's checkout and calculated entirely by Lemon's native Discount feature.
+Paid-to-paid downgrade, including trial downgrade and annual-to-monthly change, is not offered.
+Cancellation preserves the verified current entitlement through the original end, then Free;
+the customer may start a new subscription after expiry. Previously granted card-free Beta access
+keeps its original end, but no new card-free Promotional grant may be issued after billing goes live.
+This ruling supersedes all older M8-E Promotional and downgrade
+language below. R04's real zero-amount Lemon trial, signed webhook, invoice and owner binding,
+R06/R07 upgrades, R10 cancellation and R11–R13 lifecycle/security evidence carry forward; do
+not repeat those transactions or restart R01–R17. Focus the specification delta on quote,
+native discount handling, downgrade guards and one read-back of the approved trial setting on each of the
+four actual variants. R09 natural first charge/renewal and R02/R15–R17 release blockers retain
+their existing criteria. Superseded 60-day Promotional evidence does not prove the new offer.
+It does not authorize Production activation, remote delivery or a Live transaction.
+
+**Superseded promotional-code placement — earlier 2026-10-18 PO correction:** From payment activation,
+enter the existing Promotional code on the subscription confirmation page. A valid code changes
+the selected first subscription to **Prime with one 60-day free trial** on the chosen monthly or
+annual renewal interval; it replaces, rather than adds to, the ordinary one-month trial. The
+Coach completes the same Lemon checkout and payment authorization; after 60 days the confirmed
+subscription renews and charges the Prime interval price. The app does not store a payment method.
+An invalid, expired or ineligible code must not silently proceed with the ordinary paid quote.
+Abandoned checkout does not consume the code; successful owner-bound subscription confirmation
+does. Existing no-charge grants keep their established end dates. Until the billing entry is
+activated, preserve the existing Plans-page card-free redemption path so Production does not lose
+its currently released feature. The following 2026-10-17 clarification is superseded for **new
+redemptions after payment activation**; its historical evidence remains intact. This amendment
+does not itself authorize Production activation or remote delivery.
+
+**Promotional-code clarification — 2026-10-17 (superseded for new redemptions by 2026-10-18):** The existing Promotional
+code is redeemed on the Plans page for a Prime 60-day grant without a card, Lemon subscription,
+automatic renewal or payment. Paid checkout offers the ordinary selected Pro/Prime monthly or
+yearly subscription and its applicable one-month first-subscription trial; it does not accept the
+Promotional code. This supersedes the 2026-10-14 instruction below to put code entry in paid
+checkout and convert new code redemptions into card-authorized 60-day subscriptions. The existing
+Production code closes to new redemptions at 2026-12-01 00:00 Asia/Taipei. Close the separate
+Lemon 60-day variants to new direct purchases at that boundary as already scheduled. Existing
+grants and subscriptions keep their established end dates. This decision does not activate payment.
+
+**Approved promotional-bypass correction — 2026-10-17:** the Product Owner accepts that Lemon can
+briefly create a direct purchase of a published 60-day variant. The app must deny access without a
+valid app checkout, continuously audit provider subscriptions, and verify cancellation of unowned
+subscriptions so they cannot renew. Operator Email delivery is not a release gate. The existing
+ordinary one-month and coded Prime 60-day
+trial rules do not change. Provider-list, worker, alert and Test Mode evidence must pass before Live
+activation; this correction alone does not authorize Production changes or remote delivery. The
+detailed contract is in `M8-E-IMPLEMENTATION-CONTRACT.md`.
+
+**Promotional campaign scope correction — 2026-10-17 (earlier PO decision):** the Product Owner
+accepts that, until the campaign closes, a buyer may obtain a 60-day Prime trial from Lemon's
+published promotional variant without entering the app code. This direct-purchase edge case,
+copied checkout proof probes and operator notifications are no longer launch blockers. Keep the
+existing owner-bound app authorization and cancellation safeguards, but do not delay the remaining
+payment work to harden this temporary offer further. The existing Production Beta promotional code
+closes to new redemptions at 2026-12-01 00:00 Asia/Taipei; there is no separate M8-E paid code
+under the latest PO clarification. Both Lemon 60-day promotional variants must be disabled for
+new purchases at that boundary.
+Existing subscriptions retain their already established trial/renewal terms. This correction does
+not authorize Production activation or remote delivery.
+
+**Approved payment-design amendment — 2026-10-14:** the Product Owner authorizes early M8-E
+research and design while Lemon Squeezy merchant review is pending. The current tax-inclusive
+catalog is Pro NT$115/month or NT$1,150/year and Prime NT$145/month or NT$1,450/year.
+New ordinary subscriptions complete checkout and authorize a payment method before receiving
+one month of free trial; the selected monthly or annual subscription first charges at trial end
+and renews automatically. The earlier proposal to put the Promotional code in paid checkout and
+authorize a payment method for its 60-day trial is superseded by the 2026-10-17 clarification
+above. Existing code redemptions remain card-free without auto-renewal; permanent Prime grants
+remain without billing. See `M8-E-PAYMENT-DESIGN.md` for historical design and unresolved
+policy/provider constraints, including USD processing despite TWD display. The engineering
+Contract, existing Sol prerequisites, merchant approval and live-charge release gates remain
+required; early design is not payment activation or remote-delivery authorization.
+
+**Approved payment-policy follow-up — 2026-10-14:** the one-month trial applies only to the
+account's first subscription across all tiers and intervals. Resubscription after cancellation
+charges immediately without a new first-month trial. General exceptional-refund requests must
+reach support within 45 days of the relevant payment, with non-waivable legal rights and MoR
+actions preserved. Public checkout includes payment notice, terms and privacy links; internal
+refund/access decisions remain private and discretionary. See `M8-E-PAYMENT-NOTICE.md` and
+`M8-E-REFUND-OPERATIONS.md`. Refund invoices synchronize from verified provider events and
+reconciliation. A confirmed checkout leaves the payment form for plan/billing management;
+server-side duplicate prevention remains mandatory. The standalone preview's visuals are not
+approved and must be redesigned using the existing formal frontend.
+
+**Approved local development start — 2026-10-14:** after this review the Product Owner asked to
+start development and design. The independent local presentation and provider-boundary slice may
+proceed before merchant approval under `M8-E-IMPLEMENTATION-CONTRACT.md`: reusable formal React
+components, a DEV-only synthetic review route, pure server eligibility rules, checkout payload
+validation and webhook-signature verification. This bounded early start does not bypass M8-D
+admission, remaining M8-E lifecycle/persistence contracts, actual provider verification or release
+gates. No remote delivery or live charging is authorized by this local start.
+
+**Approved lifecycle policy follow-up — 2026-10-14:** both ordinary and 60-day promotional trials
+are limited to an account's first subscription. Failed renewals retain the previous paid source for
+at most seven days from the original renewal due time; verified unpaid/expired ends it sooner.
+Annual-to-monthly changes are unavailable, including simultaneous tier changes. Pro-to-Prime and
+same-tier monthly-to-annual changes credit unused paid time toward a full new period and restart
+the period after verified payment. Prime-to-Pro changes take effect at the original period end,
+including monthly Prime to annual Pro. These decisions authorize local policy implementation;
+provider proration, deferred-change execution and paid-access synchronization still require their
+own verification. No remote delivery or live charge is authorized by these decisions.
+
+**Five-choice policy correction — 2026-10-16:** this supersedes the earlier annual-to-monthly
+unavailable rule: an annual paid subscriber may choose a monthly plan, effective at the original
+annual end. Before the first charge, trial cadence may change freely while retaining the exact
+original trial end. Pro-to-Prime trial access starts immediately after provider verification;
+Prime-to-Pro access starts at trial end. Free is the absence of a paid subscription. Every active
+paid plan can select Free as an end-of-period destination, using the same cancellation operation
+as “cancel renewal”; existing verified access lasts until its original end and the next charge
+stops. The complete five-choice matrix is in `M8-E-IMPLEMENTATION-CONTRACT.md`.
+
+**Failed-renewal policy correction — 2026-10-17:** at the Product Owner's direction, the seven-day
+product grace period in the 2026-10-14 lifecycle policy is removed. A `past_due` renewal does not
+extend a verified paid period: access lasts only to its already verified end, then falls back to
+another valid grant or Free until a matching paid invoice establishes a new period. Provider retry
+timing does not create access. A late paid renewal must retain the original billing anchor. This
+reduces the Test Mode release gate to paid-renewal and recovery proof; reproducing a failed card
+charge is not a prerequisite to ship the simpler rule. No data is deleted on expiry.
+
+| Current choice | Desired immediate paid-period choice             | Desired change at original paid-period end |
+| -------------- | ------------------------------------------------ | ------------------------------------------ |
+| Free           | New checkout: Pro month/year or Prime month/year | None; no cancellation                      |
+| Pro month      | Pro year; Prime month/year                       | Free                                       |
+| Pro year       | Prime year                                       | Pro month; Prime month; Free               |
+| Prime month    | Prime year                                       | Pro month/year; Free                       |
+| Prime year     | None                                             | Prime month; Pro month/year; Free          |
+
+Each paid row also has “cancel renewal”, equivalent to choosing Free at the original end; the
+current exact choice is never offered. During the first unpaid trial, the monthly/yearly choice
+can change in either direction without moving the first charge. Pro-to-Prime access rises after
+provider confirmation; Prime-to-Pro access waits until the original trial end.
+
+**Provider-fit clarification and downgrade release condition — 2026-10-16:** the Product Owner
+retains the five-choice _desired_ behavior, but a paid-period downgrade must not immediately remove
+rights already paid for or turn a large unused annual amount into a credit that may have no future
+invoice to offset. The preferred execution is to record the Coach's target choice durably, then
+modify the **same** card-backed Lemon subscription close to its verified current end. Preserve the
+old verified tier's rights until that original end; grant the new tier only after provider and
+payment reconciliation. A candidate is a pre-renewal variant PATCH with
+`disable_prorations=true`, leaving enough time to confirm the result rather than racing the exact
+renewal instant. This is a **hypothesis, not an approved executable billing contract**: Lemon
+documents immediate variant changes, a new price at next renewal without proration, and possible
+immediate payment or billing-date movement for a month/year interval change. It does not document
+an effective-at-end variant schedule. A same-cadence and, separately, an annual-to-monthly Test Mode
+probe must establish the resulting invoice, `renews_at`, and entitlement timing before the relevant
+paid-downgrade control opens. If reliable automatic end-of-period execution cannot be established,
+M8-E offers only cancel renewal / change to Free at the original end for paid subscriptions; it
+must not advertise automatic paid downgrade. Cancellation followed by an expired subscription is
+not an automatic new subscription or a promise to reuse the card: Lemon documents that expired
+subscriptions cannot be resumed and new subscriptions start through checkout. The Coach may
+explicitly select a new paid plan later.
+
+The initial full-new-period upgrade/reset rule above remains the Product Owner's desired outcome,
+not a claim about Lemon's native settlement. For an already paid subscription, same-cadence
+upgrades change variant immediately with prorated billing; `invoice_immediately=true` requests an
+immediate difference invoice. Monthly-to-annual changes may also change the billing date or
+charge immediately. Before implementing customer-facing amounts or period promises, reconcile
+the M8-E implementation Contract with the actual native result. During the first unpaid trial,
+keep the same subscription and exact original trial end, no second checkout or immediate charge;
+Pro-to-Prime access rises after verified provider change, Prime-to-Pro access waits until that
+trial end. Never reset `billing_anchor` on an active trial merely to force a new cycle because Lemon
+documents that doing so removes the trial. A variant PATCH alone, or a browser return, never proves
+a successful payment or new verified access period.
+
+Provider references: [update subscription](https://docs.lemonsqueezy.com/api/subscriptions/update-subscription),
+[manage subscriptions](https://docs.lemonsqueezy.com/guides/developer-guide/managing-subscriptions),
+[change a subscriber's plan](https://docs.lemonsqueezy.com/guides/tutorials/change-subscriber-plan),
+[subscription-invoice refunds](https://docs.lemonsqueezy.com/api/subscription-invoices/issue-refund).
 
 **Contract gate:** freeze the named payment provider, merchant prerequisites, Basic/Advanced
 monthly and annual subscriptions, voluntary paid activation after a no-card offer, auto-renewal, cancellation,

@@ -47,13 +47,14 @@ export async function acceptLegalTerms(
 
 export interface PlanAccess {
   tier: 'free' | 'basic' | 'advanced'
-  source: 'free' | 'promotional' | 'permanent'
+  source: 'free' | 'promotional' | 'permanent' | 'subscription'
   activeStudents: number
   activeVenues: number
   studentLimit: number | null
   venueLimit: number | null
   overCapacity: boolean
   offerEndsAt?: string
+  billingEndsAt?: string
 }
 
 export async function readPlanAccess(accessToken: string): Promise<PlanAccess> {

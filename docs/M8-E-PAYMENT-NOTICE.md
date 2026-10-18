@@ -1,18 +1,22 @@
 # M8-E 付款須知與條款修訂稿
 
-> 2026-10-14 · PO 決策後的待上線文案。React 開發預覽可閱讀中英文條款／隱私修訂稿；正式 `/terms`、`/privacy` 內容、條款版本與既有同意紀錄尚未變更。須隨 M8-E 整合後一併發布，不代表條款已生效。
+> 2026-10-18 · PO 最終支付規格後的待上線文案。React 開發預覽可閱讀中英文條款／隱私修訂稿；正式 `/terms`、`/privacy` 內容、條款版本與既有同意紀錄尚未變更。須隨 M8-E 整合後一併發布，不代表條款已生效。
 
 ## 付款須知（對外文案）
 
 ### 帳單金額可能略有不同
 
-付款時可能產生小額交易手續費，因此信用卡帳單金額可能與頁面標價略有不同。實際金額以信用卡帳單為準。
+付款時可能產生小額交易手續費與匯率誤差，因此信用卡帳單金額可能與頁面標價略有不同。實際金額以信用卡帳單為準。
 
 ### 訂閱與免費體驗
 
-請確認所選方案、計費週期、今天應付金額與下次扣款日期。年繳方案每次收取完整年度費用。
+訂閱摘要列出所選方案、今天應付、預計首次扣款日期與方案金額。優惠碼折扣會在 Lemon Squeezy 結帳時反映；訂閱成立後可在方案與帳單查看確認的扣款日期。年繳方案每次收取完整年度費用。
 
-一個月免費體驗僅適用該帳號首次訂閱，所有方案共用一次資格。需先完成付款方式授權，體驗結束後依所選方案自動扣款及續訂。取消後再次訂閱不再提供首月免費體驗，將依結帳顯示金額立即收費。優惠碼的適用資格、體驗期間與後續價格，以確認頁所示條件為準。
+只有首次訂閱 Pro 或 Prime 可享 1 個月免費體驗。於 Lemon Squeezy 完成付款方式設定，今天應付 NT$0；體驗結束後由 Lemon Squeezy 依所選方案與週期扣款及自動續訂。續訂與再次訂閱沒有第二次免費體驗，再次訂閱於結帳時付款。先前已領取的免付款優惠不會自行轉為付費訂閱。
+
+### 優惠碼
+
+如有適用的折扣碼，可於 Lemon Squeezy 結帳頁輸入。適用資格、折扣金額及實際收費均由 Lemon Squeezy 計算；本站不另設輸入欄。
 
 ### 取消續訂
 
@@ -20,33 +24,35 @@
 
 ### 退款申請
 
-訂閱費用原則上不退款。如有重複或錯誤扣款，或其他特殊情況，請於該筆付款完成後 45 天內，寄信至 support@formcoachdesk.com，提供購買 Email、帳單編號與申請原因。我們會依個案評估；提出申請不代表保證退款，處理結果將另行通知。逾期不受理一般退款申請；依法不得限制的權利或付款服務商依其規則處理的情況不受此限。
+訂閱費用原則上不退款。可取消續訂，方案將持續至期限結束。如有重複或錯誤扣款，或其他特殊情況，請於該筆付款完成後 45 天內，寄信至 support@formcoachdesk.com，提供購買 Email、帳單編號與申請原因。我們會依個案評估；提出申請不代表保證退款，處理結果將另行通知。逾期不受理一般退款申請；依法不得限制的權利或付款服務商依其規則處理的情況不受此限。
 
 退款受理期限以我們收到申請的時間為準，不以完成審核的時間計算。取消訂閱或退款不會自動刪除帳號與既有資料。
+
+經核准的退款由 Lemon Squeezy 退回原付款方式。全額退款以該筆原交易實際處理的美元金額全數退回為準；部分退款金額依個案通知。發卡行的換匯匯率與國外交易費可能使信用卡帳單上的新台幣入帳額與原扣款額不同；依法不得限制的權利及錯誤扣款的處理不受此說明影響。
 
 ### 相關文件
 
 請一併閱讀服務條款與隱私權政策。付款須知是付款流程的說明；依法不得限制的權利不因本須知而受限。
 
-### 手續費與換匯說明（可展開的補充資訊）
+### 手續費與換匯說明
 
-付款由 Lemon Squeezy 處理，交易可能涉及美元換算與發卡行的國外交易費。實際費率與換匯依發卡行規定；本站不另加收訂閱處理費。不使用固定費率或差額上限保證。主要畫面先說明「可能產生小額手續費」，不以支付機制取代對使用者的影響。
+付款由 Lemon Squeezy 處理，交易可能涉及美元換算與發卡行的國外交易費。實際費率與換匯依發卡行規定；本站不另加收訂閱處理費。不使用固定費率或差額上限保證。
 
 ## 服務條款第 4 節同步替換稿
 
-Free 方案與既有免綁卡優惠不會自動開始收費。使用者完成付款授權的訂閱體驗，則於體驗到期後依結帳時同意的方案與週期扣款、自動續訂。一個月免費體驗僅適用該帳號首次訂閱，所有方案共用一次資格；取消後重新訂閱直接收費，不再提供首月免費體驗。優惠碼條件以確認頁顯示為準。
+Free 方案與先前已領取的免付款優惠不會自行轉為付費訂閱。只有首次訂閱 Pro 或 Prime 可享 1 個月免費體驗，結帳時須完成付款方式設定，今天應付 NT$0；續訂或再次訂閱不再提供免費體驗，再次訂閱須於結帳時付款。體驗期滿後，由 Lemon Squeezy 依結帳時同意的方案與週期扣款、自動續訂；訂閱成立後以 Lemon Squeezy 確認的扣款日期為準。優惠碼如適用，於 Lemon 結帳頁輸入並由 Lemon 計算折扣。
 
 付款由 Lemon Squeezy 作為 Merchant of Record 處理。我們不取得或儲存完整信用卡號。結帳前顯示方案、計費週期、首次或本次應付金額與續訂條件。本站以新台幣顯示價格，交易由 Lemon Squeezy 換算為美元處理，發卡行的換匯及國外交易費可能使信用卡帳單金額不同。
 
-您可以取消續訂，以停止未來扣款；除個案另有約定外，功能可使用至目前方案期限結束。取消不會自動退還已付款項。訂閱費用原則上不退款；如有重複或錯誤扣款或其他特殊情況，請於該筆付款完成後 45 天內，透過 support@formcoachdesk.com 提出申請。我們依個案評估，提出申請不代表保證退款；以收到申請的時間判定是否在期限內。逾期不受理一般退款申請，但依法不得限制的權利及付款服務商依其規則處理的情況不受此限。取消或退款不會自動刪除帳號與既有資料。
+您可以取消續訂，以停止未來扣款；除個案另有約定外，功能可使用至目前方案期限結束。取消不會自動退還已付款項。訂閱費用原則上不退款；如有重複或錯誤扣款或其他特殊情況，請於該筆付款完成後 45 天內，透過 support@formcoachdesk.com 提出申請。我們依個案評估，提出申請不代表保證退款；以收到申請的時間判定是否在期限內。逾期不受理一般退款申請，但依法不得限制的權利及付款服務商依其規則處理的情況不受此限。經核准的退款退回原付款方式；全額退款以原交易實際處理的美元金額全數退回為準，發卡行換匯與費用可能使新台幣帳單入帳額不同。取消或退款不會自動刪除帳號與既有資料。
 
 ### English amendment
 
-Free plans and existing card-free promotions do not automatically become paid subscriptions. A subscription trial with payment authorization renews and is charged at the end of the trial according to the plan and billing interval accepted at checkout. The one-month free trial is available only on an account's first subscription and is shared across all plans. Resubscribing after cancellation is charged immediately and does not include another one-month free trial. Promotional-code conditions are displayed before confirmation.
+Free plans and previously granted promotions without payment do not automatically become paid subscriptions. Only the first Pro or Prime subscription includes a one-month free trial. Customers set up a payment method at checkout and pay nothing today. Renewals and later subscriptions do not include another free trial; a later subscription is charged at checkout. Lemon Squeezy charges and renews the selected plan after the trial; the confirmed subscription supplies the actual charge date. If applicable, discount codes are entered at Lemon checkout and Lemon calculates the discount.
 
 Lemon Squeezy handles payments as Merchant of Record. We do not receive or store complete card numbers. The plan, billing interval, initial or current amount due, and renewal terms are displayed before checkout. Prices are displayed in TWD, while Lemon Squeezy converts transactions to USD for processing. Your card issuer's exchange rate and foreign transaction fees may cause your card statement amount to differ.
 
-You may cancel renewal to stop future charges. Unless otherwise agreed for your case, access continues until the current plan period ends. Cancellation does not automatically refund previous payments. Subscription payments are generally non-refundable. For duplicate or incorrect charges or other exceptional circumstances, email support@formcoachdesk.com within 45 days after the relevant payment is completed. Requests are assessed individually and do not guarantee a refund. Eligibility for this request window is based on when we receive the request. General refund requests received after this window are not accepted. Non-waivable legal rights and actions taken by the payment provider under its rules are unaffected. Cancellation or refund does not automatically delete your account or existing records.
+You may cancel renewal to stop future charges. Unless otherwise agreed for your case, access continues until the current plan period ends. Cancellation does not automatically refund previous payments. Subscription payments are generally non-refundable. For duplicate or incorrect charges or other exceptional circumstances, email support@formcoachdesk.com within 45 days after the relevant payment is completed. Requests are assessed individually and do not guarantee a refund. Eligibility for this request window is based on when we receive the request. General refund requests received after this window are not accepted. Non-waivable legal rights and actions taken by the payment provider under its rules are unaffected. Approved refunds return to the original payment method. A full refund means the entire USD amount processed for the original transaction is returned; card-issuer exchange rates and fees may change the amount shown in TWD on your statement. Cancellation or refund does not automatically delete your account or existing records.
 
 ## 隱私權政策同步修訂
 

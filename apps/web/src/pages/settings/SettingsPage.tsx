@@ -9,7 +9,6 @@ import {
   KeyRound,
   LogOut,
   MessageSquare,
-  Sparkles,
   SlidersHorizontal,
   Shield,
   Trash2,
@@ -45,6 +44,12 @@ import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
 import { resolveCoachDisplayName } from '../../app-shell/coach-identity'
 import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 import { HelpPanel } from './HelpPanel'
+import { localBillingEnabled, localBillingServiceEnabled } from '../../config'
+import { CurrentPlanCard } from './CurrentPlanCard'
+import { PlanComparisonBanner } from './PlanComparisonBanner'
+import { InvoiceHistory } from './billing/InvoiceHistory'
+import { BillingPanel } from './billing/BillingPanel'
+import { createHttpBillingGateway } from './billing/http-gateway'
 
 function planName(plan: PlanAccess | undefined): string {
   if (plan?.tier === 'advanced') return 'Prime 方案'
@@ -61,7 +66,7 @@ function planPeriodDate(instant: string): string {
   })
 }
 
-function PlanSummary({
+export function PlanSummary({
   plan,
   loading,
   error,
@@ -83,36 +88,27 @@ function PlanSummary({
   const nextPlan = plan?.source === 'promotional' ? 'Free 方案' : planName(plan)
   return (
     <div className="settings-plan-overview">
-      <section className="settings-current-plan-card" aria-labelledby="current-plan-title">
-        <header className="settings-current-plan-heading">
-          <div className="settings-current-plan-heading-copy">
-            <span className="settings-plan-kicker">目前方案</span>
-            <div className="settings-current-plan-title-row">
-              {!loading && !error && (
-                <span className="settings-current-plan-icon" aria-hidden="true">
-                  <Sparkles />
-                </span>
-              )}
-              <h3 id="current-plan-title">
-                {loading ? '正在讀取…' : error ? '暫時無法取得方案' : planName(plan)}
-              </h3>
-              {!loading && !error && (
-                <>
-                  <span className="settings-plan-status">使用中</span>
-                  <span className="settings-current-plan-title-break" aria-hidden="true" />
-                  <span className="settings-current-plan-period">{periodLabel}</span>
-                </>
-              )}
-            </div>
-            {!loading && !error && plan?.source === 'promotional' && <p>Prime 方案優惠體驗</p>}
-            {!loading && !error && plan?.source === 'permanent' && <p>永久 Prime 資格</p>}
-          </div>
-          {error && (
+      <CurrentPlanCard
+        title={loading ? '正在讀取…' : error ? '暫時無法取得方案' : planName(plan)}
+        status={!loading && !error ? '使用中' : undefined}
+        period={!loading && !error ? periodLabel : undefined}
+        description={
+          !loading && !error
+            ? plan?.source === 'promotional'
+              ? 'Prime 方案優惠體驗'
+              : plan?.source === 'permanent'
+                ? '永久 Prime 資格'
+                : undefined
+            : undefined
+        }
+        headerAction={
+          error ? (
             <button type="button" className="settings-plan-retry" onClick={onRetry}>
               重新讀取
             </button>
-          )}
-        </header>
+          ) : undefined
+        }
+      >
         {!loading && !error && (
           <>
             <dl className="settings-current-plan-facts">
@@ -136,35 +132,31 @@ function PlanSummary({
             )}
           </>
         )}
-      </section>
-      <Link className="settings-plans-banner" to="/plans">
-        <span className="settings-plans-banner-copy">
-          <small>FREE · PRO · PRIME</small>
-          <strong>比較方案與價格</strong>
-          <span>Beta 期間先使用 Free；支付上線後開放選購。</span>
-        </span>
-        <span className="settings-plans-banner-action">
-          查看所有方案 <ArrowRight aria-hidden="true" />
-        </span>
-      </Link>
-      <section className="settings-billing-card" aria-labelledby="billing-title">
-        <header>
-          <div>
-            <h3 id="billing-title">帳單與付款</h3>
-            <p>支付功能上線後，可在這裡管理付款方式與帳單紀錄。</p>
+      </CurrentPlanCard>
+      <PlanComparisonBanner />
+      {localBillingEnabled ? (
+        <>
+          <InvoiceHistory invoices={[]} unavailable />
+          <div className="billing-help">
+            <Link to="/settings?category=feedback#help-contact">帳單有疑問？聯絡我們</Link>
           </div>
-        </header>
-        <div className="settings-billing-rows">
-          <div>
-            <span>付款方式</span>
-            <strong>尚未設定</strong>
+        </>
+      ) : (
+        <section className="settings-billing-card" aria-labelledby="billing-title">
+          <header>
+            <div>
+              <h3 id="billing-title">帳單</h3>
+              <p>支付功能上線後，可在這裡查看帳單紀錄與憑證。</p>
+            </div>
+          </header>
+          <div className="settings-billing-rows">
+            <div>
+              <span>帳單紀錄</span>
+              <strong>尚無帳單</strong>
+            </div>
           </div>
-          <div>
-            <span>帳單紀錄</span>
-            <strong>尚無帳單</strong>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   )
 }
@@ -398,14 +390,24 @@ export function SettingsPage({ session }: { session: Session }) {
               }}
             />
           )}
-          {category === 'plans' && (
-            <PlanSummary
-              plan={planQuery.data}
-              loading={planQuery.isPending}
-              error={planQuery.isError}
-              onRetry={() => void planQuery.refetch()}
-            />
-          )}
+          {category === 'plans' &&
+            (localBillingServiceEnabled ? (
+              <BillingPanel
+                embedded
+                accountId={session.user.id}
+                gateway={createHttpBillingGateway(session.access_token)}
+                planAccess={planQuery.data}
+                onChoosePlan={() => navigate('/plans')}
+                onViewCheckout={() => navigate('/settings/checkout/status')}
+              />
+            ) : (
+              <PlanSummary
+                plan={planQuery.data}
+                loading={planQuery.isPending}
+                error={planQuery.isError}
+                onRetry={() => void planQuery.refetch()}
+              />
+            ))}
           {category === 'security' && (
             <section className="settings-panel account-settings-panel">
               <div className="settings-row">

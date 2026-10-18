@@ -14,6 +14,7 @@ import {
   ReconciliationError,
   resourceUpdate,
   type BillingResource,
+  type InvoiceResource,
   type SubscriptionResource,
 } from './resources.js'
 import { LemonTestResources } from './lemon-resources.js'
@@ -27,6 +28,7 @@ import { DevelopmentIdentityVerifier } from '../identity/development-identity.js
 import { BillingError } from './checkout.js'
 import { IdentityVerificationError } from '../identity/identity.js'
 import { localLifecycleConfiguration } from './local-lifecycle.js'
+import { billingDevelopmentEnabled } from './release-gate.js'
 
 const instant = '2026-10-14T04:00:00Z'
 const nextInstant = '2026-10-14T04:00:01Z'
@@ -65,6 +67,9 @@ const invoice = () => ({
     billing_reason: 'renewal',
     currency: 'USD',
     status: 'paid',
+    subtotal: 500,
+    subtotal_usd: 500,
+    currency_rate: '1',
     total: 500,
     refunded_amount: 0,
   },
@@ -203,12 +208,121 @@ describe('minimal verified resources', () => {
     expect(() => resourceUpdate(partial, normalizedInvoice(raw))).toThrow(
       'invoice_history_conflict',
     )
+    raw.attributes.total = 500
+    raw.attributes.subtotal = 499
+    expect(() => resourceUpdate(partial, normalizedInvoice(raw))).toThrow(
+      'invoice_history_conflict',
+    )
+    raw.attributes.subtotal = 500
+    raw.attributes.currency_rate = '0.9'
+    expect(() => resourceUpdate(partial, normalizedInvoice(raw))).toThrow(
+      'invoice_history_conflict',
+    )
     raw.attributes.refunded_amount = 601
+    expect(() => normalizedInvoice(raw)).toThrow('invalid_refund_amount')
+  })
+  it('accepts a provider-verified cumulative refund when Lemon leaves updated_at unchanged', () => {
+    const paid = normalizedInvoice()
+    const raw = invoice()
+    raw.attributes.status = 'partial_refund'
+    raw.attributes.refunded_amount = 100
+    const partial = normalizedInvoice(raw)
+    expect(resourceUpdate(paid, partial)).toBe('apply')
+    expect(resourceUpdate(partial, partial)).toBe('ignore')
+    expect(() => resourceUpdate(partial, paid)).toThrow('invoice_history_conflict')
+    raw.attributes.status = 'refunded'
+    raw.attributes.refunded_amount = 500
+    const refunded = normalizedInvoice(raw)
+    expect(resourceUpdate(partial, refunded)).toBe('apply')
+    raw.attributes.refunded_amount = 400
+    expect(() => normalizedInvoice(raw)).toThrow('invalid_refund_amount')
+  })
+  it('enriches a legacy invoice snapshot with provider rate evidence once', () => {
+    const enriched = normalizedInvoice() as InvoiceResource
+    const legacy = structuredClone(enriched)
+    delete (legacy.attributes as Partial<typeof legacy.attributes>).subtotal
+    delete (legacy.attributes as Partial<typeof legacy.attributes>).subtotal_usd
+    delete (legacy.attributes as Partial<typeof legacy.attributes>).currency_rate
+    expect(resourceUpdate(legacy, enriched)).toBe('apply')
+    expect(resourceUpdate(enriched, enriched)).toBe('ignore')
+  })
+  it('enriches a legacy subscription with verified processor without accepting other same-version changes', () => {
+    const old = normalized()
+    const raw = subscription()
+    const enriched = normalized({
+      ...raw,
+      attributes: { ...raw.attributes, payment_processor: 'stripe' },
+    } as ReturnType<typeof subscription>)
+    expect(resourceUpdate(old, enriched)).toBe('apply')
+    expect(resourceUpdate(enriched, enriched)).toBe('ignore')
+    const changed = structuredClone(enriched)
+    changed.attributes.status = 'past_due'
+    expect(() => resourceUpdate(old, changed)).toThrow('same_version_conflict')
+  })
+  it('bounds a one-cent TWD full-refund rounding difference only with matching USD settlement', () => {
+    const raw = invoice() as ReturnType<typeof invoice> & {
+      attributes: ReturnType<typeof invoice>['attributes'] & {
+        refunded: boolean
+        total_usd: number
+        refunded_amount_usd: number
+      }
+    }
+    raw.attributes.currency = 'TWD'
+    raw.attributes.total = 11498
+    raw.attributes.status = 'refunded'
+    raw.attributes.refunded_amount = 11499
+    raw.attributes.refunded = true
+    raw.attributes.total_usd = 355
+    raw.attributes.refunded_amount_usd = 355
+    const accepted = normalizedInvoice(raw)
+    if (accepted.type !== 'subscription-invoices') throw new Error('unexpected resource')
+    expect(accepted.attributes.refunded_amount).toBe(11498)
+    expect(accepted.attributes.refund_rounding).toEqual({
+      reported_refunded_amount: 11499,
+      total_usd: 355,
+      refunded_amount_usd: 355,
+    })
+    expect(JSON.stringify(accepted)).not.toMatch(/user_email|card_last_four/)
+    raw.attributes.refunded_amount = 11500
+    expect(() => normalizedInvoice(raw)).toThrow('invalid_refund_amount')
+    raw.attributes.refunded_amount = 11499
+    raw.attributes.refunded_amount_usd = 354
+    expect(() => normalizedInvoice(raw)).toThrow('invalid_refund_amount')
+    raw.attributes.refunded_amount_usd = 355
+    raw.attributes.refunded = false
+    expect(() => normalizedInvoice(raw)).toThrow('invalid_refund_amount')
+    raw.attributes.refunded = true
+    raw.attributes.currency = 'USD'
     expect(() => normalizedInvoice(raw)).toThrow('invalid_refund_amount')
   })
 })
 
 describe('signed event intake and recoverable work', () => {
+  it('accepts the documented webhook envelope without meta.test_mode', async () => {
+    const repo = new MemoryInbox()
+    const value = JSON.parse(event().toString())
+    delete value.meta.test_mode
+    const raw = Buffer.from(JSON.stringify(value))
+    await new BillingEventInbox(repo, '10', 'test-secret').receive(raw, sign(raw))
+    expect(repo.rows.size).toBe(1)
+  })
+  it('keeps signed webhook intake and provider reconciliation in the configured mode', async () => {
+    const repo = new MemoryInbox()
+    const testRaw = event()
+    const liveInbox = new BillingEventInbox(repo, '10', 'test-secret', 'live')
+    await expect(liveInbox.receive(testRaw, sign(testRaw))).rejects.toThrow('event_scope_mismatch')
+    const liveEvent = JSON.parse(testRaw.toString())
+    liveEvent.meta.test_mode = false
+    liveEvent.data.attributes.test_mode = false
+    const liveRaw = Buffer.from(JSON.stringify(liveEvent))
+    await liveInbox.receive(liveRaw, sign(liveRaw))
+    expect(repo.rows.size).toBe(1)
+    const provider = { get: vi.fn(async () => normalized()) }
+    const worker = new BillingEventWorker(repo, provider, () => new Date(instant), 'live')
+    await worker.runOne()
+    expect(repo.resources.size).toBe(0)
+    expect([...repo.rows.values()][0]?.error).toBe('provider_scope_mismatch')
+  })
   it('deduplicates concurrent deliveries and persists only notification facts', async () => {
     const repo = new MemoryInbox(),
       inbox = new BillingEventInbox(repo, '10', 'test-secret'),
@@ -353,7 +467,7 @@ describe('test-only provider adapter', () => {
       { key: 'fake', storeId: '10', variantIds: ['30'] },
       request,
     )
-    await expect(provider.cancel('1')).rejects.toThrow('invalid_provider_resource')
+    await expect(provider.cancel('1')).rejects.toThrow('provider_scope_mismatch')
     expect(request).toHaveBeenCalledTimes(1)
     expect(request.mock.calls[0]).toBeDefined()
     const options = (request.mock.calls as unknown as [string, RequestInit][])[0]![1]
@@ -367,6 +481,8 @@ function managementSetup() {
     other = { userId: '00000000-0000-4000-8000-000000000002' }
   let command: CancellationClaim | null = null
   const repo: BillingManagementRepository = {
+    invoice: async (identity, id) =>
+      identity.userId === owner.userId && id === '2' ? (normalizedInvoice() as any) : null,
     read: async (identity) =>
       identity.userId === owner.userId
         ? {
@@ -398,10 +514,127 @@ function managementSetup() {
   cancelled.attributes.status = 'cancelled'
   cancelled.attributes.cancelled = true
   cancelled.attributes.ends_at = boundary
-  const provider = { cancel: vi.fn(async () => cancelled), get: vi.fn(async () => cancelled) }
+  const provider = {
+    cancel: vi.fn(async () => cancelled),
+    get: vi.fn(async () => cancelled),
+    invoiceReceipt: vi.fn(async () => ({
+      resource: normalizedInvoice() as any,
+      url: 'https://lemonsqueezy.com/receipt',
+    })),
+  }
   return { owner, other, repo, provider, module: new BillingManagementModule(repo, provider) }
 }
 describe('owner-scoped cancellation and billing', () => {
+  it('opens only with explicit local Development Test Mode switches', () => {
+    const allowed = {
+      NODE_ENV: 'development',
+      DEPLOYMENT_TARGET: 'local',
+      SUPABASE_URL: 'https://yvhijxhtelujfsaplzpi.supabase.co',
+      DATABASE_URL:
+        'postgres://api.yvhijxhtelujfsaplzpi:secret@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres',
+      BILLING_WORKER_DATABASE_URL:
+        'postgres://worker.yvhijxhtelujfsaplzpi:secret@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres',
+      BILLING_PROVIDER_TESTS_APPROVED: 'true',
+      BILLING_LOCAL_CHECKOUT: 'true',
+      BILLING_LOCAL_LIFECYCLE: 'true',
+    }
+    expect(billingDevelopmentEnabled(allowed)).toBe(true)
+    expect(billingDevelopmentEnabled({ ...allowed, NODE_ENV: 'production' })).toBe(false)
+    expect(billingDevelopmentEnabled({ ...allowed, DEPLOYMENT_TARGET: 'production' })).toBe(false)
+    expect(
+      billingDevelopmentEnabled({ ...allowed, SUPABASE_URL: 'https://other.supabase.co' }),
+    ).toBe(false)
+    expect(billingDevelopmentEnabled({ ...allowed, BILLING_LOCAL_LIFECYCLE: 'false' })).toBe(false)
+  })
+  it('shows only a verified period and protects owned receipts', async () => {
+    const s = managementSetup()
+    expect((await s.module.snapshot(s.owner)).subscription).toBeNull()
+    const original = s.repo.read
+    s.repo.read = async (identity) => ({
+      ...(await original(identity)),
+      verifiedPeriod:
+        identity.userId === s.owner.userId
+          ? ({
+              subscription_id: '1',
+              tier: 'basic',
+              billing_interval: 'month',
+              ends_at: new Date(boundary),
+            } as const)
+          : null,
+    })
+    const snapshot = await s.module.snapshot(s.owner)
+    expect(snapshot.subscription?.tier).toBe('basic')
+    expect(snapshot.invoices[0]?.receiptAvailable).toBe(true)
+    expect(snapshot.invoices[0]?.description).toBe('訂閱帳單')
+    await expect(s.module.receipt(s.other, '2')).rejects.toThrow('invoice_not_found')
+    expect(s.provider.invoiceReceipt).not.toHaveBeenCalled()
+    await expect(s.module.receipt(s.owner, '2')).resolves.toEqual({
+      url: 'https://lemonsqueezy.com/receipt',
+    })
+    const foreign = normalizedInvoice()
+    foreign.attributes.customer_id = '999'
+    s.provider.invoiceReceipt.mockResolvedValueOnce({
+      resource: foreign,
+      url: 'https://lemonsqueezy.com/receipt',
+    })
+    await expect(s.module.receipt(s.owner, '2')).rejects.toThrow('invoice_changed')
+  })
+  it('does not relabel an earlier invoice with the current upgraded tier', async () => {
+    const s = managementSetup()
+    const original = s.repo.read
+    s.repo.read = async (identity) => ({
+      ...(await original(identity)),
+      verifiedPeriod: {
+        subscription_id: '1',
+        tier: 'advanced' as const,
+        billing_interval: 'month' as const,
+        ends_at: new Date(boundary),
+      },
+    })
+    const snapshot = await s.module.snapshot(s.owner)
+    expect(snapshot.subscription?.tier).toBe('advanced')
+    expect(snapshot.invoices[0]?.description).toBe('訂閱帳單')
+  })
+  it('projects a cancelled trial as paid access ending at the original boundary', async () => {
+    const s = managementSetup()
+    const trial = normalized()
+    trial.attributes.status = 'on_trial'
+    trial.attributes.cancelled = true
+    trial.attributes.trial_ends_at = boundary
+    trial.attributes.ends_at = boundary
+    s.repo.read = async () => ({
+      subscriptions: [trial],
+      invoices: [],
+      pendingCancellation: false,
+      verifiedPeriod: {
+        subscription_id: trial.id,
+        tier: 'advanced',
+        billing_interval: 'month',
+        ends_at: new Date(boundary),
+      },
+    })
+    expect((await s.module.snapshot(s.owner)).subscription).toEqual({
+      tier: 'advanced',
+      interval: 'month',
+      status: 'cancelled',
+      endsAt: '2026-11-14T04:00:00.000Z',
+      renewal: { amount: 14500, currency: 'TWD' },
+    })
+  })
+  it('returns only a scoped HTTPS Lemon receipt URL from the provider', async () => {
+    const raw = invoice() as ReturnType<typeof invoice> & {
+      attributes: ReturnType<typeof invoice>['attributes'] & { urls: { invoice_url: string } }
+    }
+    raw.attributes.urls = { invoice_url: 'https://app.lemonsqueezy.com/receipt/2' }
+    const request = vi.fn(async () => new Response(JSON.stringify({ data: raw }), { status: 200 }))
+    const provider = new LemonTestResources(
+      { key: 'fake', storeId: '10', variantIds: ['30'] },
+      request,
+    )
+    expect((await provider.invoiceReceipt('2')).url).toBe(raw.attributes.urls.invoice_url)
+    raw.attributes.urls.invoice_url = 'https://example.com/receipt/2'
+    await expect(provider.invoiceReceipt('2')).rejects.toThrow('unsafe_receipt_url')
+  })
   it('serializes concurrent cancellation and confirms only a verified result', async () => {
     const s = managementSetup()
     const results = await Promise.all(Array.from({ length: 20 }, () => s.module.cancel(s.owner)))

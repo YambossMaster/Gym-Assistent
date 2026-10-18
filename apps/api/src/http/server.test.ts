@@ -171,7 +171,7 @@ describe('legal acceptance HTTP boundary', () => {
 })
 
 describe('Beta admission HTTP boundary', () => {
-  it('opens a free Workspace before optional redemption and keeps other Coaches isolated', async () => {
+  it('opens a free Workspace, rejects retired promotional redemption, and keeps other Coaches isolated', async () => {
     const repository = new MemoryStudentRepository()
     const secret = 'test-secret-that-is-at-least-32-characters'
     const betaRepository = new MemoryBetaAdmissionRepository(secret)
@@ -216,8 +216,11 @@ describe('Beta admission HTTP boundary', () => {
       headers,
       payload: { code },
     })
-    expect(redeemed.statusCode).toBe(200)
-    expect(redeemed.json().grant.state).toBe('promotional')
+    expect(redeemed.statusCode).toBe(400)
+    expect(redeemed.json()).toEqual({ error: 'promotion_unavailable' })
+    expect((await server.inject({ url: '/v1/beta/status', headers })).json()).toEqual({
+      grant: { state: 'free' },
+    })
     expect(
       (
         await server.inject({
@@ -233,7 +236,7 @@ describe('Beta admission HTTP boundary', () => {
     expect((await server.inject({ url: '/v1/students', headers: other })).json()).toEqual({
       students: [],
     })
-    expect(betaRepository.usageForTest(codeDigest(code))).toBe(1)
+    expect(betaRepository.usageForTest(codeDigest(code))).toBe(0)
   })
 
   it('counts malformed JSON before parsing and returns Retry-After without code lookup', async () => {

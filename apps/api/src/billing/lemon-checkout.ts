@@ -1,8 +1,10 @@
 import { z } from 'zod'
 import { lemonCheckoutPayload } from './provider-boundary.js'
 import type { CheckoutProvider, CheckoutQuote } from './checkout.js'
+import type { BillingEnvironment } from './billing-sql.js'
 
 export type LemonTestConfiguration = {
+  environment?: BillingEnvironment
   key: string
   storeId: string
   returnUrl: string
@@ -40,7 +42,7 @@ const responseSchema = z.object({
   data: z.object({
     type: z.literal('checkouts'),
     id: z.string().min(1),
-    attributes: z.object({ test_mode: z.literal(true), url: z.string().url() }),
+    attributes: z.object({ test_mode: z.boolean(), url: z.string().url() }),
   }),
 })
 export class LemonTestCheckoutProvider implements CheckoutProvider {
@@ -49,15 +51,16 @@ export class LemonTestCheckoutProvider implements CheckoutProvider {
     private readonly request: typeof fetch = fetch,
   ) {}
   ready(quote: CheckoutQuote): boolean {
-    if (!this.config || quote.trial === '60_days') return false
+    if (!this.config) return false
     try {
+      const variantId = this.variantId(quote)
       lemonCheckoutPayload({
         storeId: this.config.storeId,
-        variantId: this.config.variants[`${quote.tier}_${quote.interval}`],
+        variantId,
         intentId: quote.id,
         email: 'configuration@example.invalid',
         skipTrial: !quote.trial,
-        testMode: true,
+        testMode: this.config.environment !== 'live',
         returnUrl: this.config.returnUrl,
         expiresAt: quote.expiresAt,
       })
@@ -75,11 +78,11 @@ export class LemonTestCheckoutProvider implements CheckoutProvider {
     if (!this.config || !this.ready(input.quote)) throw new Error('billing_unavailable')
     const payload = lemonCheckoutPayload({
       storeId: this.config.storeId,
-      variantId: this.config.variants[`${input.quote.tier}_${input.quote.interval}`],
+      variantId: this.variantId(input.quote),
       intentId: input.intentId,
       email: input.email,
       skipTrial: !input.quote.trial,
-      testMode: true,
+      testMode: this.config.environment !== 'live',
       returnUrl: this.config.returnUrl,
       expiresAt: input.expiresAt,
     })
@@ -97,6 +100,8 @@ export class LemonTestCheckoutProvider implements CheckoutProvider {
     })
     if (!response.ok) throw new Error('provider_checkout_unconfirmed')
     const result = responseSchema.parse(await response.json()).data
+    if (result.attributes.test_mode !== (this.config.environment !== 'live'))
+      throw new Error('provider_scope_mismatch')
     const url = new URL(result.attributes.url)
     if (
       url.protocol !== 'https:' ||
@@ -107,5 +112,9 @@ export class LemonTestCheckoutProvider implements CheckoutProvider {
     )
       throw new Error('unsafe_checkout_url')
     return { id: result.id, url: url.href }
+  }
+  private variantId(quote: CheckoutQuote): string {
+    if (!this.config) throw new Error('billing_unavailable')
+    return this.config.variants[`${quote.tier}_${quote.interval}`]
   }
 }

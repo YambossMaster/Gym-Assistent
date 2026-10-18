@@ -13,13 +13,13 @@ it('checks the exact signed bytes and rejects missing, malformed or tampered sig
   expect(verifyLemonSignature(body, signature, '')).toBe(false)
 })
 
-it('restricts checkout to the chosen variant and suppresses trial for a returning account', () => {
+it('restricts checkout to the chosen variant and lets Lemon handle discounts', () => {
   const input = {
     storeId: '1',
     variantId: '23',
     intentId: 'opaque-intent',
     email: 'test@example.invalid',
-    skipTrial: true,
+    skipTrial: false,
     testMode: true,
     returnUrl: 'http://127.0.0.1:4177/settings/billing/return',
     expiresAt: '2026-10-14T04:20:00Z',
@@ -27,8 +27,15 @@ it('restricts checkout to the chosen variant and suppresses trial for a returnin
   const payload = lemonCheckoutPayload(input)
   expect(payload.data.attributes.checkout_options).toEqual({
     embed: true,
-    skip_trial: true,
-    discount: false,
+    skip_trial: false,
+    discount: true,
+    locale: 'zh-CN',
+    background_color: '#f7f8f5',
+    headings_color: '#18211d',
+    primary_text_color: '#18211d',
+    secondary_text_color: '#52645a',
+    button_color: '#18211d',
+    button_text_color: '#ffffff',
   })
   expect(payload.data.attributes.product_options.enabled_variants).toEqual([23])
   expect(payload.data.attributes.checkout_data.custom).toEqual({ intent_id: 'opaque-intent' })

@@ -2,26 +2,57 @@ import type { BillingSelection } from './policy.js'
 
 export type SubscriptionChange =
   | { kind: 'unchanged' }
-  | { kind: 'unavailable'; reason: 'annual_to_monthly' }
-  | { kind: 'at_period_end' }
-  | { kind: 'immediate'; creditUnusedTime: true; restartPeriod: true }
+  | { kind: 'unavailable'; reason: 'downgrade_unavailable' }
+  | { kind: 'immediate' }
 
 /** Classifies a change to a paid subscription; does not authorize or dispatch a provider mutation. */
 export function subscriptionChangePolicy(
   current: BillingSelection,
   requested: BillingSelection,
 ): SubscriptionChange {
-  if (current.interval === 'year' && requested.interval === 'month') {
-    return { kind: 'unavailable', reason: 'annual_to_monthly' }
-  }
   if (current.tier === requested.tier && current.interval === requested.interval) {
     return { kind: 'unchanged' }
   }
-  // A tier downgrade takes precedence even when the requested interval is longer.
-  if (current.tier === 'advanced' && requested.tier === 'basic') {
-    return { kind: 'at_period_end' }
+  // Lemon applies variant changes immediately; deferred paid downgrades are not offered.
+  if (
+    (current.interval === 'year' && requested.interval === 'month') ||
+    (current.tier === 'advanced' && requested.tier === 'basic')
+  ) {
+    return { kind: 'unavailable', reason: 'downgrade_unavailable' }
   }
-  return { kind: 'immediate', creditUnusedTime: true, restartPeriod: true }
+  // This classifies the requested timing only. Lemon determines the actual
+  // invoice, credit and renewal anchor; none is guaranteed by this policy.
+  return { kind: 'immediate' }
+}
+
+export type TrialSubscriptionChange =
+  | { kind: 'unchanged' }
+  | {
+      kind: 'unavailable'
+      reason: 'invalid_trial_boundary' | 'trial_ended' | 'downgrade_unavailable'
+    }
+  | { kind: 'same_subscription'; trialEndsAt: string; chargeNowMinor: 0 }
+
+/** A trial switch changes one existing subscription, keeping its original first-charge date. */
+export function trialSubscriptionChangePolicy(
+  current: BillingSelection,
+  requested: BillingSelection,
+  originalTrialEndsAt: string,
+  now: Date,
+): TrialSubscriptionChange {
+  const end = Date.parse(originalTrialEndsAt)
+  if (!Number.isFinite(end) || !Number.isFinite(+now))
+    return { kind: 'unavailable', reason: 'invalid_trial_boundary' }
+  if (+now >= end) return { kind: 'unavailable', reason: 'trial_ended' }
+  if (current.tier === requested.tier && current.interval === requested.interval)
+    return { kind: 'unchanged' }
+  // Do not dispatch an immediate Lemon variant change for a lower tier or shorter cadence.
+  if (
+    (current.tier === 'advanced' && requested.tier === 'basic') ||
+    (current.interval === 'year' && requested.interval === 'month')
+  )
+    return { kind: 'unavailable', reason: 'downgrade_unavailable' }
+  return { kind: 'same_subscription', trialEndsAt: originalTrialEndsAt, chargeNowMinor: 0 }
 }
 
 type Money = { currency: string; amountMinor: number }
@@ -81,31 +112,25 @@ export function upgradeSettlementReference(input: {
   }
 }
 
-export type FailedRenewalAccess =
-  | { kind: 'grace'; until: string }
-  | { kind: 'ended'; reason: 'provider_ended' | 'grace_elapsed' }
-  | { kind: 'reconcile'; reason: 'invalid_renewal_time' }
-
-/**
- * Only reconciled failed-renewal facts belong here. originalDueAt is the persisted invoice's due
- * time, never webhook receivedAt, subscription updatedAt or a retry's rescheduled renews_at.
- * This returns the paid source's result, not the account's final tier or a data-deletion command.
- */
-export function failedRenewalAccess(input: {
-  status: 'past_due' | 'unpaid' | 'expired'
-  originalDueAt: Date | null
-  now: Date
-}): FailedRenewalAccess {
-  if (input.status === 'unpaid' || input.status === 'expired') {
-    return { kind: 'ended', reason: 'provider_ended' }
-  }
-  const due = input.originalDueAt?.getTime() ?? NaN
-  const now = input.now.getTime()
-  const until = new Date(due + 7 * 24 * 60 * 60 * 1000)
-  if (![due, now, until.getTime()].every(Number.isSafeInteger) || due > now) {
-    return { kind: 'reconcile', reason: 'invalid_renewal_time' }
-  }
-  return now < until.getTime()
-    ? { kind: 'grace', until: until.toISOString() }
-    : { kind: 'ended', reason: 'grace_elapsed' }
+/** A recovered renewal pays the original invoice period; payment time cannot reset its anchor. */
+export function recoveredRenewalPeriod(input: {
+  originalDueAt: Date
+  scheduledEndsAt: Date
+  paidAt: Date
+  verifiedStartsAt: Date
+  verifiedEndsAt: Date
+}): { startsAt: Date; endsAt: Date } | null {
+  const { originalDueAt, scheduledEndsAt, paidAt, verifiedStartsAt, verifiedEndsAt } = input
+  if (
+    ![originalDueAt, scheduledEndsAt, paidAt, verifiedStartsAt, verifiedEndsAt].every((d) =>
+      Number.isSafeInteger(+d),
+    ) ||
+    +scheduledEndsAt <= +originalDueAt ||
+    +paidAt < +originalDueAt ||
+    +paidAt >= +scheduledEndsAt ||
+    +verifiedStartsAt !== +originalDueAt ||
+    +verifiedEndsAt !== +scheduledEndsAt
+  )
+    return null
+  return { startsAt: new Date(originalDueAt), endsAt: new Date(scheduledEndsAt) }
 }

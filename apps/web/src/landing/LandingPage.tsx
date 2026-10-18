@@ -101,9 +101,9 @@ const plans = [
     name: 'Pro',
     label: '進階',
     description: '學員上限提高到 15 名，並開放本月收支與成長軌跡。',
-    price: 'NT$119',
+    price: 'NT$115',
     period: '／月',
-    annual: '或 NT$1,190／年',
+    annual: '或 NT$1,150／年',
     features: ['最多 15 名學員', '無限場地數量', '本月收支與成長軌跡'],
     featured: true,
     prime: false
@@ -112,9 +112,9 @@ const plans = [
     name: 'Prime',
     label: '完整功能',
     description: '學員與場地不限數量，並提供收支報表、日曆整合與收支明細匯出。',
-    price: 'NT$149',
+    price: 'NT$145',
     period: '／月',
-    annual: '或 NT$1,490／年',
+    annual: '或 NT$1,450／年',
     features: [
       '無限學員數量',
       '無限場地數量',

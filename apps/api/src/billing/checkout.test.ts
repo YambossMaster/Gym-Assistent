@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import {
   CheckoutModule,
-  nextBillingDate,
   type AccountFacts,
   type CheckoutRepository,
+  type CheckoutProvider,
   type CheckoutTransaction,
   type StoredIntent,
   type StoredQuote,
@@ -66,7 +66,10 @@ function setup() {
   const repository = new MemoryCheckouts()
   const provider = {
     ready: vi.fn(() => true),
-    create: vi.fn(async () => ({ id: '1', url: 'https://example.lemonsqueezy.com/checkout/1' })),
+    create: vi.fn(async (_input: Parameters<CheckoutProvider['create']>[0]) => ({
+      id: '1',
+      url: 'https://example.lemonsqueezy.com/checkout/1',
+    })),
   }
   let now = new Date('2026-10-14T08:00:00Z')
   const module = new CheckoutModule(repository, provider, undefined, () => now)
@@ -81,13 +84,30 @@ function setup() {
 }
 const selection = { tier: 'basic', interval: 'month' }
 describe('authenticated durable checkout operations', () => {
+  it('quotes a provider-owned one-month trial with a display-only estimated payment date', async () => {
+    const { module, provider } = setup()
+    const quote = await module.quote(identity, { tier: 'basic', interval: 'year' })
+    expect(quote).toMatchObject({
+      tier: 'basic',
+      trial: 'one_month',
+      today: { amount: 0 },
+      renewal: { amount: 115000 },
+    })
+    expect(quote.chargeAt).toBe('2026-11-14T08:00:00.000Z')
+    const intent = await module.begin(identity, {
+      quoteId: quote.id,
+      termsVersion: quote.termsVersion,
+    })
+    expect(intent.status).toBe('open')
+    expect(provider.create.mock.calls[0]![0]).not.toHaveProperty('proof')
+  })
   it('rejects client-authored billing authority and unimplemented campaign codes', async () => {
     const { module } = setup()
     for (const input of [
       { ...selection, workspaceId: randomUUID() },
       { ...selection, today: 0 },
       { ...selection, trial: 60 },
-      { ...selection, code: 'DEMO60' },
+      { ...selection, code: 'bad' },
     ])
       await expect(module.quote(identity, input)).rejects.toThrow()
   })
@@ -152,7 +172,7 @@ describe('authenticated durable checkout operations', () => {
     ).rejects.toThrow('billing_unavailable')
     expect(await module.pending(identity)).toBeNull()
     provider.ready.mockReturnValue(true)
-    repository.accounts.get(identity.userId)!.facts.hasEverSubscribed = true
+    repository.accounts.get(identity.userId)!.facts.eligibilityVersion++
     await expect(
       module.begin(identity, { quoteId: q.id, termsVersion: q.termsVersion }),
     ).rejects.toThrow('quote_expired')
@@ -172,10 +192,38 @@ describe('authenticated durable checkout operations', () => {
     facts.hasPermanentAccess = true
     await expect(module.quote(identity, selection)).rejects.toThrow('permanent_access')
   })
-  it('uses Taipei calendar months and clamps month-end, including leap years', () => {
-    expect(nextBillingDate(new Date('2026-01-31T15:59:00Z'), 1)).toBe('2026-02-28T15:59:00.000Z')
-    expect(nextBillingDate(new Date('2026-01-31T16:00:00Z'), 1)).toBe('2026-02-28T16:00:00.000Z')
-    expect(nextBillingDate(new Date('2028-01-31T04:00:00Z'), 1)).toBe('2028-02-29T04:00:00.000Z')
+  it('charges a returning subscriber immediately without another provider trial', async () => {
+    const { module, repository } = setup()
+    const first = await module.quote(identity, { tier: 'basic', interval: 'year' })
+    expect(first).toMatchObject({
+      today: { amount: 0, currency: 'TWD' },
+      renewal: { amount: 115000, currency: 'TWD' },
+      trial: 'one_month',
+      chargeAt: '2026-11-14T08:00:00.000Z',
+    })
+    repository.accounts.get(identity.userId)!.facts.hasEverSubscribed = true
+    const returning = await module.quote(identity, { tier: 'basic', interval: 'year' })
+    expect(returning).toMatchObject({
+      today: { amount: 115000, currency: 'TWD' },
+      renewal: { amount: 115000, currency: 'TWD' },
+      trial: null,
+      chargeAt: '2026-10-14T08:00:00.000Z',
+    })
+  })
+  it('clamps the first trial date estimate at the end of a shorter calendar month', async () => {
+    const { module, setNow } = setup()
+    setNow('2026-01-31T08:00:00Z')
+    const quote = await module.quote(identity, selection)
+    expect(quote.chargeAt).toBe('2026-02-28T08:00:00.000Z')
+  })
+  it('expires a trial quote when verified subscription history changes before begin', async () => {
+    const { module, repository, provider } = setup()
+    const quote = await module.quote(identity, selection)
+    repository.accounts.get(identity.userId)!.facts.hasEverSubscribed = true
+    await expect(
+      module.begin(identity, { quoteId: quote.id, termsVersion: quote.termsVersion }),
+    ).rejects.toThrow('quote_expired')
+    expect(provider.create).not.toHaveBeenCalled()
   })
 })
 export { MemoryCheckouts }

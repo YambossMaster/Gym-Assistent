@@ -14,7 +14,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function renderPanel(grant: BetaGrant, plan: PlanAccess) {
+async function renderPanel(_grant: BetaGrant, plan: PlanAccess) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const host = document.createElement('div')
@@ -24,19 +24,7 @@ async function renderPanel(grant: BetaGrant, plan: PlanAccess) {
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PlanPanel
-            grant={grant}
-            plan={plan}
-            loading={false}
-            error={false}
-            onRetry={() => undefined}
-            offerCode=""
-            onOfferCodeChange={() => undefined}
-            onRedeem={(event) => event.preventDefault()}
-            redeeming={false}
-            offerError=""
-            offerSuccess=""
-          />
+          <PlanPanel plan={plan} loading={false} error={false} onRetry={() => undefined} />
         </MemoryRouter>
       </QueryClientProvider>
     )
@@ -65,17 +53,17 @@ it('keeps ordinary Beta Coaches on Free without rendering paid selection actions
     }
   )
   try {
-    expect(view.host.textContent).toContain('NT$119／月')
-    expect(view.host.textContent).toContain('NT$149／月')
+    expect(view.host.textContent).toContain('NT$115／月')
+    expect(view.host.textContent).toContain('NT$145／月')
     await act(async () => {
       view.host
         .querySelectorAll<HTMLButtonElement>('.settings-plan-interval button')[1]
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(view.host.textContent).toContain('NT$1,190／年')
-    expect(view.host.textContent).toContain('NT$1,490／年')
-    expect(view.host.textContent).toContain('約 NT$99／月')
-    expect(view.host.textContent).toContain('約 NT$124／月')
+    expect(view.host.textContent).toContain('NT$1,150／年')
+    expect(view.host.textContent).toContain('NT$1,450／年')
+    expect(view.host.textContent).toContain('約 NT$96／月')
+    expect(view.host.textContent).toContain('約 NT$121／月')
     expect(view.host.textContent).toContain('支付功能上線後開放')
     expect(view.host.textContent).not.toContain('切換至 Pro 方案')
     expect(view.host.textContent).not.toContain('切換至 Prime 方案')
@@ -99,7 +87,7 @@ it('shows permanent Prime without self-service switching', async () => {
   )
   try {
     expect(view.host.textContent).toContain('目前方案 · 永久')
-    expect(view.host.textContent).toContain('你已具有永久 Prime 方案權限')
+    expect(view.host.textContent).not.toContain('輸入優惠碼')
     expect(view.host.textContent).not.toContain('切換至 Pro 方案')
     expect(view.host.textContent).not.toContain('切換至 Prime 方案')
   } finally {

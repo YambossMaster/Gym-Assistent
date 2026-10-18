@@ -52,4 +52,15 @@ describe('production project boundary', () => {
       'Production Web must expose public Auth entry',
     )
   })
+
+  it('keeps the public checkout build and server Live switch paired', () => {
+    const config = production(`postgresql://app:password@db.${ref}.supabase.co:5432/postgres`)
+    expect(() => assertProductionBoundary(config, supabaseUrl, false, true, false)).toThrow(
+      'Production billing Web/API switch mismatch',
+    )
+    expect(() => assertProductionBoundary(config, supabaseUrl, false, false, true)).toThrow(
+      'Production billing Web/API switch mismatch',
+    )
+    expect(() => assertProductionBoundary(config, supabaseUrl, false, true, true)).not.toThrow()
+  })
 })

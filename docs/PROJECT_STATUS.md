@@ -1,6 +1,6 @@
 # Gym Assistant project status
 
-> Last verified: 2026-10-18. This is the always-read current-state dashboard. Approved scope and
+> Main-based M8-E integration worktree, updated 2026-10-18. This is the always-read current-state dashboard. Approved scope and
 > gates live in [`ROADMAP.md`](ROADMAP.md); package detail and history are loaded only through the
 > pointers below.
 
@@ -9,16 +9,47 @@
 | Field                         | Current value                                                                                                                                          |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Active phase                  | **M8 — Taiwan Web/PWA commercial Beta release**                                                                                                        |
-| Current package               | **M8-D — Open real-Coach Beta / Beta plan-access correction**                                                                                          |
-| Current gate                  | **M8-D Beta opening active; purchase-history follow-up deployed; real-Coach admission open**                                                           |
-| Active detail                 | [`status/M8/M8-D.md`](status/M8/M8-D.md)                                                                                                               |
-| Direct carry-over             | [`status/M8/M8-C.md`](status/M8/M8-C.md)                                                                                                               |
+| Current package               | **M8-E payment integration; PO accepted M8-D as Done**                                                                                                 |
+| Current gate                  | **M8-E Lemon one-month native trial and discount integration; prior R04–R13 evidence reused**                                                          |
+| Active detail                 | [`status/M8/M8-E.md`](status/M8/M8-E.md)                                                                                                               |
+| Direct carry-over             | M8-D delivered code and Production evidence remain the protected baseline                                                                              |
 | Completed baseline            | M0–M7.5, M8-A, M8-B, M8-B-Export, M8-B-Plan-Choice and M8-C internal Alpha                                                                             |
 | Released code                 | `d54658bbd438981a1afd8c43cec2777eacc85213`; [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770) passed             |
-| Worktree                      | M8-D single-lesson follow-up deployed; payment work remains separate                                                                                   |
+| Worktree                      | Isolated M8-E changes on local `origin/main` at `1965d33c`; not pushed                                                                                 |
 | Production                    | 0 real Coaches, 3 test (owner 1, manual 2); classification integrity healthy; two issued Beta codes unused; no real Coach admitted                     |
 | Production release            | [Main CI #232](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39066095770) deployed `d54658b` without new migrations and passed readiness |
-| Pending Production migrations | None after M8-D release; both single-lesson migrations read back                                                                                       |
+| Pending Production migrations | R15 billing candidate `20261017181022` remains unapplied; its separate gate is open                                                                    |
+
+## M8-E next handoff
+
+The PO's 2026-10-18 correction replaces the earlier 60-day Promotional checkout contract:
+all four paid variants have Lemon's native one-month trial, **only for an account's first paid
+subscription**. The API uses verified subscription history and `skip_trial:true` for later new
+checkouts, which charge immediately. The four configured Test Mode variants were read back as
+published native one-month trials. The checkout shows an explicitly estimated first charge date
+and plan price; Lemon's confirmed dates and invoices remain authoritative. The site has no code
+input or validation; Lemon checkout owns any applicable native Discount. The local candidate
+hold/redemption migration was removed.
+Paid-to-paid downgrade is unavailable; cancel-to-Free at the original verified end and a new
+checkout after expiry are the supported path. Existing card-free Beta grants remain valid to their
+original end; Production is unchanged and billing-off. Prior R04 zero-amount trial, R06/R07
+upgrade, R10 cancellation and R11–R13 lifecycle/security evidence carries forward; do not repeat
+those purchases or restart R01–R17. Changed quote, discount and downgrade paths have focused
+local checks. Test Mode four-variant one-month settings and one native Lemon 10% discount preview
+passed without a new subscription. Year-to-month changes are blocked. Affected-check formatting,
+script tests, API full 368/368 and Web typecheck passed; three obsolete Web full assertions were
+corrected and their focused files passed 8/8. Web full has not been repeated after correction.
+The PO requested only the current UI detail adjustments now: checkout date/amount, fee and FX
+wording, first-only trial, a separate Lemon discount section in the payment notice, expanded fee/exchange section,
+and cancellation wording in the refund paragraph. Focused API/Web checks and review previews
+are recorded in [`status/M8/M8-E.md`](status/M8/M8-E.md). **Next handoff is the next conversation:**
+after PO UI feedback, continue R02 Live merchant setup, R15 Production restore/migration, R16
+controlled Live and R17 exact-SHA release under their gates. R09 ordinary natural first
+charge/renewal still lacks a true event. No Production migration, Live transaction or remote
+delivery has occurred in this UI pass.
+Live merchant products/webhook, natural renewal, encrypted artifact restore and ≤48-hour recoverable
+point, Production migration, controlled Live purchase and exact-SHA release remain open. See
+[`status/M8/M8-E.md`](status/M8/M8-E.md) for the fixed R01–R17 register and exact next actions.
 
 ## Required context
 
@@ -64,8 +95,8 @@ draft. Production's migration sequence is unchanged. See [local handoff](M8-E-LO
 
 For every formal-product task:
 
-1. Read the active [`M8-D status`](status/M8/M8-D.md).
-2. Read `ROADMAP.md` sections **Delivery model**, **M8-D**, **Sequencing and concurrency**, and
+1. Read the active [`M8-E status`](status/M8/M8-E.md).
+2. Read `ROADMAP.md` sections **Delivery model**, **M8-E**, **Sequencing and concurrency**, and
    **Roadmap change control**.
 3. Read [`M8-C status`](status/M8/M8-C.md) only when the task touches Production, release workflows,
    Auth/legal admission, installed-PWA acceptance, or another M8-C carry-over.
@@ -127,13 +158,15 @@ startup context.
 
 ## Next handoff
 
-Continue M8-D's real-Coach Beta admission and installed-device checks from
-[`status/M8/M8-D.md`](status/M8/M8-D.md). Keep payment work and the primary checkout isolated.
+Present the revised payment flow and legal copy for inspection using the local preview described in
+[`status/M8/M8-E.md`](status/M8/M8-E.md). After explicit approval of this version for full
+verification, execute the remaining R01–R17 evidence gates in order. Keep
+Production billing off until the Live safeguards, migration, provider and release gates pass.
 
 ## Status system
 
 - Structure and update protocol: [`status/README.md`](status/README.md)
-- Active package: [`status/M8/M8-D.md`](status/M8/M8-D.md)
+- Active package: [`status/M8/M8-E.md`](status/M8/M8-E.md)
 - Demo baseline: [`status/DEMO.md`](status/DEMO.md)
 - New engineering log: [`status/log/2026-10.md`](status/log/2026-10.md)
 - Complete pre-split record:

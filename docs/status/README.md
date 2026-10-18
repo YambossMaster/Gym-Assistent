@@ -18,8 +18,9 @@ frozen package state; logs and the legacy archive are conditional evidence.
 ## Layout
 
 - `../PROJECT_STATUS.md`: current package, blockers, required context and one executable handoff.
-- `M8/M8-D.md`: active package detail. Its permanent milestone path also becomes its frozen record.
-- `M8/M8-C.md`: direct release/admission carry-over needed by M8-D.
+- `M8/M8-E.md`: active payment package detail and fixed launch register.
+- `M8/M8-D.md`: delivered baseline and conditional predecessor context.
+- `M8/M8-C.md`: conditional release/admission carry-over.
 - `DEMO.md`: Demo reference boundary and conditional reading route.
 - `log/YYYY-MM.md`: chronological engineering entries created after this split.
 - `archive/PROJECT_STATUS-legacy-through-2026-10-09.md`: complete LOG-001–LOG-462 and pre-split

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { FastifyInstance } from 'fastify'
 import { verifyLemonSignature } from './provider-boundary.js'
 import { BillingError } from './checkout.js'
+import type { BillingEnvironment } from './billing-sql.js'
 import { ReconciliationError, type BillingResource, type ResourceKind } from './resources.js'
 
 const events: Record<string, ResourceKind> = {
@@ -21,15 +22,16 @@ const events: Record<string, ResourceKind> = {
 const envelope = z.object({
   meta: z.object({
     event_name: z.string(),
-    test_mode: z.literal(true),
-    custom_data: z.object({ intent_id: z.uuid().optional() }).optional(),
+    // Lemon documents test_mode on data.attributes; meta may omit it.
+    test_mode: z.boolean().optional(),
+    custom_data: z.unknown().optional(),
   }),
   data: z.object({
     type: z.enum(['subscriptions', 'subscription-invoices']),
     id: z.string().regex(/^[1-9]\d*$/),
     attributes: z.object({
       store_id: z.number().int().positive().safe(),
-      test_mode: z.literal(true),
+      test_mode: z.boolean(),
     }),
   }),
 })
@@ -40,7 +42,11 @@ export type BillingNotification = {
   resourceId: string
   intentId: string | null
 }
-export type BillingJob = BillingNotification & { id: string; lease: string; attempts: number }
+export type BillingJob = BillingNotification & {
+  id: string
+  lease: string
+  attempts: number
+}
 export interface BillingInboxRepository {
   receive(notification: BillingNotification): Promise<void>
   claim(now: Date): Promise<BillingJob | null>
@@ -55,6 +61,7 @@ export class BillingEventInbox {
     private readonly repository: BillingInboxRepository,
     private readonly storeId: string,
     private readonly secret: string,
+    private readonly environment: BillingEnvironment = 'test',
   ) {}
   async receive(raw: Buffer, signature: string | undefined) {
     if (!this.secret) throw new BillingError(503, 'billing_unavailable')
@@ -72,16 +79,26 @@ export class BillingEventInbox {
     const event = result.data
     if (
       String(event.data.attributes.store_id) !== this.storeId ||
+      event.data.attributes.test_mode !== (this.environment === 'test') ||
+      (event.meta.test_mode !== undefined &&
+        event.meta.test_mode !== event.data.attributes.test_mode) ||
       events[event.meta.event_name] !== event.data.type
     ) {
       throw new BillingError(400, 'event_scope_mismatch')
     }
+    const custom =
+      event.meta.custom_data &&
+      typeof event.meta.custom_data === 'object' &&
+      !Array.isArray(event.meta.custom_data)
+        ? (event.meta.custom_data as Record<string, unknown>)
+        : {}
+    const intentId = z.uuid().safeParse(custom.intent_id)
     await this.repository.receive({
       digest: createHash('sha256').update(raw).digest('hex'),
       storeId: this.storeId,
       kind: event.data.type,
       resourceId: event.data.id,
-      intentId: event.meta.custom_data?.intent_id ?? null,
+      intentId: intentId.success ? intentId.data : null,
     })
   }
 }
@@ -90,6 +107,7 @@ export class BillingEventWorker {
     private readonly repository: BillingInboxRepository,
     private readonly provider: BillingResourceProvider,
     private readonly now = () => new Date(),
+    private readonly environment: BillingEnvironment = 'test',
   ) {}
   async runOne(): Promise<boolean> {
     const job = await this.repository.claim(this.now())
@@ -100,7 +118,7 @@ export class BillingEventWorker {
         resource.type !== job.kind ||
         resource.id !== job.resourceId ||
         resource.attributes.store_id !== job.storeId ||
-        !resource.attributes.test_mode
+        resource.attributes.test_mode !== (this.environment === 'test')
       ) {
         throw new ReconciliationError('provider_scope_mismatch')
       }
