@@ -265,6 +265,7 @@ jobs:
       VITE_SUPABASE_URL: ${{ vars.PRODUCTION_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
       VITE_SUPPORT_EMAIL: ${{ vars.PRODUCTION_SUPPORT_EMAIL }}
+      VITE_BILLING_LIVE: ${{ vars.PRODUCTION_BILLING_LIVE_ENABLED || 'false' }}
     steps:
       - name: Check out exact release commit
         uses: actions/checkout@v4
@@ -278,6 +279,7 @@ jobs:
           test -n "$VITE_SUPABASE_URL"
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
           test -n "$VITE_SUPPORT_EMAIL"
+          [[ "$VITE_BILLING_LIVE" == 'true' || "$VITE_BILLING_LIVE" == 'false' ]]
 
       - name: Set up Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
@@ -305,6 +307,8 @@ jobs:
           --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="$VITE_SUPABASE_PUBLISHABLE_KEY"
           --build-arg VITE_SUPPORT_EMAIL="$VITE_SUPPORT_EMAIL"
           --build-arg VITE_INTERNAL_ALPHA=false
+          --build-arg VITE_BILLING_LIVE="$VITE_BILLING_LIVE"
+          --env BILLING_LIVE_ENABLED="$VITE_BILLING_LIVE"
 
       - name: Verify production readiness
         shell: bash

@@ -105,6 +105,22 @@ test('automatic deployment validates Fly runtime secret names before deploying',
   )
 })
 
+test('manual and automatic deployments bind Web and API to the same durable Live switch', () => {
+  for (const file of ['ci.yml', 'production-migration-release.yml']) {
+    const workflow = readFileSync(new URL(`../.github/workflows/${file}`, import.meta.url), 'utf8')
+    assert.match(
+      workflow,
+      /VITE_BILLING_LIVE: \$\{\{ vars\.PRODUCTION_BILLING_LIVE_ENABLED \|\| 'false' \}\}/,
+    )
+    assert.match(workflow, /--build-arg VITE_BILLING_LIVE="\$VITE_BILLING_LIVE"/)
+    assert.match(workflow, /--env BILLING_LIVE_ENABLED="\$VITE_BILLING_LIVE"/)
+    assert.ok(
+      workflow.indexOf('node scripts/production-runtime-secrets.mjs') <
+        workflow.indexOf('--env BILLING_LIVE_ENABLED='),
+    )
+  }
+})
+
 test('readiness failures collect redacted Fly machine state and bounded logs', () => {
   const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
   const deploy = workflow.slice(workflow.indexOf('  deploy-production:'))

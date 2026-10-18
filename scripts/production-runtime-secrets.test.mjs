@@ -4,6 +4,7 @@ import { inspectProductionRuntimeSecrets } from './production-runtime-secrets.mj
 
 const contract = {
   required: ['DATABASE_URL', 'SUPABASE_URL'],
+  liveBillingRequired: ['LEMON_LIVE_API_KEY', 'LEMON_LIVE_WEBHOOK_SECRET'],
   featureRequired: [
     {
       name: 'CALENDAR_SUBSCRIPTION_SECRET',
@@ -43,4 +44,20 @@ test('accepts Fly JSON field casing and reports missing feature secrets without 
 
 test('rejects malformed Fly secret inventory instead of treating it as an empty list', () => {
   assert.throws(() => inspectProductionRuntimeSecrets({}), /invalid Fly secret inventory/i)
+})
+
+test('requires Live billing secrets only for a payment-enabled release', () => {
+  const baseline = [{ Name: 'DATABASE_URL' }, { Name: 'SUPABASE_URL' }]
+  assert.doesNotThrow(() => inspectProductionRuntimeSecrets(baseline, contract))
+  assert.throws(
+    () => inspectProductionRuntimeSecrets(baseline, contract, true),
+    /Missing Live billing runtime secrets: LEMON_LIVE_API_KEY, LEMON_LIVE_WEBHOOK_SECRET/,
+  )
+  assert.doesNotThrow(() =>
+    inspectProductionRuntimeSecrets(
+      [...baseline, { Name: 'LEMON_LIVE_API_KEY' }, { Name: 'LEMON_LIVE_WEBHOOK_SECRET' }],
+      contract,
+      true,
+    ),
+  )
 })

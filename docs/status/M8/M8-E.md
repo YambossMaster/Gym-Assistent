@@ -10,6 +10,7 @@
 
 ## 2026-10-18 接續後的實際上線進度
 
+- **R17 部署開關修復（本地，未發布）：** 發現原 Docker build 未傳 `VITE_BILLING_LIVE`，手動與自動 Fly 發布也未保持同一付款開關；即使正式資料與商家準備完成，Live Web 入口仍可能隱藏，或與 API 開關不一致而拒絕啟動。現已讓 Docker 接收 build arg，兩種發布都從 `PRODUCTION_BILLING_LIVE_ENABLED`（未設定時為 false）將同值傳給 Web build 及 Fly runtime；手動流程須與 `billing_live` 操作者選項相符。Live 發布前僅核對 Fly 的必要密鑰名稱，缺項即在 migration 前停止，不輸出值。合成 public 設定的 Web production build 成功，`deployment-config.json` 讀回 `billingLiveEnabled:true`；發布腳本／密鑰聚焦 18/18、Prettier 與 whitespace 通過。未設定 GitHub 正式變數、Fly 密鑰或實際發布；Production 仍 hard-off。正式變數、密鑰、遷移與同 SHA 部署須在各自發布授權點完成。
 - **PO 已在前一對話檢視並修正付款頁與付款須知。** 不再要求重做同一輪 UI 審閱；Live 流程及發布 Gate 仍須依各自判準驗證。
 - **R02 Live 商店：** Lemon 後台已建立未發布、未顯示於 storefront 的商品草稿 1449729（FORM Coach Desk 訂閱），含四個明確 variant：Pro 月繳 2262960／NT$115 每月、Pro 年繳 2262966／NT$1,150 每年、Prime 月繳 2262967／NT$145 每月、Prime 年繳 2262969／NT$1,450 每年。各 variant 在編輯頁設原生 1 個月試用及 SaaS business-use 稅務類別；商品詳情讀回四項價／週期、Draft 及 storefront 關閉。這是目錄草稿，不代表已發布或可收款。Live Webhooks 清單仍空；建立表單已核對 callback URL、簽章 secret 與 11 個程式接受的訂閱事件選項，未儲存新 hook；General 仍提示 Activate your store to accept live sales。操作後 Test Mode 開關已恢復開啟。
 - **R09 自然續扣：** Test Mode 診斷用日繳訂閱 2609055 的供應商已出現 billing_reason=renewal 的已付發票 8754514（NT$115，2026-10-18 08:17:47 UTC）；舊 tunnel webhook 收到 HTTP 400。該 merchant-side 訂閱不綁任何 Development Coach；Development 訂閱／發票 ledger 對這兩個 provider ID 均為 0，不能據此宣稱 app owner、權益或期間驗收通過。R09 仍部分。
