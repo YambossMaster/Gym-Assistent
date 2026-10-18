@@ -64,7 +64,7 @@ it('shows unpriced completed lessons in the existing purchase list, including a 
       )
     )
     expect(host.querySelectorAll('.purchase-ledger-row')).toHaveLength(2)
-    expect(host.textContent).toContain('尚未設定學生課堂單價')
+    expect(host.textContent).toContain('尚未設定學生課堂單價（學生基本資料）')
     expect(host.textContent).toContain('已修改（來源 $0）')
     expect(host.textContent).toContain('$600')
     expect(host.textContent).not.toContain('查看課堂')
@@ -104,6 +104,7 @@ it('reuses the purchase editor for a single lesson with one locked lesson and no
     const form = document.querySelector<HTMLFormElement>('.purchase-create-form')!
     expect(form).toBeTruthy()
     expect(document.body.textContent).toContain('編輯購課紀錄')
+    expect(form.textContent).toContain('尚未設定學生課堂單價（學生基本資料）')
     expect(form.textContent).not.toContain('幣別')
     expect(form.textContent).not.toContain('每堂參考價')
     expect(form.querySelector<HTMLInputElement>('input[type="number"]')).toBeNull()
