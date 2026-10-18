@@ -17347,8 +17347,16 @@ button:disabled {
     will-change: transform;
     transition: transform 210ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+  /* Keep the viewport-fixed dock on the viewport during iOS edge scrolling. */
+  .app-shell[data-mobile-chrome] > .bottom-nav {
+    will-change: auto;
+    transition: transform 210ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
   .app-shell[data-mobile-chrome='pinned'] .mobile-header {
     will-change: auto;
+    transition: none;
+  }
+  .app-shell[data-mobile-chrome='pinned'] > .bottom-nav {
     transition: none;
   }
   .app-shell[data-mobile-chrome='hidden'] .mobile-header {

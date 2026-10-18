@@ -8,6 +8,13 @@
 > 真實交易細節另見 [`M8-E-LOCAL-CHECKOUT.md`](../../M8-E-LOCAL-CHECKOUT.md) 和
 > [`2026-10 月工程日誌`](../log/2026-10.md)。歷史說法不得覆蓋本頁的最新決定。
 
+## 2026-10-18 Draft PR #51 與更新後 Main 的合併準備
+
+- **遠端狀態：** PO 明確授權將 `1d5e4ea744b9216bea751ce093d3530494682ce8` 推送付款分支並建立 [Draft PR #51](https://github.com/YambossMaster/Gym-Assistent/pull/51)；PR head、六個變更檔已讀回。此授權不含合併、部署、Live 密鑰或真實交易。GitHub 連接器建立 PR 回傳 403，改用同倉庫 Git 認證的 GitHub API 成功建立。
+- **Main 並行更新與衝突：** 遠端 Main 已前進至 `6c544d4a7f580354a81563090f679d66013a4a41`（PWA 修復／回歸規則），PR #51 的舊 head 在 `PROJECT_STATUS.md` 與月誌有合併衝突，且尚無 Actions run。依更新後 `docs/status/README.md`，付款工作線只維護本頁；目前已在本地合併 Main，保留 Main 的整合 router／月誌原版並移除該 PR 的共享文件改動，準備新合併提交。新提交未獲遠端推送授權。
+- **既有行為影響圖：** 變更邊界只有 API Test Mode 漏送補償 worker 的訂閱讀取迴圈與掃描日誌。直接消費者是已綁定訂閱的 provider 查詢、inbox 對帳及同訂閱權益；必須維持正常訂閱和發票恢復、後續 ID 不被舊 variant 餓死、重跑不重複授權、Live 未知 variant／其他 provider 或 owner 範圍錯誤仍 fail-closed。聚焦測試 4/4 包括跳過後續 ID 與 Live 負例；相關 entitlement／period／lifecycle 65/65、API typecheck 通過；Development 真 provider 掃描 12 訂閱／33 資源／跳過 1 舊 variant。尚缺更新後 Main 的同版 PR CI 與本次修復後隔離 webhook 漏送的端到端重驗，R12 維持部分；沒有 Production billing 行為變更或 Live 收款證據。
+- **下一步：** 完成本地合併文件與聚焦回歸、形成可審核新提交；取得對該新提交的明確推送授權後更新 PR #51 並核對 exact-SHA CI。接著完成 Test Mode 情境清單，尤其 R09 原始試用終點的正常首扣／owner-bound 自然續扣；在全情境通過前不進 R16 Live 真交易。
+
 ## 2026-10-18 Main 付款關閉發布與 R15 備份修復
 
 - **同版正式發布：** PO 明確授權 PR #45 合併及付款關閉的 Production migration／Fly 發布。PR #45 已合併 Main `0318cb4be74559cb93c91526f6b345e1da54a24a`；Main Actions #247／run 39119278228 的 `verify`、`browser-ui`、Development `migration-dry-run` 與 `production-migration-preview` 均成功。正式預覽只列 `20261017181022_billing_live_test_foundation.sql`，自動 deploy 因待 migration 跳過。手動 release run 39119563394 對同一提交完成 migration、Fly deploy 與 readiness。Production migration history 已讀回該版本；13 張付款表均存在且啟用 RLS，訂閱／發票 0；Fly release 52 機器 started、健康檢查 1/1，公開 `/api/ready`、`/`、`/login` 均 HTTP 200，`deployment-config.json` 讀回 `billingLiveEnabled:false`。Live 九個必要 Fly secret 名稱尚未設定，正式 webhook 仍空，商品仍為 Draft；正式收款仍關閉。
@@ -15,7 +22,7 @@
 - **固定 R01–R17 更新：** 目前 8 項通過（R04–R07、R10–R11、R13、R15）、R08 條件結案、8 項部分／未驗（R01–R03、R09、R12、R14、R16–R17）。R12 因本輪發現舊 Test Mode variant 可阻塞後續補償，修正須完成遠端同版交付及漏送回歸後才恢復通過；下方較早計數及 R15 未套 migration 記載均為歷史狀態，以此段及 Main 證據為準。
 - **PO 新 Test Mode 驗收順序：** 任何受控 Live 真實交易之前，先以目前付款版本完成 Test Mode 全情境核對。既有 R04–R13 真供應商證據與同版 CI 作基線，但這次完整情境回歸尚未完成；逐項核對首購／回購、四方案、原生優惠、試用與已付升級、禁止降級、取消到期、退款、webhook 漏送／重放／簽章、並發與跨 owner、失敗／pending 和自然續扣，以及桌機／手機方案→結帳→狀態→帳單。逐項記錄 provider／API／帳本／權益證據與不能即時重現的限制，未通過前不開始 R16 Live 交易。
 - **本輪 Test Mode 首購通過：** PO 親自於 Lemon Test Mode 按「開始試用」。隔離 Coach 由 `/plans` 選 Pro 年繳、確認 NT$1,150／年、1 個月試用及今天 NT$0，使用官方測試卡完成。Development intent `c94e9393-811a-4b43-afd1-eb1e555d3227` confirmed；Lemon 訂閱 `2617258` 為 `on_trial`、variant `2250108`、trial end `2026-11-18T11:23:50Z`；供應商試用發票 `8756158` 已付 TWD 0。真簽章 webhook 的兩筆 subscription 與一筆 invoice inbox 均 `done`、各一次；Development ledger 的同一訂閱／發票相符，唯一 `initial` verified period 為 Pro 年繳試用。Coach 重新讀回「Pro 方案／免費體驗中」、NT$1,150／年與 NT$0 已付款帳單；付款憑證入口實際開啟 Lemon Test Mode 訂單 `49107415`，顯示總額 NT$0、訂閱仍試用中。這證首購端到端，不證一個月後自然首扣或其他情境。
-- **本輪漏送補償問題與修正（本地未交付）：** Development 中舊 Test Mode 訂閱 `2614961` 指向不在目前四個正式 variant 的 `2250115`；原掃描在 `unknown_variant` 中斷，後續已綁定訂閱也得不到補償。修正為僅在 Test Mode 對這個已知版本錯誤保留 fail-closed、跳過該筆並繼續掃描，記錄 warning；Live 的未知版本與其他 provider／scope 錯誤仍失敗。聚焦測試 4/4、API typecheck 通過；重啟 Development 本機 API 後，真 provider 掃描回報 `scanned=12, resources=33, skipped=1`，後續新首購沒有被舊資料阻塞。此修正僅在本地分支，尚未推送／部署，須納入下一次同版 CI；故 R12 的正式補償仍不能靠本地修正宣稱交付。
+- **本輪漏送補償問題與修正（PR #51 待同版 CI）：** Development 中舊 Test Mode 訂閱 `2614961` 指向不在目前四個正式 variant 的 `2250115`；原掃描在 `unknown_variant` 中斷，後續已綁定訂閱也得不到補償。修正為僅在 Test Mode 對這個已知版本錯誤保留 fail-closed、跳過該筆並繼續掃描，記錄 warning；Live 的未知版本與其他 provider／scope 錯誤仍失敗。聚焦測試 4/4、API typecheck 通過；重啟 Development 本機 API 後，真 provider 掃描回報 `scanned=12, resources=33, skipped=1`，後續新首購沒有被舊資料阻塞。此修正已推送 Draft PR #51，但因遠端 Main 文件衝突，尚無同版 CI；本地已準備移除共享文件衝突，新提交尚未推送／部署；故 R12 的正式補償仍不能靠本地修正宣稱交付。
 - **R09 加速試用診斷作廢並還原：** 曾在隔離訂閱 `2617258` 以供應商管理 API 暫改 `trial_ends_at` 至當日，觀察到供應商 webhook 同步更新；但凍結 Contract 要求首次試用的原始終點固定，行政改期不屬可驗收的正常首扣情境，不能由此推論產品權益缺陷或自然續扣通過。已立即改回原始 `2026-11-18T11:23:50Z`，Lemon 與 Development ledger 的 `trial_ends_at`／`renews_at` 均讀回原值，只有原始已付 NT$0 發票，verified period 原終點一致。R09 正常首扣及 owner-bound 自然續扣仍未驗。
 - **暫時測試設施清理：** Test Mode webhook `142825` 已還原至原 URL；Cloudflare Quick Tunnel、僅 webhook 的本機代理、API 與 Web 測試服務已停止，3008／3009／4178 無監聽。已輸入瀏覽器的測試密碼已輪替為新隨機值，僅存 Git 忽略 manifest；測試帳戶與訂閱保留供日後 R09 原始到期核對。原 webhook URL 現不可達，下一次供應商事件前須先接回受控接收端。
 
