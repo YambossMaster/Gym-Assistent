@@ -32,6 +32,12 @@ Before planning, changing, or reporting formal-product work:
   intended outcome, the affected flows/modules, what is known, and what remains uncertain. Give the
   Product Owner a brief assessment, concrete next steps, and scope boundary. Scale this to the task;
   read-only investigation and routine commands do not need a separate approval or repeated ceremony.
+- Before every implementation or release, run the **existing-behavior impact check** in
+  `docs/VERIFICATION_WORKFLOW.md` ("Protect existing behavior on every release"). Compare with the
+  branch base and last deployed commit; map direct consumers of changed shared UI, Module rules or
+  interfaces, schema, and configuration. For each affected flow, name the behavior to preserve, a
+  decisive regression check, and any live or device evidence still missing. Record the impact map
+  and gaps in the owning Status; the size of a diff does not limit its consumer set.
 - Proactively seek external references when choosing an approach, especially for unfamiliar APIs,
   architecture, security, workflows, or UI design. Check official documentation and primary sources
   for technical facts; inspect relevant established products or patterns for interaction design.
