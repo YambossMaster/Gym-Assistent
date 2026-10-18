@@ -107,6 +107,13 @@ because a CSS or Markdown file changed. For visual changes, capture the affected
 and 390×844 preview; a single screenshot is not responsive acceptance. There is no automated
 pixel-baseline suite yet, so do not claim visual regression coverage from a DOM/unit test.
 
+When mobile App Shell CSS, fixed controls, document scrolling, or the PWA update path changes,
+check Today, Students and Calendar in the installed iPhone PWA. On each route, inspect the header
+and bottom navigation at rest, during an ordinary scroll, and after pulling at both document edges.
+The bottom navigation must stay against the visible bottom edge. Also check one route where the
+chrome auto-hides and returns. Record the installed build or served asset separately from the
+390×844 browser preview; source assertions and desktop browser emulation do not prove iPhone behavior.
+
 ## Commit and CI guardrails
 
 `npm install` activates the repository's local Git pre-commit hook. The hook checks the **staged**

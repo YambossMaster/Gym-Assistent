@@ -33,6 +33,10 @@ separate task.
 | ------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). Its local R15 evidence has not been merged into this Main baseline. Resume only in a verified payment checkout. |
 
+The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) has a
+Main-based local CSS fix and focused browser evidence. Installed iPhone PWA acceptance, package CI
+and remote delivery remain open. It does not change M8-E's payment handoff.
+
 This router records integrated facts and points to workstreams. It does not assign a global Next
 across parallel branches. Select the user-requested workstream first; then read that workstream's
 Status and the applicable Roadmap and Contract. A predecessor is background unless the chosen
