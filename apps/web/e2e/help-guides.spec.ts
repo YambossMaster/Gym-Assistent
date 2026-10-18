@@ -23,8 +23,32 @@ for (const viewport of [
       page.getByRole('heading', { name: '把 Form Coach Desk 加入手機主畫面' })
     ).toBeVisible()
     await expect(page.locator('.pwa-step-grid > li')).toHaveCount(6)
+    await expect
+      .poll(async () =>
+        page
+          .locator('.pwa-step-grid img')
+          .evaluateAll((images) =>
+            images.every(
+              (image) =>
+                image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0
+            )
+          )
+      )
+      .toBe(true)
     await page.getByRole('tab', { name: 'Android' }).click()
     await expect(page.locator('.pwa-step-grid > li')).toHaveCount(4)
+    await expect
+      .poll(async () =>
+        page
+          .locator('.pwa-step-grid img')
+          .evaluateAll((images) =>
+            images.every(
+              (image) =>
+                image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0
+            )
+          )
+      )
+      .toBe(true)
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(documentWidth).toBeLessThanOrEqual(viewport.width)

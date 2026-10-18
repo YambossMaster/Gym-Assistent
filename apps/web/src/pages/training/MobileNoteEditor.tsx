@@ -1,12 +1,5 @@
 import { IndentDecrease, IndentIncrease, ListOrdered, NotebookTabs } from 'lucide-react'
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ClipboardEvent,
-  type FormEvent,
-  type KeyboardEvent
-} from 'react'
+import { useLayoutEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { parseNote, serializeNote, type NoteBlock } from './note-format'
 
@@ -290,6 +283,25 @@ export function MobileNoteEditor({
     commit(blocks, index + 1, 0)
   }
 
+  // Use the native inputType from a mobile keyboard's beforeinput event.
+  // Persist the paragraph before the browser mutates the DOM into nodes that
+  // readBlocks would flatten into one line.
+  useLayoutEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+    const handleBeforeInput = (event: InputEvent) => {
+      if (event.isComposing || !event.cancelable) return
+      if (event.inputType === 'deleteContentBackward' && backspaceAtStart()) {
+        event.preventDefault()
+      } else if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') {
+        event.preventDefault()
+        splitBlock()
+      }
+    }
+    editor.addEventListener('beforeinput', handleBeforeInput)
+    return () => editor.removeEventListener('beforeinput', handleBeforeInput)
+  })
+
   const handleInput = () => {
     const editor = editorRef.current
     if (!editor) return
@@ -519,24 +531,6 @@ export function MobileNoteEditor({
             }
           }}
           onInput={handleInput}
-          onBeforeInput={(event: FormEvent<HTMLDivElement>) => {
-            const input = event.nativeEvent as InputEvent
-            if (
-              !input.isComposing &&
-              input.inputType === 'deleteContentBackward' &&
-              backspaceAtStart()
-            ) {
-              event.preventDefault()
-              return
-            }
-            if (
-              !input.isComposing &&
-              (input.inputType === 'insertParagraph' || input.inputType === 'insertLineBreak')
-            ) {
-              event.preventDefault()
-              splitBlock()
-            }
-          }}
           onKeyDown={(event) => {
             if (reading) {
               if (event.key === 'Enter' || event.key === ' ') {

@@ -3,6 +3,8 @@ setlocal
 cd /d "%~dp0"
 set "APP_PATH=/today"
 if /I "%~1"=="mobile" set "APP_PATH=/mobile-preview.html"
+set "WEB_PORT=5173"
+if defined GYM_ASSISTANT_WEB_PORT set "WEB_PORT=%GYM_ASSISTANT_WEB_PORT%"
 
 where npm >nul 2>nul
 if errorlevel 1 (
@@ -45,15 +47,15 @@ if errorlevel 1 (
   exit /b 1
 )
 
-call powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\wait-local-service.ps1" -Service web -TimeoutSeconds 0
+call powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\wait-local-service.ps1" -Service web -WebPort %WEB_PORT% -TimeoutSeconds 0
 if not errorlevel 1 (
-  echo Reusing the running Gym Assistant Web app at http://127.0.0.1:5173%APP_PATH%
-  start "" "http://127.0.0.1:5173%APP_PATH%"
+  echo Reusing the running Gym Assistant Web app at http://127.0.0.1:%WEB_PORT%%APP_PATH%
+  start "" "http://127.0.0.1:%WEB_PORT%%APP_PATH%"
   exit /b 0
 )
 
-echo Starting Gym Assistant at http://127.0.0.1:5173
+echo Starting Gym Assistant at http://127.0.0.1:%WEB_PORT%
 echo Keep both this window and the API window open while using the application.
-call npm run dev --workspace @gym-assistant/web -- --open %APP_PATH%
+call npm run dev --workspace @gym-assistant/web -- --port %WEB_PORT% --strictPort --open %APP_PATH%
 
 if errorlevel 1 pause

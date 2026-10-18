@@ -72,6 +72,11 @@ it('opens the PWA guide from Help and keeps the guide state in the URL', async (
   expect(host.textContent).not.toContain('加入清單')
   expect(host.textContent).not.toContain('完整離線')
   expect(host.querySelectorAll('.pwa-step-grid li')).toHaveLength(6)
+  expect(
+    [...host.querySelectorAll<HTMLImageElement>('.pwa-step-art img')].map((image) =>
+      image.getAttribute('src')
+    )
+  ).toEqual(Array.from({ length: 6 }, (_, index) => `/help/pwa-ios-step-${index + 1}.png`))
 })
 
 it('switches to the current Android install flow and returns to Help', async () => {
@@ -82,6 +87,11 @@ it('switches to the current Android install flow and returns to Help', async () 
   expect(host.textContent).toContain('打開 Chrome 選單')
   expect(host.textContent).toContain('安裝應用程式')
   expect(host.querySelectorAll('.pwa-step-grid li')).toHaveLength(4)
+  expect(
+    [...host.querySelectorAll<HTMLImageElement>('.pwa-step-art img')].map((image) =>
+      image.getAttribute('src')
+    )
+  ).toEqual(Array.from({ length: 4 }, (_, index) => `/help/pwa-android-step-${index + 1}.png`))
 
   await click('返回使用教學')
   expect(host.querySelector('[data-location]')?.textContent).toBe('/settings?category=feedback')

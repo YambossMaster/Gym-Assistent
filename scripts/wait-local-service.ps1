@@ -4,12 +4,14 @@ param(
   [string]$Service,
   [ValidateRange(0, 120)]
   [int]$TimeoutSeconds = 0,
+  [ValidateRange(1, 65535)]
+  [int]$WebPort = 5173,
   [switch]$RequireDatabase
 )
 
 $url = if ($Service -eq 'api') {
   if ($RequireDatabase) { 'http://127.0.0.1:3000/ready' } else { 'http://127.0.0.1:3000/health' }
-} else { 'http://127.0.0.1:5173/' }
+} else { "http://127.0.0.1:$WebPort/" }
 $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
 
 do {
