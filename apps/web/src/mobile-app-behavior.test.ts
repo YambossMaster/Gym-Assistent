@@ -53,6 +53,15 @@ describe('mobile app shell behavior', () => {
     expect(styles).toMatch(/\.compact-calendar-page\s*\{[^}]*flex:\s*1 1 auto;[^}]*height:\s*auto/s)
   })
 
+  it('keeps the fixed mobile navigation out of a permanent transform layer', () => {
+    expect(styles).toMatch(
+      /\.app-shell\[data-mobile-chrome\]\s*>\s*\.bottom-nav\s*\{[^}]*will-change:\s*auto/s
+    )
+    expect(styles).toMatch(
+      /\.app-shell\[data-mobile-chrome='pinned'\]\s*>\s*\.bottom-nav\s*\{[^}]*transition:\s*none/s
+    )
+  })
+
   it('turns the focused Coach note into one internally scrolling writing surface', () => {
     expect(styles).toMatch(
       /html\.is-session-note-focused\s+\.app-shell\s*>\s*\.main-content\s*\{[^}]*position:\s*fixed;[^}]*top:\s*var\(--session-note-viewport-top,\s*0px\);[^}]*height:\s*var\(--session-note-viewport-height,\s*100dvh\);[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*overflow:\s*hidden/s

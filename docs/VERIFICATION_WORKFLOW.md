@@ -16,6 +16,34 @@ only when a later change could affect its result, its evidence is missing or inc
 required package gate calls for a fresh run. A completed milestone stays closed unless a later
 approved package explicitly corrects it.
 
+## Protect existing behavior on every release
+
+Before changing a shared surface, record the intended files and compare the candidate with both
+its branch base and the last deployed commit. Identify every direct consumer of the changed
+component, selector, Module interface, rule, schema object or configuration value. For each
+affected user flow, record the behavior that must remain true, one representative success case,
+one consequential failure or boundary case, and the smallest check that can detect a regression.
+Include a known-good peer route when changing shared presentation. If a consumer cannot be tested,
+record the gap and keep its release acceptance open; a passing typecheck is not visual or business
+behavior evidence.
+
+Use this impact map to choose checks, independent of how small the diff looks:
+
+| Changed boundary                                    | Required regression reach                                                                                                                                                |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Shared CSS, App Shell or design token               | Inspect all matched routes and states at affected widths; include a browser check of computed layout and installed PWA when touch, viewport or fixed chrome is involved. |
+| Route-owned Web component or interaction            | Exercise the changed action, its loading/error/empty result and the adjacent route or control that shares its primitive.                                                 |
+| API Module, authorization or entitlement            | Check owner and non-owner paths, denied writes, contested edits and the corresponding Web projection.                                                                    |
+| Persistence, migration or background worker         | Check read/write round-trip, replay or retry, concurrency where applicable, migration history and restore boundary.                                                      |
+| Auth, PWA update, build or deployment configuration | Check entry, refresh and recovery paths, served asset/build identity, exact-SHA CI and Production readiness.                                                             |
+
+Keep the change isolated from unrelated work. Add a regression check at the seam that actually
+failed, then run the affected flows and the mandatory CI jobs for the exact candidate commit.
+After deployment, read back the same commit and test the real surface that exposed the bug. If a
+required flow fails, stop release or roll back the scoped commit; do not quietly broaden the patch
+or treat unrelated green tests as proof. Record the impact map, evidence, gaps and rollback point
+in the active Status so the next release does not rediscover them.
+
 For a newly added Coach choice or date field, compare the component and computed type roles against
 [`WEB_CONTROL_STANDARDS.md`](WEB_CONTROL_STANDARDS.md). Check the open choice/calendar state, not
 only the closed control. When the control is entitlement-gated, use an authorized unlocked preview
@@ -106,6 +134,13 @@ A release gate may require more than this table. Do not run migration or securit
 because a CSS or Markdown file changed. For visual changes, capture the affected desktop widths
 and 390×844 preview; a single screenshot is not responsive acceptance. There is no automated
 pixel-baseline suite yet, so do not claim visual regression coverage from a DOM/unit test.
+
+When mobile App Shell CSS, fixed controls, document scrolling, or the PWA update path changes,
+check Today, Students and Calendar in the installed iPhone PWA. On each route, inspect the header
+and bottom navigation at rest, during an ordinary scroll, and after pulling at both document edges.
+The bottom navigation must stay against the visible bottom edge. Also check one route where the
+chrome auto-hides and returns. Record the installed build or served asset separately from the
+390×844 browser preview; source assertions and desktop browser emulation do not prove iPhone behavior.
 
 ## Commit and CI guardrails
 
