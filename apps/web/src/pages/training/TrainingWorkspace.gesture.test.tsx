@@ -264,13 +264,28 @@ it('leaves note focus mode immediately while saving in the background', async ()
   const block = editor.querySelector<HTMLElement>('.mobile-note-block')!
   block.textContent = '今天動作品質穩定'
   await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
+  const range = document.createRange()
+  range.selectNodeContents(block)
+  range.collapse(false)
+  const selection = window.getSelection()!
+  selection.removeAllRanges()
+  selection.addRange(range)
+  await act(async () =>
+    editor.dispatchEvent(
+      new InputEvent('beforeinput', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertParagraph'
+      })
+    )
+  )
 
   await act(async () => window.dispatchEvent(new Event('session-note-focus-exit')))
 
   expect(calls.save).toHaveBeenCalledWith(
     expect.objectContaining({
       sessionId: 'gesture-session',
-      payload: expect.objectContaining({ privateNote: '今天動作品質穩定' })
+      payload: expect.objectContaining({ privateNote: '今天動作品質穩定\n' })
     })
   )
   expect(host.querySelector('.session-workspace')?.classList.contains('is-note-focused')).toBe(
