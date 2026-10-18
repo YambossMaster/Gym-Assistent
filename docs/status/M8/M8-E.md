@@ -8,6 +8,11 @@
 > 真實交易細節另見 [`M8-E-LOCAL-CHECKOUT.md`](../../M8-E-LOCAL-CHECKOUT.md) 和
 > [`2026-10 月工程日誌`](../log/2026-10.md)。歷史說法不得覆蓋本頁的最新決定。
 
+## 2026-10-18 Main 付款關閉發布與 R15 備份修復
+
+- **同版正式發布：** PO 明確授權 PR #45 合併及付款關閉的 Production migration／Fly 發布。PR #45 已合併 Main `0318cb4be74559cb93c91526f6b345e1da54a24a`；Main Actions #247／run 39119278228 的 `verify`、`browser-ui`、Development `migration-dry-run` 與 `production-migration-preview` 均成功。正式預覽只列 `20261017181022_billing_live_test_foundation.sql`，自動 deploy 因待 migration 跳過。手動 release run 39119563394 對同一提交完成 migration、Fly deploy 與 readiness。Production migration history 已讀回該版本；13 張付款表均存在且啟用 RLS，訂閱／發票 0；Fly release 52 機器 started、健康檢查 1/1，公開 `/api/ready`、`/`、`/login` 均 HTTP 200，`deployment-config.json` 讀回 `billingLiveEnabled:false`。Live 九個必要 Fly secret 名稱尚未設定，正式 webhook 仍空，商品仍為 Draft；正式收款仍關閉。
+- **新加密備份／隔離還原：** PO 另明確授權將正式全庫加密上傳七天 GitHub artifact、實際下載並在斷網 runner 還原。run 39119776842 的 artifact `12133737710`（7 天保留）已完成正式匯出、AES256 加密、上傳及下載；SHA 與 ≤48 小時恢復點檢查通過，斷網容器還原基線成功。但 R15 合成付費 fixture 的 CSV 匯出用了伺服器端 `COPY TO '/tmp/...'`，本機 `postgres` 缺 `pg_write_server_files` 而失敗；付費六表往返 Gate **未通過**。目前只把這兩處改為 psql 客戶端 `\copy`，不提升資料庫角色權限、不修改正式資料；待同版 workflow 經聚焦檢查及遠端交付後重跑此已授權的備份流程。失敗 run 的 runner 明文與 passphrase 清理步驟成功。
+
 ## 2026-10-18 PR #45 與同版 CI
 
 - **遠端交付：** PO 明確允許推送付款分支並建立 PR；Draft PR #45 以 `763eeff` 對 Main `3faee94` 建立，未合併或部署。首輪 Actions #244／run 39118267500：`verify`（格式、型別、完整測試及 production build）成功；`migration-dry-run` 因 Development 已有 `20261017164829_billing_refund_case_decision`，本分支的已知遠端 migration 清單漏列而失敗；`browser-ui` 因測試仍期待舊版頁名、年費與不可選方案而失敗。Production migration preview 與 deploy 在 PR 上依設計跳過。

@@ -206,7 +206,7 @@ jobs:
               "environment='test' and store_id='r15-restore-fixture' and subscription_id='r15-paid-subscription'")
             for index in "${!tables[@]}"; do
               docker exec "$container" psql -U postgres -d postgres --variable ON_ERROR_STOP=1 \
-                --command "copy (select * from app_private.${tables[$index]} where ${filters[$index]}) to '/tmp/r15-${tables[$index]}.csv' with (format csv, header true)"
+                --command "\copy (select * from app_private.${tables[$index]} where ${filters[$index]}) to '/tmp/r15-${tables[$index]}.csv' with (format csv, header true)"
             done
             docker exec "$container" psql -U postgres -d postgres --variable ON_ERROR_STOP=1 \
               --command "delete from app_private.billing_checkout_account where workspace_id='$fixture_workspace' and environment='test'"
@@ -214,7 +214,7 @@ jobs:
             test "$fixture_remaining" -eq 0
             restore_args=()
             for table in "${tables[@]}"; do
-              restore_args+=(--command "copy app_private.$table from '/tmp/r15-$table.csv' with (format csv, header true)")
+              restore_args+=(--command "\copy app_private.$table from '/tmp/r15-$table.csv' with (format csv, header true)")
             done
             docker exec "$container" psql -U postgres -d postgres --single-transaction \
               --variable ON_ERROR_STOP=1 "${restore_args[@]}"
