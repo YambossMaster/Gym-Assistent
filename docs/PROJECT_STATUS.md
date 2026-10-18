@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-18 against remote `origin/main` at
-> `26c9cca6cf45af1659a7fce3f23fc11bd31b7deb` and the Product Owner's M8-D completion decision.
+> `20d745d2e07b5ec6dd2b92dad23a1d14cb7e7cb0` and the Product Owner's M8-D completion decision.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -39,7 +39,7 @@ passed and deployed the same commit with readiness; public CSS contains the fix.
 tested the installed iPhone PWA, provided the 19:18 recording, and accepted the correction as fixed.
 The cross-cutting release check is now routed from `AGENTS.md`.
 
-The [mobile PWA Coach Note and Help correction](status/M8/M8-MOBILE-PWA-NOTES-HELP.md) merged as PR #52 / `26c9cca6`. [Main CI #262](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39128029725) passed and deployed the same commit with readiness. Public API and HTML routes, plus new guide images, returned HTTP 200. Installed-iPhone acceptance of the three reported issues remains pending.
+The [mobile PWA Coach Note and Help correction](status/M8/M8-MOBILE-PWA-NOTES-HELP.md) merged as PR #52 / `26c9cca6`. [Main CI #262](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39128029725) passed and deployed the same commit with readiness. Public API and HTML routes, plus new guide images, returned HTTP 200. The Product Owner confirmed the installed mobile PWA looked correct after deployment; this correction is accepted.
 
 This router records integrated facts and points to workstreams. It does not assign a global Next
 across parallel branches. Select the user-requested workstream first; then read that workstream's
