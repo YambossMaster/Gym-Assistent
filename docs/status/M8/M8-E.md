@@ -1,6 +1,6 @@
 # M8-E 支付上線 Status — 當前規則與決定性驗證
 
-> 更新：2026-10-18（台北）。這是支付工作目前唯一的執行清單；R01–R17 的範圍仍由
+> 更新：2026-10-19（台北）。這是支付工作目前唯一的執行清單；R01–R17 的範圍仍由
 > [`ROADMAP.md`](../../ROADMAP.md) 與 [`M8-E-IMPLEMENTATION-CONTRACT.md`](../../M8-E-IMPLEMENTATION-CONTRACT.md)
 > 管理。PO 已於 2026-10-17 要求繼續逐項解決；以下記錄恢復後的聚焦證據。
 > 改寫前的 500 行逐次紀錄存於
@@ -8,7 +8,14 @@
 > 真實交易細節另見 [`M8-E-LOCAL-CHECKOUT.md`](../../M8-E-LOCAL-CHECKOUT.md) 和
 > [`2026-10 月工程日誌`](../log/2026-10.md)。歷史說法不得覆蓋本頁的最新決定。
 
-## 2026-10-18 PO 上線時序決定與目前總清單
+## 2026-10-19 PO 上線時序決定與目前總清單
+
+### 2026-10-19 00:12 R02／R16 首筆 Live 試用已同步，取消續訂延後驗證
+
+- **授權與發布：** PO 授權修復既有交易的不同步問題，暫緩取消續訂以保留後續取消流程驗證。[Draft PR #58](https://github.com/YambossMaster/Gym-Assistent/pull/58) 的 `ea0b8a9` 經 [PR CI #273](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39142408385) 通過後，依授權 squash merge 為 Main `d3e215bc5b70c7d0d8e3c6aeca2f4bb0463fcbee`。[Main CI #274](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39142971519) 的 verify、browser-ui、Development migration、Production migration history 與同版 Fly deploy／readiness 全成功；Web／Development migration 因無相關變更按規則跳過實作步驟，Production 無待套 migration。獨立 `/api/ready`、`/`、`/login`、`/deployment-config.json` 皆 HTTP 200；錯誤 webhook 簽章仍回 401。
+- **原事件補送及對帳：** Lemon Live 原 `subscription_created`、`subscription_updated`、`subscription_payment_success` 從有效登入會話補送後，Fly webhook 回 HTTP 200。補送第一筆後本站從零帳本綁定原 intent `a399cebe-f9eb-4d0d-9a8c-f5eef412f0b2`、同一隔離 workspace `38fb2147-a922-42ec-a11b-402892d7fd1a` 與供應商訂閱 `2617697`；worker 的已綁定訂閱補償亦取得後續資源。最後 Live inbox 5 筆全部 `done`／各 1 次／無 dead，訂閱、發票、已驗證期間各唯一 1 筆；invoice `8757694` 為 `paid` TWD 0，期間 `initial/trial/basic/year` 至 2026-11-18，intent `confirmed`。付款成功原事件再次送達後，唯一性仍維持。
+- **真使用者路徑：** 隔離 Coach 重新登入 Production 原 `/settings/checkout/status`，看到「Pro 訂閱已啟用」與試用開始；方案與帳單頁顯示「免費體驗中 年繳方案」、NT$1,150／年、2026/11/18 首次扣款，以及 `8757694 已付款 NT$0`。沒有第二次結帳或卡片輸入。
+- **限制與下一步：** 這證明首筆 NT$0 Live 試用、真簽章 webhook、owner 綁定、帳本及使用者頁面恢復，不證正額實扣／結算、取消續訂或自然首扣。PO 明確要求先修完同步與其他付款問題，故目前**未取消續訂**，2026-11-18 的未來續扣仍可能發生。R01／R03／R09／R14／R16／R17 的未完成判準仍需逐項處理，固定 9 通過、R08 條件結案、7 部分／未驗的總計不因這次局部成功改變。接著檢查目前可做的 R01/R14 使用者路徑與 R17 首筆觀察；保留取消流程作後續明確驗證，且須在到期前完成或先保護訂閱。先前 Lemon 舊分頁過期時兩次 `Resend` 點擊未到達本站，重新載入有效登入會話後才成功；此為操作會話問題，沒有新增 Roadmap 項目。
 
 ### 2026-10-18 23:31 R02／R16 正式首筆試用的 webhook 500 事故（修復候選未發布）
 
