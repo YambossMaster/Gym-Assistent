@@ -18,73 +18,51 @@ const DEFAULT_SUPPORT_EMAIL = 'support@formcoachdesk.com'
 type TutorialStep = {
   title: string
   detail: string
-  column: 0 | 1
-  row: 0 | 1 | 2
 }
 
 const iosSteps: TutorialStep[] = [
   {
     title: '用 Safari 開啟網站',
-    detail: '前往 formcoachdesk.com，並先登入你的帳號。',
-    column: 0,
-    row: 0
+    detail: '前往 formcoachdesk.com，並先登入你的帳號。'
   },
   {
     title: '點選「分享」',
-    detail: '在 Safari 工具列找到方框向上的分享圖示。',
-    column: 1,
-    row: 0
+    detail: '在 Safari 工具列找到方框向上的分享圖示。'
   },
   {
     title: '選擇「加入主畫面」',
-    detail: '在分享選單中向下滑，點選「加入主畫面」。',
-    column: 0,
-    row: 1
+    detail: '在分享選單中向下滑，點選「加入主畫面」。'
   },
   {
     title: '開啟「打開為網頁 App」',
-    detail: '確認這個選項已開啟，再繼續下一步。',
-    column: 1,
-    row: 1
+    detail: '確認這個選項已開啟，再繼續下一步。'
   },
   {
     title: '點選「新增」',
-    detail: '點選右上角的「新增」，完成安裝。',
-    column: 0,
-    row: 2
+    detail: '點選右上角的「新增」，完成安裝。'
   },
   {
     title: '從主畫面開啟',
-    detail: '回到手機主畫面，點選 Form Coach Desk 圖示。',
-    column: 1,
-    row: 2
+    detail: '回到手機主畫面，點選 Form Coach Desk 圖示。'
   }
 ]
 
 const androidSteps: TutorialStep[] = [
   {
     title: '用 Chrome 開啟網站',
-    detail: '前往 formcoachdesk.com，並先登入你的帳號。',
-    column: 0,
-    row: 0
+    detail: '前往 formcoachdesk.com，並先登入你的帳號。'
   },
   {
     title: '打開 Chrome 選單',
-    detail: '點選網址列右側的三個點。',
-    column: 1,
-    row: 0
+    detail: '點選網址列右側的三個點。'
   },
   {
     title: '選擇安裝',
-    detail: '點選「安裝應用程式」或「新增至主畫面」，再依畫面確認。',
-    column: 0,
-    row: 1
+    detail: '點選「安裝應用程式」或「新增至主畫面」，再依畫面確認。'
   },
   {
     title: '從主畫面開啟',
-    detail: '回到手機主畫面，點選 Form Coach Desk 圖示。',
-    column: 1,
-    row: 1
+    detail: '回到手機主畫面，點選 Form Coach Desk 圖示。'
   }
 ]
 
@@ -245,12 +223,14 @@ function PwaGuide({ onBack }: { onBack: () => void }) {
         <ol className="pwa-step-grid" data-platform={platform}>
           {steps.map((step, index) => (
             <li key={step.title}>
-              <div
-                className={`pwa-step-art pwa-step-art--${platform}`}
-                data-column={step.column}
-                data-row={step.row}
-                aria-hidden="true"
-              />
+              <div className="pwa-step-art" aria-hidden="true">
+                <img
+                  src={`/help/pwa-${platform}-step-${index + 1}.png`}
+                  width={platform === 'ios' ? 656 : 735}
+                  height={platform === 'ios' ? (index >= 4 ? 399 : 400) : 535}
+                  alt=""
+                />
+              </div>
               <div className="pwa-step-copy">
                 <span className="pwa-step-number">{String(index + 1).padStart(2, '0')}</span>
                 <p>

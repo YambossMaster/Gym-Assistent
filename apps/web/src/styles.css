@@ -8143,6 +8143,20 @@ body.is-reordering-exercise * {
   font-weight: 700;
 }
 
+.session-bottom .session-lifecycle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.session-bottom .session-lifecycle-button svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
 .session-bottom .session-lifecycle-button.is-processing:disabled {
   cursor: wait;
   opacity: 0.62;
@@ -15486,33 +15500,11 @@ button:disabled {
 .pwa-step-art {
   width: 100%;
   border-bottom: 1px solid #e2e3dd;
-  background-repeat: no-repeat;
 }
-.pwa-step-art--ios {
-  aspect-ratio: 1.68;
-  background-image: url('/help/pwa-install-ios-v2.png');
-  background-size: 200% 300%;
-}
-.pwa-step-art--android {
-  aspect-ratio: 1.374;
-  background-image: url('/help/pwa-install-android.png');
-  background-size: 200% 200%;
-}
-.pwa-step-art[data-column='0'] {
-  background-position-x: left;
-}
-.pwa-step-art[data-column='1'] {
-  background-position-x: right;
-}
-.pwa-step-art[data-row='0'] {
-  background-position-y: top;
-}
-.pwa-step-art--ios[data-row='1'] {
-  background-position-y: center;
-}
-.pwa-step-art--ios[data-row='2'],
-.pwa-step-art--android[data-row='1'] {
-  background-position-y: bottom;
+.pwa-step-art img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .pwa-step-copy {
   min-height: 106px;

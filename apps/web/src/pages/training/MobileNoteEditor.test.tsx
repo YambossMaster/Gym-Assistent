@@ -10,6 +10,203 @@ describe('mobile note editor', () => {
     localStorage.removeItem('gym-assistant.note-import-selection')
   })
 
+  it('creates a saved paragraph from the native iOS beforeinput event', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const values: string[] = []
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value="第一行"
+          onChange={(value) => values.push(value)}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+          focused
+        />
+      )
+    )
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    const block = host.querySelector<HTMLElement>('.mobile-note-block')!
+    const range = document.createRange()
+    range.selectNodeContents(block)
+    range.collapse(false)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+    await act(async () =>
+      editor.dispatchEvent(
+        new InputEvent('beforeinput', {
+          bubbles: true,
+          cancelable: true,
+          inputType: 'insertParagraph'
+        })
+      )
+    )
+    expect(values.at(-1)).toBe('第一行\n')
+    expect(host.querySelectorAll('.mobile-note-block')).toHaveLength(2)
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
+  it('keeps mid-line and repeated iOS returns editable after a controlled readback', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    let saved = ''
+    function Example({ initial = '前段後段' }: { initial?: string }) {
+      const [value, setValue] = useState(initial)
+      return (
+        <MobileNoteEditor
+          value={value}
+          onChange={(next) => {
+            saved = next
+            setValue(next)
+          }}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+          focused
+        />
+      )
+    }
+    const blocks = () => host.querySelectorAll<HTMLElement>('.mobile-note-block')
+    const editor = () => host.querySelector<HTMLElement>('.mobile-note-content')!
+    const placeCaret = (index: number, offset: number) => {
+      const range = document.createRange()
+      range.setStart(blocks()[index]!.firstChild!, offset)
+      range.collapse(true)
+      const selection = window.getSelection()!
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }
+    const returnKey = async (inputType: string) => {
+      await act(async () =>
+        editor().dispatchEvent(
+          new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType })
+        )
+      )
+    }
+
+    await act(async () => root.render(<Example />))
+    placeCaret(0, 2)
+    await returnKey('insertParagraph')
+    expect(saved).toBe('前段\n後段')
+    placeCaret(1, 2)
+    await returnKey('insertLineBreak')
+    expect(saved).toBe('前段\n後段\n')
+    blocks()[2]!.textContent = '續寫'
+    await act(async () => editor().dispatchEvent(new InputEvent('input', { bubbles: true })))
+    expect(saved).toBe('前段\n後段\n續寫')
+    await act(async () => root.unmount())
+    const reopened = createRoot(host)
+    await act(async () => reopened.render(<Example initial={saved} />))
+    expect([...blocks()].map((block) => block.textContent)).toEqual(['前段', '後段', '續寫'])
+    await act(async () => reopened.unmount())
+    host.remove()
+  })
+
+  it('rejects a Return past the note limit without changing the saved value', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const onChange = vi.fn()
+    const onLimit = vi.fn()
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value={'字'.repeat(5000)}
+          onChange={onChange}
+          onFocusChange={() => {}}
+          onLimit={onLimit}
+          importItems={[]}
+          focused
+        />
+      )
+    )
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    const block = host.querySelector<HTMLElement>('.mobile-note-block')!
+    const range = document.createRange()
+    range.selectNodeContents(block)
+    range.collapse(false)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+    await act(async () =>
+      editor.dispatchEvent(
+        new InputEvent('beforeinput', {
+          bubbles: true,
+          cancelable: true,
+          inputType: 'insertParagraph'
+        })
+      )
+    )
+    expect(onLimit).toHaveBeenCalledOnce()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(host.querySelectorAll('.mobile-note-block')).toHaveLength(1)
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
+  it('pastes multiple lines into the caret position without losing the following text', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    })
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    let saved = ''
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value="前後"
+          onChange={(value) => (saved = value)}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+          focused
+        />
+      )
+    )
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    const block = host.querySelector<HTMLElement>('.mobile-note-block')!
+    const range = document.createRange()
+    range.setStart(block.firstChild!, 1)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+    const paste = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(paste, 'clipboardData', {
+      value: { getData: () => '甲\n乙' }
+    })
+    await act(async () => editor.dispatchEvent(paste))
+    expect(saved).toBe('前甲\n乙後')
+    expect(
+      [...host.querySelectorAll('.mobile-note-block')].map((node) => node.textContent)
+    ).toEqual(['前甲', '乙後'])
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
   it('contains empty and boundary drags while preserving real note scrolling', () => {
     expect(
       shouldContainNoteTouch({
