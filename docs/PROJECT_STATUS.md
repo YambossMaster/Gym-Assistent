@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-18 against remote `origin/main` at
-> `e7a20c7421facc8f5c678f50eb8f44b406f675f9` and the Product Owner's M8-D completion decision.
+> `a38ca6fc2bad2cd92824be64c59bc553b7869fda` and the Product Owner's M8-D completion decision.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -29,13 +29,16 @@ separate task.
 
 ## Active workstreams
 
-| Workstream   | Owns                                                                         | State and entry                                                                                                                                       |
-| ------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). Its local R15 evidence has not been merged into this Main baseline. Resume only in a verified payment checkout. |
+| Workstream   | Owns                                                                         | State and entry                                                                                                                                           |
+| ------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). The foundation migration and code are deployed; Live payments remain hard-off and their separate gates remain open. |
 
 The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) has a
-Main-based local CSS fix and focused browser evidence. Installed iPhone PWA acceptance, package CI
-and remote delivery remain open. It does not change M8-E's payment handoff.
+Main-based local CSS fix and focused browser evidence. The Product Owner authorized full
+verification and deployment. [Main CI #249](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39120996344)
+deployed `a38ca6f` after the separately authorized M8-E foundation migration release; its
+Production preview found no pending migrations. Installed iPhone PWA acceptance, this correction's
+exact-SHA CI and remote delivery remain open.
 
 This router records integrated facts and points to workstreams. It does not assign a global Next
 across parallel branches. Select the user-requested workstream first; then read that workstream's

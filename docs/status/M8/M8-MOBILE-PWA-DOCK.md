@@ -1,6 +1,6 @@
 # Mobile PWA bottom navigation regression — local correction
 
-> Owner: isolated `mobile-bottom-nav-stability` worktree, based on Main `3faee94`.
+> Owner: isolated `mobile-bottom-nav-stability` worktree, rebased onto Main `a38ca6f`.
 > This correction is separate from M8-E payment work and does not reopen the completed M8-D package.
 
 ## User impact and evidence
@@ -33,13 +33,22 @@ after the recording and is excluded as its cause.
   `position: fixed`, `will-change: auto`, `transition: none` on Today; its bottom remains at 844px
   before and after 500px of document scrolling. This proves the desktop browser geometry, not iOS
   PWA edge-bounce behavior.
-- Add the Today/Students/Calendar installed-PWA edge-scroll check to the verification workflow.
+- Add a Playwright real-stylesheet geometry check for Today, Students and Calendar: 3/3 pass.
+  Add their installed-PWA edge-scroll check and a general change-impact protocol to the
+  verification workflow.
+- On rebased Main `0318cb4`, root `npm run check` passes 38 script tests, API 372/372, Web
+  416/416 and both typechecks. `npm run build` passes. The full browser run passes 7/7, including
+  three new dock geometry cases. These checks do not include a physical iPhone.
 
 ## Current state and next action
 
-Local correction is ready for Product Owner review. Installed iPhone PWA acceptance, complete
-package CI and remote delivery are unverified. Before any push, integrate only these scoped files
-on the then-current Main, inspect the exact diff and run the authorized gate. After deployment,
+The Product Owner explicitly authorized full verification and deployment on 2026-10-18. The local
+correction is on current Main and local full checks have passed. Main `0318cb4` merged M8-E
+payment code after the recording. A separately authorized release run 39119563394 applied its
+foundation migration and deployed that exact commit. Main `a38ca6f` later changed only the
+isolated backup workflow and payment Status; [Main CI #249](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39120996344)
+found no pending Production migrations and deployed `a38ca6f` with readiness. This correction's
+exact-SHA remote CI and installed iPhone PWA acceptance are still unverified. After deployment,
 reload/reopen the installed PWA and test Today, Students and Calendar at both scroll edges; confirm
 the visible bottom gap remains zero and the intended Students auto-hide still works. If it still
 drifts, capture the installed build ID and a new short recording before changing the scroll owner.
