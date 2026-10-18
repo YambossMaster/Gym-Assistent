@@ -1,4 +1,4 @@
-# Mobile PWA bottom navigation regression — deployed, device acceptance pending
+# Mobile PWA bottom navigation regression — deployed, device follow-up received
 
 > Owner: Main `d4b9a49af18cba04ca6d706c572c05e9469e99d0` via PR #47.
 > This correction is separate from M8-E payment work and does not reopen the completed M8-D package.
@@ -52,8 +52,11 @@ asset `index-CR4K_Dcw.css` contains both the mobile dock `will-change:auto` and 
 `local-1792321674482`, so the public build ID alone does not prove the Git SHA; the release
 workflow's same-SHA deploy and served CSS establish the current release evidence.
 
-Installed iPhone PWA edge-bounce acceptance is still open. Reload/reopen the installed PWA and
-test Today, Students and Calendar at both scroll edges; confirm the visible bottom gap remains
-zero and the intended Students auto-hide still works. If it still drifts, capture the installed
-build ID and a new short recording before changing the scroll owner. Aligning public build IDs
-with deployment SHA is a separate release-traceability improvement, not part of this CSS fix.
+The Product Owner's 2026-10-18 follow-up says the installed PWA appears fixed. The supplied 19:18
+recording shows the bottom dock aligned with the visible edge while navigating through Finance,
+Exercise Library, Calendar and Today. It does not separately demonstrate every route at both
+elastic-scroll edges or the Students auto-hide transition; keep those cases in the ongoing PWA
+release check rather than claiming they were shown in this recording. The incident has no further
+reported symptom. The general existing-behavior impact check now has an entry in `AGENTS.md`, with
+its detailed matrix in `docs/VERIFICATION_WORKFLOW.md`. Aligning public build IDs with deployment
+SHA is a separate release-traceability improvement.
