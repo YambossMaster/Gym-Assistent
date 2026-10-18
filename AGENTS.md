@@ -111,6 +111,11 @@ Agents may proactively use available project-relevant Skills, plugins, apps, con
 CLIs, and browser surfaces. The user does not need to mention or invoke them again when their use is
 within the active task and materially improves accuracy, verification, or completion.
 
+Before introducing or running a tool that generates local artifacts, check its output paths against
+`.gitignore`. Add precise ignore rules for disposable caches, build output and test artifacts first;
+then verify with `git status --short` and `git check-ignore` that the outputs stay out of Git while
+source files and intentional evidence remain visible.
+
 Chrome, Supabase, and GitHub may appear through different capability types in different sessions; use
 the best available mechanism and fall back cleanly when one is unavailable.
 
