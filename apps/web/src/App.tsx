@@ -51,6 +51,9 @@ const LocalPaymentNotice = localBillingEnabled
       }))
     )
   : null
+const GroupTrainingPreview = import.meta.env.DEV
+  ? lazy(() => import('./pages/training/GroupTrainingPreviewPage'))
+  : null
 
 export function App() {
   return (
@@ -93,6 +96,16 @@ export function App() {
         <Route path="/r/:token" element={<PublicCapabilityApp purpose="reschedule" />} />
         <Route path="/terms" element={<TermsPage billingLive={billingLiveBuildEnabled} />} />
         <Route path="/privacy" element={<PrivacyPage billingLive={billingLiveBuildEnabled} />} />
+        {GroupTrainingPreview && (
+          <Route
+            path="/__review/group-training"
+            element={
+              <Suspense fallback={<AppLoadingScreen />}>
+                <GroupTrainingPreview />
+              </Suspense>
+            }
+          />
+        )}
         {LocalPaymentNotice && (
           <>
             <Route

@@ -1,7 +1,7 @@
 # Group training action-first prototype — review
 
 > Owner: managed worktree `training-record-baseline`, local branch `codex/group-training-ui-template`, based on `d9e17778a12ddd5a1dc0ddaff456e754caba0e8c` on 2026-10-19.
-> Integration state: local design reference on this branch, with interactive source retained in the attached worktree; no remote delivery or Main integration. Scope: accepted Web UI template only; no Roadmap package or formal Contract is allocated by this file.
+> Integration state: design reference and interactive source on `codex/group-training-ui-template`; no Main integration. The Product Owner authorized pushing this design branch on 2026-10-19. Scope: accepted Web UI template only; no Roadmap package or formal Contract is allocated by this file.
 
 ## Boundary and dependencies
 
@@ -26,10 +26,10 @@
 | Focused Web typecheck                                      | Done       | `npm run typecheck --workspace @gym-assistant/web` passed on 2026-10-19                                                                                                                                                                                                                                                           |
 | Formal storage and full package verification               | Unverified | Not part of this review prototype; no CI, migration, or remote push                                                                                                                                                                                                                                                               |
 
-The design record is saved in a local commit. The runnable preview source remains in this attached worktree: the staged-format hook requires whole-file formatting of existing `TrainingWorkspace.tsx` and `styles.css`, and an automatic approval review rejected that broad reformat for this design-only save. The source is therefore not committed or pushed; later formal implementation must resolve the formatting gate within its approved scope.
+The design record and runnable preview source are retained together on this branch. A read-only check showed both existing files were Prettier-clean at the branch base; formatting the new preview additions made the staged-format hook pass without reformatting baseline code. Focused Web typecheck and format checks passed on 2026-10-19. This is a design snapshot, not formal group implementation or a CI gate.
 
 ## One Next within this workstream
 
-Preserve this accepted UI template and attached worktree. When the Product Owner starts formal group development, first allocate and freeze the group Contract, then adapt the accepted view onto the existing authoritative API and training data. No action is needed from the Product Owner now.
+Push the authorized design branch and verify its remote HEAD. Then preserve this accepted UI template. When the Product Owner starts formal group development, first allocate and freeze the group Contract, then adapt the accepted view onto the existing authoritative API and training data. No action is needed from the Product Owner now.
 
 Snapshot files: `apps/web/src/App.tsx`, `apps/web/src/pages/training/TrainingWorkspace.tsx`, `apps/web/src/styles.css`, `GroupTrainingModesPrototype.tsx`, `GroupTrainingPreviewPage.tsx`, `docs/GROUP-TRAINING-ACTION-FIRST-PROTOTYPE.md`, and this Status file.

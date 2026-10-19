@@ -100,6 +100,20 @@ import {
 } from '../../local-resilience'
 
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'retrying' | 'conflict'
+export type GroupTrainingPreviewState = {
+  name: string
+  members: Array<{ id: string; name: string; present: boolean }>
+  selectedId: string
+  onSelect: (id: string) => void
+  onToggleAttendance: (id: string) => void
+  draft?: TrainingDraftPayload
+  onDraftChange: (id: string, draft: TrainingDraftPayload) => void
+  onAddExerciseToOthers: (definition: ExerciseDefinition) => void
+  modeContent?: ReactNode
+  modeControl?: ReactNode
+  modeActionNames?: string[]
+  modeCounts?: { completed: number; total: number }
+}
 type DragLayout = {
   compactHeight: number
   leading: number
@@ -115,7 +129,8 @@ export function TrainingWorkspace({
   headerActions,
   onBack,
   sessionNotice,
-  timeZone
+  timeZone,
+  groupPreview
 }: {
   session: Session
   query: UseQueryResult<SessionTraining, Error>
@@ -123,6 +138,7 @@ export function TrainingWorkspace({
   onBack: () => void
   sessionNotice?: string
   timeZone: string
+  groupPreview?: GroupTrainingPreviewState
 }) {
   if (query.isLoading) return <TrainingLoading />
   if (query.isError || !query.data)
@@ -154,6 +170,7 @@ export function TrainingWorkspace({
       onBack={onBack}
       sessionNotice={sessionNotice}
       timeZone={timeZone}
+      groupPreview={groupPreview}
     />
   )
 }
@@ -265,7 +282,8 @@ function TrainingEditor({
   headerActions,
   onBack,
   sessionNotice,
-  timeZone
+  timeZone,
+  groupPreview
 }: {
   session: Session
   initial: SessionTraining
@@ -274,6 +292,7 @@ function TrainingEditor({
   onBack: () => void
   sessionNotice?: string
   timeZone: string
+  groupPreview?: GroupTrainingPreviewState
 }) {
   const plan = usePlanAccess(session)
   const navigate = useNavigate()
@@ -281,7 +300,8 @@ function TrainingEditor({
   const focusedDefinitionId = new URLSearchParams(routeLocation.search).get('exercise')
   const mutations = useTrainingMutations(session),
     scheduling = useSchedulingMutations(session)
-  const [draft, setDraft] = useState(() => toDraft(initial)),
+  const [draft, setDraft] = useState(() => groupPreview?.draft ?? toDraft(initial)),
+    [pendingGroupDefinition, setPendingGroupDefinition] = useState<ExerciseDefinition | null>(null),
     [revision, setRevision] = useState(0),
     [saveState, setSaveState] = useState<SaveState>('idle'),
     [conflictReason, setConflictReason] = useState<string>('version_conflict'),
@@ -591,7 +611,7 @@ function TrainingEditor({
       .catch(() => setStorageError(true))
   }, [initial.session.id, session.user.id, store])
   useEffect(() => {
-    if (!revision) return
+    if (!revision || groupPreview) return
     const payload = {
       ...draft,
       recordVersion: versions.current.record,
@@ -640,6 +660,7 @@ function TrainingEditor({
   }, [
     coordinator,
     draft,
+    groupPreview,
     initial.session.id,
     key,
     offline,
@@ -661,9 +682,10 @@ function TrainingEditor({
   const change = (next: TrainingDraftPayload) => {
     latest.current = next
     revisionRef.current += 1
+    groupPreview?.onDraftChange(groupPreview.selectedId, next)
     setDraft(next)
     setRevision(revisionRef.current)
-    setSaveState('pending')
+    setSaveState(groupPreview ? 'idle' : 'pending')
   }
   useEffect(() => {
     if (!noteFocused) return
@@ -1124,7 +1146,25 @@ function TrainingEditor({
     })
     setPicker(false)
   }
+  const pickDefinition = (definition: ExerciseDefinition) => {
+    if (!groupPreview) {
+      addDefinition(definition)
+      return
+    }
+    setPicker(false)
+    setPendingGroupDefinition(definition)
+  }
+  const addGroupDefinition = (scope: 'student' | 'all') => {
+    if (!pendingGroupDefinition || !groupPreview) return
+    if (scope === 'all') groupPreview.onAddExerciseToOthers(pendingGroupDefinition)
+    addDefinition(pendingGroupDefinition)
+    setPendingGroupDefinition(null)
+  }
   const complete = async () => {
+    if (groupPreview) {
+      setNotice('開發預覽不會完成課堂或扣堂。')
+      return
+    }
     if (completing) return
     setCompleting(true)
     try {
@@ -1152,20 +1192,23 @@ function TrainingEditor({
     }
   }
   const reopen = () =>
-    scheduling.transitionSession.mutate(
-      {
-        sessionId: initial.session.id,
-        input: { action: 'reopen', version: versions.current.session }
-      },
-      {
-        onSuccess: (accepted) => {
-          versions.current.session = accepted.session.version!
-          setNotice('')
-        }
-      }
-    )
-  const statusText =
-    saveState === 'conflict'
+    groupPreview
+      ? setNotice('開發預覽不會變更課堂狀態。')
+      : scheduling.transitionSession.mutate(
+          {
+            sessionId: initial.session.id,
+            input: { action: 'reopen', version: versions.current.session }
+          },
+          {
+            onSuccess: (accepted) => {
+              versions.current.session = accepted.session.version!
+              setNotice('')
+            }
+          }
+        )
+  const statusText = groupPreview
+    ? '預覽資料未儲存'
+    : saveState === 'conflict'
       ? '儲存衝突'
       : offline
         ? '離線中，恢復連線後會繼續儲存。'
@@ -1370,10 +1413,18 @@ function TrainingEditor({
             <div className="context-stat">
               <span>訓練動作</span>
               <p>
-                {draft.exercises.length
-                  ? draft.exercises.map((exercise) => exercise.definitionName).join(', ')
+                {(
+                  groupPreview?.modeActionNames ??
+                  draft.exercises.map((exercise) => exercise.definitionName)
+                ).length
+                  ? (
+                      groupPreview?.modeActionNames ??
+                      draft.exercises.map((exercise) => exercise.definitionName)
+                    ).join(', ')
                   : '尚未安排動作'}
-                <small>共 {draft.exercises.length} 項</small>
+                <small>
+                  共 {groupPreview?.modeActionNames?.length ?? draft.exercises.length} 項
+                </small>
               </p>
             </div>
             <div className="context-divider" />
@@ -1404,20 +1455,67 @@ function TrainingEditor({
                 },
                 {
                   label: '訓練動作',
-                  text: `訓練動作：${draft.exercises.length ? draft.exercises.map((exercise) => exercise.definitionName).join('、') : '尚未安排動作'}`
+                  text: `訓練動作：${groupPreview?.modeActionNames?.length ? groupPreview.modeActionNames.join('、') : draft.exercises.length ? draft.exercises.map((exercise) => exercise.definitionName).join('、') : '尚未安排動作'}`
                 }
               ]}
             />
           </div>
         </aside>
         <main className="training-editor" id="session-training-panel" role="tabpanel">
-          <header className="training-heading">
-            <div>
-              <span>TRAINING LOG</span>
-              <h2>訓練紀錄</h2>
-              <p>依動作類型填寫本組數值，再標記完成結果。</p>
-            </div>
-          </header>
+          <div
+            className={`training-heading-row${groupPreview && !groupPreview.modeContent ? ' has-group' : ''}`}
+          >
+            <header className="training-heading">
+              <div>
+                <span>TRAINING LOG</span>
+                <h2>訓練紀錄</h2>
+                <p>依動作類型填寫本組數值，再標記完成結果。</p>
+              </div>
+              {groupPreview?.modeControl}
+            </header>
+            {groupPreview && !groupPreview.modeContent ? (
+              <section
+                className="group-training-settings"
+                aria-label="學生群組：切換訓練紀錄與出缺勤"
+              >
+                <header>
+                  <h3>學生群組</h3>
+                  <span>{groupPreview.members.length} / 3 人</span>
+                </header>
+                <div className="group-training-members">
+                  {groupPreview.members.map((member) => (
+                    <div
+                      className={`group-training-member${member.id === groupPreview.selectedId ? ' is-selected' : ''}${member.present ? '' : ' is-absent'}`}
+                      key={member.id}
+                    >
+                      <button
+                        type="button"
+                        className="group-training-member-select"
+                        disabled={!member.present}
+                        aria-pressed={member.id === groupPreview.selectedId}
+                        aria-label={
+                          member.present
+                            ? `${member.name}的訓練紀錄${member.id === groupPreview.selectedId ? '，目前顯示' : '，點擊查看'}`
+                            : `${member.name}缺席，無訓練紀錄`
+                        }
+                        onClick={() => groupPreview.onSelect(member.id)}
+                      >
+                        <strong>{member.name}</strong>
+                      </button>
+                      <button
+                        type="button"
+                        className="group-training-attendance"
+                        aria-label={`${member.name}：${member.present ? '出席' : '缺席'}，點擊切換`}
+                        onClick={() => groupPreview.onToggleAttendance(member.id)}
+                      >
+                        {member.present ? '出席' : '缺席'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
           {storageError && (
             <p className="notice error">此裝置暫時無法保護尚未同步的內容，請保持頁面開啟。</p>
           )}
@@ -1520,13 +1618,18 @@ function TrainingEditor({
               </button>
             </section>
           )}
-          {draft.exercises.length === 0 ? (
+          {groupPreview?.modeContent ? (
+            groupPreview.modeContent
+          ) : draft.exercises.length === 0 ? (
             <section className="training-empty">
               <Dumbbell />
               <h3>尚未安排動作</h3>
               <p>加入第一個動作，開始記錄這堂課的訓練。</p>
               <button
                 className="primary-button compact ui-action-add"
+                disabled={Boolean(
+                  groupPreview && !groupPreview.members.some((member) => member.present)
+                )}
                 onClick={() => setPicker(true)}
               >
                 <Plus />
@@ -1601,6 +1704,9 @@ function TrainingEditor({
                 )}
                 <button
                   className="training-add-exercise ui-action-add"
+                  disabled={Boolean(
+                    groupPreview && !groupPreview.members.some((member) => member.present)
+                  )}
                   onClick={() => setPicker(true)}
                 >
                   <Plus />
@@ -1639,7 +1745,8 @@ function TrainingEditor({
       <footer className="session-bottom">
         <div>
           <span>
-            {completedSets} / {totalSets}
+            {groupPreview?.modeCounts?.completed ?? completedSets} /{' '}
+            {groupPreview?.modeCounts?.total ?? totalSets}
           </span>{' '}
           組已記錄
         </div>
@@ -1674,8 +1781,24 @@ function TrainingEditor({
         </p>
       )}
       {picker && (
-        <ExercisePicker session={session} onPick={addDefinition} onClose={() => setPicker(false)} />
+        <ExercisePicker
+          session={session}
+          onPick={pickDefinition}
+          onClose={() => setPicker(false)}
+          previewOnly={Boolean(groupPreview)}
+        />
       )}
+      {pendingGroupDefinition && groupPreview ? (
+        <GroupExerciseScopeDialog
+          definition={pendingGroupDefinition}
+          studentName={
+            groupPreview.members.find((member) => member.id === groupPreview.selectedId)?.name ?? ''
+          }
+          attendingCount={groupPreview.members.filter((member) => member.present).length}
+          onChoose={addGroupDefinition}
+          onClose={() => setPendingGroupDefinition(null)}
+        />
+      ) : null}
       {trend && trend.recording ? (
         <MultiMetricTrend
           session={session}
@@ -1973,12 +2096,13 @@ function ExerciseCard({
     </article>
   )
 }
-function SetCard({
+export function SetCard({
   set,
   recording,
   values,
   index,
   isLastSet,
+  hideIndex = false,
   onChange,
   onRemove
 }: {
@@ -1987,13 +2111,14 @@ function SetCard({
   values: Measurements
   index: number
   isLastSet: boolean
+  hideIndex?: boolean
   onChange: (set: TrainingSet) => void
   onRemove: () => void
 }) {
   const number = (value: string) => (value === '' ? null : Number(value))
   return (
     <div className={`training-set-card ${set.result ?? ''}`}>
-      <strong>{index + 1}</strong>
+      {hideIndex ? null : <strong>{index + 1}</strong>}
       <MeasurementInputs
         config={recording}
         values={values}
@@ -2100,14 +2225,67 @@ function rememberExercisePickerView(coachId: string, view: ExercisePickerView) {
   }
 }
 
+function GroupExerciseScopeDialog({
+  definition,
+  studentName,
+  attendingCount,
+  onChoose,
+  onClose
+}: {
+  definition: ExerciseDefinition
+  studentName: string
+  attendingCount: number
+  onChoose: (scope: 'student' | 'all') => void
+  onClose: () => void
+}) {
+  const { dialogRef, onBackdropPointerDown } = useDialogBehavior(onClose, {
+    submitOnEnter: false,
+    focusDialog: true
+  })
+  return (
+    <div className="dialog-backdrop" role="presentation" onPointerDown={onBackdropPointerDown}>
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="group-exercise-scope-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="group-exercise-scope-title"
+      >
+        <header>
+          <div>
+            <span>新增動作</span>
+            <h2 id="group-exercise-scope-title">{definition.name}適用於誰？</h2>
+          </div>
+          <button className="icon-button" aria-label="關閉" onClick={onClose}>
+            <X />
+          </button>
+        </header>
+        <div className="group-exercise-scope-options">
+          <button type="button" onClick={() => onChoose('student')}>
+            <strong>僅目前學生</strong>
+            <small>加入{studentName}的訓練紀錄</small>
+          </button>
+          <button type="button" onClick={() => onChoose('all')}>
+            <strong>本堂全體出席學生</strong>
+            <small>加入 {attendingCount} 人各自的訓練紀錄</small>
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 export function ExercisePicker({
   session,
   onPick,
-  onClose
+  onClose,
+  previewOnly = false
 }: {
   session: Session
   onPick: (definition: ExerciseDefinition) => void
   onClose: () => void
+  previewOnly?: boolean
 }) {
   const [q, setQ] = useState(''),
     [view, setView] = useState<ExercisePickerView>(() => readExercisePickerView(session.user.id)),
@@ -2226,16 +2404,18 @@ export function ExercisePicker({
               <span className="library-filter-dot" />
             )}
           </button>
-          <button
-            className="primary-button picker-create ui-action-add"
-            onClick={() => {
-              setMessage('')
-              setEditing(null)
-            }}
-          >
-            <Plus aria-hidden="true" />
-            自訂動作
-          </button>
+          {!previewOnly ? (
+            <button
+              className="primary-button picker-create ui-action-add"
+              onClick={() => {
+                setMessage('')
+                setEditing(null)
+              }}
+            >
+              <Plus aria-hidden="true" />
+              自訂動作
+            </button>
+          ) : null}
         </div>
         {query.data && (
           <section
@@ -2337,35 +2517,39 @@ export function ExercisePicker({
                       </span>
                       <ChevronRight aria-hidden="true" />
                     </button>
-                    <button
-                      className="icon-button favorite-button"
-                      aria-label={`${definition.favorite ? '取消常用' : '加入常用'}：${definition.name}`}
-                      aria-pressed={definition.favorite}
-                      disabled={busy}
-                      onClick={() =>
-                        mutations.favorite.toggle(definition.id, () =>
-                          setMessage('常用更新失敗，已恢復原狀。')
-                        )
-                      }
-                    >
-                      <Heart />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label={`編輯：${definition.name}`}
-                      disabled={busy}
-                      onClick={() => setEditing(definition)}
-                    >
-                      <Pencil />
-                    </button>
-                    <button
-                      className="icon-button danger"
-                      aria-label={`刪除：${definition.name}`}
-                      disabled={busy}
-                      onClick={() => setDeleting(definition)}
-                    >
-                      <Trash2 />
-                    </button>
+                    {!previewOnly ? (
+                      <>
+                        <button
+                          className="icon-button favorite-button"
+                          aria-label={`${definition.favorite ? '取消常用' : '加入常用'}：${definition.name}`}
+                          aria-pressed={definition.favorite}
+                          disabled={busy}
+                          onClick={() =>
+                            mutations.favorite.toggle(definition.id, () =>
+                              setMessage('常用更新失敗，已恢復原狀。')
+                            )
+                          }
+                        >
+                          <Heart />
+                        </button>
+                        <button
+                          className="icon-button"
+                          aria-label={`編輯：${definition.name}`}
+                          disabled={busy}
+                          onClick={() => setEditing(definition)}
+                        >
+                          <Pencil />
+                        </button>
+                        <button
+                          className="icon-button danger"
+                          aria-label={`刪除：${definition.name}`}
+                          disabled={busy}
+                          onClick={() => setDeleting(definition)}
+                        >
+                          <Trash2 />
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 )
               })}
