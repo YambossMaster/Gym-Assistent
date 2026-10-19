@@ -54,7 +54,7 @@ export type PaidChangePreview = {
 }
 /** Implement with authenticated HTTP; never use browser facts as payment authority. */
 export interface BillingGateway {
-  quote(selection: Selection & { code?: string }, signal: AbortSignal): Promise<Quote>
+  quote(selection: Selection, signal: AbortSignal): Promise<Quote>
   begin(input: { quoteId: string; termsVersion: string }): Promise<CheckoutIntent>
   intent(id: string): Promise<CheckoutIntent>
   billing(signal: AbortSignal): Promise<BillingSnapshot>

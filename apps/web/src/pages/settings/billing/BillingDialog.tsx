@@ -70,8 +70,8 @@ export function PaymentNoticeContent() {
         <section>
           <h3>手續費與換匯說明</h3>
           <p>
-            Lemon Squeezy
-            將交易換算為美元處理。信用卡帳單依發卡行匯率與國外交易費計算，本站不另加收訂閱處理費。
+            付款由支付服務商 Lemon Squeezy
+            處理，交易將換算為美元。信用卡帳單金額依發卡行匯率與國外交易費計算；本站不另加收訂閱處理費。
           </p>
         </section>
       </div>

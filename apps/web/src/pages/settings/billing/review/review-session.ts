@@ -8,7 +8,8 @@ export const reviewScenarios = [
   'overlay_error',
   'cancel_error',
   'past_due',
-  'expired'
+  'expired',
+  'permanent'
 ] as const
 export type ReviewScenario = (typeof reviewScenarios)[number]
 export type ReviewProgress = {

@@ -118,7 +118,7 @@ export function CheckoutPage({
       : quoteQuery.isFetching
         ? '正在更新金額，完成後即可繼續。'
         : quoteQuery.isError
-          ? '無法取得訂閱金額，請重新讀取。'
+          ? readableError(quoteQuery.error)
           : expired
             ? '訂閱金額已逾時，請更新後重新確認。'
             : !quote
@@ -133,7 +133,8 @@ export function CheckoutPage({
       !expired &&
       !intent &&
       !begin.isPending &&
-      quote.tier === selection.tier
+      quote.tier === selection.tier &&
+      quote.interval === selection.interval
   )
   const subscribe = () => {
     if (!canStart || !quote || starting.current) return

@@ -22,6 +22,18 @@ import {
 import './checkout.css'
 import { planAccessKey } from '../../../beta-admission/usePlanAccess'
 
+function submittedKey(accountId: string, intentId: string) {
+  return `billing-provider-submitted:${accountId}:${intentId}`
+}
+
+function wasSubmitted(accountId: string, intentId: string) {
+  try {
+    return window.sessionStorage.getItem(submittedKey(accountId, intentId)) === 'true'
+  } catch {
+    return false
+  }
+}
+
 /** The intent is resumed, never recreated, after checkout has started. */
 export function PaymentStatusPage({
   accountId,
@@ -45,7 +57,9 @@ export function PaymentStatusPage({
   const client = useQueryClient()
   const [windowError, setWindowError] = useState(false)
   const [opening, setOpening] = useState(false)
-  const [checkedMessage, setCheckedMessage] = useState('')
+  const [providerSubmitted, setProviderSubmitted] = useState(() =>
+    wasSubmitted(accountId, intent.id)
+  )
   const attempted = useRef(false)
   const status = useQuery({
     queryKey: ['billing', accountId, 'intent', intent.id],
@@ -70,6 +84,12 @@ export function PaymentStatusPage({
       setOpening(true)
       try {
         await openCheckout(next.url, () => {
+          try {
+            window.sessionStorage.setItem(submittedKey(accountId, next.id), 'true')
+          } catch {
+            // Private browsing may disable storage; the in-memory state still protects this view.
+          }
+          setProviderSubmitted(true)
           void client.invalidateQueries({ queryKey: ['billing', accountId, 'intent', next.id] })
         })
       } catch {
@@ -86,32 +106,25 @@ export function PaymentStatusPage({
     void open(intent)
   }, [autoOpen, intent, open])
   const finish = () => {
+    try {
+      window.sessionStorage.removeItem(submittedKey(accountId, intent.id))
+    } catch {
+      // Session storage is optional.
+    }
     void client.invalidateQueries({ queryKey: ['billing', accountId] })
     void client.invalidateQueries({ queryKey: planAccessKey(accountId) })
     onComplete()
   }
-  const checkResult = async () => {
-    setCheckedMessage('正在向付款服務查詢…')
-    const result = await status.refetch()
-    if (result.isError) {
-      setCheckedMessage('這次查詢失敗，請稍後再試。')
-    } else if (result.data?.status === 'confirmed') {
-      setCheckedMessage('訂閱已確認。')
-    } else {
-      setCheckedMessage(
-        result.data?.status === 'open'
-          ? '已查詢：這筆付款尚未完成，可繼續原付款。'
-          : '已查詢：付款結果尚未確認，請稍後再查詢。'
-      )
-    }
-  }
+  const awaitingConfirmation = current.status === 'pending' || providerSubmitted
   const title = confirmed
     ? `${tierName(quote?.tier ?? 'basic')} ${confirmed.activation === 'trial' ? '體驗已開始' : '訂閱已啟用'}`
-    : windowError
-      ? '付款視窗未能開啟'
-      : current.status === 'open'
-        ? '付款尚未完成'
-        : '正在確認你的訂閱'
+    : status.isError
+      ? '暫時無法確認付款狀態'
+      : windowError && !providerSubmitted
+        ? '付款視窗未能開啟'
+        : !awaitingConfirmation
+          ? '付款尚未完成'
+          : '正在確認你的訂閱'
   return (
     <div className="checkout-page payment-status-page">
       <div className="checkout-topbar">
@@ -137,11 +150,13 @@ export function PaymentStatusPage({
         <p className="payment-status-lead">
           {confirmed
             ? '你的方案已啟用，可在方案與帳單管理續訂。'
-            : windowError
-              ? '訂閱尚未完成。請重新開啟同一筆付款，無須再次訂閱。'
-              : current.status === 'pending'
-                ? '付款已送出，正在等待確認。你可以在此查詢結果。'
-                : '關閉付款視窗只會暫停操作。你可以繼續這筆付款；重新選方案不會取消它。'}
+            : status.isError
+              ? '目前無法讀取最新結果。若已完成 Lemon 結帳，請勿再次付款。'
+              : windowError && !providerSubmitted
+                ? '訂閱尚未完成。請重新開啟同一筆付款，無須再次訂閱。'
+                : awaitingConfirmation
+                  ? '正在確認這筆結帳，結果會自動更新。請勿再次付款。'
+                  : '若尚未完成 Lemon 結帳，可返回同一筆付款。若已完成，請勿再次付款；結果會自動更新。'}
         </p>
         {quote && (
           <dl className="payment-status-facts">
@@ -168,7 +183,7 @@ export function PaymentStatusPage({
         )}
         {status.isError && !confirmed && (
           <p className="payment-status-alert" role="alert">
-            暫時無法查詢訂閱結果。這筆結帳仍可繼續，請稍後重新查詢。
+            暫時無法查詢訂閱結果。請稍後重試，若已完成 Lemon 結帳，請勿再次付款。
           </p>
         )}
         <div className="payment-status-actions">
@@ -176,25 +191,25 @@ export function PaymentStatusPage({
             <button className="primary-button" onClick={finish}>
               完成，查看我的方案 <ArrowRight aria-hidden="true" />
             </button>
-          ) : current.status === 'open' ? (
+          ) : status.isError ? (
+            <button
+              className="primary-button"
+              disabled={status.isFetching}
+              onClick={() => void status.refetch()}
+            >
+              {status.isFetching ? '正在查詢…' : '重試查詢'} <ArrowRight aria-hidden="true" />
+            </button>
+          ) : current.status === 'open' && !providerSubmitted ? (
             <button
               className="primary-button"
               disabled={opening || !recoveryUrl}
               onClick={() => void open(current)}
             >
-              {opening ? '正在開啟付款視窗…' : windowError ? '重新開啟付款視窗' : '繼續付款'}
+              {opening ? '正在開啟付款視窗…' : windowError ? '重新開啟付款視窗' : '返回同一筆結帳'}
               <ArrowRight aria-hidden="true" />
             </button>
-          ) : (
-            <button
-              className="primary-button"
-              disabled={status.isFetching}
-              onClick={() => void checkResult()}
-            >
-              {status.isFetching ? '正在查詢…' : '查詢訂閱結果'} <ArrowRight aria-hidden="true" />
-            </button>
-          )}
-          {!confirmed && current.status === 'open' && (
+          ) : null}
+          {!confirmed && !status.isError && current.status === 'open' && !providerSubmitted && (
             <div
               className={`payment-status-secondary-actions${windowError && recoveryUrl ? ' has-fallback' : ''}`}
             >
@@ -209,21 +224,9 @@ export function PaymentStatusPage({
                   新分頁付款 <ExternalLink aria-hidden="true" />
                 </a>
               )}
-              <button
-                className="payment-status-refresh"
-                disabled={status.isFetching}
-                onClick={() => void checkResult()}
-              >
-                查詢付款結果
-              </button>
             </div>
           )}
         </div>
-        {!confirmed && checkedMessage && (
-          <p className="payment-status-check" role="status">
-            {checkedMessage}
-          </p>
-        )}
       </main>
     </div>
   )

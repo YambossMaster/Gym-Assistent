@@ -82,20 +82,16 @@ async function mount(path = '/plans') {
   return { host, fetch, click, button }
 }
 
-it('opens the normal plan selection and standalone checkout, retaining annual selection without billing requests', async () => {
+it('lets permanent Prime compare annual prices without exposing a plan-change action', async () => {
   const view = await mount()
   expect(view.host.textContent).toContain('目前方案 · 永久')
   await view.click(view.button('年費方案'))
-  await view.click(view.button('查看 Prime 訂閱'))
-  expect(view.host.querySelector('h1')?.textContent).toBe('確認你的訂閱')
-  expect(view.host.textContent).toContain('NT$1,450')
-  expect(view.host.textContent).toContain('每年一次')
-  expect(view.host.querySelector('.settings-category-nav')).toBeNull()
-  expect(view.button('訂閱尚未開放').disabled).toBe(true)
-  expect(view.host.textContent).not.toContain('今天應付')
-  expect(view.host.textContent).toContain('首次訂閱可享 1 個月免費體驗')
-  await view.click(view.button('返回方案選擇'))
+  expect(view.button('查看 Prime 訂閱')).toBeUndefined()
+  expect(view.button('查看 Pro 訂閱')).toBeUndefined()
   expect(view.host.querySelector('h1')?.textContent).toBe('比較方案與價格')
+  expect(view.host.textContent).toContain('NT$1,450')
+  expect(view.host.textContent).toContain('永久 Prime 資格')
+  expect(view.host.querySelector('.settings-category-nav')).toBeNull()
   expect(view.fetch).not.toHaveBeenCalled()
 })
 

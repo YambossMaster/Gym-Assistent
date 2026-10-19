@@ -80,7 +80,7 @@ it('defaults off, rejects production opt-in and blocks incomplete merchant setup
     }),
   ).toBeNull()
 })
-it('requires the four paid variants and lets Lemon handle discounts', async () => {
+it('requires the four paid variants and hides Lemon discount entry', async () => {
   const environment = {
     BILLING_LOCAL_CHECKOUT: 'true',
     BILLING_PROVIDER_TESTS_APPROVED: 'true',
@@ -117,7 +117,7 @@ it('requires the four paid variants and lets Lemon handle discounts', async () =
   const payload = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
   expect(payload.data.relationships.variant.data.id).toBe('5')
   expect(payload.data.attributes.checkout_options.skip_trial).toBe(false)
-  expect(payload.data.attributes.checkout_options.discount).toBe(true)
+  expect(payload.data.attributes.checkout_options.discount).toBe(false)
   expect(payload.data.attributes.checkout_data.custom).toEqual({ intent_id: 'i' })
 })
 it('asks Lemon to skip the native trial for a returning subscriber', async () => {
@@ -150,7 +150,7 @@ it('asks Lemon to skip the native trial for a returning subscriber', async () =>
   })
   const payload = JSON.parse(String(request.mock.calls[0]?.[1]?.body))
   expect(payload.data.attributes.checkout_options.skip_trial).toBe(true)
-  expect(payload.data.attributes.checkout_options.discount).toBe(true)
+  expect(payload.data.attributes.checkout_options.discount).toBe(false)
 })
 it('uses only server-mapped Test Mode checkout and keeps the native trial', async () => {
   const request = vi.fn<typeof fetch>(

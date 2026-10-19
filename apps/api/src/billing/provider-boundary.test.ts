@@ -13,7 +13,7 @@ it('checks the exact signed bytes and rejects missing, malformed or tampered sig
   expect(verifyLemonSignature(body, signature, '')).toBe(false)
 })
 
-it('restricts checkout to the chosen variant and lets Lemon handle discounts', () => {
+it('restricts checkout to the chosen variant and hides Lemon discount entry', () => {
   const input = {
     storeId: '1',
     variantId: '23',
@@ -28,7 +28,7 @@ it('restricts checkout to the chosen variant and lets Lemon handle discounts', (
   expect(payload.data.attributes.checkout_options).toEqual({
     embed: true,
     skip_trial: false,
-    discount: true,
+    discount: false,
     locale: 'zh-CN',
     background_color: '#f7f8f5',
     headings_color: '#18211d',
