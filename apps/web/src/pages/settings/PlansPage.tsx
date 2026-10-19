@@ -13,6 +13,7 @@ import { createHttpBillingGateway } from './billing/http-gateway'
 import { BillingDialog } from './billing/BillingDialog'
 import { tierName, type PaidChangePreview } from './billing/types'
 import { billingQuoteKey, billingQuoteStaleTime } from './billing/quote-query'
+import { wasProviderSubmitted } from './billing/lemon-overlay'
 import './billing/billing.css'
 import type { BillingSnapshot } from './billing/types'
 
@@ -567,19 +568,27 @@ export function PlansPage({ session }: { session: Session }) {
                   if (localBillingServiceEnabled) {
                     setPreparing(true)
                     try {
-                      const [current, overview] = await Promise.all([
-                        queryClient.fetchQuery({
-                          queryKey: ['billing', session.user.id, 'current'],
-                          queryFn: ({ signal }) => billingGateway.current(signal)
-                        }),
-                        queryClient.fetchQuery({
-                          queryKey: ['billing', session.user.id, 'overview'],
-                          queryFn: ({ signal }) => billingGateway.billing(signal)
-                        })
-                      ])
+                      const current = await queryClient.fetchQuery({
+                        queryKey: ['billing', session.user.id, 'current'],
+                        queryFn: ({ signal }) => billingGateway.current(signal)
+                      })
+                      const overview = await queryClient.fetchQuery({
+                        queryKey: ['billing', session.user.id, 'overview'],
+                        queryFn: ({ signal }) => billingGateway.billing(signal)
+                      })
                       if (current.current) {
                         setPreparing(false)
-                        navigate('/settings/checkout/status')
+                        if (current.current.intent.status === 'abandon_requested') {
+                          setPreparationError(
+                            '先前結帳結果尚待核對，暫時無法建立新結帳。請稍後重新讀取方案。'
+                          )
+                          return
+                        }
+                        navigate(
+                          wasProviderSubmitted(session.user.id, current.current.intent.id)
+                            ? '/settings/checkout/status'
+                            : '/settings/checkout'
+                        )
                         return
                       }
                       if (overview.subscription || overview.pendingCheckout) {

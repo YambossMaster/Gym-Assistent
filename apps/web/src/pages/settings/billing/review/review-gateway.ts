@@ -156,6 +156,24 @@ export function createReviewGateway(
     async intent() {
       return status ?? { id: 'review-intent', status: 'pending' }
     },
+    async submitted() {
+      if (!status) return { id: 'review-intent', status: 'abandoned' }
+      if (status.status === 'open') status = { id: status.id, status: 'pending' }
+      progress.paymentSubmitted = true
+      save()
+      return status
+    },
+    async abandon() {
+      if (!status || status.status !== 'open') throw new Error('checkout_unavailable')
+      const abandoned = { id: status.id, status: 'abandoned' as const }
+      status = null
+      chosen = null
+      progress.begun = false
+      progress.abandonRequested = false
+      progress.paymentSubmitted = false
+      save()
+      return abandoned
+    },
     async billing() {
       return structuredClone({
         ...overview,
@@ -230,6 +248,12 @@ export function createReviewGateway(
       url: 'https://review.lemonsqueezy.com/checkout/review-not-a-real-checkout'
     }
     if (progress.paymentSubmitted) status = { id: 'review-intent', status: 'pending' }
+    if (progress.abandonRequested)
+      status = {
+        id: 'review-intent',
+        status: 'abandon_requested',
+        expiresAt: new Date(Date.now() + 900_000).toISOString()
+      }
     if (progress.confirmed) confirm()
   }
   if (progress.cancelled && overview.subscription) overview.subscription.status = 'cancelled'
@@ -243,6 +267,14 @@ export function createReviewGateway(
       if (!status || status.status !== 'open') return
       status = { id: status.id, status: 'pending' }
       progress.paymentSubmitted = true
+      save()
+    },
+    releaseAbandoned: () => {
+      if (status?.status !== 'abandon_requested') return
+      status = null
+      chosen = null
+      progress.begun = false
+      progress.abandonRequested = false
       save()
     },
     current: () => ({ intent: status ?? undefined, quote: chosen ?? undefined }),

@@ -17,6 +17,8 @@ export type CheckoutIntent =
   | { id: string; status: 'open'; url: string }
   | { id: string; status: 'pending' }
   | { id: string; status: 'confirmed'; activation: 'trial' | 'paid' }
+  | { id: string; status: 'abandoned' }
+  | { id: string; status: 'abandon_requested'; expiresAt: string }
 export type Invoice = {
   id: string
   number: string
@@ -57,6 +59,8 @@ export interface BillingGateway {
   quote(selection: Selection, signal: AbortSignal): Promise<Quote>
   begin(input: { quoteId: string; termsVersion: string }): Promise<CheckoutIntent>
   intent(id: string): Promise<CheckoutIntent>
+  abandon(id: string): Promise<CheckoutIntent>
+  submitted(id: string): Promise<CheckoutIntent>
   billing(signal: AbortSignal): Promise<BillingSnapshot>
   cancel(): Promise<void>
   changeTrial(selection: Selection): Promise<{ status: 'confirmed' | 'unchanged' }>
@@ -64,7 +68,12 @@ export interface BillingGateway {
   confirmPaid(previewId: string): Promise<{ status: 'pending' }>
   receipt(invoiceId: string): Promise<string>
 }
-export type OpenCheckout = (url: string, onProviderSuccess: () => void) => Promise<void>
+export type OpenCheckout = (
+  url: string,
+  onProviderSuccess: () => void,
+  signal?: AbortSignal,
+  scope?: { accountId: string; intentId: string }
+) => Promise<void>
 export const tierName = (tier: PaidTier) => (tier === 'basic' ? 'Pro' : 'Prime')
 export const intervalName = (interval: BillingInterval) => (interval === 'month' ? '月' : '年')
 export const formatMoney = (money: Money) =>

@@ -28,6 +28,8 @@ export function createHttpBillingGateway(accessToken: string) {
     quote: (selection, signal) => request('/quote', 'POST', selection, signal),
     begin: (input) => request('/checkouts', 'POST', input),
     intent: (id) => request(`/checkouts/${encodeURIComponent(id)}`),
+    abandon: (id) => request(`/checkouts/${encodeURIComponent(id)}/abandon`, 'POST', {}),
+    submitted: (id) => request(`/checkouts/${encodeURIComponent(id)}/submitted`, 'POST', {}),
     billing: (signal) => request('', 'GET', undefined, signal),
     cancel: () => request('/cancel', 'POST', {}),
     changeTrial: (selection) => request('/trial-change', 'POST', selection),

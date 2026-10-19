@@ -13,9 +13,11 @@ import {
   tierName,
   type BillingGateway,
   type CheckoutIntent,
+  type OpenCheckout,
   type Quote,
   type Selection
 } from './types'
+import { markProviderSubmitted, openLemonCheckout } from './lemon-overlay'
 import './billing.css'
 import './checkout.css'
 
@@ -42,6 +44,7 @@ export function CheckoutPage({
   initialIntent,
   initialQuote,
   preparationOnly = false,
+  openCheckout = openLemonCheckout,
   onStarted,
   onBack,
   termsHref = '/terms',
@@ -55,8 +58,9 @@ export function CheckoutPage({
   initialIntent?: CheckoutIntent
   initialQuote?: Quote
   preparationOnly?: boolean
+  openCheckout?: OpenCheckout
   onStarted: (intent: CheckoutIntent, quote: Quote) => void
-  onBack: () => void
+  onBack: (intent?: CheckoutIntent) => void
   termsHref?: string
   privacyHref?: string
   noticeHref?: string
@@ -67,7 +71,12 @@ export function CheckoutPage({
     preparationOnly ? null : (initialIntent ?? null)
   )
   const [expired, setExpired] = useState(false)
+  const [providerError, setProviderError] = useState(false)
+  const [openElsewhere, setOpenElsewhere] = useState(false)
+  const [opening, setOpening] = useState(false)
   const starting = useRef(false)
+  const overlayAbort = useRef<AbortController | null>(null)
+  useEffect(() => () => overlayAbort.current?.abort(), [])
   const quoteQuery = useQuery({
     queryKey: billingQuoteKey(accountId, selection),
     queryFn: ({ signal }) => gateway.quote(selection, signal),
@@ -92,13 +101,45 @@ export function CheckoutPage({
     mutationFn: (input: { quoteId: string; termsVersion: string }) => gateway.begin(input),
     onSuccess: (next) => {
       setIntent(next)
-      if (quote) onStarted(next, quote)
+      if (next.status === 'open' && quote) void open(next, quote)
     },
     onError: () => {
       starting.current = false
       setConsentQuote(null)
     }
   })
+  const open = async (next: CheckoutIntent, selected: Quote) => {
+    if (next.status !== 'open' || opening) return
+    setProviderError(false)
+    setOpenElsewhere(false)
+    setOpening(true)
+    overlayAbort.current?.abort()
+    const controller = new AbortController()
+    overlayAbort.current = controller
+    try {
+      await openCheckout(
+        next.url,
+        () => {
+          if (controller.signal.aborted) return
+          markProviderSubmitted(accountId, next.id)
+          void gateway.submitted(next.id).catch(() => {
+            // The status page keeps polling verified provider evidence.
+          })
+          onStarted(next, selected)
+        },
+        controller.signal,
+        { accountId, intentId: next.id }
+      )
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        if (error instanceof Error && error.message === 'checkout_open_elsewhere')
+          setOpenElsewhere(true)
+        else setProviderError(true)
+      }
+    } finally {
+      setOpening(false)
+    }
+  }
   const change = (next: Selection) => {
     if (intent || begin.isPending) return
     setConsentQuote(null)
@@ -113,17 +154,23 @@ export function CheckoutPage({
   }
   const checkoutIssue = preparationOnly
     ? '目前不會扣款或變更你的方案。'
-    : intent
-      ? '訂閱正在確認中，請勿重複付款。'
-      : quoteQuery.isFetching
-        ? '正在更新金額，完成後即可繼續。'
-        : quoteQuery.isError
-          ? readableError(quoteQuery.error)
-          : expired
-            ? '訂閱金額已逾時，請更新後重新確認。'
-            : !quote
-              ? '正在取得訂閱金額…'
-              : ''
+    : intent?.status === 'open'
+      ? openElsewhere
+        ? '這筆結帳已在另一個分頁開啟，請回到該分頁繼續。'
+        : providerError
+          ? '付款介面未能開啟。這筆付款尚未完成，請重試。'
+          : '付款尚未完成。可重新開啟同一筆 Lemon 結帳。'
+      : intent
+        ? '先前結帳狀態尚待確認，請勿重複付款。'
+        : quoteQuery.isFetching
+          ? '正在更新金額，完成後即可繼續。'
+          : quoteQuery.isError
+            ? readableError(quoteQuery.error)
+            : expired
+              ? '訂閱金額已逾時，請更新後重新確認。'
+              : !quote
+                ? '正在取得訂閱金額…'
+                : ''
   const canStart = Boolean(
     quote &&
       !preparationOnly &&
@@ -150,7 +197,14 @@ export function CheckoutPage({
     <div className="checkout-page">
       <div className="checkout-topbar">
         <img src="/brand/form-horizontal-on-light.png" alt="FORM Coach Desk" />
-        <button className="billing-back" onClick={onBack}>
+        <button
+          className="billing-back"
+          disabled={begin.isPending}
+          onClick={() => {
+            overlayAbort.current?.abort()
+            onBack(intent ?? undefined)
+          }}
+        >
           <ArrowLeft aria-hidden="true" />
           返回方案選擇
         </button>
@@ -220,7 +274,10 @@ export function CheckoutPage({
               <>
                 <button
                   className="checkout-change-plan"
-                  onClick={onBack}
+                  onClick={() => {
+                    overlayAbort.current?.abort()
+                    onBack(intent ?? undefined)
+                  }}
                   disabled={begin.isPending}
                 >
                   變更方案 <ArrowRight aria-hidden="true" />
@@ -363,16 +420,22 @@ export function CheckoutPage({
               )}
               <button
                 className="primary-button billing-submit"
-                disabled={!canStart}
-                onClick={subscribe}
+                disabled={intent?.status === 'open' ? opening : !canStart}
+                onClick={
+                  intent?.status === 'open' ? () => quote && void open(intent, quote) : subscribe
+                }
               >
                 {preparationOnly
                   ? '訂閱尚未開放'
-                  : begin.isPending
-                    ? '正在準備結帳…'
-                    : quote?.trial
-                      ? '設定付款方式，開始體驗'
-                      : '付款並訂閱'}
+                  : intent?.status === 'open'
+                    ? opening
+                      ? '正在開啟付款介面…'
+                      : '重新開啟 Lemon 付款介面'
+                    : begin.isPending
+                      ? '正在準備結帳…'
+                      : quote?.trial
+                        ? '設定付款方式，開始體驗'
+                        : '付款並訂閱'}
                 <ArrowRight aria-hidden="true" />
               </button>
               <div className="checkout-feedback" id="checkout-feedback" aria-live="polite">

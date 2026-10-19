@@ -17,6 +17,7 @@ export type ReviewProgress = {
   selection: Selection
   startedAt: string
   begun: boolean
+  abandonRequested?: boolean
   paymentSubmitted?: boolean
   confirmed: boolean
   cancelled: boolean
@@ -24,7 +25,7 @@ export type ReviewProgress = {
   /** Previous local preview storage only; normalized to trialChanges when read. */
   trialChange?: { tier: 'basic' | 'advanced'; interval: 'month' | 'year' }
 }
-export const reviewSessionKey = 'form:billing:synthetic-review:v1'
+export const reviewSessionKey = 'form:billing:synthetic-review:v2'
 
 /** Only synthetic selections and actions, never identity, provider URLs or account data. */
 export function readReviewProgress(storage: Pick<Storage, 'getItem'>): ReviewProgress | undefined {
@@ -42,6 +43,7 @@ export function readReviewProgress(storage: Pick<Storage, 'getItem'>): ReviewPro
       Date.now() - Date.parse(p.startedAt) > 24 * 60 * 60 * 1000 ||
       ![p.begun, p.confirmed, p.cancelled].every((v) => typeof v === 'boolean') ||
       (p.paymentSubmitted !== undefined && typeof p.paymentSubmitted !== 'boolean') ||
+      (p.abandonRequested !== undefined && typeof p.abandonRequested !== 'boolean') ||
       (p.paymentSubmitted && !p.begun) ||
       (p.confirmed && (!p.begun || !p.paymentSubmitted)) ||
       (p.cancelled &&
@@ -68,6 +70,7 @@ export function readReviewProgress(storage: Pick<Storage, 'getItem'>): ReviewPro
       selection: { tier: p.selection.tier, interval: p.selection.interval },
       startedAt: p.startedAt,
       begun: p.begun,
+      ...(p.abandonRequested ? { abandonRequested: true } : {}),
       ...(p.paymentSubmitted ? { paymentSubmitted: true } : {}),
       confirmed: p.confirmed,
       cancelled: p.cancelled,

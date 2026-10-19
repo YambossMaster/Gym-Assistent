@@ -24,4 +24,26 @@ export function checkoutRoutes(
     reply.header('Cache-Control', 'no-store, private')
     return checkout.intent(await identity.verify(request.headers.authorization), request.params.id)
   })
+  server.post<{ Params: { id: string } }>(
+    '/v1/billing/checkouts/:id/submitted',
+    { bodyLimit: 2 },
+    async (request, reply) => {
+      reply.header('Cache-Control', 'no-store, private')
+      return checkout.submitted(
+        await identity.verify(request.headers.authorization),
+        request.params.id,
+      )
+    },
+  )
+  server.post<{ Params: { id: string } }>(
+    '/v1/billing/checkouts/:id/abandon',
+    { bodyLimit: 2 },
+    async (request, reply) => {
+      reply.header('Cache-Control', 'no-store, private')
+      return checkout.abandon(
+        await identity.verify(request.headers.authorization),
+        request.params.id,
+      )
+    },
+  )
 }

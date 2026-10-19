@@ -43,15 +43,49 @@ class MemoryCheckouts implements CheckoutRepository {
     )
     try {
       const result = await work({
-        facts: async () => ({ ...state.facts, hasUnresolvedCheckout: state.intents.length > 0 }),
+        facts: async () => ({
+          ...state.facts,
+          hasUnresolvedCheckout: state.intents.some((i) =>
+            ['creating', 'open', 'pending', 'abandon_requested'].includes(i.status),
+          ),
+        }),
         quote: async (id) => state.quotes.find((q) => q.id === id) ?? null,
         saveQuote: async (quote) => {
           state.quotes.push(quote)
         },
-        unresolved: async () => state.intents[0] ?? null,
+        unresolved: async () =>
+          state.intents.find((i) =>
+            ['creating', 'open', 'pending', 'abandon_requested'].includes(i.status),
+          ) ?? null,
         intent: async (id) => state.intents.find((i) => i.id === id) ?? null,
         saveIntent: async (intent) => {
           state.intents = [...state.intents.filter((i) => i.id !== intent.id), intent]
+        },
+        abandonExpired: async (id, now) => {
+          const intent = state.intents.find((i) => i.id === id)
+          if (
+            !intent ||
+            !['open', 'pending', 'abandon_requested'].includes(intent.status) ||
+            Date.parse(intent.expiresAt) > now.getTime() - 300_000
+          )
+            return false
+          intent.status = 'abandoned'
+          intent.url = null
+          return true
+        },
+        markSubmitted: async (id) => {
+          const intent = state.intents.find((i) => i.id === id)
+          if (!intent || intent.status !== 'open') return false
+          intent.status = 'pending'
+          intent.url = null
+          return true
+        },
+        requestAbandon: async (id) => {
+          const intent = state.intents.find((i) => i.id === id)
+          if (!intent || intent.status !== 'open') return false
+          intent.status = 'abandoned'
+          intent.url = null
+          return true
         },
       })
       this.accounts.set(identity.userId, state)
@@ -70,6 +104,7 @@ function setup() {
       id: '1',
       url: 'https://example.lemonsqueezy.com/checkout/1',
     })),
+    hasSubscriptionSince: vi.fn(async () => false),
   }
   let now = new Date('2026-10-14T08:00:00Z')
   const module = new CheckoutModule(repository, provider, undefined, () => now)
@@ -133,7 +168,12 @@ describe('authenticated durable checkout operations', () => {
     )
     expect(new Set(results.map((i) => i.id)).size).toBe(1)
     expect(provider.create).toHaveBeenCalledTimes(1)
-    const restored = await new CheckoutModule(repository, provider).pending(identity)
+    const restored = await new CheckoutModule(
+      repository,
+      provider,
+      undefined,
+      () => new Date('2026-10-14T08:00:00Z'),
+    ).pending(identity)
     expect(restored?.quote).toMatchObject({ id: q.id, today: { amount: 0 } })
     expect(restored?.quote).not.toHaveProperty('eligibilityVersion')
     expect(restored?.intent.id).toBe(results[0]!.id)
@@ -155,10 +195,114 @@ describe('authenticated durable checkout operations', () => {
     const input = { quoteId: q.id, termsVersion: q.termsVersion }
     const first = await module.begin(identity, input)
     expect(first.status).toBe('pending')
-    setNow('2026-10-15T08:00:00Z')
+    setNow('2026-10-14T08:19:59Z')
     expect(await module.begin(identity, input)).toEqual(first)
     expect(provider.create).toHaveBeenCalledTimes(1)
     await expect(module.quote(identity, selection)).rejects.toThrow('checkout_pending')
+    setNow('2026-10-14T08:20:00Z')
+    expect((await module.quote(identity, selection)).id).not.toBe(q.id)
+  })
+  it('releases an expired unpaid provider link only after a negative provider check', async () => {
+    const { module, provider, setNow } = setup()
+    const old = await module.quote(identity, { tier: 'advanced', interval: 'year' })
+    const opened = await module.begin(identity, { quoteId: old.id, termsVersion: old.termsVersion })
+    setNow('2026-10-14T08:19:59Z')
+    await expect(module.quote(identity, selection)).rejects.toThrow('checkout_pending')
+    setNow('2026-10-14T08:20:00Z')
+    provider.hasSubscriptionSince.mockResolvedValueOnce(true)
+    await expect(module.quote(identity, selection)).rejects.toThrow('checkout_pending')
+    provider.hasSubscriptionSince.mockRejectedValueOnce(new Error('provider unavailable'))
+    await expect(module.quote(identity, selection)).rejects.toThrow('checkout_pending')
+    const fresh = await module.quote(identity, selection)
+    expect(fresh.tier).toBe('basic')
+    expect(await module.pending(identity)).toBeNull()
+    expect(await module.intent(identity, opened.id)).toEqual({ id: opened.id, status: 'abandoned' })
+    expect(provider.create).toHaveBeenCalledTimes(1)
+  })
+  it('abandons an unsubmitted checkout immediately and allows a fresh choice', async () => {
+    const { module, provider, setNow } = setup()
+    const oldQuote = await module.quote(identity, { tier: 'advanced', interval: 'year' })
+    const old = await module.begin(identity, {
+      quoteId: oldQuote.id,
+      termsVersion: oldQuote.termsVersion,
+    })
+    expect(old.status).toBe('open')
+    const abandoned = await module.abandon(identity, old.id)
+    expect(abandoned).toEqual({ id: old.id, status: 'abandoned' })
+    expect(await module.pending(identity)).toBeNull()
+    const fresh = await module.quote(identity, selection)
+    const next = await module.begin(identity, {
+      quoteId: fresh.id,
+      termsVersion: fresh.termsVersion,
+    })
+    expect(next.status).toBe('open')
+    expect(next.id).not.toBe(old.id)
+    expect(provider.create).toHaveBeenCalledTimes(2)
+  })
+  it('keeps a submitted checkout in reconciliation and blocks a second payment path', async () => {
+    const { module, provider, setNow } = setup()
+    const q = await module.quote(identity, selection)
+    const opened = await module.begin(identity, { quoteId: q.id, termsVersion: q.termsVersion })
+    expect(await module.submitted(identity, opened.id)).toEqual({
+      id: opened.id,
+      status: 'pending',
+    })
+    expect(await module.submitted(identity, opened.id)).toEqual({
+      id: opened.id,
+      status: 'pending',
+    })
+    expect(await module.abandon(identity, opened.id)).toEqual({ id: opened.id, status: 'pending' })
+    expect((await module.pending(identity))?.intent.status).toBe('pending')
+    await expect(module.quote(identity, { tier: 'advanced', interval: 'year' })).rejects.toThrow(
+      'checkout_pending',
+    )
+    const other = { ...identity, userId: randomUUID() }
+    await expect(module.submitted(other, opened.id)).rejects.toThrow('not_found')
+    setNow('2026-10-14T08:20:00Z')
+    provider.hasSubscriptionSince.mockResolvedValueOnce(true)
+    await expect(module.quote(identity, selection)).rejects.toThrow('checkout_pending')
+    const fresh = await module.quote(identity, selection)
+    expect(fresh.id).not.toBe(q.id)
+  })
+  it('lets an in-flight submit beat a delayed abandon check', async () => {
+    const { module, provider } = setup()
+    const q = await module.quote(identity, selection)
+    const opened = await module.begin(identity, { quoteId: q.id, termsVersion: q.termsVersion })
+    let finishCheck!: (value: boolean) => void
+    provider.hasSubscriptionSince.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishCheck = resolve
+        }),
+    )
+    const leaving = module.abandon(identity, opened.id)
+    await vi.waitFor(() => expect(finishCheck).toBeTypeOf('function'))
+    expect(await module.submitted(identity, opened.id)).toEqual({
+      id: opened.id,
+      status: 'pending',
+    })
+    finishCheck(false)
+    expect(await leaving).toEqual({ id: opened.id, status: 'pending' })
+    expect((await module.pending(identity))?.intent.status).toBe('pending')
+  })
+  it('keeps the old checkout locked when provider reports payment or cannot answer', async () => {
+    const { module, provider } = setup()
+    const quote = await module.quote(identity, selection)
+    const intent = await module.begin(identity, {
+      quoteId: quote.id,
+      termsVersion: quote.termsVersion,
+    })
+    provider.hasSubscriptionSince.mockResolvedValueOnce(true)
+    await expect(module.abandon(identity, intent.id)).rejects.toThrow('checkout_pending')
+    expect((await module.pending(identity))?.intent.status).toBe('open')
+    provider.hasSubscriptionSince.mockRejectedValueOnce(new Error('unavailable'))
+    await expect(module.abandon(identity, intent.id)).rejects.toThrow(
+      'checkout_recovery_unavailable',
+    )
+    await expect(module.quote(identity, { tier: 'advanced', interval: 'year' })).rejects.toThrow(
+      'checkout_pending',
+    )
+    expect(provider.create).toHaveBeenCalledTimes(1)
   })
   it('rejects stale quote/terms/eligibility and missing configuration before claiming', async () => {
     const { module, provider, repository, setNow } = setup()
@@ -188,8 +332,8 @@ describe('authenticated durable checkout operations', () => {
     const facts = repository.accounts.get(identity.userId)!.facts
     facts.hasLegacyOffer = true
     await expect(module.quote(identity, selection)).rejects.toThrow('existing_offer')
-    facts.hasLegacyOffer = false
-    facts.hasPermanentAccess = true
+    repository.accounts.get(identity.userId)!.facts.hasLegacyOffer = false
+    repository.accounts.get(identity.userId)!.facts.hasPermanentAccess = true
     await expect(module.quote(identity, selection)).rejects.toThrow('permanent_access')
   })
   it('charges a returning subscriber immediately without another provider trial', async () => {

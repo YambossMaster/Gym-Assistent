@@ -45,6 +45,19 @@ const responseSchema = z.object({
     attributes: z.object({ test_mode: z.boolean(), url: z.string().url() }),
   }),
 })
+const subscriptionListSchema = z.object({
+  data: z.array(
+    z.object({
+      type: z.literal('subscriptions'),
+      attributes: z.object({
+        created_at: z.string(),
+        test_mode: z.boolean(),
+        store_id: z.number(),
+      }),
+    }),
+  ),
+  meta: z.object({ page: z.object({ lastPage: z.number().int().positive() }) }),
+})
 export class LemonTestCheckoutProvider implements CheckoutProvider {
   constructor(
     private readonly config: LemonTestConfiguration | null,
@@ -112,6 +125,34 @@ export class LemonTestCheckoutProvider implements CheckoutProvider {
     )
       throw new Error('unsafe_checkout_url')
     return { id: result.id, url: url.href }
+  }
+  async hasSubscriptionSince(input: { email: string; since: string }): Promise<boolean> {
+    if (!this.config) throw new Error('billing_unavailable')
+    const url = new URL('https://api.lemonsqueezy.com/v1/subscriptions')
+    url.searchParams.set('filter[store_id]', this.config.storeId)
+    url.searchParams.set('filter[user_email]', input.email)
+    url.searchParams.set('page[size]', '100')
+    const response = await this.request(url.href, {
+      headers: {
+        Authorization: `Bearer ${this.config.key}`,
+        Accept: 'application/vnd.api+json',
+      },
+      signal: AbortSignal.timeout(10_000),
+      redirect: 'error',
+    })
+    if (!response.ok) throw new Error('provider_subscription_check_unavailable')
+    const result = subscriptionListSchema.parse(await response.json())
+    // Never clear an intent from an incomplete provider search.
+    if (result.meta.page.lastPage !== 1) throw new Error('provider_subscription_check_incomplete')
+    return result.data.some(({ attributes }) => {
+      if (
+        attributes.test_mode !== (this.config!.environment !== 'live') ||
+        String(attributes.store_id) !== this.config!.storeId ||
+        !Number.isFinite(Date.parse(attributes.created_at))
+      )
+        throw new Error('provider_subscription_scope_mismatch')
+      return Date.parse(attributes.created_at) >= Date.parse(input.since)
+    })
   }
   private variantId(quote: CheckoutQuote): string {
     if (!this.config) throw new Error('billing_unavailable')

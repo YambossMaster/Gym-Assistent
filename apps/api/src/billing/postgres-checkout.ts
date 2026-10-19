@@ -105,7 +105,7 @@ function transaction(c: PoolClient, workspaceId: string): CheckoutTransaction {
       )
       const row = result.rows[0]!
       const pending = await c.query(
-        "select 1 from app_private.billing_checkout_intent where workspace_id=$1 and environment=@billing_environment and status in ('creating','open','pending') limit 1",
+        "select 1 from app_private.billing_checkout_intent where workspace_id=$1 and environment=@billing_environment and status in ('creating','open','pending','abandon_requested') limit 1",
         scope,
       )
       return {
@@ -142,7 +142,7 @@ function transaction(c: PoolClient, workspaceId: string): CheckoutTransaction {
     },
     async unresolved() {
       const result = await c.query<{ intent: StoredIntent }>(
-        "select intent from app_private.billing_checkout_intent where workspace_id=$1 and environment=@billing_environment and status in ('creating','open','pending') order by created_at desc limit 1",
+        "select intent from app_private.billing_checkout_intent where workspace_id=$1 and environment=@billing_environment and status in ('creating','open','pending','abandon_requested') order by created_at desc limit 1",
         scope,
       )
       return result.rows[0]?.intent ?? null
@@ -168,6 +168,52 @@ function transaction(c: PoolClient, workspaceId: string): CheckoutTransaction {
           intent.createdAt,
         ],
       )
+    },
+    async abandonExpired(id, now) {
+      const result = await c.query(
+        `update app_private.billing_checkout_intent i
+         set status='abandoned',
+             intent=(i.intent-'url')||jsonb_build_object('status','abandoned','url',null)
+         where i.id=$2 and i.workspace_id=$1 and i.environment=@billing_environment
+           and i.status in ('open','pending','abandon_requested')
+           and (i.intent->>'expiresAt')::timestamptz <= $3::timestamptz - interval '5 minutes'
+           and not exists(select 1 from app_private.billing_subscription_ledger s
+             where s.environment=i.environment and s.workspace_id=i.workspace_id and s.intent_id=i.id)
+           and not exists(select 1 from app_private.billing_event_inbox e
+             where e.environment=i.environment
+               and e.notification->>'intentId'=i.id::text)
+         returning i.id`,
+        [workspaceId, id, now.toISOString()],
+      )
+      return result.rowCount === 1
+    },
+    async markSubmitted(id) {
+      const result = await c.query(
+        `update app_private.billing_checkout_intent i
+         set status='pending',
+             intent=(i.intent-'url')||jsonb_build_object('status','pending','url',null)
+         where i.id=$2 and i.workspace_id=$1 and i.environment=@billing_environment
+           and i.status='open'
+         returning i.id`,
+        [workspaceId, id],
+      )
+      return result.rowCount === 1
+    },
+    async requestAbandon(id) {
+      const result = await c.query(
+        `update app_private.billing_checkout_intent i
+         set status='abandoned',
+             intent=(i.intent-'url')||jsonb_build_object('status','abandoned','url',null)
+         where i.id=$2 and i.workspace_id=$1 and i.environment=@billing_environment
+           and i.status='open'
+           and not exists(select 1 from app_private.billing_subscription_ledger s
+             where s.environment=i.environment and s.workspace_id=i.workspace_id and s.intent_id=i.id)
+           and not exists(select 1 from app_private.billing_event_inbox e
+             where e.environment=i.environment and e.notification->>'intentId'=i.id::text)
+         returning i.id`,
+        [workspaceId, id],
+      )
+      return result.rowCount === 1
     },
   }
 }
