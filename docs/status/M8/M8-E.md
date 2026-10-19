@@ -10,6 +10,13 @@
 
 ## 2026-10-19 PO 上線時序決定與目前總清單
 
+### 2026-10-19 18:25 R14 候選同版合併部署與正式讀回
+
+- **範圍與審查：** PO 已授權合併並部署。相對發布前 Main `7b3923a` 的 25 檔差異只在支付 API、方案／結帳／付款狀態、付款法律文案、本地支付預覽與 M8-E 文件；沒有 App Shell、其他 Coach route、共用設計 token、migration 或相依套件變更。永久 Prime 的方案比較與不可變更守衛、一般首次一個月試用、既有付款意圖的待確認／成功邊界與手機留白是直接影響面；相鄰付款狀態頁與一般方案頁一併讀回。兩軸審查未發現阻擋發布的程式／規格問題。Main 新增的 Live 取消文件保留，R01／R14 的舊「部分」列由較新的 PO 驗收取代。
+- **同版檢查與部署：** 整合分支 `94898e5` 的本地 `npm run check` 通過根腳本 38/38、API 63 檔 376/376、Web 94 檔 422/422，`npm run build` 成功。[PR #61](https://github.com/YambossMaster/Gym-Assistent/pull/61) 的 [CI #279](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39236105348) 全綠，合併為 Main `a12e5a5b6e1c26e363f3c2fb42835ff48bff15db`。[Main CI #280](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39236640713) 的 verify、browser-ui、migration-dry-run、Production migration preview 與 deploy-production 全部通過；無新增 migration。Fly `formcoachdesk` 啟動機器的映像標籤 `GH_SHA` 為同一 Main SHA，service check passing。
+- **獨立正式讀回：** `https://formcoachdesk.com/api/ready`、`/`、`/login`、`/plans` 均 HTTP 200；正式 HTML 載入新版 `index-Cn_XxceG.js`／`index-tsk_4tIb.css`。已登入一般帳號的方案頁保留 Free／Pro／Prime 與月年切換，Prime 賣點只列「收支報表」；既有未確認的 Prime 年繳意圖進入「正在確認你的訂閱」並提醒不要再次付款，沒有另建交易。正式 `/payment-notice` 顯示新付款與帳單文案、支付服務商說明、原生一個月試用，沒有優惠碼段落；Chrome 390px 量測 `scrollWidth=375 < innerWidth=390`，無水平溢出。這次沒有進行新的 Live 付款，亦未在正式永久 Prime 帳號重新操作方案選擇；後者的 PO 本地驗收、API 守衛與同 SHA 部署為沿用證據。
+- **固定清單／下一步：** **R01–R07、R10–R17 共 15 項通過；R08 條件結案；R09 等原訂閱自然首扣／續扣事件後補。** 付費優惠碼 C01 已撤回，正式頁面維持關閉。無需 PO 現在操作；在自然事件發生後讀回 Lemon 發票、簽章事件、owner 帳本與權益，再補 R09。此段為 Main 已合併部署的正式證據，下面較早的「待推送／待驗收」段落只保留歷史脈絡。
+
 ### 2026-10-19 18:05 PO 授權整合與部署，對齊最新 Main
 
 - **授權與範圍：** PO 明確同意將已驗收的支付候選合併並部署，R09 仍依自然事件後補；要求核對新改動是否誤傷既有功能、版面及穩定性。候選 `fe2d332` 已在隔離工作樹完成完整本地 check／build。最新 `origin/main` 為 `7b3923a`，相對舊基準只增加 M8-E Live 取消的正式文件；無程式碼或 migration 變更。
