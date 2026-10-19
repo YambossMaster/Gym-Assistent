@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-19 against remote `origin/main` at
-> `66caf697d59e64b008395c8376cae9f8e041041a` and the Product Owner's M8-D completion decision.
+> Integrated Main router, reconciled 2026-10-19 against deployed Main
+> `a12e5a5b6e1c26e363f3c2fb42835ff48bff15db` and the Product Owner's M8-E acceptance decision.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -16,6 +16,13 @@
 | Beta ops     | Latest Main Status recorded 0 real Coaches, 3 test accounts and two unused Beta codes. This is a historical snapshot, not a fresh Production count.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Payment      | M8-E Live worker TLS repair [PR #58](https://github.com/YambossMaster/Gym-Assistent/pull/58) deployed as d3e215b; [Main CI #274](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39142971519) passed. Documentation [PR #59](https://github.com/YambossMaster/Gym-Assistent/pull/59) merged as 66caf69 and [Main CI #276](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39144603411) passed with deployment skipped. The isolated Live Pro annual trial has one confirmed intent, owner-bound subscription 2617697, paid TWD 0 invoice 8757694 and verified trial period. Lemon, Production ledger and Coach page confirm renewal cancelled with original 2026-11-18 end. The original webhook TLS failure was repaired and signed events reconciled. Natural paid collection remains R09; no second transaction is needed for cancellation. |
 
+M8-E acceptance corrections [PR #61](https://github.com/YambossMaster/Gym-Assistent/pull/61) merged
+as `a12e5a5`; [Main CI #280](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39236640713)
+passed verify, browser UI, migration checks, Production preview and Fly deployment. Fly's running
+image label matches the Main SHA; readiness and independent `/api/ready`, `/`, `/login`, `/plans`
+readbacks returned 200. The released payment notice shows the approved wording and one-month trial,
+without a discount-code section. No new migration or Live transaction was made for this correction.
+
 The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
 merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
 passed all required jobs and deployed the same commit. Production returned HTTP 200 for
@@ -29,9 +36,9 @@ separate task.
 
 ## Active workstreams
 
-| Workstream   | Owns                                                                         | State and entry                                                                                                                                                                      |
-| ------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). Thirteen items passed, R08 conditionally closed, three remain partial: R01 final acceptance, R09 natural charge/renewal, R14 final 390px flow. |
+| Workstream   | Owns                                                                         | State and entry                                                                                                                                                         |
+| ------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). Fifteen items passed and released, R08 conditionally closed; only R09 awaits its natural charge/renewal event and later evidence. |
 
 The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) merged as
 PR #47 / `d4b9a49`. [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121728371)
@@ -55,14 +62,12 @@ recovery fix merged as `206e115`; [Main CI #260](https://github.com/YambossMaste
 passed exact-SHA verification, Fly deployment and readiness. At that historical checkpoint, public
 config reported `billingLiveEnabled:false`; the current Live release is recorded above.
 
-The workstream has thirteen R items passed (R02–R07, R10–R13, R15–R17), R08
-conditionally closed, and three partial (R01, R09, R14). The PO approved continuing Live
-release without waiting for R09 natural first charge or renewal; that later provider/owner
-result remains a separate check. The original Production Coach Live trial now has a verified
-subscription, NT$0 paid invoice, trial period, confirmed intent and cancelled renewal.
-Lemon, Production ledger and Coach page agree on cancellation and the original 2026-11-18
-end. The remaining immediate work is final 390px flow review and PO acceptance; no further
-check of this cancellation is needed. See [M8-E Status](status/M8/M8-E.md).
+The workstream has fifteen R items passed (R01–R07, R10–R17) and R08 conditionally closed.
+The PO accepted the final 390px R14 flow, and the exact-SHA release above is deployed. R09 remains
+the approved natural-event follow-up; do not create a new transaction merely to close it. The
+original Production Coach Live trial has a verified subscription, NT$0 paid invoice, trial period,
+confirmed intent and cancelled renewal. Lemon, Production ledger and Coach page agree on the
+original 2026-11-18 end. See [M8-E Status](status/M8/M8-E.md).
 
 ## Handoff rule
 
