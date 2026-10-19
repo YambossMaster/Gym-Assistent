@@ -44,10 +44,16 @@ Before planning, changing, or reporting formal-product work:
   Report useful links, findings, and how they fit this product. Verify uncertainty instead of filling
   gaps from memory or model intuition. Skip external lookup when current repository evidence fully
   answers a narrow task.
-- When the request and evidence establish a safe direction, proceed through the scoped work without
-  an extra confirmation. Ask only for a product decision that remains unresolved after investigation,
-  a material scope change, or an action that requires explicit authorization. Incorporate feedback
-  into the current work rather than restarting an approval cycle.
+- Optimize for the overall outcome, not the elimination of one isolated risk. Before proposing a
+  safeguard or stopping work, distinguish observed evidence from a possible scenario; assess its
+  trigger, plausible likelihood, severity and affected scope alongside the safeguard's cost to
+  ordinary users, delivery progress and approved goals. Prefer the smallest targeted prevention,
+  detection or recovery that preserves the approved flow. A possibility alone is not a blocker.
+  Treat approved product decisions as constraints and continue the work they permit. Reopen one only
+  when evidence shows targeted measures are insufficient and the remaining harm outweighs the cost
+  of changing course; present that evidence, alternatives and tradeoffs with the specific decision
+  needed. Otherwise ask only for an unresolved product decision, material scope change or action
+  requiring explicit authorization, and incorporate feedback without restarting an approval cycle.
 
 ## Sources of truth
 
