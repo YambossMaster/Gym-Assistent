@@ -148,10 +148,11 @@ source files and intentional evidence remain visible.
 Chrome, Supabase, and GitHub may appear through different capability types in different sessions; use
 the best available mechanism and fall back cleanly when one is unavailable.
 
-- **Chrome:** use the normal browser session for live UI acceptance, responsive checks, authenticated
-  project dashboards, and evidence that cannot be obtained reliably from code or a purpose-built
-  connector. Reuse an existing relevant tab/session when practical and never expose credentials in
-  output or source files.
+- **Chrome:** for tasks in the user's normal Chrome browser, use the `@Chrome` browser tool directly
+  to select the tab, read its URL and state, and interact with the page. This includes live UI
+  acceptance, responsive checks, authenticated dashboards, and payment handoff pages. Reuse an
+  existing relevant tab/session when practical and never expose credentials in output or source
+  files. Use Windows Computer Use for native desktop apps, not as the route to a Chrome tab.
 - **Supabase:** use the Supabase Skill and available connector or CLI for current documentation,
   schema/Auth/security inspection, development-environment operations, migration checks, advisors,
   and live evidence. Discover CLI syntax with `--help`, create migrations through the official CLI,
@@ -164,7 +165,10 @@ the best available mechanism and fall back cleanly when one is unavailable.
   explicit scope.
 
 Tool availability is environment-dependent. If a required capability is absent or disconnected,
-continue with a safe available fallback and report only the evidence actually observed.
+refresh the target and retry once, then continue with a safe available fallback and report the
+exact observed error. A failed browser operation blocks only the affected UI step; continue other
+authorized work and preserve a concrete resume point. Do not infer a URL verification failure from
+a generic window-state timeout or end the whole task while a suitable browser route remains.
 
 ## Implementation rules
 
