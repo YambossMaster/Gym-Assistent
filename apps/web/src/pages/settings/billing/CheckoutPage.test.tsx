@@ -60,6 +60,7 @@ it('renders a prepared quote immediately without requesting it again after navig
 })
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup()
+  window.sessionStorage.clear()
   vi.unstubAllGlobals()
 })
 async function mount(
@@ -180,14 +181,33 @@ it('invalidates consent when interval changes and does not infer success from th
   await view.click(view.button('開始體驗'))
   await act(async () => view.success())
   await view.flush()
-  expect(view.host.textContent).toContain('付款尚未完成')
+  expect(view.host.textContent).toContain('正在確認你的訂閱')
+  expect(view.host.textContent).not.toContain('返回同一筆結帳')
   expect(view.host.textContent).not.toContain('體驗已開始')
   expect(view.gateway.begin).toHaveBeenCalledTimes(1)
   view.confirm()
-  await view.click(view.button('查詢付款結果'))
+  await act(async () => view.success())
+  await view.flush()
   expect(view.host.textContent).toContain('Pro 體驗已開始')
   await view.click(view.button('完成，查看我的方案'))
   expect(view.onComplete).toHaveBeenCalledTimes(1)
+})
+
+it('does not offer the provider checkout again after a success callback and page reload', async () => {
+  const first = await mount(
+    {},
+    { id: 'intent1', status: 'open', url: 'https://store.lemonsqueezy.com/checkout/custom/id' }
+  )
+  await first.click(first.button('返回同一筆結帳'))
+  await act(async () => first.success())
+  await first.flush()
+  expect(first.host.textContent).toContain('正在確認你的訂閱')
+  const restored = await mount(
+    {},
+    { id: 'intent1', status: 'open', url: 'https://store.lemonsqueezy.com/checkout/custom/id' }
+  )
+  expect(restored.host.textContent).toContain('正在確認你的訂閱')
+  expect(restored.host.textContent).not.toContain('返回同一筆結帳')
 })
 
 it('does not show the previous interval price while the replacement quote is pending', async () => {
@@ -217,7 +237,6 @@ it('does not show the previous interval price while the replacement quote is pen
   await view.flush()
   expect(view.host.textContent).toContain('NT$1,150')
 })
-
 it('shows the provider-configured one-month trial and no site discount entry', async () => {
   const view = await mount()
   expect(view.host.querySelector('#checkout-code')).toBeNull()
@@ -299,10 +318,11 @@ it('restores a server-owned checkout without quoting or creating a second checko
   expect(view.host.querySelector('.billing-summary')).toBeNull()
   expect(view.host.textContent).toContain('NT$115')
   expect(view.host.textContent).toContain('正在確認你的訂閱')
-  expect(view.button('查詢訂閱結果')).toBeTruthy()
+  expect(view.button('查詢訂閱結果')).toBeUndefined()
+  expect(view.host.textContent).toContain('結果會自動更新')
 })
 
-it('reports an unchanged checkout result after an explicit query', async () => {
+it('keeps an unfinished checkout on its original provider URL without creating another intent', async () => {
   const view = await mount(
     {},
     {
@@ -311,8 +331,27 @@ it('reports an unchanged checkout result after an explicit query', async () => {
       url: 'https://store.lemonsqueezy.com/checkout/custom/id'
     }
   )
-  await view.click(view.button('查詢付款結果'))
-  expect(view.host.textContent).toContain('已查詢：這筆付款尚未完成，可繼續原付款。')
+  expect(view.button('查詢付款結果')).toBeUndefined()
+  await view.click(view.button('返回同一筆結帳'))
+  expect(view.gateway.begin).not.toHaveBeenCalled()
+})
+
+it('withholds the provider link while the latest payment status cannot be read', async () => {
+  const view = await mount(
+    {
+      intent: vi.fn(async () => {
+        throw new Error('unavailable')
+      })
+    },
+    {
+      id: 'persisted-intent',
+      status: 'open',
+      url: 'https://store.lemonsqueezy.com/checkout/custom/id'
+    }
+  )
+  expect(view.host.textContent).toContain('暫時無法確認付款狀態')
+  expect(view.button('重試查詢')).toBeTruthy()
+  expect(view.button('返回同一筆結帳')).toBeUndefined()
 })
 
 it('recovers the same checkout when the payment overlay cannot open', async () => {

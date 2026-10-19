@@ -62,6 +62,11 @@ export class PostgresPaidChange implements PaidChangeRepository {
       await c.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [
         `billing-subscription-command:${workspace}`,
       ])
+      const permanent = await c.query(
+        "select 1 from app_private.beta_grant where workspace_id=$1 and kind='permanent'",
+        [workspace],
+      )
+      if (permanent.rowCount) throw new BillingError(409, 'permanent_access')
       return work(c, workspace)
     })
   }

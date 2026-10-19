@@ -61,10 +61,10 @@ export function PlanPanel({
   const currentBadge = (tier: PlanAccess['tier']) => {
     if (subscription && tier === 'free') return null
     if (plan?.tier !== tier) return null
+    if (plan.source === 'permanent') return '目前方案 · 永久'
     if (subscription && subscription.tier === tier)
       return `目前方案 · ${tier === 'advanced' ? 'Prime' : 'Pro'} ${subscription.interval === 'month' ? '月繳' : '年繳'}`
     if (plan.source === 'promotional') return '目前方案 · 優惠體驗'
-    if (plan.source === 'permanent') return '目前方案 · 永久'
     return '目前方案'
   }
   const isCurrentSelection = (tier: 'basic' | 'advanced') =>
@@ -75,7 +75,8 @@ export function PlanPanel({
       : plan?.tier === tier
   const selectionReady = !loading && !error
   const canChoose = (tier: 'basic' | 'advanced') =>
-    !canChoosePlan || canChoosePlan({ tier, interval: selectedInterval })
+    plan?.source !== 'permanent' &&
+    (!canChoosePlan || canChoosePlan({ tier, interval: selectedInterval }))
   const paidChoiceLabel = (tier: 'basic' | 'advanced') => {
     if (!subscription)
       return preparationOnly ? `查看 ${tierName(tier)} 訂閱` : `選擇 ${tierName(tier)}`
@@ -87,6 +88,9 @@ export function PlanPanel({
   return (
     <div className="settings-plan-page">
       <section className="settings-plan-section settings-pricing-section" aria-label="方案比較">
+        {plan?.source === 'permanent' && (
+          <p className="settings-plan-note">你目前享有永久 Prime 資格，無須變更方案。</p>
+        )}
         {error && (
           <p role="alert" className="settings-plan-note">
             暫時無法讀取方案。
@@ -169,7 +173,8 @@ export function PlanPanel({
                 </li>
               ))}
             </ul>
-            {subscription &&
+            {plan?.source !== 'permanent' &&
+              subscription &&
               subscription.status !== 'cancelled' &&
               onChooseFree &&
               selectionReady && (
@@ -201,9 +206,10 @@ export function PlanPanel({
                 </li>
               ))}
             </ul>
-            {(!subscription ||
-              subscription.status === 'trial' ||
-              subscription.status === 'active') &&
+            {plan?.source !== 'permanent' &&
+              (!subscription ||
+                subscription.status === 'trial' ||
+                subscription.status === 'active') &&
               (preparationOnly || !isCurrentSelection('basic')) && (
                 <div className="settings-plan-card-footer">
                   {onChoosePlan && selectionReady && canChoose('basic') ? (
@@ -244,22 +250,18 @@ export function PlanPanel({
               {selectedInterval === 'year' && <em>約 NT$121／月</em>}
             </div>
             <ul className="settings-plan-features">
-              {[
-                '無限學員數量',
-                '無限場地數量',
-                '本月收支與成長軌跡',
-                '收支報表',
-                '行事曆整合',
-                '收支明細匯出'
-              ].map((feature) => (
-                <li key={feature}>
-                  <CircleCheck aria-hidden="true" /> {feature}
-                </li>
-              ))}
+              {['無限學員數量', '無限場地數量', '本月收支與成長軌跡', '收支報表', '行事曆整合'].map(
+                (feature) => (
+                  <li key={feature}>
+                    <CircleCheck aria-hidden="true" /> {feature}
+                  </li>
+                )
+              )}
             </ul>
-            {(!subscription ||
-              subscription.status === 'trial' ||
-              subscription.status === 'active') &&
+            {plan?.source !== 'permanent' &&
+              (!subscription ||
+                subscription.status === 'trial' ||
+                subscription.status === 'active') &&
               (preparationOnly || !isCurrentSelection('advanced')) && (
                 <div className="settings-plan-card-footer">
                   {onChoosePlan && selectionReady && canChoose('advanced') ? (
@@ -513,9 +515,11 @@ export function PlansPage({ session }: { session: Session }) {
       title={localBillingEnabled ? '比較方案與價格' : '比較方案與 Beta 權益'}
       eyebrow="FORM 方案"
       description={
-        localBillingEnabled
-          ? '選擇適合你的方案與付款週期。'
-          : 'Beta 期間開放 Free 方案；Pro 與 Prime 將於支付功能上線後開放選購。'
+        planQuery.data?.source === 'permanent'
+          ? undefined
+          : localBillingEnabled
+            ? '選擇適合你的方案與付款週期。'
+            : 'Beta 期間開放 Free 方案；Pro 與 Prime 將於支付功能上線後開放選購。'
       }
       className="plans-page"
       beforeHeader={<MobilePageAppBar title="所有方案" />}
@@ -545,6 +549,7 @@ export function PlansPage({ session }: { session: Session }) {
           !planQuery.isPending &&
           !planQuery.isError
             ? async (selection) => {
+                if (planQuery.data?.source === 'permanent') return
                 if (preparing) return
                 setPreparationError('')
                 if (billingQuery.data?.subscription?.status === 'trial') {
@@ -605,6 +610,7 @@ export function PlansPage({ session }: { session: Session }) {
             : undefined
         }
         canChoosePlan={(selection) => {
+          if (planQuery.data?.source === 'permanent') return false
           const current = billingQuery.data?.subscription
           if (!current) return true
           if (current.status === 'trial')

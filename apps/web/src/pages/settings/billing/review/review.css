@@ -55,11 +55,14 @@
 }
 @media (max-width: 720px) {
   .billing-review-toolbar {
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
+    position: static;
+    max-width: none;
+    margin: 8px;
     justify-content: space-between;
     gap: 6px;
+  }
+  .billing-review-shell .main-content {
+    padding-bottom: 0;
   }
   .billing-review-hint {
     display: none;

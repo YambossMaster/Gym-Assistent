@@ -53,6 +53,11 @@ export class PostgresTrialChange implements TrialChangeRepository {
       await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [
         `billing-trial-change:${workspaceId}`,
       ])
+      const permanent = await client.query(
+        "select 1 from app_private.beta_grant where workspace_id=$1 and kind='permanent'",
+        [workspaceId],
+      )
+      if (permanent.rowCount) throw new BillingError(409, 'permanent_access')
       return work(client, workspaceId)
     })
   }

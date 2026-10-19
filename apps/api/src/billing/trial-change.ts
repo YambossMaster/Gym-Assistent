@@ -106,7 +106,8 @@ export class TrialChangeModule {
         return { status: 'pending' as const }
       await this.repository.confirm(identity, baseline, result)
       return { status: 'confirmed' as const }
-    } catch {
+    } catch (error) {
+      if (error instanceof BillingError && error.code === 'permanent_access') throw error
       // A timed-out PATCH might already have changed Lemon. Recover by read-back on retry.
       return { status: 'pending' as const }
     }

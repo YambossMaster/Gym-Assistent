@@ -48,7 +48,7 @@ export function lemonCheckoutPayload(input: {
         checkout_options: {
           embed: true,
           skip_trial: input.skipTrial,
-          discount: true,
+          discount: false,
           locale: 'zh-CN',
           background_color: '#f7f8f5',
           headings_color: '#18211d',

@@ -6,17 +6,13 @@
 
 ### 帳單金額可能略有不同
 
-付款時可能產生小額交易手續費與匯率誤差，因此信用卡帳單金額可能與頁面標價略有不同。實際金額以信用卡帳單為準。
+付款時可能產生小額交易手續費與匯率誤差，因此實際付款與帳單金額可能與頁面標價略有不同。實際金額以信用卡帳單為準。
 
 ### 訂閱與免費體驗
 
-訂閱摘要列出所選方案、今天應付、預計首次扣款日期與方案金額。優惠碼折扣會在 Lemon Squeezy 結帳時反映；訂閱成立後可在方案與帳單查看確認的扣款日期。年繳方案每次收取完整年度費用。
+訂閱摘要列出所選方案、今天應付、預計首次扣款日期與方案金額。訂閱成立後可在方案與帳單查看確認的扣款日期。年繳方案每次收取完整年度費用。
 
 只有首次訂閱 Pro 或 Prime 可享 1 個月免費體驗。於 Lemon Squeezy 完成付款方式設定，今天應付 NT$0；體驗結束後由 Lemon Squeezy 依所選方案與週期扣款及自動續訂。續訂與再次訂閱沒有第二次免費體驗，再次訂閱於結帳時付款。先前已領取的免付款優惠不會自行轉為付費訂閱。
-
-### 優惠碼
-
-如有適用的折扣碼，可於 Lemon Squeezy 結帳頁輸入。適用資格、折扣金額及實際收費均由 Lemon Squeezy 計算；本站不另設輸入欄。
 
 ### 取消續訂
 
@@ -36,11 +32,11 @@
 
 ### 手續費與換匯說明
 
-付款由 Lemon Squeezy 處理，交易可能涉及美元換算與發卡行的國外交易費。實際費率與換匯依發卡行規定；本站不另加收訂閱處理費。不使用固定費率或差額上限保證。
+付款由支付服務商 Lemon Squeezy 處理，交易將換算為美元。信用卡帳單金額依發卡行匯率與國外交易費計算；本站不另加收訂閱處理費。不使用固定費率或差額上限保證。
 
 ## 服務條款第 4 節同步替換稿
 
-Free 方案與先前已領取的免付款優惠不會自行轉為付費訂閱。只有首次訂閱 Pro 或 Prime 可享 1 個月免費體驗，結帳時須完成付款方式設定，今天應付 NT$0；續訂或再次訂閱不再提供免費體驗，再次訂閱須於結帳時付款。體驗期滿後，由 Lemon Squeezy 依結帳時同意的方案與週期扣款、自動續訂；訂閱成立後以 Lemon Squeezy 確認的扣款日期為準。優惠碼如適用，於 Lemon 結帳頁輸入並由 Lemon 計算折扣。
+Free 方案與先前已領取的免付款優惠不會自行轉為付費訂閱。只有首次訂閱 Pro 或 Prime 可享 1 個月免費體驗，結帳時須完成付款方式設定，今天應付 NT$0；續訂或再次訂閱不再提供免費體驗，再次訂閱須於結帳時付款。體驗期滿後，由 Lemon Squeezy 依結帳時同意的方案與週期扣款、自動續訂；訂閱成立後以 Lemon Squeezy 確認的扣款日期為準。
 
 付款由 Lemon Squeezy 作為 Merchant of Record 處理。我們不取得或儲存完整信用卡號。結帳前顯示方案、計費週期、首次或本次應付金額與續訂條件。本站以新台幣顯示價格，交易由 Lemon Squeezy 換算為美元處理，發卡行的換匯及國外交易費可能使信用卡帳單金額不同。
 
@@ -48,7 +44,7 @@ Free 方案與先前已領取的免付款優惠不會自行轉為付費訂閱。
 
 ### English amendment
 
-Free plans and previously granted promotions without payment do not automatically become paid subscriptions. Only the first Pro or Prime subscription includes a one-month free trial. Customers set up a payment method at checkout and pay nothing today. Renewals and later subscriptions do not include another free trial; a later subscription is charged at checkout. Lemon Squeezy charges and renews the selected plan after the trial; the confirmed subscription supplies the actual charge date. If applicable, discount codes are entered at Lemon checkout and Lemon calculates the discount.
+Free plans and previously granted promotions without payment do not automatically become paid subscriptions. Only the first Pro or Prime subscription includes a one-month free trial. Customers set up a payment method at checkout and pay nothing today. Renewals and later subscriptions do not include another free trial; a later subscription is charged at checkout. Lemon Squeezy charges and renews the selected plan after the trial; the confirmed subscription supplies the actual charge date.
 
 Lemon Squeezy handles payments as Merchant of Record. We do not receive or store complete card numbers. The plan, billing interval, initial or current amount due, and renewal terms are displayed before checkout. Prices are displayed in TWD, while Lemon Squeezy converts transactions to USD for processing. Your card issuer's exchange rate and foreign transaction fees may cause your card statement amount to differ.
 

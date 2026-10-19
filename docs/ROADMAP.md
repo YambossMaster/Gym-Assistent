@@ -877,6 +877,15 @@ migration, Production and remote delivery checkpoints. This does not activate M8
 
 #### M8-E — Paid checkout before first offer expiry
 
+**PO discount decision — 2026-10-19 (supersedes the paid discount-code portions below):**
+Do not offer Lemon Squeezy discount codes in the M8-E paid checkout. Retain the native one-month
+free trial for an account's first Pro or Prime subscription, with the existing provider-confirmed
+trial and renewal rules. The app and Lemon checkout must not offer a discount-code input or apply
+the unreleased `drinkmorewater` C01 candidate. Previously granted card-free Beta access and
+permanent Prime entitlements retain their separate rules; this decision does not revoke them.
+The fixed R01–R17 launch register and R09 natural-event follow-up remain unchanged. Any future paid
+coupon campaign requires a new Product Owner decision and its own verified provider behavior.
+
 **PO launch-timing decision — 2026-10-18 (supersedes only the wait for calendar-time R09 evidence):**
 Continue M8-E development, Live preparation and release without waiting for the original one-month
 Test Mode trial to reach its natural first charge or for a monthly subscription to renew. Keep R09

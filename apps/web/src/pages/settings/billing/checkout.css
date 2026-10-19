@@ -253,7 +253,7 @@
 }
 @media (max-width: 760px) {
   .checkout-page {
-    padding: 0 20px 84px;
+    padding: 0 20px calc(32px + env(safe-area-inset-bottom));
   }
   .checkout-topbar {
     min-height: 80px;
@@ -296,6 +296,9 @@
   .checkout-confirmation > header,
   .checkout-confirmation .billing-summary-body {
     padding: 22px;
+  }
+  .checkout-feedback {
+    min-height: 28px;
   }
   .checkout-renewal-note {
     display: none;

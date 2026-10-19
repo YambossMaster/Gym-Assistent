@@ -1,5 +1,96 @@
 # M8-E local implementation contract
 
+## 2026-10-19 PO decision — no paid discount codes
+
+The paid Lemon Squeezy checkout offers only the existing native one-month trial for an account's
+first Pro or Prime subscription. Do not accept a paid discount code in the app quote API, display
+a code field in the app or provider checkout, or use the unreleased C01 introductory price flow.
+This supersedes the C01 candidate sections below; they remain historical implementation evidence,
+not active release requirements. Existing card-free Beta entitlements and permanent Prime grants
+are separate and remain valid. R01–R17, including R09 and R14, keep their existing gates.
+
+## C01 local candidate implementation note — 2026-10-19 02:38
+
+The branch-local candidate now reserves `drinkmorewater` by verified workspace and environment
+when an intent is created. A zero-value initial trial invoice never consumes it. A positive `paid`
+subscription invoice consumes it only after the existing invoice/period authority validates the
+90% first-charge price within the already approved FX tolerance. A durable worker then changes
+the same subscription from the introductory variant to the standard variant, with prorations and
+immediate invoicing disabled. It reads the subscription again before retrying a lost response;
+plan changes wait until that switch is confirmed. A cancelled introductory subscription remains
+cancelled and cannot be switched while inactive. Uncertain/abandoned checkout intents remain
+unresolved until provider reconciliation; the reservation is not marked consumed merely because
+the URL expires. A later eligible checkout can reuse a reservation only if no subscription bound
+to that prior intent. These fail-closed conditions preserve the once-per-account rule.
+
+The provider checkout's native subscription preview would repeat the temporary custom price
+forever until the switch. For introductory checkouts, the candidate hides that misleading preview
+and states the first positive charge and later catalog renewal in the provider product description;
+the site's quote shows the same two amounts. Live promotion entry is hidden unless the server
+has the required introductory variant for the selected tier and interval and the account is
+eligible. Live still has no introductory catalog configuration, migration application or release
+authorization. Focused local checks are recorded in M8-E Status; Development database and actual
+provider switch verification remain for the approved later gate.
+
+## C01 drinkmorewater addition — PO decision 2026-10-19; local design
+
+The Product Owner requested `drinkmorewater`: 10% off the account's first actual positive payment
+after the code is used, strictly once per Form Coach Desk account. A zero-amount trial order does
+not consume the economic benefit. Later paid renewals return to the normal plan price. The
+account-scoped eligibility, reservation and consumption rule is server-owned; Lemon must calculate
+the charge and produce the matching invoice. An abandoned checkout must not consume the benefit;
+two concurrent checkouts or a resubscription by the same account must not obtain it twice.
+
+This is a new addition to the earlier Lemon-native discount ruling. The shared public code must
+not be enabled as a Live Lemon discount until the account limit is enforced. An isolated Test Mode
+10% `duration=once` code initially previewed NT$0 now, NT$103.50 after the one-month Pro trial,
+and NT$115 on later months. The later provider invoice evidence below supersedes that preview.
+No Production provider setting, migration or checkout activation follows from this decision alone.
+
+The 2026-10-19 Test Mode trial exposed a provider mismatch: the `duration=once`, max-one coupon
+redeemed on the initial NT$0 order (redemption amount 0), while the first later positive invoice
+showed no discount. Its quoted subtotal and total were NT$114.89 and discount total NT$0; its
+`pending` status means settlement is unverified, but does not erase the clear discount-allocation
+result. The test subscription's future renewal was cancelled. Therefore the tested native once
+coupon cannot satisfy this Contract for trial subscriptions. Keep the public code and app entry
+closed.
+
+A second isolated Test Mode trial with a 10% `repeating` discount for two months also redeemed
+against the NT$0 order; its first positive invoice likewise showed NT$0 discount and was `pending`
+when read. Its future renewal was cancelled without forcing another charge. This alternative also
+fails the first-positive-charge gate; do not infer provider behavior from the checkout preview.
+
+On 2026-10-19 the Product Owner authorized a **Test Mode and local Contract prototype only** of a
+separate introductory variant: preserve the one-month trial, create a checkout with a server-owned
+introductory custom price, then after a verified first positive payment move the same subscription
+to its standard variant with prorations disabled so future renewal uses the standard price. Lemon's
+[custom pricing guide](https://docs.lemonsqueezy.com/guides/developer-guide/taking-payments)
+states that a subscription custom price persists until a different variant is selected; its
+[subscription management guide](https://docs.lemonsqueezy.com/guides/developer-guide/managing-subscriptions)
+describes next-renewal price changes without proration. Together with the observed Test Mode
+introductory-price invoice below, these establish a supported provider mechanism for the local
+design; another accelerated provider transaction is not a prerequisite to implement it. The
+server must enforce one economic benefit per verified account, switch only after the first
+**paid positive** provider invoice, handle retries/cancellation and apply the same rule to month
+and year variants. Focused tests must cover those app-owned rules. A later natural paid renewal
+remains useful operational evidence, not a blocker to local design. No Live variant, public code,
+migration or app entry is authorized by this Test Mode prototype.
+
+The isolated Pro monthly Test Mode variant `2250118` was published with a one-month trial and
+NT$115 catalog price. Its checkout used a NT$103.50 custom price, but the provider rendered
+NT$103.50 for **every** future month until a variant switch. The Product Owner submitted the
+test checkout; the zero-amount initial invoice was paid. With the Product Owner's specific
+authorization, the trial was accelerated. The first positive renewal invoice `8758783` was
+`pending` for NT$103.53, with no discount line, against the checkout's NT$103.50 preview. The
+NT$0.03 difference is within the existing transaction-rate FX tolerance below; **exact TWD
+equality was never required**. `pending` only means actual collection was not proved. The
+subscription `2618012` was cancelled and read back as cancelled, so no second renewal was forced
+and the switch to the standard variant was not attempted. The provider's documented variant
+behavior supports that next step; annual configuration and app-level account-once enforcement
+remain implementation work, with natural paid renewal evidence tracked separately.
+The three provider diagnostic subscriptions `2617960`, `2617986` and `2618012` all have future
+renewals cancelled. C01 remains unavailable in Live and in the app.
+
 ## Release timing decision — Product Owner 2026-10-18
 
 The Product Owner directed continued development and Live release even if R09's naturally timed

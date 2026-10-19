@@ -81,7 +81,7 @@ export default function BillingReview() {
               setStarted(null)
               setSettled(false)
               navigate(
-                `${base}/${['invoices', 'cancel_error', 'past_due', 'expired'].includes(next) ? 'billing' : 'checkout'}`,
+                `${base}/${next === 'permanent' ? 'plans' : ['invoices', 'cancel_error', 'past_due', 'expired'].includes(next) ? 'billing' : 'checkout'}`,
                 { replace: true }
               )
             }}
@@ -94,6 +94,7 @@ export default function BillingReview() {
             <option value="cancel_error">取消待確認／重試</option>
             <option value="past_due">續訂付款待處理</option>
             <option value="expired">已到期／Free</option>
+            <option value="permanent">永久 Prime</option>
           </select>
         </label>
         <button
@@ -107,7 +108,9 @@ export default function BillingReview() {
             setTrialSelection(null)
             setPreparationError('')
             setSettled(false)
-            navigate(`${base}/checkout`, { replace: true })
+            navigate(`${base}/${scenario === 'permanent' ? 'plans' : 'checkout'}`, {
+              replace: true
+            })
           }}
         >
           重設
@@ -157,17 +160,25 @@ export default function BillingReview() {
                     preparing={preparing}
                     preparationError={preparationError}
                     plan={{
-                      tier: reviewSubscription?.tier ?? 'free',
-                      source: reviewSubscription ? 'subscription' : 'free',
+                      tier:
+                        scenario === 'permanent'
+                          ? 'advanced'
+                          : (reviewSubscription?.tier ?? 'free'),
+                      source:
+                        scenario === 'permanent'
+                          ? 'permanent'
+                          : reviewSubscription
+                            ? 'subscription'
+                            : 'free',
                       activeStudents: 0,
                       activeVenues: 0,
                       studentLimit:
-                        reviewSubscription?.tier === 'advanced'
+                        scenario === 'permanent' || reviewSubscription?.tier === 'advanced'
                           ? null
                           : reviewSubscription
                             ? 15
                             : 5,
-                      venueLimit: reviewSubscription ? null : 1,
+                      venueLimit: scenario === 'permanent' || reviewSubscription ? null : 1,
                       overCapacity: false
                     }}
                     subscription={reviewSubscription}
@@ -281,6 +292,19 @@ export default function BillingReview() {
                 <BillingPanel
                   accountId="local-review"
                   gateway={fixture.gateway}
+                  planAccess={
+                    scenario === 'permanent'
+                      ? {
+                          tier: 'advanced',
+                          source: 'permanent',
+                          activeStudents: 0,
+                          activeVenues: 0,
+                          studentLimit: null,
+                          venueLimit: null,
+                          overCapacity: false
+                        }
+                      : undefined
+                  }
                   onChoosePlan={() => navigate(`${base}/plans`)}
                   onViewCheckout={() => navigate(`${base}/status`)}
                 />
