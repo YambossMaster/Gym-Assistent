@@ -13,6 +13,9 @@ Before planning, changing, or reporting formal-product work:
 1. Identify this checkout with `git branch --show-current`, `git rev-parse HEAD`,
    `git status --short` and `git worktree list`; preserve unrelated changes. Read `README.md`
    and the integrated Main router `docs/PROJECT_STATUS.md`.
+   After moving to another worktree, read that checkout's `AGENTS.md` and owned Status before
+   planning or editing there; the instructions loaded at session start may belong to the original
+   checkout.
 2. Select the user-requested workstream, then read its owned Status and named `ROADMAP.md`
    sections. A different branch's Next is not an assignment. Check Main or release evidence before
    treating a local Status as current Production fact. Follow `docs/status/README.md` for ownership.
@@ -32,7 +35,21 @@ Before planning, changing, or reporting formal-product work:
   intended outcome, the affected flows/modules, what is known, and what remains uncertain. Give the
   Product Owner a brief assessment, concrete next steps, and scope boundary. Scale this to the task;
   read-only investigation and routine commands do not need a separate approval or repeated ceremony.
-- Before every implementation or release, run the **existing-behavior impact check** in
+- At the start of a governed work package, make a bounded inventory of implementation steps, user
+  flows, decisive checks and delivery gates. Track total, completed, remaining and next work. Mark
+  genuine unknowns; add a newly discovered task only with its reason, priority and count impact.
+  Do not present a focused pass as completion of the whole package.
+- Close one actionable problem at a time: state its impact, likely cause and observable pass
+  criterion; fix the cause, run the smallest decisive check, and state what the evidence does and
+  does not establish. Use direct provider, database or permission evidence for payment, security and
+  data-loss risks; focused tests for ordinary behavior; and final flow review for non-blocking polish.
+  Stop probing once the pass criterion is met.
+- Resolve uncertainty with the smallest check that distinguishes pass from fail and a safe fallback.
+  Record whether the result passed, was fixed and rechecked, was conditionally closed with a verified
+  fallback, or blocks only the affected entry point. Investigate again only for a new concrete risk
+  or changed hypothesis.
+- Before changing shared UI, Module rules or interfaces, schema, or configuration, run the
+  **existing-behavior impact check** in
   `docs/VERIFICATION_WORKFLOW.md` ("Protect existing behavior on every release"). Compare with the
   branch base and last deployed commit; map direct consumers of changed shared UI, Module rules or
   interfaces, schema, and configuration. For each affected flow, name the behavior to preserve, a
@@ -93,8 +110,8 @@ a letter or reinterpret an existing M0–M10 identifier under the new convention
 Follow the Roadmap's `Contract -> Sol -> CI` gates in order for every active or future governed work
 package. Preserve historical Terra evidence from delivered packages without creating new Terra
 handoffs.
-Before implementation, confirm that the active Contract is frozen and that its prior gates are
-complete.
+Before implementing a Roadmap-governed work package, confirm that its Contract is frozen and its
+prior gates are complete.
 
 Verification cadence: after each change, run only the smallest focused check needed for the changed
 behavior. Use the affected-check workflow in `docs/VERIFICATION_WORKFLOW.md` for local preflight;
@@ -206,6 +223,9 @@ Complete the contracted implementation with focused checks after changes, then g
 Owner a reviewable version: changed behaviour, relevant files, desktop/mobile preview where
 applicable, focused-check results, and known gaps. Apply their corrections and repeat focused checks.
 Wait for explicit Product Owner approval of that version before starting the package CI gate.
+Approval already given for the same scope and reviewed version, including in an earlier handoff,
+remains valid; do not ask again. Seek renewed approval only after a material change to that scope
+or reviewed behavior.
 After that approval, run the applicable focused tests, live/browser checks, migration dry-run and
 any Contract-required local build or full run.
 Before any remote push or merge, present the final check results, relevant commit, known gaps, and
