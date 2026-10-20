@@ -39,19 +39,39 @@ select 'f1100000-0000-4000-8000-000000000014', s.workspace_id, s.id
 from app_private.course_session s
 where s.id = 'f1100000-0000-4000-8000-000000000013';
 
+insert into app_private.lesson_purchase
+  (id, workspace_id, student_id, purchased_at, lesson_count)
+select 'f1100000-0000-4000-8000-000000000015', g.workspace_id, g.id,
+       now(), 1
+from app_private.student g
+where g.id = 'f1100000-0000-4000-8000-000000000011';
+
+insert into app_private.session_lesson_source
+  (workspace_id, session_id, student_id, kind, purchase_id)
+select s.workspace_id, s.id, s.student_id, 'manual',
+       'f1100000-0000-4000-8000-000000000015'
+from app_private.course_session s
+where s.id = 'f1100000-0000-4000-8000-000000000013';
+
 -- Round-trip nonempty M11 group history using the full dump's COPY format.
 \copy (select * from app_private.student where id = 'f1100000-0000-4000-8000-000000000011') to '/tmp/development-restore/group.csv' with (format csv, header true)
 \copy (select * from app_private.student_group_member where id = 'f1100000-0000-4000-8000-000000000012') to '/tmp/development-restore/member.csv' with (format csv, header true)
 \copy (select * from app_private.course_session where id = 'f1100000-0000-4000-8000-000000000013') to '/tmp/development-restore/session.csv' with (format csv, header true)
 \copy (select * from app_private.course_session_participant where session_id = 'f1100000-0000-4000-8000-000000000013') to '/tmp/development-restore/participant.csv' with (format csv, header true)
 \copy (select * from app_private.training_record where id = 'f1100000-0000-4000-8000-000000000014') to '/tmp/development-restore/record.csv' with (format csv, header true)
+\copy (select * from app_private.lesson_purchase where id = 'f1100000-0000-4000-8000-000000000015') to '/tmp/development-restore/purchase.csv' with (format csv, header true)
+\copy (select * from app_private.session_lesson_source where session_id = 'f1100000-0000-4000-8000-000000000013') to '/tmp/development-restore/source.csv' with (format csv, header true)
+delete from app_private.session_lesson_source where session_id = 'f1100000-0000-4000-8000-000000000013';
+delete from app_private.lesson_purchase where id = 'f1100000-0000-4000-8000-000000000015';
 delete from app_private.course_session where id = 'f1100000-0000-4000-8000-000000000013';
 delete from app_private.student where id = 'f1100000-0000-4000-8000-000000000011';
 \copy app_private.student from '/tmp/development-restore/group.csv' with (format csv, header true)
 \copy app_private.student_group_member from '/tmp/development-restore/member.csv' with (format csv, header true)
+\copy app_private.lesson_purchase from '/tmp/development-restore/purchase.csv' with (format csv, header true)
 \copy app_private.course_session from '/tmp/development-restore/session.csv' with (format csv, header true)
 \copy app_private.course_session_participant from '/tmp/development-restore/participant.csv' with (format csv, header true)
 \copy app_private.training_record from '/tmp/development-restore/record.csv' with (format csv, header true)
+\copy app_private.session_lesson_source from '/tmp/development-restore/source.csv' with (format csv, header true)
 
 do $$
 begin
@@ -78,5 +98,17 @@ begin
   ) then
     raise exception 'M11 completed group Session history COPY round-trip failed';
   end if;
-  raise notice 'PASS nonempty M11 group, member, completed Session, absent participant and Training Record COPY round-trip in isolated restore database.';
+  if (
+    select count(*) from app_private.session_lesson_source source
+    join app_private.lesson_purchase purchase
+      on purchase.workspace_id = source.workspace_id
+      and purchase.student_id = source.student_id
+      and purchase.id = source.purchase_id
+    where source.session_id = 'f1100000-0000-4000-8000-000000000013'
+      and source.student_id = 'f1100000-0000-4000-8000-000000000011'
+      and source.kind = 'manual' and purchase.lesson_count = 1
+  ) <> 1 then
+    raise exception 'M11 group purchase and sole Session source COPY round-trip failed';
+  end if;
+  raise notice 'PASS nonempty M11 group, member, purchase, completed Session, absent participant, Training Record and sole lesson source COPY round-trip in isolated restore database.';
 end $$;
