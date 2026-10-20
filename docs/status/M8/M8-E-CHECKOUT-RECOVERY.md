@@ -117,3 +117,9 @@ PO 指出本輪把普通的付款結果晚到與刻意保存舊 URL／雙頁付�
 - 本地 check 全綠（腳本 38/38、API 382/382、Web 428/428）、build 通過、獨立埠 browser gate 7/7、diff --check 通過，均是程式變更後、真試用前既有 gate；真試用後未改程式。遠端 Main 531f223 對比本分支基底 45b8d70 只改 AGENTS.md（PR #63–#65），付款程式／migration 無交集。本分支自身 AGENTS.md 改動必須排除付款提交。
 - 未以新付款刻意製造 Checkout.Success 早於 webhook、改買家 email 的舊 URL 二次交易。既有合成雙頁／提交訊號及本輪真 webhook-first 路徑各自有證據，不能互稱完整涵蓋。Production 未套候選 migration，正式站仍可能有原返回／重選缺陷。
 - **現在的下一步：** 本地付款候選程式、migration、流程文件與本 Status 已提交，AGENTS.md 排除；確認精確 HEAD、diff、ignore 及本地 gate。向 PO 呈交具體遠端動作與缺口，取得分開的 push/merge/Production migration/部署授權後才執行同 SHA CI、migration 及 Production readiness。未授權時停在本地可審查提交，不修改 Main router。原 M8-E R09 仍待自然續扣事件。
+
+### 2026-10-20 PR #66 Development CI 修復（待重跑）
+
+- PO 已授權 push Main、Production migration、deploy，並提供 Roadmap 要求的字面 `APPLY`。PR #66 首輪 CI #290：verify、browser-ui 通過；migration-dry-run 在 Development 拒絕較早版本的本地 `20261017181022_billing_live_test_foundation.sql`，尚未合併／套用 Production／部署。
+- Development 遠端唯讀清單確認 `20261019111117_billing_abandoned_checkout` 已套用；正式 foundation 為本地檔、Development 未套用，因其付款表來自分段 migration。僅修正 Development dry-run 腳本：核對這個精確狀態後，在預覽期間暫藏正式 foundation，並於成功／失敗時還原；陌生歷史或其他排除均拒絕。聚焦腳本測試 3/3 通過，未修補遠端 migration history，也未改付款產品邏輯。
+- 下一步：提交並推送 PR 修正，確認 PR 三個必要檢查全綠；其後合併 Main，查同 SHA CI 與 Production migration preview，依已授權的 `APPLY` workflow 套用候選 migration／部署，獨立讀回 DB、Fly 與正式網址；最後更新 Main router 與月誌。R09 自然續扣仍獨立未驗。
