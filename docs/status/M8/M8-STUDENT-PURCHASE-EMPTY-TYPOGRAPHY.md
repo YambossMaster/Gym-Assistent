@@ -1,27 +1,21 @@
-# Single Student purchase empty-state typography — delivery in progress
+# Single Student purchase empty-state typography — released
 
-> Owner: `codex/student-purchase-empty-typography` in the managed `student-purchase-empty-typography` worktree; observed 2026-10-20 (Taipei).
-> Base: `origin/main` `904fdbc` after final local rebase; integration: branch-local until merge.
-> Scope: post-M8-D formal Web visual correction requested by the Product Owner. No Roadmap scope, domain contract, migration or payment change.
+> Owner: `codex/student-purchase-empty-typography`; scoped release record completed 2026-10-20 (Taipei).
+> Base: Main `904fdbc`; [PR #70](https://github.com/YambossMaster/Gym-Assistent/pull/70) candidate `b44fb565aab7784d97adf995ed1e4d611a347977`, squash-merged as Main `d946b0e5790cd5929b042a690cfc0b5f651d2fde`.
+> Scope: post-M8-D formal Web visual correction. No Roadmap scope, domain contract, migration or payment change.
 
-## Boundary and impact
+## Result and impact
 
-- Outcome: on `/students/:id`, `尚無購課紀錄。` uses the same 13px color and line-height as `尚未建立固定課表。`.
-- Changed presentation: only the empty purchase paragraph and its scoped CSS rule. The existing fixed-series CSS block, populated purchase rows and all other paragraphs remain as before.
-- Representative cases: no purchases shows the corrected text; purchase-present still renders ledger rows; the unchanged fixed-series empty text is the visual peer.
-- The Product Owner authorized direct deployment on 2026-10-20, including full verification and remote delivery. No database or payment mutation is needed.
+- On `/students/:id`, `尚無購課紀錄。` now uses the same 13px size, `#646a60` color and 1.55 line-height as `尚未建立固定課表。`.
+- The new CSS selector applies only to the purchase empty paragraph. The original fixed-series rule, populated purchase rows and other paragraphs remain unchanged.
+- The Product Owner authorized direct deployment on 2026-10-20. No Production data, provider or migration mutation was performed.
 
-## Inventory and evidence
+## Verification and release
 
-| Item                                   | State                   | Evidence                                                                                                                                                                                                                                                                                                                                                  |
-| -------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Locate mismatch and direct consumers   | Done                    | Purchase fallback inherited card paragraph size; fixed-series empty text had explicit 13px CSS.                                                                                                                                                                                                                                                           |
-| Apply scoped correction                | Done                    | `student-purchase-empty` has its own 13px, `#646a60`, 1.55 line-height rule. The fixed-series rule remains intact.                                                                                                                                                                                                                                        |
-| Focused verification                   | Done                    | Changed-file format, Web typecheck and related tests 16/16 passed. The first full Web suite caught a selector-shape assertion after moving the fixed-series declarations; restoring its original block fixed this.                                                                                                                                        |
-| Desktop and 390px presentation         | Done for scoped preview | Playwright loaded a two-card preview using a copy of the actual Web stylesheet. At 1280px and 390px both empty messages computed to 13px, 20.15px line-height and `rgb(100, 106, 96)`; 390px document width equaled viewport width. Images are ignored local artifacts in `output/playwright/`. This does not prove the authenticated full Student route. |
-| Local build and full gate              | Done                    | Root `npm run check` exited 0 after correction: engineering script tests 39/39, API tests 384/384, Web tests 428/428, format and typechecks passed. Root `npm run build` exited 0; Vite retained its existing large-chunk advisory. `git diff --check` passed.                                                                                            |
-| Remote release and Production readback | Pending                 | Push scoped branch, open and merge PR after required checks, confirm exact Main SHA deployment/readiness, then inspect the real Student route.                                                                                                                                                                                                            |
+- Focused preflight passed Web typecheck and related tests 16/16. The first full Web run exposed an existing selector-shape assertion after the fixed-series rule was rearranged; restoring that rule and adding a separate purchase rule resolved it.
+- Final root `npm run check` passed: engineering scripts 39/39, API 384/384, Web 428/428, formatting and typechecks. Root `npm run build` and `git diff --check` passed. The build retained its existing large-chunk advisory.
+- Playwright loaded a scoped two-card preview with a copy of the actual Web stylesheet. At 1280px and 390px the empty messages computed to 13px, 20.15px line-height and `rgb(100, 106, 96)`; the 390px document had no horizontal overflow. Ignored images are under `output/playwright/`. This preview did not establish authenticated-route behavior.
+- PR #70 required `verify`, browser UI and Development migration jobs passed; Production preview was skipped on the PR as expected. [Main CI #300](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39440052242) passed `verify`, browser UI, Development migration, Production migration preview and `deploy-production` for `d946b0e`. The deployment job checked out that exact SHA, rejected superseding Main changes, deployed to Fly and reported machine `874ddec06064d8` healthy. No migration was pending.
+- Independent Production `/api/ready`, `/` and `/login` reads returned HTTP 200. The already-open authenticated synthetic Student page was refreshed after deployment; both real DOM empty messages computed to 13px, 20.15px line-height and `rgb(100, 106, 96)`. The page remained 1583px wide with no overflow. The 390px authenticated route and installed PWA were not separately inspected; no fixed chrome or touch behavior changed.
 
-## One Next within this workstream
-
-Push the scoped branch and follow its exact-SHA PR/Main CI and Production deployment. After release, read back the real Student page; record any unavailable authenticated or installed-PWA evidence precisely. The Product Owner has already authorized deployment and needs no further action for this scope.
+This correction is released. No executable Next remains in this workstream.
