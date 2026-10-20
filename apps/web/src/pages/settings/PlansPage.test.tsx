@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { BetaGrant, PlanAccess } from '../../api'
+import type { BillingSnapshot } from './billing/types'
 import { PlanPanel } from './PlansPage'
 
 vi.mock('../../supabase', () => ({ supabase: { auth: {} } }))
@@ -17,7 +18,11 @@ afterEach(() => {
 async function renderPanel(
   _grant: BetaGrant,
   plan: PlanAccess,
-  onChoosePlan?: (selection: { tier: 'basic' | 'advanced'; interval: 'month' | 'year' }) => void
+  onChoosePlan?: (selection: { tier: 'basic' | 'advanced'; interval: 'month' | 'year' }) => void,
+  options: {
+    showFirstSubscriptionOffer?: boolean
+    subscription?: BillingSnapshot['subscription']
+  } = {}
 ) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -34,6 +39,7 @@ async function renderPanel(
             error={false}
             onRetry={() => undefined}
             onChoosePlan={onChoosePlan}
+            {...options}
           />
         </MemoryRouter>
       </QueryClientProvider>
@@ -79,6 +85,53 @@ it('keeps ordinary Beta Coaches on Free without rendering paid selection actions
     expect(view.host.textContent).not.toContain('切換至 Prime 方案')
   } finally {
     await view.cleanup()
+  }
+})
+
+it('shows the conditional first-subscription offer on both paid plans without changing selection actions', async () => {
+  const onChoosePlan = vi.fn()
+  const plan: PlanAccess = {
+    tier: 'free',
+    source: 'free',
+    activeStudents: 0,
+    activeVenues: 0,
+    studentLimit: 5,
+    venueLimit: 1,
+    overCapacity: false
+  }
+  const view = await renderPanel({ state: 'free' }, plan, onChoosePlan, {
+    showFirstSubscriptionOffer: true
+  })
+  try {
+    expect(
+      Array.from(view.host.querySelectorAll('.settings-plan-trial-badge')).map(
+        (badge) => badge.textContent
+      )
+    ).toEqual(['首訂首月免費', '首訂首月免費'])
+    expect(view.host.textContent).toContain('選擇 Pro')
+    expect(view.host.textContent).toContain('選擇 Prime')
+    await act(async () => {
+      view.host.querySelector<HTMLButtonElement>('.billing-pro-button')?.click()
+    })
+    expect(onChoosePlan).toHaveBeenCalledWith({ tier: 'basic', interval: 'month' })
+  } finally {
+    await view.cleanup()
+  }
+
+  const subscribed = await renderPanel({ state: 'free' }, plan, onChoosePlan, {
+    showFirstSubscriptionOffer: true,
+    subscription: {
+      tier: 'basic',
+      interval: 'month',
+      status: 'active',
+      endsAt: '2026-11-21T00:00:00.000Z',
+      renewal: { amount: 11500, currency: 'TWD' }
+    }
+  })
+  try {
+    expect(subscribed.host.querySelectorAll('.settings-plan-trial-badge')).toHaveLength(0)
+  } finally {
+    await subscribed.cleanup()
   }
 })
 
