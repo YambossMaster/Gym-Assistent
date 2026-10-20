@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-20 against deployed application commit
-> `dae474fae96b3d6f08f6726b55e2ae69ad1c62cd` and the M8-E checkout recovery release.
+> `00dff7f6f9b05904ba3ae5d4b385ea01b50b93fb` and the M8-E R09 paid-renewal recovery release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -38,6 +38,10 @@ R09's isolated Test Mode daily renewal invoice became paid on 2026-10-19; its mi
 owner-bound recovery and paid-after-cancellation correction are recorded in the M8-E workstream.
 R09 remains partial: the recovery completed after the paid period ended, so in-period Coach access,
 the original one-month trial first charge and Live positive collection remain unverified.
+The correction was merged through [PR #68](https://github.com/YambossMaster/Gym-Assistent/pull/68)
+as Main `00dff7f`; [Main CI #296](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39432337018)
+passed and deployed the same SHA to Fly release 61 with passing service check. There was no new
+migration; independent `/api/ready`, `/` and `/login` returned HTTP 200.
 
 The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
 merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
