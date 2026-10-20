@@ -271,6 +271,14 @@ export function renewalPeriod(
   const starts = Date.parse(previousEndsAt)
   const ends = Date.parse(s.renews_at ?? '')
   const invoiceCreated = Date.parse(i.created_at)
+  // Cancellation can precede invoice settlement, and the provider can mark the
+  // same cycle expired before a missed event is recovered. Preserve its paid
+  // historical period only when cancellation did not shorten that cycle.
+  const terminalPaidCycle =
+    s.cancelled &&
+    !!s.ends_at &&
+    ((s.status === 'cancelled' && s.ends_at === s.renews_at) ||
+      (s.status === 'expired' && Date.parse(s.ends_at) >= ends))
   if (
     !Number.isFinite(starts) ||
     !Number.isFinite(ends) ||
@@ -282,8 +290,8 @@ export function renewalPeriod(
     throw new ReconciliationError('invalid_renewal_period')
   }
   if (
-    s.status !== 'active' ||
-    s.cancelled ||
+    (s.status !== 'active' && !terminalPaidCycle) ||
+    (s.cancelled && !terminalPaidCycle) ||
     s.variant_id !== expected.variantId ||
     !s.renews_at ||
     ends <= starts ||

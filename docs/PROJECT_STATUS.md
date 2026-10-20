@@ -34,7 +34,10 @@ status constraint, unresolved-intent index, owner inbox policy and restricted AP
 read back. Fly image label `GH_SHA` matches Main, service check passes, and independent `/api/ready`,
 `/`, `/login` return HTTP 200; `billingLiveEnabled:true` remains. The
 [checkout recovery record](status/M8/M8-E-CHECKOUT-RECOVERY.md) holds test evidence and limitations.
-R09 natural collection remains open.
+R09's isolated Test Mode daily renewal invoice became paid on 2026-10-19; its missed webhook,
+owner-bound recovery and paid-after-cancellation correction are recorded in the M8-E workstream.
+R09 remains partial: the recovery completed after the paid period ended, so in-period Coach access,
+the original one-month trial first charge and Live positive collection remain unverified.
 
 The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
 merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
@@ -49,9 +52,9 @@ separate task.
 
 ## Active workstreams
 
-| Workstream   | Owns                                                                         | State and entry                                                                                                                                                         |
-| ------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). Fifteen items passed and released, R08 conditionally closed; only R09 awaits its natural charge/renewal event and later evidence. |
+| Workstream   | Owns                                                                         | State and entry                                                                                                                                                                                                                               |
+| ------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M8-E payment | R01–R17 checkout, entitlement, Live/Test isolation, backup and release gates | [M8-E workstream](status/M8/M8-E.md). Fifteen items passed and released, R08 conditionally closed; R09's Test Mode daily renewal was paid and recovered after expiry, with in-period access and original trial first charge still unverified. |
 
 The separate [mobile PWA bottom-navigation correction](status/M8/M8-MOBILE-PWA-DOCK.md) merged as
 PR #47 / `d4b9a49`. [Main CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39121728371)

@@ -290,6 +290,39 @@ describe('verified renewal period', () => {
     })
   })
 
+  it('keeps a paid renewal through its original end after cancelling the following cycle', () => {
+    const cancelled = renewedSubscription()
+    cancelled.attributes.status = 'cancelled'
+    cancelled.attributes.cancelled = true
+    cancelled.attributes.ends_at = cancelled.attributes.renews_at
+    expect(renewalPeriod(cancelled, renewalInvoice(), priorEnd, expected)).toMatchObject({
+      origin: 'renewal',
+      startsAt: priorEnd,
+      endsAt: cancelled.attributes.ends_at,
+      invoiceId: '3',
+    })
+
+    const pending = renewalInvoice()
+    pending.attributes.status = 'pending'
+    expect(renewalPeriod(cancelled, pending, priorEnd, expected)).toBeNull()
+
+    cancelled.attributes.ends_at = '2026-11-20T00:00:00Z'
+    expect(renewalPeriod(cancelled, renewalInvoice(), priorEnd, expected)).toBeNull()
+  })
+
+  it('recovers a paid historical cycle after provider expiry without extending it', () => {
+    const expired = renewedSubscription()
+    expired.attributes.status = 'expired'
+    expired.attributes.cancelled = true
+    expired.attributes.ends_at = '2026-12-15T00:00:28Z'
+    expect(renewalPeriod(expired, renewalInvoice(), priorEnd, expected)).toMatchObject({
+      endsAt: expired.attributes.renews_at,
+      invoiceId: '3',
+    })
+    expired.attributes.ends_at = '2026-12-14T23:59:59Z'
+    expect(renewalPeriod(expired, renewalInvoice(), priorEnd, expected)).toBeNull()
+  })
+
   it.each(['pending', 'void', 'refunded', 'partial_refund'] as const)(
     'does not treat %s as current renewal payment proof',
     (status) => {
