@@ -1,12 +1,19 @@
 # M8-E 支付上線 Status — 當前規則與決定性驗證
 
-> 更新：2026-10-20（台北）。這是支付工作目前唯一的執行清單；R01–R17 的範圍仍由
+> 更新：2026-10-21（台北）。這是支付工作目前唯一的執行清單；R01–R17 的範圍仍由
 > [`ROADMAP.md`](../../ROADMAP.md) 與 [`M8-E-IMPLEMENTATION-CONTRACT.md`](../../M8-E-IMPLEMENTATION-CONTRACT.md)
 > 管理。PO 已於 2026-10-17 要求繼續逐項解決；以下記錄恢復後的聚焦證據。
 > 改寫前的 500 行逐次紀錄存於
 > [`archive/M8-E-2026-10-17-pre-priority-rules.md`](../archive/M8-E-2026-10-17-pre-priority-rules.md)；
 > 真實交易細節另見 [`M8-E-LOCAL-CHECKOUT.md`](../../M8-E-LOCAL-CHECKOUT.md) 和
 > [`2026-10 月工程日誌`](../log/2026-10.md)。歷史說法不得覆蓋本頁的最新決定。
+
+### 2026-10-21 方案卡片首次訂閱試用資訊（PO 已接受視覺，本地驗證完成）
+
+- **範圍與原因：** 方案比較頁原有 Pro／Prime 價格及選擇按鈕，卻沒有顯示首次訂閱的一個月試用。從 Main `d946b0e` 建立隔離 `codex/plans-trial-copy` worktree；PO 檢視後否決長句標籤，再指出短標籤與 Free「目前方案」狀態使用相同的膠囊視覺，缺乏促銷層級。現將「首訂首月免費」做成跨越付費卡片頂框的高對比螢光綠燕尾旗幟，字級與輪廓均不同於狀態標籤。付款服務未啟用、帳單讀取失敗、已有當前訂閱或永久 Prime 時不顯示。保留原按鈕、報價與後端資格判定，沒有改動 API、schema、支付設定或正式資料。取消後回購者沒有當前訂閱時仍可能看到條件式「首訂」資訊，結帳頁會由後端報價顯示立即扣款。
+- **既有行為影響：** 只改 `PlanPanel` 及其專屬標籤選擇器；直接使用者是 `/plans` 與本地付款預覽。須保留 Free／Pro／Prime 三卡、月年價格切換、選擇動作、當前訂閱／永久 Prime 的現有狀態及手機橫向卡片。代表成功案例為首次情境兩張付費卡顯示標籤並可選 Pro；邊界案例為已有訂閱時不顯示。Checkout 報價與付款權限未變。共享 `styles.css` 只加新選擇器，未修改既有共用樣式。
+- **聚焦證據與缺口：** PO 看過修正版截圖後以「行吧，就這樣吧」接受本版視覺。`npm run check:affected -- origin/main` 以退出碼 0 完成：變更檔 Prettier、diff whitespace、Web typecheck、相關測試 7 檔 19/19 通過。本地付款預覽驗證首次訂閱月費／年費兩張旗幟、Pro 年費 NT$1,150 選擇後進入結帳、永久 Prime 無旗幟、390px 手機 Pro 卡片及旗幟可見。另有 1600px 年繳桌機及 390px Pro／Prime 的實際截圖：本 worktree `output/playwright/plans-trial-ribbon-annual-desktop.png`、`plans-trial-ribbon-keyboard-pro.png`、`plans-trial-ribbon-keyboard-prime.png`。這是隔離本地預覽與模擬情境，沒有實際 Auth／支付供應商／正式站或安裝版 PWA 證據；Checkout 報價與權益規則沒有變更。無 migration，依 `VERIFICATION_WORKFLOW.md` 不為此樣式／文案修改單獨執行 migration dry-run。遠端 exact-SHA CI 與正式站讀回需在獲得推送授權後完成；不改動原 R01–R17 結論。
+- **下一步：** 保存本地候選提交，向 PO 提供提交 SHA、截圖與檢查結果；依 `AGENTS.md` 遠端交付檢查點，取得明確授權後才推送共享遠端分支並確認 exact-SHA CI。
 
 2026-10-20 棄單結帳恢復已透過 [PR #66](https://github.com/YambossMaster/Gym-Assistent/pull/66)
 合併 Main `dae474fae96b3d6f08f6726b55e2ae69ad1c62cd`；
