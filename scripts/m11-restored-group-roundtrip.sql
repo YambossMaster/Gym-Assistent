@@ -18,12 +18,40 @@ join lateral (
 ) p on true
 where g.id = 'f1100000-0000-4000-8000-000000000011';
 
--- Round-trip nonempty M11 rows using the same COPY format as the full dump.
+insert into app_private.course_session
+  (id, workspace_id, student_id, status, is_legacy, starts_at, ends_at,
+   completed_at, location)
+select 'f1100000-0000-4000-8000-000000000013', g.workspace_id, g.id,
+       'completed', false, now() - interval '1 hour', now(), now(),
+       'M11 isolated restore'
+from app_private.student g
+where g.id = 'f1100000-0000-4000-8000-000000000011';
+
+insert into app_private.course_session_participant
+  (workspace_id, session_id, student_id, attendance, attendance_edited)
+select m.workspace_id, 'f1100000-0000-4000-8000-000000000013',
+       m.student_id, 'absent', true
+from app_private.student_group_member m
+where m.id = 'f1100000-0000-4000-8000-000000000012';
+
+insert into app_private.training_record (id, workspace_id, session_id)
+select 'f1100000-0000-4000-8000-000000000014', s.workspace_id, s.id
+from app_private.course_session s
+where s.id = 'f1100000-0000-4000-8000-000000000013';
+
+-- Round-trip nonempty M11 group history using the full dump's COPY format.
 \copy (select * from app_private.student where id = 'f1100000-0000-4000-8000-000000000011') to '/tmp/development-restore/group.csv' with (format csv, header true)
 \copy (select * from app_private.student_group_member where id = 'f1100000-0000-4000-8000-000000000012') to '/tmp/development-restore/member.csv' with (format csv, header true)
+\copy (select * from app_private.course_session where id = 'f1100000-0000-4000-8000-000000000013') to '/tmp/development-restore/session.csv' with (format csv, header true)
+\copy (select * from app_private.course_session_participant where session_id = 'f1100000-0000-4000-8000-000000000013') to '/tmp/development-restore/participant.csv' with (format csv, header true)
+\copy (select * from app_private.training_record where id = 'f1100000-0000-4000-8000-000000000014') to '/tmp/development-restore/record.csv' with (format csv, header true)
+delete from app_private.course_session where id = 'f1100000-0000-4000-8000-000000000013';
 delete from app_private.student where id = 'f1100000-0000-4000-8000-000000000011';
 \copy app_private.student from '/tmp/development-restore/group.csv' with (format csv, header true)
 \copy app_private.student_group_member from '/tmp/development-restore/member.csv' with (format csv, header true)
+\copy app_private.course_session from '/tmp/development-restore/session.csv' with (format csv, header true)
+\copy app_private.course_session_participant from '/tmp/development-restore/participant.csv' with (format csv, header true)
+\copy app_private.training_record from '/tmp/development-restore/record.csv' with (format csv, header true)
 
 do $$
 begin
@@ -37,5 +65,18 @@ begin
   ) then
     raise exception 'M11 group and member COPY round-trip failed';
   end if;
-  raise notice 'PASS nonempty M11 group and member COPY round-trip in isolated restore database.';
+  if not exists (
+    select 1 from app_private.course_session s
+    join app_private.course_session_participant p
+      on p.workspace_id = s.workspace_id and p.session_id = s.id
+    join app_private.training_record r
+      on r.workspace_id = s.workspace_id and r.session_id = s.id
+    where s.id = 'f1100000-0000-4000-8000-000000000013'
+      and s.status = 'completed' and s.student_id = 'f1100000-0000-4000-8000-000000000011'
+      and p.attendance = 'absent'
+      and r.id = 'f1100000-0000-4000-8000-000000000014'
+  ) then
+    raise exception 'M11 completed group Session history COPY round-trip failed';
+  end if;
+  raise notice 'PASS nonempty M11 group, member, completed Session, absent participant and Training Record COPY round-trip in isolated restore database.';
 end $$;

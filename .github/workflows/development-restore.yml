@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/development-restore.yml'
+      - 'scripts/m11-restored-*.sql'
       - 'supabase/migrations/**'
 
 permissions:
