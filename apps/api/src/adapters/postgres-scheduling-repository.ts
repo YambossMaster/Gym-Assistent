@@ -649,7 +649,11 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           [workspaceId, studentId],
         ),
       ])
-      const timeZone = await this.getTimeZone(workspaceId)
+      const timeZoneRow = await client.query<{ time_zone: string }>(
+        'select time_zone from app_private.workspace where id = $1',
+        [workspaceId],
+      )
+      const timeZone = timeZoneRow.rows[0]?.time_zone ?? 'Asia/Taipei'
       const sessions = sessionRows.rows.map(mapSession)
       const generated: CourseSession[] = []
       for (const seriesRow of seriesRows.rows) {

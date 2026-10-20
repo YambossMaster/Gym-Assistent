@@ -3,6 +3,36 @@ import { expect, it, vi } from 'vitest'
 import { PostgresSchedulingRepository } from './postgres-scheduling-repository.js'
 import { SchedulingVersionConflictError } from '../scheduling/scheduling-repository.js'
 
+it('reconciles a group Series without borrowing another pool connection during its transaction', async () => {
+  const calls: string[] = []
+  const query = vi.fn(async (sql: string) => {
+    calls.push(sql)
+    if (sql.startsWith('select kind,active from app_private.student'))
+      return { rows: [{ kind: 'group', active: true }], rowCount: 1 }
+    if (sql.includes('from app_private.student_group_member'))
+      return { rows: [{ '?column?': 1 }], rowCount: 1 }
+    if (sql.startsWith('select time_zone from app_private.workspace'))
+      return { rows: [{ time_zone: 'Asia/Taipei' }], rowCount: 1 }
+    return { rows: [], rowCount: 0 }
+  })
+  const poolQuery = vi.fn(() => {
+    throw new Error('A pool connection was borrowed while the transaction held one')
+  })
+  const repository = new PostgresSchedulingRepository({
+    connect: async () => ({ query, release: vi.fn() }),
+    query: poolQuery,
+  } as unknown as Pool)
+
+  await expect(repository.reconcileSeries('workspace-1', 'group-1', new Date())).resolves.toEqual(
+    [],
+  )
+  expect(poolQuery).not.toHaveBeenCalled()
+  expect(calls.some((sql) => sql.startsWith('select time_zone from app_private.workspace'))).toBe(
+    true,
+  )
+  expect(calls.at(-1)).toBe('commit')
+})
+
 it('checks Series version before deletion and leaves existing Sessions to the FK', async () => {
   const calls: string[] = []
   const query = vi.fn(async (sql: string) => {

@@ -4,11 +4,11 @@
 
 ## Gate 與清單
 
-| Gate     | 狀態                                                                                                                                               |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                    |
-| Sol      | 前 7 項已有分支實作；Product Owner 於 2026-10-21 同意進入完整驗證。Development 真 DB API 與真 Supabase Auth 登入後主流程通過；剩餘矩陣情境見下方。 |
-| CI／發布 | PR #72 為草稿；`7c4ee1f` 的 verify、browser-ui、Development migration-dry-run 均通過。Production migration、預覽、部署及合併未執行。               |
+| Gate     | 狀態                                                                                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                   |
+| Sol      | 前 7 項已有分支實作；Product Owner 於 2026-10-21 同意進入完整驗證。Development 真 DB API 與真 Supabase Auth 登入後主流程通過；剩餘矩陣情境見下方。                |
+| CI／發布 | PR #72 為草稿；`7c4ee1f` 與後續 Status 提交 `8b6fde1` 的 verify、browser-ui、Development migration-dry-run 均通過。Production migration、預覽、部署及合併未執行。 |
 
 八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。前 7 項已有分支實作，第 8 項已取得 Development 與第一筆遠端 CI 證據；未完成的隔離還原、裝置／並行情境及 Production 證據不得視為整體完成。總數仍為 8，未新增工作包。
 
@@ -22,9 +22,11 @@ Development 真實 API 驗證（2026-10-21）：Product Owner 明確核准建立
 
 真 Supabase Auth／瀏覽器驗收（2026-10-21）：以 Development 的一次性 synthetic Coach 完成真 Auth 密碼登入；本機正式 OIDC verifier、Fastify 與 PostgreSQL adapters 接收 JWT，Web 連 Development 公開設定。瀏覽器建立兩位自然人與一群組，名單仍為 2 位學生及 1 個群組；群組購買 2 堂後餘額 2；Calendar 建立含兩名參與者的共課，完課後餘額 1，群組課程歷史指向同一 Session。課堂中乙標缺席，甲以 50kg／8 次／RPE 7 完成一組並確認「已儲存」；甲個人課程歷史顯示該共課，個人餘額仍 0。390px 實際群組詳細頁截圖已檢視，`innerWidth=scrollWidth=390`；320px 是先前隔離預覽證據，尚非真登入流程。測試 Auth、Workspace、Student、Session、Venue、分類 intent、臨時 DB role 精確清理後讀回皆 0；本機忽略的密碼、JWT、公開 Web 設定已刪除。這是本機 Development 瀏覽器驗證，不等於安裝手機 PWA、Production 或 exact-SHA CI。
 
+封存／週期課並行回歸（2026-10-21）：另建一組隔離 Development Auth／Workspace／群組／成員／Series，以最多兩條連線且僅繼承 `gym_assistant_api` 的臨時角色，同時呼叫真 PostgreSQL adapters 的 `reconcileSeries` 與群組封存。首輪暴露 `reconcileSeries` 持有交易連線時另用 pool 查時區，兩條連線被占滿可導致逾時；改為交易內同一連線讀時區。重測含預先排定的未來課：群組與 Series 都停用，scheduled 未來課 0、cancelled 未來課 1；重新啟用群組沒有重建 Series。新增聚焦測試防止再次借用第三條連線，Scheduling adapter 7/7、API typecheck 通過。測後 Auth、Workspace、Student、Series、Session、分類 intent、臨時角色精確讀回均為 0，本機密碼檔已刪除。此測試證明一次實際競爭與既有課取消，不代表所有交錯順序的壓力測試。
+
 對齊 Main 後本機 gate（2026-10-21）：`codex/student-group-sol` 已無衝突 rebase 到當時 `origin/main` `d946b0e`。`npm run check` exit 0：Prettier、根目錄 39 項腳本測試、API 64 檔／392 項、Web 94 檔／430 項全部通過；`npm run build` exit 0，API TypeScript 和 Web Vite 產物正常，僅既存大 chunk 提示。`git diff --check` 通過。完整隔離邏輯備份還原尚無證據：本機沒有 `pg_dump`、`pg_restore`、Docker；現有 GitHub 備份／還原 workflow 僅對 Production 執行，不能用 Development 的局部 SQL 檢查冒充還原。需在後續可用的隔離執行環境證實，Production 尚未套 M11 migration。
 
-遠端交付（2026-10-21）：Product Owner 明確授權推送分支及建立草稿 PR。Main 再新增文件提交 `6c3703c` 後，M11 分支無衝突 rebase 並推送 exact SHA `7c4ee1f3729436113eb59a4aee7f695f2ae63208`；[PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft、open、mergeable。GitHub Actions CI run `39472693400` 對該 SHA 的 `verify`、`browser-ui`、`migration-dry-run` 全部 success；`production-migration-preview`、`deploy-production` 為 skipped，符合草稿狀態。PR 檔案清單無 `.env`、測試憑證或忽略的輸出。此證據只屬 PR 分支，不代表已 merge、Production migration 或部署。
+遠端交付（2026-10-21）：Product Owner 明確授權推送分支及建立草稿 PR。Main 再新增文件提交 `6c3703c` 後，M11 分支無衝突 rebase 並推送 exact SHA `7c4ee1f3729436113eb59a4aee7f695f2ae63208`；[PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft、open、mergeable。GitHub Actions CI run `39472693400` 對該 SHA 的 `verify`、`browser-ui`、`migration-dry-run` 全部 success；Status 提交 `8b6fde1` 的 run `39473207543` 也三項 success。`browser-ui` 是現行 Plan Choice 桌面／手機既有回歸，不是 M11 專屬裝置驗收。`production-migration-preview`、`deploy-production` 均 skipped，符合草稿狀態。PR 檔案清單無 `.env`、測試憑證或忽略的輸出。此證據只屬 PR 分支，不代表已 merge、Production migration 或部署。
 
 真實 API 情境首次揭露第三條整帳刪除鏈缺陷：有完成課來源時，既有 `session_lesson_source`→`lesson_purchase` FK 的立即檢查擋住 Auth→Workspace 級聯；前次回滾測試未含購課來源。新增 `20261021010300_m11_workspace_lesson_source_deferred_fk.sql` 將該 FK 改為可延遲檢查；隔離 dry-run 只列此 migration，Development 套用後擴充的 rollback SQL 和兩筆真實 fixture 整帳刪除皆通過。精確 ID 讀回 Auth、Workspace、Student、Session、來源皆為 0；臨時角色已撤銷、刪除並確認 `pg_roles` 為 0。本機忽略目錄中的密碼／連線檔已刪除。這補完原第 7／8 項的整帳刪除證據，不新增工作包。
 
@@ -36,16 +38,16 @@ Sol 聚焦證據（2026-10-20 至 21，本機分支）：API／Web TypeScript ty
 
 ### Sol 工作盤點與目前結果
 
-| #   | 面向           | 本機已做                                                                                                                                                                                                                                | 仍待收斂／關鍵證據                                                      |
-| --- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 1   | 群組／成員     | `student.kind`、成員交易、名單／詳細頁、封存及歷史硬刪防護；未來課同步，移出有草稿者回滾；版本衝突回傳最新主體／成員／未來課，封存個人後遞增相關群組版本                                                                                | DB FK／並行與封存實測                                                   |
-| 2   | 群組購課       | 沿用群組 owner 的課包／單堂價格；真 DB 已證一組一堂、重開恢復、零價／缺價、場地來源與 Finance 一筆；真瀏覽器購課 2 堂完課剩 1 堂                                                                                                        | 遠端 exact-SHA 與 Production 證據                                       |
-| 3   | 排課／快照     | 單次、週期與改派交易建立參與快照；個人歷史依參與快照；真瀏覽器 Calendar 建一堂兩人成員共課                                                                                                                                              | DB 鎖與系列生成並行、Today／重複排課真瀏覽器情境                        |
-| 4   | 出席／完課     | 出席保存在原訓練命令，完課清掉缺席者組數，兩個完課入口共用來源配置                                                                                                                                                                      | 原子扣堂／場地費、全員缺席、重開及結果修正的 DB 證據                    |
-| 5   | 多人訓練       | 同一草稿動作、本人組數、兩模式檢視與個人成長查詢；真登入後一人缺席、另一人完成一組並儲存；390px 實際群組頁無水平溢出                                                                                                                    | Product Owner 視覺意見、安裝手機 PWA 與完整兩模式真瀏覽器情境           |
-| 6   | 公開能力       | 群組成果加允許的出席與本人組數；結果連結版本納入 Session、群組與參與者版本；改期仍移整堂                                                                                                                                                | allowlist、跨 Workspace、舊連結及真 UI 流程                             |
-| 7   | 封存／匯出相容 | 個別訓練匯出僅本人組數、Today 自然人數、封存確認數量；完整 DB 備份理應包含新表                                                                                                                                                          | 回填前後筆數、舊 API 過渡、完整隔離還原及帳號刪除鏈                     |
-| 8   | 正式驗證       | PO 已放行；Development 三筆 migration、回填／FK／RLS／舊寫入／整帳刪除；場地費、零價／缺價、公開結果、個人舊路徑真 DB API；真 Auth 瀏覽器主流程；本機根目錄 check、API／Web 全套 392／430 項及 build、PR `7c4ee1f` 三個適用 CI job 通過 | 完整隔離還原、安裝手機 PWA、320px 真登入及剩餘並行情境、Production gate |
+| #   | 面向           | 本機已做                                                                                                                                                                                                                                   | 仍待收斂／關鍵證據                                                             |
+| --- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| 1   | 群組／成員     | `student.kind`、成員交易、名單／詳細頁、封存及歷史硬刪防護；未來課同步，移出有草稿者回滾；版本衝突回傳最新主體／成員／未來課，封存個人後遞增相關群組版本                                                                                   | DB FK／並行與封存實測                                                          |
+| 2   | 群組購課       | 沿用群組 owner 的課包／單堂價格；真 DB 已證一組一堂、重開恢復、零價／缺價、場地來源與 Finance 一筆；真瀏覽器購課 2 堂完課剩 1 堂                                                                                                           | 遠端 exact-SHA 與 Production 證據                                              |
+| 3   | 排課／快照     | 單次、週期與改派交易建立參與快照；個人歷史依參與快照；真瀏覽器 Calendar 建一堂兩人成員共課；封存與系列重算的真 DB 競爭及未來課取消通過                                                                                                     | Today／重複排課真瀏覽器情境與更多交錯順序                                      |
+| 4   | 出席／完課     | 出席保存在原訓練命令，完課清掉缺席者組數，兩個完課入口共用來源配置                                                                                                                                                                         | 原子扣堂／場地費、全員缺席、重開及結果修正的 DB 證據                           |
+| 5   | 多人訓練       | 同一草稿動作、本人組數、兩模式檢視與個人成長查詢；真登入後一人缺席、另一人完成一組並儲存；390px 實際群組頁無水平溢出                                                                                                                       | Product Owner 視覺意見、安裝手機 PWA 與完整兩模式真瀏覽器情境                  |
+| 6   | 公開能力       | 群組成果加允許的出席與本人組數；結果連結版本納入 Session、群組與參與者版本；改期仍移整堂                                                                                                                                                   | allowlist、跨 Workspace、舊連結及真 UI 流程                                    |
+| 7   | 封存／匯出相容 | 個別訓練匯出僅本人組數、Today 自然人數、封存確認數量；完整 DB 備份理應包含新表                                                                                                                                                             | 回填前後筆數、舊 API 過渡、完整隔離還原及帳號刪除鏈                            |
+| 8   | 正式驗證       | PO 已放行；Development 三筆 migration、回填／FK／RLS／舊寫入／整帳刪除；場地費、零價／缺價、公開結果、個人舊路徑及封存／Series 並行真 DB API；真 Auth 瀏覽器主流程；本機 check、API／Web 392／430 項及 build、PR 既有兩 SHA 的適用 CI 通過 | 新修正 exact-SHA CI、完整隔離還原、安裝手機 PWA、320px 真登入、Production gate |
 
 ## 已確立與待辦
 
@@ -74,4 +76,4 @@ Sol 聚焦證據（2026-10-20 至 21，本機分支）：API／Web TypeScript ty
 
 ## 下一步
 
-下一個動作：將這份 PR #72 遠端證據更新推送至已授權的工作分支，確認新 exact-SHA 的 CI；然後以草稿 PR 持續完成可行的封存／系列生成並行與窄螢幕情境。完整隔離還原與安裝手機 PWA 仍需可用的隔離還原執行環境及實際裝置；未取得前不可宣稱 M11 完成。Production migration／部署／merge 不屬本次授權，須另行明確範圍與釋出證據。真 API 與 Auth 瀏覽器 fixture、臨時 DB 角色已精確清除；Development 三筆 migration 已套用，Production 未套用。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。
+下一個動作：將交易連線修正及封存／週期並行證據推送草稿 PR #72，確認新 exact-SHA 的 CI。320px 真登入流程與安裝手機 PWA 仍需後續 UI／裝置驗收；完整隔離還原須有可用的隔離執行環境。未取得前不可宣稱 M11 完成。Production migration／部署／merge 不屬本次授權，須另行明確範圍與釋出證據。所有 Development 真 API／Auth 測試 fixture 與臨時角色已精確清除；三筆 migration 已套用 Development，Production 未套用。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。
