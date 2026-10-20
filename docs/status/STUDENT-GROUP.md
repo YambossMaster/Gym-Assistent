@@ -1,16 +1,16 @@
-# Student Group Contract workstream
+# M11 Student Group workstream
 
-> 2026-10-20，獨立於 `codex/group-training-ui-template` 與 M8-E 的本機工作線。基線：本地 `origin/main` `531f223`；本工作線沒有變更正式產品程式。
+> 2026-10-20，獨立於 `codex/group-training-ui-template` 與 M8-E 的本機工作線。基線：本地 `origin/main` `531f223`；本工作線只變更 Contract／Roadmap／Status，尚無正式產品程式或資料變更。
 
 ## Gate 與清單
 
-| Gate     | 狀態                                                                                                     |
-| -------- | -------------------------------------------------------------------------------------------------------- |
-| Contract | 審閱稿 [`../STUDENT-GROUP-CONTRACT.md`](../STUDENT-GROUP-CONTRACT.md) 已寫；未凍結，Roadmap 位置未核准。 |
-| Sol      | 未開始。                                                                                                 |
-| CI／發布 | 未開始，沒有 migration、遠端 push、PR 或部署。                                                           |
+| Gate     | 狀態                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。 |
+| Sol      | 可開始；8/8 實作面向未開始，首步是逐查詢／刪除路徑影響檢查與 migration 設計。                                                   |
+| CI／發布 | 未開始，沒有 migration、遠端 push、PR 或部署。                                                                                  |
 
-八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。Contract 草稿與已接受的桌面／手機 UI 設計紀錄現已在此工作線可讀；8/8 實作均未開始。
+八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。正式 Contract 與已接受的桌面／手機 UI 設計紀錄現已在此工作線可讀；8/8 實作均未開始。
 
 聚焦查核：對照目前 Main 的 schema／Student、Scheduling、Training、Finance、Plan Access、Export、Public Access 路徑與既有 Demo 頁面；新文件的 `git diff --check` 已通過。文件尚未做產品實機驗收；API、migration 與 CI 均未執行，因為本工作線沒有程式或資料變更。
 
@@ -26,9 +26,9 @@
 - 本次審核新增一個具體相容邊界：現有已排定 Session 可改派 owner；新增非空 `training_set.student_id` 後，個人→個人改派必須同交易重指組數，涉及群組且已有訓練內容或教練手動修改的出席狀態則拒絕改派以保護草稿；無內容時同步重建參與快照。屬原第 3／5 項必要相容檢查，優先級高，八項總數不變。
 - 已確認封存後繼續排課的既有 bug 確實列在 Contract 第 2／8 節，但現行 `StudentModule.update` 只更新 `student.active`，`reconcileSeries` 只看 `schedule_series.active`。Contract 進一步要求封存同交易停用 Series、取消未開始的 scheduled Session；封存後手動建課／新增 Series 被拒，自動排課重查 owner active 並與封存序列化，恢復不自動重建。屬原第 1／3 項的必要修正，八項總數不變。
 - 外部審查的 kind 防呆方向採納，但其 `FOREIGN KEY (group_id, 'group')` 並非 PostgreSQL 合法語法。Contract 指定同 Workspace 的 `(workspace_id,id,kind)` 唯一鍵，以及子表受 CHECK 限制的固定種類判別欄加三欄複合外鍵；成員、參與者和訓練組數須在 DB 層拒絕 group 冒充 person，並維持完整帳號刪除。這是原第 1／3／5／8 項資料約束細化，總數不變。
-- Product Owner 尚需決定本套件在 Roadmap 的位置、與未完成／條件式 M9／M10 的整合次序，以及是否凍結 Contract。Roadmap 第 6 節規定新編號從 M11 起且數字是發布順序，故不能自行命名就提前發布。此前不進 Sol。實作完成後仍須先供 Product Owner 檢視，再依現行 gate 做完整驗證；遠端 delivery 另需授權。
+- Product Owner 於 2026-10-20 核准凍結 M11 Contract，並明確選擇先調整 Roadmap 讓 M11 優先於 M9／條件式 M10 整合。Roadmap 第 6 節已記錄編號與發布順序的明示例外；M9／M10 名稱與原有範圍不變。M11 Sol 可在獨立工作線開始，與其他工作線共用的 migration／Module 介面須序列化；Sol 實作完成後先供 Product Owner 檢視，完整驗證及遠端 delivery 仍遵守原關卡。此為 Roadmap 順序與 Contract 凍結決定，不代表 M11 已交付。
 
-### 現有行為影響圖（Contract 階段，尚未執行回歸）
+### 現有行為影響圖（Sol 起始基線，尚未執行回歸）
 
 | 共用邊界                           | 必須保留的既有行為                                 | Sol 時最小決定性檢查                                                                                                                                                                                                                                                                                                     |
 | ---------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -41,4 +41,4 @@
 
 ## 下一步
 
-提交 Contract 與 Roadmap 位置建議供 Product Owner 檢視。獲准後由 Roadmap owner 記錄套件位置並凍結 Contract，才開始 Sol；Sol 首步核對逐查詢、DB 約束與 migration 設計。保留 UI 範本分支與主 checkout 的既有變更。
+M11 Sol 首步：逐查詢盤點自然人假設與刪除依賴，核對 DB kind／租戶／刪除約束、既有組數歸屬回填與舊版 API 寫入相容，形成最小 migration 設計；其後按八項清單逐一實作、執行聚焦檢查。正式 UI 供 Product Owner 檢視後才進完整驗證；遠端 push／merge 需另行授權。保留 UI 範本分支與主 checkout 的既有變更。

@@ -1,6 +1,6 @@
-# 學生群組與多人共課 Contract（審閱稿）
+# M11 學生群組與多人共課 Contract（已凍結）
 
-> 2026-10-20，獨立 Contract 工作線；**尚未凍結，未改 Roadmap，也未授權 Sol、migration 或發布**。本稿以目前 `origin/main` 本地快照 `531f223`、主 checkout 的未追蹤討論稿，以及 2026-10-19 已接受的桌面／手機訓練 UI 範本為依據。正式套件位置與 Contract 凍結由 Product Owner 決定；不能把 UI 原型當成資料庫證據。
+> 2026-10-20 Product Owner 核准凍結為 M11 正式 Contract，並核准 M11 優先於未完成的 M9／條件式 M10 整合；依 [Roadmap](ROADMAP.md) 的明示順序例外執行。Sol 可從此版本開始；migration、Production、完整 CI gate 與遠端交付仍按各自關卡執行。本 Contract 以本地 origin/main 快照 531f223、主 checkout 的討論稿，以及 2026-10-19 已接受的桌面／手機訓練 UI 範本為依據；UI 原型不作為資料庫證據。
 
 > 2026-10-20 Product Owner 修訂方向：**學生群組就是現有學生主體的一種集合型態**，沿用原有購課、排課、課堂、訓練、場地及收支路徑，只對多人名單與組數歸屬做必要擴充。方案學生人數始終只算自然人；群組不增加人數，同一人加入多組也不重算。
 
@@ -98,9 +98,9 @@
 
 不建立兩三筆隱藏的一對一 Session、每人多份 Training Record、第二套扣堂或收支帳本，不從 UI 原型的假資料／`skippedStudentIds` 推導正式欄位。遷移保留所有既有 ID、權益、歷史和金額；既有單人組數按上述受驗證的 Session owner 回填，不猜測舊課為群組，也不重算舊餘額。資料刪除、完整 Workspace 匯出／還原和個別學生匯出須各自定義群組歸屬；個別學生匯出只含此人可歸屬的共課組數，不含同伴私有資料。Supabase 私有 schema、API 角色權限、跨 Workspace 404 與公開連結 allowlist 均維持現有邊界。
 
-## 7. Contract 凍結前的決定與工程檢查
+## 7. 已核准的 Roadmap 位置與 Sol 入口
 
-1. **Roadmap 歸屬與順序（Product Owner）**：建議獨立的「學生群組」Contract → Sol → CI 套件，在已交付的個人課與 M8-E 支付主幹之外並行；共用 migration／Module 接口的整合須序列化。現行 Roadmap 第 6 節禁止新增編號插入 M10 以前，下一個新階段須由 M11 起命名；數字階段同時代表整合／發布次序，而 M9、M10 尚未完成／決定。因此 PO 須同時選定群組套件的階段與對 M9／M10 的整合次序，不能只命名 M11 就默認可提前發布。此稿不自行編號或更改已核准 Roadmap。只有 PO 批准套件位置及凍結此 Contract 後才可進 Sol。
+1. **Roadmap 歸屬與順序（Product Owner 已核准）**：M11 是獨立的「學生群組與多人共課」Contract → Sol → CI 套件。2026-10-20 Product Owner 核准先調整 Roadmap 順序，讓 M11 在 M9／條件式 M10 之前整合；這是第 6 節未來編號慣例的明示例外，不改 M9／M10 的既有名稱或商業／國際化範圍，也不以 M8-E 的未結自然付款證據作為 M11 Sol 前置。獨立工作線可先進 Sol；共用 migration、Module 介面及實際整合須序列化。M11 完成與發布仍須自己的 Sol 接受、CI 證據及遠端授權。
 2. **現有結構的工程檢查**：第 6 節已把「群組也是學生主體」與「一堂一份 Training Record」定為本 Contract 的基線。Sol 起始時須完成逐查詢清單、DB 約束、個人讀取路徑、既有組數回填和舊版寫入相容的 migration 設計檢查；若出現具體不能安全沿用的路徑，先提出該路徑的最小修正及證據，只有修正仍不足才回 Contract 討論替代主體。這不是待 PO 重新選擇架構的假設題。
 
 ## 8. Sol 與 CI 驗收矩陣
