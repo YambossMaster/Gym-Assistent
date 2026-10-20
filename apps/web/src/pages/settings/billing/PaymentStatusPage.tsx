@@ -8,7 +8,12 @@ import {
   TriangleAlert
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { validateCheckoutUrl } from './lemon-overlay'
+import {
+  clearProviderSubmitted,
+  markProviderSubmitted,
+  validateCheckoutUrl,
+  wasProviderSubmitted
+} from './lemon-overlay'
 import {
   formatDate,
   formatMoney,
@@ -22,18 +27,6 @@ import {
 import './checkout.css'
 import { planAccessKey } from '../../../beta-admission/usePlanAccess'
 
-function submittedKey(accountId: string, intentId: string) {
-  return `billing-provider-submitted:${accountId}:${intentId}`
-}
-
-function wasSubmitted(accountId: string, intentId: string) {
-  try {
-    return window.sessionStorage.getItem(submittedKey(accountId, intentId)) === 'true'
-  } catch {
-    return false
-  }
-}
-
 /** The intent is resumed, never recreated, after checkout has started. */
 export function PaymentStatusPage({
   accountId,
@@ -42,6 +35,7 @@ export function PaymentStatusPage({
   quote,
   openCheckout,
   autoOpen = false,
+  assumeSubmitted = false,
   onComplete,
   onBack
 }: {
@@ -51,24 +45,27 @@ export function PaymentStatusPage({
   quote?: Quote
   openCheckout: OpenCheckout
   autoOpen?: boolean
+  assumeSubmitted?: boolean
   onComplete: () => void
   onBack: () => void
 }) {
   const client = useQueryClient()
   const [windowError, setWindowError] = useState(false)
   const [opening, setOpening] = useState(false)
-  const [providerSubmitted, setProviderSubmitted] = useState(() =>
-    wasSubmitted(accountId, intent.id)
+  const [providerSubmitted, setProviderSubmitted] = useState(
+    () => assumeSubmitted || wasProviderSubmitted(accountId, intent.id)
   )
   const attempted = useRef(false)
   const status = useQuery({
     queryKey: ['billing', accountId, 'intent', intent.id],
     queryFn: () => gateway.intent(intent.id),
     retry: false,
-    refetchInterval: (query) => (query.state.data?.status === 'confirmed' ? false : 2500)
+    refetchInterval: (query) =>
+      ['confirmed', 'abandoned'].includes(query.state.data?.status ?? '') ? false : 2500
   })
   const current = status.data ?? intent
   const confirmed = current.status === 'confirmed' ? current : null
+  const abandoned = current.status === 'abandoned'
   let recoveryUrl: string | null = null
   if (current.status === 'open') {
     try {
@@ -83,15 +80,19 @@ export function PaymentStatusPage({
       setWindowError(false)
       setOpening(true)
       try {
-        await openCheckout(next.url, () => {
-          try {
-            window.sessionStorage.setItem(submittedKey(accountId, next.id), 'true')
-          } catch {
-            // Private browsing may disable storage; the in-memory state still protects this view.
-          }
-          setProviderSubmitted(true)
-          void client.invalidateQueries({ queryKey: ['billing', accountId, 'intent', next.id] })
-        })
+        await openCheckout(
+          next.url,
+          () => {
+            markProviderSubmitted(accountId, next.id)
+            void gateway.submitted(next.id).catch(() => {
+              // Provider reconciliation remains authoritative.
+            })
+            setProviderSubmitted(true)
+            void client.invalidateQueries({ queryKey: ['billing', accountId, 'intent', next.id] })
+          },
+          undefined,
+          { accountId, intentId: next.id }
+        )
       } catch {
         setWindowError(true)
       } finally {
@@ -106,11 +107,7 @@ export function PaymentStatusPage({
     void open(intent)
   }, [autoOpen, intent, open])
   const finish = () => {
-    try {
-      window.sessionStorage.removeItem(submittedKey(accountId, intent.id))
-    } catch {
-      // Session storage is optional.
-    }
+    clearProviderSubmitted(accountId, intent.id)
     void client.invalidateQueries({ queryKey: ['billing', accountId] })
     void client.invalidateQueries({ queryKey: planAccessKey(accountId) })
     onComplete()
@@ -118,13 +115,15 @@ export function PaymentStatusPage({
   const awaitingConfirmation = current.status === 'pending' || providerSubmitted
   const title = confirmed
     ? `${tierName(quote?.tier ?? 'basic')} ${confirmed.activation === 'trial' ? '體驗已開始' : '訂閱已啟用'}`
-    : status.isError
-      ? '暫時無法確認付款狀態'
-      : windowError && !providerSubmitted
-        ? '付款視窗未能開啟'
-        : !awaitingConfirmation
-          ? '付款尚未完成'
-          : '正在確認你的訂閱'
+    : abandoned
+      ? '這筆結帳已逾期'
+      : status.isError
+        ? '暫時無法確認付款狀態'
+        : windowError && !providerSubmitted
+          ? '付款視窗未能開啟'
+          : !awaitingConfirmation
+            ? '付款尚未完成'
+            : '正在確認你的訂閱'
   return (
     <div className="checkout-page payment-status-page">
       <div className="checkout-topbar">
@@ -147,16 +146,21 @@ export function PaymentStatusPage({
         </div>
         <span className="eyebrow dark">FORM MEMBERSHIP</span>
         <h1>{title}</h1>
-        <p className="payment-status-lead">
+        <p
+          className="payment-status-lead"
+          role={status.isError && !confirmed ? 'alert' : undefined}
+        >
           {confirmed
             ? '你的方案已啟用，可在方案與帳單管理續訂。'
-            : status.isError
-              ? '目前無法讀取最新結果。若已完成 Lemon 結帳，請勿再次付款。'
-              : windowError && !providerSubmitted
-                ? '訂閱尚未完成。請重新開啟同一筆付款，無須再次訂閱。'
-                : awaitingConfirmation
-                  ? '正在確認這筆結帳，結果會自動更新。請勿再次付款。'
-                  : '若尚未完成 Lemon 結帳，可返回同一筆付款。若已完成，請勿再次付款；結果會自動更新。'}
+            : abandoned
+              ? '這筆 Lemon 結帳已失效，沒有完成訂閱。可返回方案重新選擇。'
+              : status.isError
+                ? '目前無法讀取最新結果。若已完成 Lemon 結帳，請勿再次付款。'
+                : windowError && !providerSubmitted
+                  ? '訂閱尚未完成。請重新開啟同一筆付款，無須再次訂閱。'
+                  : awaitingConfirmation
+                    ? '正在確認這筆結帳，結果會自動更新。請勿再次付款。'
+                    : '若尚未完成 Lemon 結帳，可返回同一筆付款。若已完成，請勿再次付款；結果會自動更新。'}
         </p>
         {quote && (
           <dl className="payment-status-facts">
@@ -181,15 +185,14 @@ export function PaymentStatusPage({
             </div>
           </dl>
         )}
-        {status.isError && !confirmed && (
-          <p className="payment-status-alert" role="alert">
-            暫時無法查詢訂閱結果。請稍後重試，若已完成 Lemon 結帳，請勿再次付款。
-          </p>
-        )}
         <div className="payment-status-actions">
           {confirmed ? (
             <button className="primary-button" onClick={finish}>
               完成，查看我的方案 <ArrowRight aria-hidden="true" />
+            </button>
+          ) : abandoned ? (
+            <button className="primary-button" onClick={onBack}>
+              返回方案選擇 <ArrowRight aria-hidden="true" />
             </button>
           ) : status.isError ? (
             <button

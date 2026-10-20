@@ -217,6 +217,7 @@ try {
       create: async () => {
         throw new Error('read-only route smoke')
       },
+      hasSubscriptionSince: async () => false,
     }),
   })
   try {

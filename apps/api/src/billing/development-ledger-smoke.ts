@@ -119,6 +119,7 @@ try {
       id: randomUUID(),
       url: 'https://isolated.lemonsqueezy.com/checkout/fixture',
     }),
+    hasSubscriptionSince: async () => false,
   })
   const quote = await checkout.quote(owner, { tier: 'basic', interval: 'month' })
   const intent = await checkout.begin(owner, {

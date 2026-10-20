@@ -37,3 +37,26 @@ it('recovers a server-owned intent without relying on local storage', async () =
     await createHttpBillingGateway('test').current(new AbortController().signal)
   ).toMatchObject({ current: { intent: { id: 'i', status: 'pending' } } })
 })
+
+it('sends valid empty JSON for authenticated abandon and submitted commands', async () => {
+  const fetchMock = vi.fn<typeof fetch>(
+    async () =>
+      new Response(JSON.stringify({ id: 'one', status: 'pending' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  const gateway = createHttpBillingGateway('isolated-test-token')
+  await gateway.abandon('one')
+  await gateway.submitted('one')
+  expect(fetchMock).toHaveBeenCalledTimes(2)
+  for (const [, options] of fetchMock.mock.calls) {
+    expect(options).toBeDefined()
+    expect(options!.method).toBe('POST')
+    expect(options!.body).toBe('{}')
+    expect((options!.headers as Record<string, string>).authorization).toBe(
+      'Bearer isolated-test-token'
+    )
+  }
+})

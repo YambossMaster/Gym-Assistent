@@ -35,6 +35,16 @@
   font-size: 14px;
   line-height: 1.8;
 }
+.checkout-existing-note {
+  max-width: 680px;
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface, #f7f8f5);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
 .checkout-page .billing-checkout-grid {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: start;

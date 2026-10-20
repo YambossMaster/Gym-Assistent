@@ -32,6 +32,13 @@ const pool = new Pool({
   max: 5,
   connectionTimeoutMillis: 10000,
 })
+const workerUrl = new URL(process.env.BILLING_WORKER_DATABASE_URL!)
+assert.ok(decodeURIComponent(workerUrl.username).endsWith(`.${developmentRef}`))
+const workerPool = new Pool({
+  connectionString: process.env.BILLING_WORKER_DATABASE_URL,
+  max: 1,
+  connectionTimeoutMillis: 10000,
+})
 const users: string[] = []
 const reservedEmails: string[] = []
 const studentRepository = new PostgresStudentRepository(pool)
@@ -54,6 +61,9 @@ const provider = {
     if (realProvider) return realProvider.create(input)
     return { id: randomUUID(), url: 'https://isolated.lemonsqueezy.com/checkout/fixture' }
   },
+  hasSubscriptionSince: async (
+    input: Parameters<LemonTestCheckoutProvider['hasSubscriptionSince']>[0],
+  ) => (realProvider ? realProvider.hasSubscriptionSince(input) : false),
 }
 const checkout = new CheckoutModule(new PostgresCheckoutRepository(pool), provider)
 const server = buildServer({
@@ -182,8 +192,101 @@ try {
     await rls.query('rollback')
     rls.release()
   }
+  const testDigest = randomBytes(32).toString('hex')
+  try {
+    await workerPool.query(
+      `insert into app_private.billing_event_inbox(environment,digest,notification)
+       values ('test',$1,$2)`,
+      [testDigest, JSON.stringify({ intentId })],
+    )
+    const inbox = await pool.connect()
+    try {
+      await inbox.query('begin')
+      const owner = await inbox.query<{ id: string }>(
+        'select id from app_private.workspace where owner_user_id=$1',
+        [a.id],
+      )
+      const foreign = await inbox.query<{ id: string }>(
+        'select id from app_private.workspace where owner_user_id=$1',
+        [b.id],
+      )
+      await inbox.query('set local role gym_assistant_api')
+      await inbox.query("select set_config('app.current_workspace_id',$1,true)", [
+        owner.rows[0]!.id,
+      ])
+      const visible = await inbox.query<{ environment: string }>(
+        "select environment from app_private.billing_event_inbox where notification->>'intentId'=$1",
+        [intentId],
+      )
+      assert.deepEqual(
+        visible.rows,
+        [{ environment: 'test' }],
+        'owner sees only own test intent event',
+      )
+      await inbox.query("select set_config('app.current_workspace_id',$1,true)", [
+        foreign.rows[0]!.id,
+      ])
+      assert.equal(
+        (
+          await inbox.query(
+            "select environment from app_private.billing_event_inbox where notification->>'intentId'=$1",
+            [intentId],
+          )
+        ).rowCount,
+        0,
+        'foreign owner cannot see inbox event',
+      )
+      await inbox.query("select set_config('app.current_workspace_id','',true)")
+      assert.equal(
+        (
+          await inbox.query(
+            "select environment from app_private.billing_event_inbox where notification->>'intentId'=$1",
+            [intentId],
+          )
+        ).rowCount,
+        0,
+        'unset workspace cannot see inbox event',
+      )
+      await assert.rejects(
+        inbox.query('select digest from app_private.billing_event_inbox limit 1'),
+        { code: '42501' },
+        'API role cannot read digest',
+      )
+    } finally {
+      await inbox.query('rollback')
+      inbox.release()
+    }
+    assert.equal(
+      (await request(a.token, `/checkouts/${intentId}/abandon`, {})).statusCode,
+      409,
+      'arrived owner event prevents abandonment',
+    )
+  } finally {
+    await workerPool.query(
+      'delete from app_private.billing_event_inbox where digest=any($1::text[])',
+      [[testDigest]],
+    )
+  }
+  assert.equal(
+    (await request(b.token, `/checkouts/${intentId}/submitted`, {})).statusCode,
+    404,
+    'foreign owner cannot mark payment submitted',
+  )
+  const submitted = await request(a.token, `/checkouts/${intentId}/submitted`, {})
+  assert.equal(submitted.statusCode, 200)
+  assert.deepEqual(submitted.json(), { id: intentId, status: 'pending' })
+  assert.equal(
+    (await request(a.token, `/checkouts/${intentId}/abandon`, {})).json().status,
+    'pending',
+    'a success signal prevents a competing tab from abandoning this payment',
+  )
+  assert.equal(
+    (await request(a.token, '/quote', { tier: 'advanced', interval: 'year' })).statusCode,
+    409,
+    'only this owner intent awaits provider reconciliation',
+  )
   console.log(
-    'PASS: Development User-JWT authentication, quote persistence, concurrent deduplication, owner isolation, restart recovery, RLS',
+    'PASS: Development User-JWT, concurrent deduplication, owner/inbox RLS, arrived-event guard and submitted-vs-abandon',
   )
 } finally {
   await server.close()
@@ -205,6 +308,7 @@ try {
       [reservedEmails],
     )
   await pool.end()
+  await workerPool.end()
   assert.equal(cleanupFailed, false, 'isolated Auth cleanup')
   assert.equal(remaining.rows[0]!.count, '0', 'isolated Workspace cleanup')
   console.log('PASS: isolated Development users/workspaces cleaned up')

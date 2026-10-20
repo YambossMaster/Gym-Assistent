@@ -5,6 +5,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   unlinkSync,
 } from 'node:fs'
@@ -26,6 +27,8 @@ export const fetchedDevelopmentHistory = [
   '20261017164829_billing_refund_case_decision.sql',
 ]
 const expectedHistory = [...developmentHistory, ...fetchedDevelopmentHistory]
+const productionFoundation = '20261017181022_billing_live_test_foundation.sql'
+const abandonedCheckout = '20261019111117_billing_abandoned_checkout.sql'
 
 export function validateDevelopmentHistory(project, payload) {
   if (project !== developmentProject)
@@ -50,9 +53,28 @@ export function validateDevelopmentHistory(project, payload) {
   return expectedHistory
 }
 
-export function withDevelopmentHistory(root, files, fetchedRoot, run) {
+export function developmentDryRunExclusions(payload) {
+  const foundation = payload.migrations.find(
+    (row) => row.local === productionFoundation.slice(0, 14),
+  )
+  const checkout = payload.migrations.find((row) => row.remote === abandonedCheckout.slice(0, 14))
+  if (!foundation || foundation.remote || !checkout || checkout.local !== checkout.remote)
+    throw new Error('Unexpected Development billing migration state')
+  return [productionFoundation]
+}
+
+export function withDevelopmentHistory(root, files, fetchedRoot, run, excluded = []) {
   const staged = []
+  const hidden = []
   try {
+    for (const file of excluded) {
+      if (file !== productionFoundation) throw new Error('Unapproved Development exclusion')
+      const source = resolve(root, 'supabase/migrations', file)
+      const target = `${source}.development-dry-run-hidden`
+      if (!existsSync(source) || existsSync(target)) throw new Error('Cannot hide migration safely')
+      renameSync(source, target)
+      hidden.push({ source, target })
+    }
     for (const file of files) {
       if (!expectedHistory.includes(file)) throw new Error('Unapproved overlay')
       const source = developmentHistory.includes(file)
@@ -68,6 +90,7 @@ export function withDevelopmentHistory(root, files, fetchedRoot, run) {
     return run()
   } finally {
     for (const target of staged) unlinkSync(target)
+    for (const { source, target } of hidden) renameSync(target, source)
   }
 }
 
@@ -82,7 +105,9 @@ function main() {
     [cli, 'migration', 'list', '--linked', '--output-format', 'json'],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
   )
-  const files = validateDevelopmentHistory(project, JSON.parse(list))
+  const history = JSON.parse(list)
+  const files = validateDevelopmentHistory(project, history)
+  const excluded = developmentDryRunExclusions(history)
   const scratch = mkdtempSync(join(tmpdir(), 'm8d-dev-history-'))
   try {
     mkdirSync(resolve(scratch, 'supabase/migrations'), { recursive: true })
@@ -92,10 +117,15 @@ function main() {
       [cli, 'migration', 'fetch', '--project-ref', project, '--workdir', scratch, '--yes'],
       { stdio: ['ignore', 'pipe', 'inherit'] },
     )
-    withDevelopmentHistory(root, files, scratch, () =>
-      execFileSync(process.execPath, [cli, 'db', 'push', '--linked', '--dry-run'], {
-        stdio: 'inherit',
-      }),
+    withDevelopmentHistory(
+      root,
+      files,
+      scratch,
+      () =>
+        execFileSync(process.execPath, [cli, 'db', 'push', '--linked', '--dry-run'], {
+          stdio: 'inherit',
+        }),
+      excluded,
     )
   } finally {
     if (

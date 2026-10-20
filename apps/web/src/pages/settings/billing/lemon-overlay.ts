@@ -1,6 +1,6 @@
 type Lemon = {
   Setup: (options: { eventHandler: (event: { event: string }) => void }) => void
-  Url: { Open: (url: string) => void }
+  Url: { Open: (url: string) => void; Close: () => void }
 }
 declare global {
   interface Window {
@@ -9,6 +9,81 @@ declare global {
   }
 }
 let loading: Promise<Lemon> | undefined
+let heldCheckoutLock: { name: string; release: () => void } | undefined
+const submittedChannel = 'billing-checkout-submitted'
+
+function releaseCheckoutLock(): void {
+  heldCheckoutLock?.release()
+  heldCheckoutLock = undefined
+}
+
+async function acquireCheckoutLock(accountId: string, intentId: string): Promise<boolean> {
+  if (!navigator.locks) return true
+  const name = `billing-checkout:${accountId}:${intentId}`
+  if (heldCheckoutLock?.name === name) return true
+  releaseCheckoutLock()
+  return new Promise<boolean>((resolve, reject) => {
+    void navigator.locks
+      .request(name, { ifAvailable: true }, async (lock) => {
+        if (!lock) {
+          resolve(false)
+          return
+        }
+        await new Promise<void>((release) => {
+          heldCheckoutLock = { name, release }
+          resolve(true)
+        })
+      })
+      .catch(reject)
+  })
+}
+
+export function onProviderSubmitted(
+  accountId: string,
+  listener: (intentId: string) => void
+): () => void {
+  if (!window.BroadcastChannel) return () => {}
+  const channel = new BroadcastChannel(submittedChannel)
+  channel.onmessage = (message: MessageEvent<{ accountId: string; intentId: string }>) => {
+    if (message.data?.accountId !== accountId || typeof message.data.intentId !== 'string') return
+    rememberProviderSubmitted(accountId, message.data.intentId)
+    listener(message.data.intentId)
+  }
+  return () => channel.close()
+}
+
+function rememberProviderSubmitted(accountId: string, intentId: string): void {
+  try {
+    window.sessionStorage.setItem(submittedKey(accountId, intentId), 'true')
+  } catch {
+    /* Session storage is optional. */
+  }
+}
+
+function submittedKey(accountId: string, intentId: string) {
+  return `billing-provider-submitted:${accountId}:${intentId}`
+}
+export function wasProviderSubmitted(accountId: string, intentId: string): boolean {
+  try {
+    return window.sessionStorage.getItem(submittedKey(accountId, intentId)) === 'true'
+  } catch {
+    return false
+  }
+}
+export function markProviderSubmitted(accountId: string, intentId: string): void {
+  rememberProviderSubmitted(accountId, intentId)
+  if (!window.BroadcastChannel) return
+  const channel = new BroadcastChannel(submittedChannel)
+  channel.postMessage({ accountId, intentId })
+  channel.close()
+}
+export function clearProviderSubmitted(accountId: string, intentId: string): void {
+  try {
+    window.sessionStorage.removeItem(submittedKey(accountId, intentId))
+  } catch {
+    /* Session storage is optional. */
+  }
+}
 
 export function validateCheckoutUrl(value: string): string {
   const url = new URL(value)
@@ -59,13 +134,45 @@ function loadLemon(): Promise<Lemon> {
 }
 
 /** Success only asks the authenticated server to reconcile; it never grants a plan. */
-export async function openLemonCheckout(url: string, onProviderSuccess: () => void): Promise<void> {
+export async function openLemonCheckout(
+  url: string,
+  onProviderSuccess: () => void,
+  signal?: AbortSignal,
+  scope?: { accountId: string; intentId: string }
+): Promise<void> {
   const safeUrl = validateCheckoutUrl(url)
   const lemon = await loadLemon()
-  lemon.Setup({
-    eventHandler: (event) => {
-      if (event.event === 'Checkout.Success') onProviderSuccess()
-    }
-  })
-  lemon.Url.Open(safeUrl)
+  if (signal?.aborted) return
+  if (scope && !(await acquireCheckoutLock(scope.accountId, scope.intentId)))
+    throw new Error('checkout_open_elsewhere')
+  if (signal?.aborted) {
+    releaseCheckoutLock()
+    return
+  }
+  signal?.addEventListener('abort', releaseCheckoutLock, { once: true })
+  try {
+    lemon.Setup({
+      eventHandler: (event) => {
+        if (event.event === 'Checkout.Success' && !signal?.aborted) {
+          releaseCheckoutLock()
+          onProviderSuccess()
+        }
+      }
+    })
+    lemon.Url.Open(safeUrl)
+  } catch (error) {
+    releaseCheckoutLock()
+    throw error
+  }
+}
+
+export function closeLemonCheckout(): boolean {
+  try {
+    window.LemonSqueezy?.Url.Close()
+    window.LemonSqueezy?.Setup({ eventHandler: () => {} })
+    releaseCheckoutLock()
+    return true
+  } catch {
+    return false
+  }
 }

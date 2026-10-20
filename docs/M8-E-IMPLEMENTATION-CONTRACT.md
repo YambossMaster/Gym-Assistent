@@ -1,5 +1,7 @@
 # M8-E local implementation contract
 
+> 2026-10-19 結帳中斷修正：最新端到端節點、判定與例外路徑見 [支付流程與狀態路徑圖](M8-E-PAYMENT-FLOW-STATE-MAP.md)。本分支候選改為關閉 Lemon 視窗後留在結帳頁，按返回放棄本站意圖，成功訊號後才進結果頁；下方較早「先進 status」描述是歷史版本。發布狀態與待驗證項目見專屬 workstream Status。
+
 ## 2026-10-19 PO decision — no paid discount codes
 
 The paid Lemon Squeezy checkout offers only the existing native one-month trial for an account's

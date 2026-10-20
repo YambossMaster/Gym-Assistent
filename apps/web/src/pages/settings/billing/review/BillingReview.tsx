@@ -125,6 +125,7 @@ export default function BillingReview() {
             送達確認結果
           </button>
         )}
+
         <small>重新整理保留進度</small>
       </div>
       <div
@@ -202,6 +203,12 @@ export default function BillingReview() {
                     onChoosePlan={async (next) => {
                       if (preparing) return
                       setPreparationError('')
+                      if (fixture.current().intent) {
+                        const old = fixture.current().quote
+                        if (old) setSelection({ tier: old.tier, interval: old.interval })
+                        navigate(`${base}/checkout`)
+                        return
+                      }
                       if (reviewSubscription?.status === 'trial') {
                         setTrialChangeError(false)
                         setTrialSelection(next)
@@ -235,8 +242,6 @@ export default function BillingReview() {
               element={
                 settled || (fixture.hasSubscription() && !fixture.current().intent) ? (
                   <Navigate to={`${base}/billing`} replace />
-                ) : fixture.current().intent || started ? (
-                  <Navigate to={`${base}/status`} replace />
                 ) : (
                   <CheckoutPage
                     key={`${scenario}-${revision}`}
@@ -249,7 +254,18 @@ export default function BillingReview() {
                     termsHref={`${base}/terms`}
                     privacyHref={`${base}/privacy`}
                     noticeHref={`${base}/payment-notice`}
-                    onBack={() => navigate(`${base}/plans`)}
+                    onBack={(intent) => {
+                      if (intent?.status === 'open')
+                        void fixture.gateway.abandon(intent.id).then(() => {
+                          setProvider(null)
+                          navigate(`${base}/plans`)
+                        })
+                      else navigate(`${base}/plans`)
+                    }}
+                    openCheckout={async (_url, onSuccess) => {
+                      if (scenario === 'overlay_error') throw new Error('preview_failure')
+                      setProvider({ notify: onSuccess })
+                    }}
                     onStarted={(intent, quote) => {
                       setStarted({ intent, quote })
                       navigate(`${base}/status`, { replace: true })
@@ -267,18 +283,12 @@ export default function BillingReview() {
                     gateway={fixture.gateway}
                     intent={(started?.intent ?? fixture.current().intent)!}
                     quote={started?.quote ?? fixture.current().quote}
-                    autoOpen={Boolean(started)}
+                    autoOpen={false}
                     onBack={() => navigate(`${base}/billing`)}
                     onComplete={complete}
-                    openCheckout={async () => {
+                    openCheckout={async (_url, onSuccess) => {
                       if (scenario === 'overlay_error') throw new Error('preview_failure')
-                      setProvider({
-                        notify: () => {
-                          fixture.markPending()
-                          fixture.confirm()
-                          void client.invalidateQueries({ queryKey: ['billing', 'local-review'] })
-                        }
-                      })
+                      setProvider({ notify: onSuccess })
                     }}
                   />
                 ) : (
@@ -322,10 +332,10 @@ export default function BillingReview() {
             <button
               className="primary-button compact"
               onClick={() => {
-                if (scenario === 'pending') {
-                  fixture.markPending()
-                  void client.invalidateQueries({ queryKey: ['billing', 'local-review'] })
-                } else provider.notify()
+                fixture.markPending()
+                if (scenario !== 'pending') fixture.confirm()
+                void client.invalidateQueries({ queryKey: ['billing', 'local-review'] })
+                provider.notify()
                 setProvider(null)
               }}
             >

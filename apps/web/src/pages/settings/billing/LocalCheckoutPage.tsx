@@ -1,20 +1,27 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import { CheckoutPage } from './CheckoutPage'
 import { PaymentStatusPage } from './PaymentStatusPage'
 import { formatDate, intervalName, tierName, type CheckoutIntent, type Quote } from './types'
 import { createHttpBillingGateway } from './http-gateway'
-import { openLemonCheckout } from './lemon-overlay'
+import {
+  closeLemonCheckout,
+  onProviderSubmitted,
+  openLemonCheckout,
+  wasProviderSubmitted
+} from './lemon-overlay'
 import { localBillingServiceEnabled } from '../../../config'
 
 /** Authenticated checkout; the build and API each require an explicit Live switch. */
 export default function LocalCheckoutPage({ session }: { session: Session }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const [started, setStarted] = useState<{ intent: CheckoutIntent; quote: Quote } | null>(null)
+  const [exitError, setExitError] = useState('')
   const [search] = useSearchParams()
   const gateway = useMemo(
     () => createHttpBillingGateway(session.access_token),
@@ -34,6 +41,27 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
     staleTime: 30_000,
     enabled: localBillingServiceEnabled
   })
+  useEffect(
+    () =>
+      onProviderSubmitted(session.user.id, (intentId) => {
+        const activeId = started?.intent.id ?? current.data?.current?.intent.id
+        if (activeId !== intentId) return
+        closeLemonCheckout()
+        void gateway.submitted(intentId).catch(() => {
+          // The provider event or a later retry can still reconcile the payment.
+        })
+        void current.refetch()
+        navigate('/settings/checkout/status', { replace: true })
+      }),
+    [
+      session.user.id,
+      started?.intent.id,
+      current.data?.current?.intent.id,
+      gateway,
+      current,
+      navigate
+    ]
+  )
   if (
     localBillingServiceEnabled &&
     (current.isPending || current.isError || billing.isPending || billing.isError)
@@ -67,6 +95,10 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
   const activeQuote = started?.quote ?? restored?.quote
   const isStatus = location.pathname === '/settings/checkout/status'
   const subscription = billing.data?.subscription
+  if (!isStatus && activeIntent?.status === 'abandon_requested')
+    return <Navigate to="/plans" replace />
+  if (!isStatus && activeIntent && wasProviderSubmitted(session.user.id, activeIntent.id))
+    return <Navigate to="/settings/checkout/status" replace />
   if (subscription && !isStatus) return <Navigate to="/settings?category=plans" replace />
   if (subscription && isStatus)
     return (
@@ -107,8 +139,10 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
       <div className="checkout-page payment-status-page">
         <main className="payment-status-main" aria-live="polite">
           <span className="eyebrow dark">FORM MEMBERSHIP</span>
-          <h1>正在確認訂閱結果</h1>
-          <p className="payment-status-lead">目前尚未取得已確認的訂閱資訊。請勿重新付款。</p>
+          <h1>尚未確認訂閱結果</h1>
+          <p className="payment-status-lead">
+            目前未查到已確認的訂閱。若剛完成付款，請重新查詢，勿再次付款；若尚未付款，可返回方案。
+          </p>
           <div className="payment-status-actions">
             <button
               className="primary-button"
@@ -120,13 +154,12 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
               重新查詢結果 <ArrowRight aria-hidden="true" />
             </button>
             <Link className="billing-back" to="/settings?category=plans">
-              查看方案與帳單
+              返回方案與帳單
             </Link>
           </div>
         </main>
       </div>
     )
-  if (!isStatus && activeIntent) return <Navigate to="/settings/checkout/status" replace />
   return (
     <>
       {import.meta.env.DEV && (
@@ -142,6 +175,11 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
           </small>
         </div>
       )}
+      {exitError && (
+        <p className="checkout-existing-note" role="alert">
+          {exitError}
+        </p>
+      )}
       {isStatus && activeIntent ? (
         <PaymentStatusPage
           accountId={session.user.id}
@@ -149,7 +187,8 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
           intent={activeIntent}
           quote={activeQuote}
           openCheckout={openLemonCheckout}
-          autoOpen={Boolean(started)}
+          autoOpen={false}
+          assumeSubmitted
           onBack={() => navigate('/settings?category=plans')}
           onComplete={() => navigate('/settings?category=plans', { replace: true })}
         />
@@ -180,7 +219,36 @@ export default function LocalCheckoutPage({ session }: { session: Session }) {
             setStarted({ intent, quote })
             navigate('/settings/checkout/status', { replace: true })
           }}
-          onBack={() => navigate('/plans')}
+          onBack={(intent) => {
+            if (!intent) {
+              navigate('/plans')
+              return
+            }
+            if (intent.status !== 'open') {
+              setExitError('這筆結帳狀態尚待核對，目前無法安全結束。請稍後重試。')
+              return
+            }
+            setExitError('')
+            if (!closeLemonCheckout()) {
+              setExitError('付款視窗尚未安全關閉，請再試一次。')
+              return
+            }
+            void gateway
+              .abandon(intent.id)
+              .then(async (result) => {
+                if (result.status !== 'abandoned') {
+                  setExitError('結帳狀態已更新，請先確認訂閱結果。')
+                  return
+                }
+                queryClient.setQueryData(['billing', session.user.id, 'current'], { current: null })
+                queryClient.removeQueries({ queryKey: ['billing', session.user.id, 'quote'] })
+                await queryClient.invalidateQueries({
+                  queryKey: ['billing', session.user.id, 'overview']
+                })
+                navigate('/plans')
+              })
+              .catch(() => setExitError('暫時無法安全退出這筆結帳，請稍後重試。'))
+          }}
         />
       )}
     </>

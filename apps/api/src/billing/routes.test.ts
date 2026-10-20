@@ -40,6 +40,8 @@ it('requires verified identity before touching checkout, including current-inten
     '/v1/billing/quote',
     '/v1/billing/checkouts',
     '/v1/billing/checkouts/current',
+    '/v1/billing/checkouts/00000000-0000-4000-8000-000000000001/abandon',
+    '/v1/billing/checkouts/00000000-0000-4000-8000-000000000001/submitted',
   ]) {
     const response = await server.inject({
       method: url.endsWith('current') ? 'GET' : 'POST',

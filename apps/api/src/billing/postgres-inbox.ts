@@ -592,7 +592,7 @@ export class PostgresBillingInbox implements BillingInboxRepository {
         await c.query(
           `update app_private.billing_checkout_intent
            set status=$2,intent=(intent-'url')||jsonb_build_object('status',$2::text,'url',null,'activation',$4::text)
-           where id=$1 and workspace_id=$3 and environment=@billing_environment and status in ('creating','open','pending')`,
+          where id=$1 and workspace_id=$3 and environment=@billing_environment and status in ('creating','open','pending','abandon_requested','abandoned')`,
           [bound.intent_id, status, bound.workspace_id, origin === 'payment' ? 'paid' : origin],
         )
       }

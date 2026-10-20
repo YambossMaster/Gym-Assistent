@@ -27,6 +27,50 @@ const quote: CheckoutQuote = {
   trial: 'one_month',
   chargeAt: null,
 }
+it('checks the complete provider subscription page before releasing an expired checkout', async () => {
+  const request = vi.fn<typeof fetch>(
+    async () =>
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              type: 'subscriptions',
+              attributes: {
+                created_at: '2026-10-14T08:10:00Z',
+                test_mode: true,
+                store_id: 1,
+              },
+            },
+          ],
+          meta: { page: { lastPage: 1 } },
+        }),
+      ),
+  )
+  const provider = new LemonTestCheckoutProvider(config, request)
+  expect(
+    await provider.hasSubscriptionSince({
+      email: 'coach@example.invalid',
+      since: '2026-10-14T08:00:00Z',
+    }),
+  ).toBe(true)
+  expect(String(request.mock.calls[0]?.[0])).toContain(
+    'filter%5Buser_email%5D=coach%40example.invalid',
+  )
+  request.mockResolvedValueOnce(
+    new Response(
+      JSON.stringify({
+        data: [],
+        meta: { page: { lastPage: 2 } },
+      }),
+    ),
+  )
+  await expect(
+    provider.hasSubscriptionSince({
+      email: 'coach@example.invalid',
+      since: '2026-10-14T08:00:00Z',
+    }),
+  ).rejects.toThrow('provider_subscription_check_incomplete')
+})
 it.each([
   ['basic', 'month', '2'],
   ['basic', 'year', '3'],

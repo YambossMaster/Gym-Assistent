@@ -121,7 +121,7 @@ it('stays on plans until current state and the chosen quote are prepared', async
   }
 })
 
-it('resumes a checkout discovered during preflight without quoting a second purchase', async () => {
+it('returns an unfinished checkout to the checkout page without quoting a second purchase', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   billing.current.mockResolvedValue({
     current: {
@@ -148,7 +148,7 @@ it('resumes a checkout discovered during preflight without quoting a second purc
                   />
                 }
               />
-              <Route path="/settings/checkout/status" element={<p>existing checkout</p>} />
+              <Route path="/settings/checkout" element={<p>existing checkout</p>} />
             </Routes>
           </MemoryRouter>
         </QueryClientProvider>

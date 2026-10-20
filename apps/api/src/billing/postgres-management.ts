@@ -66,7 +66,7 @@ export class PostgresBillingManagement implements BillingManagementRepository {
       )
       const checkout = await c.query(
         `select 1 from app_private.billing_checkout_intent where environment=@billing_environment and workspace_id=$1
-         and status in ('creating','open','pending') limit 1`,
+         and status in ('creating','open','pending','abandon_requested') limit 1`,
         [workspace],
       )
       const paidChange = await c.query(

@@ -18,6 +18,9 @@ export const selectionSchema = z
   })
   .strict()
 const beginSchema = z.object({ quoteId: z.uuid(), termsVersion: z.string().max(80) }).strict()
+// Lemon checkout links may remain valid after the user leaves; guard late payment evidence separately.
+const checkoutLinkLifetimeMs = 900_000
+const checkoutReconciliationGraceMs = 300_000
 export type CheckoutQuote = {
   id: string
   expiresAt: string
@@ -35,7 +38,7 @@ export type StoredQuote = CheckoutQuote & {
 export type StoredIntent = {
   id: string
   quoteId: string
-  status: 'creating' | 'open' | 'pending' | 'confirmed'
+  status: 'creating' | 'open' | 'pending' | 'abandon_requested' | 'confirmed' | 'abandoned'
   activation?: 'trial' | 'paid' | null
   url: string | null
   providerId: string | null
@@ -46,6 +49,8 @@ export type IntentView =
   | { id: string; status: 'pending' }
   | { id: string; status: 'open'; url: string }
   | { id: string; status: 'confirmed'; activation: 'trial' | 'paid' }
+  | { id: string; status: 'abandoned' }
+  | { id: string; status: 'abandon_requested'; expiresAt: string }
 export type AccountFacts = BillingFacts & { eligibilityVersion: number; hasLegacyOffer: boolean }
 export interface CheckoutTransaction {
   facts(): Promise<AccountFacts>
@@ -54,6 +59,9 @@ export interface CheckoutTransaction {
   unresolved(): Promise<StoredIntent | null>
   intent(id: string): Promise<StoredIntent | null>
   saveIntent(intent: StoredIntent): Promise<void>
+  abandonExpired(id: string, now: Date): Promise<boolean>
+  requestAbandon(id: string): Promise<boolean>
+  markSubmitted(id: string): Promise<boolean>
 }
 export interface CheckoutRepository {
   transaction<T>(
@@ -69,6 +77,7 @@ export interface CheckoutProvider {
     email: string
     expiresAt: string
   }): Promise<{ id: string; url: string }>
+  hasSubscriptionSince(input: { email: string; since: string }): Promise<boolean>
 }
 
 function publicQuote({ eligibilityVersion: _version, ...quote }: StoredQuote): CheckoutQuote {
@@ -88,6 +97,9 @@ function view(intent: StoredIntent, now: Date): IntentView {
   // Expiry alone cannot prove an external checkout did not create a subscription.
   if (intent.status === 'confirmed' && intent.activation)
     return { id: intent.id, status: 'confirmed', activation: intent.activation }
+  if (intent.status === 'abandoned') return { id: intent.id, status: 'abandoned' }
+  if (intent.status === 'abandon_requested')
+    return { id: intent.id, status: 'abandon_requested', expiresAt: intent.expiresAt }
   return intent.status === 'open' && intent.url && Date.parse(intent.expiresAt) > now.getTime()
     ? { id: intent.id, status: 'open', url: intent.url }
     : { id: intent.id, status: 'pending' }
@@ -99,8 +111,31 @@ export class CheckoutModule {
     private readonly termsVersion = 'billing-first-trial-2026-10-18',
     private readonly now = () => new Date(),
   ) {}
+  private async releaseExpired(identity: AuthenticatedIdentity): Promise<void> {
+    if (!identity.email) return
+    const now = this.now()
+    const intent = await this.repository.transaction(identity, (tx) => tx.unresolved())
+    if (
+      !intent ||
+      !['open', 'pending', 'abandon_requested'].includes(intent.status) ||
+      !Number.isFinite(Date.parse(intent.expiresAt)) ||
+      now.getTime() < Date.parse(intent.expiresAt) + checkoutReconciliationGraceMs
+    )
+      return
+    // A lost response or delayed provider event is not evidence of abandonment.
+    try {
+      if (
+        await this.provider.hasSubscriptionSince({ email: identity.email, since: intent.createdAt })
+      )
+        return
+    } catch {
+      return
+    }
+    await this.repository.transaction(identity, (tx) => tx.abandonExpired(intent.id, now))
+  }
   async quote(identity: AuthenticatedIdentity, raw: unknown): Promise<CheckoutQuote> {
     const selection = selectionSchema.parse(raw)
+    await this.releaseExpired(identity)
     return this.repository.transaction(identity, async (tx) => {
       const facts = await tx.facts()
       if (facts.hasLegacyOffer) throw new BillingError(409, 'existing_offer')
@@ -155,7 +190,7 @@ export class CheckoutModule {
         url: null,
         providerId: null,
         createdAt: now.toISOString(),
-        expiresAt: new Date(now.getTime() + 900_000).toISOString(),
+        expiresAt: new Date(now.getTime() + checkoutLinkLifetimeMs).toISOString(),
       }
       // Persist the claim/consent BEFORE any network request. Only this claimant may dispatch.
       await tx.saveIntent(intent)
@@ -193,9 +228,45 @@ export class CheckoutModule {
       return view(intent, this.now())
     })
   }
+  async abandon(identity: AuthenticatedIdentity, id: string): Promise<IntentView> {
+    z.uuid().parse(id)
+    const intent = await this.repository.transaction(identity, (tx) => tx.intent(id))
+    if (!intent) throw new BillingError(404, 'not_found')
+    if (intent.status !== 'open') return view(intent, this.now())
+    if (!identity.email) throw new BillingError(409, 'email_required')
+    try {
+      if (
+        await this.provider.hasSubscriptionSince({ email: identity.email, since: intent.createdAt })
+      )
+        throw new BillingError(409, 'checkout_pending')
+    } catch (error) {
+      if (error instanceof BillingError) throw error
+      throw new BillingError(503, 'checkout_recovery_unavailable')
+    }
+    return this.repository.transaction(identity, async (tx) => {
+      const current = await tx.intent(id)
+      if (!current) throw new BillingError(404, 'not_found')
+      if (current.status === 'open' && !(await tx.requestAbandon(id)))
+        throw new BillingError(409, 'checkout_pending')
+      const updated = await tx.intent(id)
+      return view(updated!, this.now())
+    })
+  }
+  async submitted(identity: AuthenticatedIdentity, id: string): Promise<IntentView> {
+    z.uuid().parse(id)
+    return this.repository.transaction(identity, async (tx) => {
+      const current = await tx.intent(id)
+      if (!current) throw new BillingError(404, 'not_found')
+      if (current.status === 'open' && !(await tx.markSubmitted(id)))
+        throw new BillingError(409, 'checkout_pending')
+      const updated = await tx.intent(id)
+      return view(updated!, this.now())
+    })
+  }
   async pending(
     identity: AuthenticatedIdentity,
   ): Promise<{ intent: IntentView; quote: CheckoutQuote } | null> {
+    await this.releaseExpired(identity)
     return this.repository.transaction(identity, async (tx) => {
       const intent = await tx.unresolved()
       if (!intent) return null

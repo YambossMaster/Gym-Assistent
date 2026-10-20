@@ -87,6 +87,12 @@ async function mount(
       url: 'https://store.lemonsqueezy.com/checkout/custom/id'
     })),
     intent: vi.fn(async () => state),
+    submitted: vi.fn(async () => ({ id: state.id, status: 'pending' as const })),
+    abandon: vi.fn(async () => ({
+      id: state.id,
+      status: 'abandon_requested' as const,
+      expiresAt: new Date(Date.now() + 900_000).toISOString()
+    })),
     billing: vi.fn(),
     cancel: vi.fn(),
     changeTrial: vi.fn(),
@@ -115,7 +121,7 @@ async function mount(
         intent={started.intent}
         quote={started.quote}
         openCheckout={openCheckout}
-        autoOpen={!restored}
+        autoOpen={false}
         onComplete={onComplete}
         onBack={() => {}}
       />
@@ -125,6 +131,7 @@ async function mount(
         email="test@example.invalid"
         gateway={gateway}
         initialSelection={{ tier: 'basic', interval: 'month' }}
+        openCheckout={openCheckout}
         onStarted={(intent, nextQuote) => setStarted({ intent, quote: nextQuote })}
         onBack={() => {}}
       />
@@ -166,6 +173,7 @@ async function mount(
     success: () => providerSuccess(),
     confirm: () => {
       state = { id: 'intent1', status: 'confirmed', activation: 'trial' }
+      void client.invalidateQueries({ queryKey: ['billing', 'isolated', 'intent', 'intent1'] })
     }
   }
 }
@@ -179,6 +187,8 @@ it('invalidates consent when interval changes and does not infer success from th
   expect(view.host.querySelector<HTMLButtonElement>('.billing-submit')!.disabled).toBe(true)
   await view.click(view.host.querySelector('input[type=checkbox]')!)
   await view.click(view.button('開始體驗'))
+  expect(view.host.textContent).toContain('確認你的訂閱')
+  expect(view.host.textContent).not.toContain('正在確認你的訂閱')
   await act(async () => view.success())
   await view.flush()
   expect(view.host.textContent).toContain('正在確認你的訂閱')
@@ -193,6 +203,16 @@ it('invalidates consent when interval changes and does not infer success from th
   expect(view.onComplete).toHaveBeenCalledTimes(1)
 })
 
+it('ignores a late provider callback after leaving the checkout', async () => {
+  const view = await mount()
+  await view.click(view.host.querySelector('input[type=checkbox]')!)
+  await view.click(view.button('開始體驗'))
+  await view.click(view.button('返回方案選擇'))
+  await act(async () => view.success())
+  await view.flush()
+  expect(view.host.textContent).not.toContain('正在確認你的訂閱')
+  expect(window.sessionStorage.getItem('billing-provider-submitted:isolated:intent1')).toBeNull()
+})
 it('does not offer the provider checkout again after a success callback and page reload', async () => {
   const first = await mount(
     {},
@@ -358,11 +378,10 @@ it('recovers the same checkout when the payment overlay cannot open', async () =
   const view = await mount({}, undefined, true)
   await view.click(view.host.querySelector('input[type=checkbox]')!)
   await view.click(view.button('開始體驗'))
-  expect(view.host.querySelector('.payment-status-main')).not.toBeNull()
-  expect(view.host.textContent).toContain('付款視窗未能開啟')
-  expect(view.button('重新開啟付款視窗')).toBeTruthy()
-  expect(view.host.textContent).toContain('新分頁付款')
+  expect(view.host.querySelector('.billing-summary')).not.toBeNull()
+  expect(view.host.textContent).toContain('付款介面未能開啟')
+  expect(view.button('重新開啟 Lemon 付款介面')).toBeTruthy()
   expect(view.gateway.begin).toHaveBeenCalledTimes(1)
-  await view.click(view.button('重新開啟付款視窗'))
+  await view.click(view.button('重新開啟 Lemon 付款介面'))
   expect(view.gateway.begin).toHaveBeenCalledTimes(1)
 })
