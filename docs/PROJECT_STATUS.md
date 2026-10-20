@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-19 against deployed Main
-> `a12e5a5b6e1c26e363f3c2fb42835ff48bff15db` and the Product Owner's M8-E acceptance decision.
+> Integrated Main router, reconciled 2026-10-20 against deployed application commit
+> `dae474fae96b3d6f08f6726b55e2ae69ad1c62cd` and the M8-E checkout recovery release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -22,6 +22,19 @@ passed verify, browser UI, migration checks, Production preview and Fly deployme
 image label matches the Main SHA; readiness and independent `/api/ready`, `/`, `/login`, `/plans`
 readbacks returned 200. The released payment notice shows the approved wording and one-month trial,
 without a discount-code section. No new migration or Live transaction was made for this correction.
+
+M8-E abandoned-checkout recovery [PR #66](https://github.com/YambossMaster/Gym-Assistent/pull/66)
+merged as `dae474fae96b3d6f08f6726b55e2ae69ad1c62cd`.
+[Main CI #292](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39406922712)
+passed verify, browser UI, Development migration dry-run and Production preview; only
+`20261019111117_billing_abandoned_checkout.sql` was pending. Authorized
+[Production release #12](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39407408898)
+re-previewed and applied that migration, then deployed the same SHA. Production migration history,
+status constraint, unresolved-intent index, owner inbox policy and restricted API column grants were
+read back. Fly image label `GH_SHA` matches Main, service check passes, and independent `/api/ready`,
+`/`, `/login` return HTTP 200; `billingLiveEnabled:true` remains. The
+[checkout recovery record](status/M8/M8-E-CHECKOUT-RECOVERY.md) holds test evidence and limitations.
+R09 natural collection remains open.
 
 The latest M8-D copy follow-up is [PR #43](https://github.com/YambossMaster/Gym-Assistent/pull/43),
 merged as `e7a20c7`. [Main CI #241](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39113661473)
