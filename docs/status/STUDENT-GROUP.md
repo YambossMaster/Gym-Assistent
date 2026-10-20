@@ -4,11 +4,11 @@
 
 ## Gate 與清單
 
-| Gate     | 狀態                                                                                                                                                              |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                   |
-| Sol      | 前 7 項已有分支實作；Product Owner 於 2026-10-21 同意進入完整驗證。Development 真 DB API 與真 Supabase Auth 登入後主流程通過；剩餘矩陣情境見下方。                |
-| CI／發布 | PR #72 為草稿；`7c4ee1f` 與後續 Status 提交 `8b6fde1` 的 verify、browser-ui、Development migration-dry-run 均通過。Production migration、預覽、部署及合併未執行。 |
+| Gate     | 狀態                                                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                                 |
+| Sol      | 前 7 項已有分支實作；Product Owner 於 2026-10-21 同意進入完整驗證。Development 真 DB API 與真 Supabase Auth 登入後主流程通過；剩餘矩陣情境見下方。                              |
+| CI／發布 | PR #72 為草稿；實作 `7c4ee1f`、Status `8b6fde1`、並行修正 `fadf3d6` 的 verify、browser-ui、Development migration-dry-run 均通過。Production migration、預覽、部署及合併未執行。 |
 
 八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。前 7 項已有分支實作，第 8 項已取得 Development 與第一筆遠端 CI 證據；未完成的隔離還原、裝置／並行情境及 Production 證據不得視為整體完成。總數仍為 8，未新增工作包。
 
@@ -23,6 +23,8 @@ Development 真實 API 驗證（2026-10-21）：Product Owner 明確核准建立
 真 Supabase Auth／瀏覽器驗收（2026-10-21）：以 Development 的一次性 synthetic Coach 完成真 Auth 密碼登入；本機正式 OIDC verifier、Fastify 與 PostgreSQL adapters 接收 JWT，Web 連 Development 公開設定。瀏覽器建立兩位自然人與一群組，名單仍為 2 位學生及 1 個群組；群組購買 2 堂後餘額 2；Calendar 建立含兩名參與者的共課，完課後餘額 1，群組課程歷史指向同一 Session。課堂中乙標缺席，甲以 50kg／8 次／RPE 7 完成一組並確認「已儲存」；甲個人課程歷史顯示該共課，個人餘額仍 0。390px 實際群組詳細頁截圖已檢視，`innerWidth=scrollWidth=390`；320px 是先前隔離預覽證據，尚非真登入流程。測試 Auth、Workspace、Student、Session、Venue、分類 intent、臨時 DB role 精確清理後讀回皆 0；本機忽略的密碼、JWT、公開 Web 設定已刪除。這是本機 Development 瀏覽器驗證，不等於安裝手機 PWA、Production 或 exact-SHA CI。
 
 封存／週期課並行回歸（2026-10-21）：另建一組隔離 Development Auth／Workspace／群組／成員／Series，以最多兩條連線且僅繼承 `gym_assistant_api` 的臨時角色，同時呼叫真 PostgreSQL adapters 的 `reconcileSeries` 與群組封存。首輪暴露 `reconcileSeries` 持有交易連線時另用 pool 查時區，兩條連線被占滿可導致逾時；改為交易內同一連線讀時區。重測含預先排定的未來課：群組與 Series 都停用，scheduled 未來課 0、cancelled 未來課 1；重新啟用群組沒有重建 Series。新增聚焦測試防止再次借用第三條連線，Scheduling adapter 7/7、API typecheck 通過。測後 Auth、Workspace、Student、Series、Session、分類 intent、臨時角色精確讀回均為 0，本機密碼檔已刪除。此測試證明一次實際競爭與既有課取消，不代表所有交錯順序的壓力測試。
+
+並行修正已推送 PR #72 exact SHA `fadf3d6561c55d826482936a5bbf00d44e7b82f4`；GitHub Actions CI run `39474721782` 的 `verify`、`browser-ui`、`migration-dry-run` 全部 success，Production 預覽／部署 skipped。`browser-ui` 仍是既有 Plan Choice 回歸；M11 真登入瀏覽器證據在前述 Development 手測。
 
 對齊 Main 後本機 gate（2026-10-21）：`codex/student-group-sol` 已無衝突 rebase 到當時 `origin/main` `d946b0e`。`npm run check` exit 0：Prettier、根目錄 39 項腳本測試、API 64 檔／392 項、Web 94 檔／430 項全部通過；`npm run build` exit 0，API TypeScript 和 Web Vite 產物正常，僅既存大 chunk 提示。`git diff --check` 通過。完整隔離邏輯備份還原尚無證據：本機沒有 `pg_dump`、`pg_restore`、Docker；現有 GitHub 備份／還原 workflow 僅對 Production 執行，不能用 Development 的局部 SQL 檢查冒充還原。需在後續可用的隔離執行環境證實，Production 尚未套 M11 migration。
 
@@ -76,4 +78,4 @@ Sol 聚焦證據（2026-10-20 至 21，本機分支）：API／Web TypeScript ty
 
 ## 下一步
 
-下一個動作：將交易連線修正及封存／週期並行證據推送草稿 PR #72，確認新 exact-SHA 的 CI。320px 真登入流程與安裝手機 PWA 仍需後續 UI／裝置驗收；完整隔離還原須有可用的隔離執行環境。未取得前不可宣稱 M11 完成。Production migration／部署／merge 不屬本次授權，須另行明確範圍與釋出證據。所有 Development 真 API／Auth 測試 fixture 與臨時角色已精確清除；三筆 migration 已套用 Development，Production 未套用。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。
+下一個動作：Product Owner 進入 M11 前端調整時，以草稿 PR #72 的真登入流程檢視 UI，補做 320px 流程與安裝手機 PWA 驗收；後續在可用的隔離還原執行環境證實 M11 新表可隨備份完整還原。這兩類證據未取得前不可宣稱 M11 完成。Production migration／部署／merge 不屬本次授權，須另行明確範圍與釋出證據。所有 Development 真 API／Auth 測試 fixture 與臨時角色已精確清除；三筆 migration 已套用 Development，Production 未套用。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。
