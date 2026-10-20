@@ -34,6 +34,9 @@ import {
   LessonPurchaseVersionConflictError,
   LessonPurchaseAllocationConflictError,
   StudentVersionConflictError,
+  StudentGroupMemberError,
+  StudentGroupDraftConflictError,
+  StudentHasHistoryError,
 } from '../students/student-repository.js'
 import { WorkspaceVersionConflictError } from '../workspace/workspace-repository.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
@@ -122,6 +125,13 @@ const createStudentBodySchema = {
   required: ['name'],
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 120 },
+    kind: { type: 'string', enum: ['person', 'group'] },
+    memberIds: {
+      type: 'array',
+      items: { type: 'string', format: 'uuid' },
+      maxItems: 3,
+      uniqueItems: true,
+    },
     phone: { type: 'string', maxLength: 40 },
     goal: { type: 'string', maxLength: 1000 },
     privateNote: { type: 'string', maxLength: 4000 },
@@ -152,6 +162,12 @@ const updateStudentBodySchema = {
   required: ['name', 'version'],
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 120 },
+    memberIds: {
+      type: 'array',
+      items: { type: 'string', format: 'uuid' },
+      maxItems: 3,
+      uniqueItems: true,
+    },
     phone: { type: 'string', maxLength: 40 },
     goal: { type: 'string', maxLength: 1000 },
     privateNote: { type: 'string', maxLength: 4000 },
@@ -341,9 +357,13 @@ export function buildServer({
       if (policy === 'create-student' || policy === 'create-venue') {
         if (plan.overCapacity) throw new PlanAccessError('capacity_limit')
         const active = (request.body as { active?: boolean } | undefined)?.active !== false
+        const isGroup =
+          policy === 'create-student' &&
+          (request.body as { kind?: string } | undefined)?.kind === 'group'
         const count = policy === 'create-student' ? plan.activeStudents : plan.activeVenues
         const limit = policy === 'create-student' ? plan.studentLimit : plan.venueLimit
-        if (active && limit !== null && count >= limit) throw new PlanAccessError('capacity_limit')
+        if (active && !isGroup && limit !== null && count >= limit)
+          throw new PlanAccessError('capacity_limit')
         return
       }
       if (policy === 'update-student' || policy === 'delete-student') {
@@ -358,6 +378,7 @@ export function buildServer({
         if (
           !current.active &&
           wantsActive &&
+          current.kind !== 'group' &&
           plan.studentLimit !== null &&
           plan.activeStudents >= plan.studentLimit
         )
@@ -591,7 +612,32 @@ export function buildServer({
       return reply.status(409).send({ error: 'version_conflict', message: error.message })
     }
     if (error instanceof StudentVersionConflictError) {
-      return reply.status(409).send({ error: 'version_conflict', message: error.message })
+      return reply.status(409).send({
+        error: 'version_conflict',
+        message: error.message,
+        currentStudent: error.currentStudent,
+        currentMemberIds: error.currentMemberIds,
+        affectedSessions: error.affectedSessions,
+      })
+    }
+    if (error instanceof StudentGroupMemberError) {
+      return reply.status(400).send({ error: 'invalid_group_member', message: error.message })
+    }
+    if (error instanceof StudentGroupDraftConflictError) {
+      return reply.status(409).send({
+        error: 'group_draft_present',
+        message: error.message,
+        sessionIds: error.sessionIds,
+      })
+    }
+    if (
+      (error as { code?: string }).code === '23514' &&
+      ['group_member_limit', 'group_member_inactive'].includes((error as Error).message)
+    ) {
+      return reply.status(409).send({ error: 'group_members_changed' })
+    }
+    if (error instanceof StudentHasHistoryError) {
+      return reply.status(409).send({ error: 'student_has_history', message: error.message })
     }
     if (error instanceof LessonPurchaseVersionConflictError) {
       return reply.status(409).send({
@@ -618,10 +664,18 @@ export function buildServer({
       })
     }
     if (error instanceof SchedulingStudentChangeError) {
-      return reply.status(error.reason === 'student_not_found' ? 404 : 400).send({
-        error: error.reason,
-        message: error.message,
-      })
+      return reply
+        .status(
+          error.reason === 'student_not_found'
+            ? 404
+            : error.reason === 'group_draft_present' || error.reason === 'group_empty'
+              ? 409
+              : 400,
+        )
+        .send({
+          error: error.reason,
+          message: error.message,
+        })
     }
     if (error instanceof TrainingVersionConflictError) {
       return reply.status(409).send({
@@ -1266,7 +1320,7 @@ export function buildServer({
     )
     server.get<{
       Params: { sessionId: string }
-      Querystring: { definitionId: string; metric: string }
+      Querystring: { definitionId: string; metric: string; studentId?: string }
     }>('/v1/sessions/:sessionId/training/defaults', async (request, reply) => {
       const identity = await identityVerifier.verify(request.headers.authorization)
       const defaults = await training.getDefaults(
@@ -1274,6 +1328,7 @@ export function buildServer({
         request.params.sessionId,
         request.query.definitionId,
         request.query.metric,
+        request.query.studentId,
       )
       if (!defaults)
         return reply

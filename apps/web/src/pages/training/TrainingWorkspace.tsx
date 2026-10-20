@@ -287,6 +287,9 @@ function TrainingEditor({
     [conflictReason, setConflictReason] = useState<string>('version_conflict'),
     [adoptingConflict, setAdoptingConflict] = useState(false),
     [mobileTab, setMobileTab] = useState<'training' | 'note'>('training'),
+    [groupView, setGroupView] = useState<'timeline' | 'student'>(() =>
+      localStorage.getItem('group-training-view') === 'student' ? 'student' : 'timeline'
+    ),
     [classInfoExpanded, setClassInfoExpanded] = useState(true),
     [noteFocused, setNoteFocused] = useState(false),
     [activeSetInput, setActiveSetInput] = useState<HTMLInputElement | null>(null),
@@ -1126,6 +1129,25 @@ function TrainingEditor({
   }
   const complete = async () => {
     if (completing) return
+    const absent =
+      initial.participants?.filter(
+        (person) =>
+          draft.attendance?.find((item) => item.studentId === person.studentId)?.status === 'absent'
+      ) ?? []
+    const omitted = draft.exercises.reduce(
+      (count, exercise) =>
+        count +
+        exercise.sets.filter((set) => absent.some((person) => person.studentId === set.studentId))
+          .length,
+      0
+    )
+    if (
+      initial.session.studentKind === 'group' &&
+      !confirm(
+        `${absent.length === initial.participants?.length ? '全員缺席，仍要完成這堂課並扣群組一堂？' : '完成這堂群組課並扣一堂？'}${omitted ? `\n${omitted} 組缺席者的草稿結果將不納入成果。` : ''}`
+      )
+    )
+      return
     setCompleting(true)
     try {
       await coordinator.flush()
@@ -1418,6 +1440,76 @@ function TrainingEditor({
               <p>依動作類型填寫本組數值，再標記完成結果。</p>
             </div>
           </header>
+          {initial.session.studentKind === 'group' && initial.participants && (
+            <section className="group-training-controls" aria-label="共課出席與檢視">
+              <div className="group-training-attendance">
+                {initial.participants.map((person) => {
+                  const absent =
+                    draft.attendance?.find((item) => item.studentId === person.studentId)
+                      ?.status === 'absent'
+                  return (
+                    <button
+                      key={person.studentId}
+                      type="button"
+                      aria-pressed={!absent}
+                      onClick={() => {
+                        if (
+                          !absent &&
+                          initial.session.status === 'completed' &&
+                          draft.exercises.some((exercise) =>
+                            exercise.sets.some((set) => set.studentId === person.studentId)
+                          ) &&
+                          !confirm(
+                            `將 ${person.name} 改為缺席並移除其正式組數結果？舊成果連結也會失效。`
+                          )
+                        )
+                          return
+                        change({
+                          ...draft,
+                          attendance: initial.participants!.map((item) => ({
+                            studentId: item.studentId,
+                            status:
+                              item.studentId === person.studentId
+                                ? absent
+                                  ? 'present'
+                                  : 'absent'
+                                : (draft.attendance?.find(
+                                    (entry) => entry.studentId === item.studentId
+                                  )?.status ?? 'present')
+                          })),
+                          operationId: crypto.randomUUID()
+                        })
+                      }}
+                    >
+                      {person.name} · {absent ? '缺席' : '出席'}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="group-training-view" role="group" aria-label="組數檢視">
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'timeline'}
+                  onClick={() => {
+                    setGroupView('timeline')
+                    localStorage.setItem('group-training-view', 'timeline')
+                  }}
+                >
+                  按時序
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'student'}
+                  onClick={() => {
+                    setGroupView('student')
+                    localStorage.setItem('group-training-view', 'student')
+                  }}
+                >
+                  按學生
+                </button>
+              </div>
+            </section>
+          )}
           {storageError && (
             <p className="notice error">此裝置暫時無法保護尚未同步的內容，請保持頁面開啟。</p>
           )}
@@ -1533,6 +1625,41 @@ function TrainingEditor({
                 加入動作
               </button>
             </section>
+          ) : initial.session.studentKind === 'group' && initial.participants ? (
+            <div className="group-training-exercises">
+              {draft.exercises.map((exercise, index) => (
+                <GroupExerciseCard
+                  key={exercise.id}
+                  exercise={exercise}
+                  index={index}
+                  mode={groupView}
+                  participants={initial.participants!}
+                  attendance={draft.attendance ?? []}
+                  preference={initial}
+                  onChange={(next) =>
+                    change({
+                      ...draft,
+                      exercises: draft.exercises.map((item) => (item.id === next.id ? next : item)),
+                      operationId: crypto.randomUUID()
+                    })
+                  }
+                  onRemove={() =>
+                    change({
+                      ...draft,
+                      exercises: draft.exercises.filter((item) => item.id !== exercise.id),
+                      operationId: crypto.randomUUID()
+                    })
+                  }
+                />
+              ))}
+              <button
+                className="training-add-exercise ui-action-add"
+                onClick={() => setPicker(true)}
+              >
+                <Plus />
+                加入動作
+              </button>
+            </div>
           ) : (
             <div
               ref={dragShellRef}
@@ -1746,6 +1873,234 @@ export function SessionLifecycleButton({
       {pending ? <LoaderCircle className="button-spinner" /> : complete ? <Check /> : <RotateCcw />}
       {pending ? '處理中…' : complete ? '完成上課' : '改回未完成'}
     </button>
+  )
+}
+
+export function GroupExerciseCard({
+  exercise,
+  index,
+  mode,
+  participants,
+  attendance,
+  preference,
+  onChange,
+  onRemove
+}: {
+  exercise: TrainingDraftPayload['exercises'][number]
+  index: number
+  mode: 'timeline' | 'student'
+  participants: NonNullable<SessionTraining['participants']>
+  attendance: NonNullable<TrainingDraftPayload['attendance']>
+  preference: SessionTraining
+  onChange: (value: TrainingDraftPayload['exercises'][number]) => void
+  onRemove: () => void
+}) {
+  const details = preference.record.exercises.find((item) => item.id === exercise.id)
+  const recording =
+    details?.recording ??
+    exercise.recording ??
+    legacyRecording(details?.performanceMetric ?? 'weight')
+  const updateSet = (setId: string, next: TrainingSet) =>
+    onChange({
+      ...exercise,
+      recording,
+      formatVersion: 2,
+      sets: exercise.sets.map((current) =>
+        current.id === setId ? normalizeSet(next, recording, preference) : current
+      )
+    })
+  const addSet = (studentId: string) => {
+    const previous = exercise.sets.filter((set) => set.studentId === studentId).at(-1)
+    onChange({
+      ...exercise,
+      recording,
+      formatVersion: 2,
+      sets: [
+        ...exercise.sets,
+        {
+          id: crypto.randomUUID(),
+          studentId,
+          measurements: previous?.measurements ?? emptyMeasurements(preference, recording.type),
+          plannedWeight: previous?.plannedWeight ?? null,
+          plannedReps: previous?.plannedReps ?? null,
+          actualReps: null,
+          rpe: null,
+          result: null,
+          unit: previous?.unit ?? preference.defaultWeightUnit
+        }
+      ]
+    })
+  }
+  const present = participants.filter(
+    (person) =>
+      attendance.find((entry) => entry.studentId === person.studentId)?.status !== 'absent'
+  )
+  const recorded = new Set(
+    exercise.sets
+      .filter((set) => present.some((person) => person.studentId === set.studentId))
+      .map((set) => set.studentId)
+  ).size
+  const handleSetKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.key === 'Enter' &&
+      !event.nativeEvent.isComposing &&
+      event.target instanceof HTMLInputElement
+    ) {
+      event.preventDefault()
+      advanceTrainingSetInput(event.target)
+    }
+  }
+  return (
+    <article
+      className="training-exercise-card recording-v2 group-exercise-card"
+      data-exercise-id={exercise.id}
+    >
+      <header>
+        <span className="exercise-number">{String(index + 1).padStart(2, '0')}</span>
+        <div className="exercise-identity">
+          <h3>{exercise.definitionName || '訓練動作'}</h3>
+          <small>
+            {details ? `${details.bodyParts.join('、')} · ${details.equipment}` : '共用動作'}
+          </small>
+        </div>
+        {recorded > 0 ? <span className="group-exercise-count">{recorded} 人有紀錄</span> : null}
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={`移除${exercise.definitionName}動作`}
+          onClick={() => {
+            if (!exercise.sets.length || confirm('移除這個動作與所有組數？')) onRemove()
+          }}
+        >
+          <XCircle />
+        </button>
+      </header>
+      {mode === 'timeline' ? (
+        <div
+          className="group-exercise-sequence"
+          onFocusCapture={(event) => selectTrainingSetValue(event.target)}
+          onKeyDownCapture={handleSetKey}
+        >
+          <div className="training-set-head" aria-hidden="true">
+            <span>學生</span>
+            <span
+              className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+            >
+              {recordingTypes[recording.type].dimensions.map((dimension) => (
+                <span key={dimension}>{metricLabels[dimension]}</span>
+              ))}
+            </span>
+            <span>RPE</span>
+            <span>結果</span>
+            <span />
+          </div>
+          {exercise.sets
+            .filter((set) => present.some((person) => person.studentId === set.studentId))
+            .map((set) => {
+              const person = participants.find((item) => item.studentId === set.studentId)!
+              const ownNumber =
+                exercise.sets
+                  .filter((item) => item.studentId === set.studentId)
+                  .findIndex((item) => item.id === set.id) + 1
+              return (
+                <div className="group-sequence-row" key={set.id}>
+                  <span className="group-sequence-person" title={person.name}>
+                    <strong>{person.name}</strong>
+                    <small>第 {ownNumber} 組</small>
+                  </span>
+                  <SetCard
+                    set={set}
+                    index={ownNumber - 1}
+                    isLastSet={false}
+                    recording={recording}
+                    values={measurementValues(set, recording, preference)}
+                    onChange={(next) => updateSet(set.id, next)}
+                    onRemove={() =>
+                      onChange({
+                        ...exercise,
+                        sets: exercise.sets.filter((item) => item.id !== set.id)
+                      })
+                    }
+                  />
+                </div>
+              )
+            })}
+          <div className="group-exercise-add-buttons">
+            {present.map((person) => (
+              <button
+                key={person.studentId}
+                type="button"
+                className="text-button set-add ui-action-add"
+                onClick={() => addSet(person.studentId)}
+              >
+                <Plus />
+                {person.name}加一組
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        participants.map((person) => {
+          const absent =
+            attendance.find((entry) => entry.studentId === person.studentId)?.status === 'absent'
+          const own = exercise.sets.filter((set) => set.studentId === person.studentId)
+          return (
+            <section key={person.studentId} className="group-exercise-person">
+              <h4>
+                {person.name}
+                {absent ? <small>缺席</small> : null}
+              </h4>
+              {!absent && (
+                <div
+                  className="training-sets-scroll"
+                  onFocusCapture={(event) => selectTrainingSetValue(event.target)}
+                  onKeyDownCapture={handleSetKey}
+                >
+                  <div className="training-set-head" aria-hidden="true">
+                    <span>組</span>
+                    <span
+                      className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+                    >
+                      {recordingTypes[recording.type].dimensions.map((dimension) => (
+                        <span key={dimension}>{metricLabels[dimension]}</span>
+                      ))}
+                    </span>
+                    <span>RPE</span>
+                    <span>結果</span>
+                    <span />
+                  </div>
+                  {own.map((set, ownIndex) => (
+                    <SetCard
+                      key={set.id}
+                      set={set}
+                      index={ownIndex}
+                      isLastSet={ownIndex === own.length - 1}
+                      recording={recording}
+                      values={measurementValues(set, recording, preference)}
+                      onChange={(next) => updateSet(set.id, next)}
+                      onRemove={() =>
+                        onChange({
+                          ...exercise,
+                          sets: exercise.sets.filter((item) => item.id !== set.id)
+                        })
+                      }
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    className="text-button set-add ui-action-add"
+                    onClick={() => addSet(person.studentId)}
+                  >
+                    <Plus />
+                    新增一組
+                  </button>
+                </div>
+              )}
+            </section>
+          )
+        })
+      )}
+    </article>
   )
 }
 
@@ -2440,6 +2795,14 @@ export function ExercisePicker({
 function toDraft(value: SessionTraining): TrainingDraftPayload {
   return {
     privateNote: value.record.privateNote,
+    ...(value.participants
+      ? {
+          attendance: value.participants.map((person) => ({
+            studentId: person.studentId,
+            status: person.status === 'absent' ? ('absent' as const) : ('present' as const)
+          }))
+        }
+      : {}),
     exercises: value.record.exercises.map((exercise) => ({
       id: exercise.id,
       definitionId: exercise.definitionId,

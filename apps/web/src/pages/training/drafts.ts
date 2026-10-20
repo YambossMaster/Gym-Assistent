@@ -21,6 +21,7 @@ export type StoredTrainingDraft = LocalRecord & {
 export function sameTrainingContent(left: TrainingDraftPayload, right: TrainingDraftPayload) {
   const content = (value: TrainingDraftPayload) => ({
     privateNote: value.privateNote,
+    attendance: value.attendance,
     exercises: value.exercises.map((exercise) => ({
       id: exercise.id,
       definitionId: exercise.definitionId,

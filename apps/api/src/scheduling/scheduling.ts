@@ -91,6 +91,9 @@ export type CourseSession = {
   id: string
   studentId: string
   studentName: string
+  ownerKind?: 'person' | 'group'
+  participantAttendance?: 'pending' | 'present' | 'absent'
+  participantNames?: string[]
   seriesId: string | null
   startsAt: string | null
   endsAt: string | null

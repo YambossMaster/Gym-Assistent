@@ -118,6 +118,15 @@ function TrainingResultPage() {
             ) : null}
           </div>
         </header>
+        {result.participants?.length ? (
+          <div className="public-participants" aria-label="本堂出席">
+            {result.participants.map((person) => (
+              <span key={person.studentId}>
+                {person.name} · {person.attendance === 'absent' ? '缺席' : '出席'}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {result.exercises.length ? (
           <div className="public-exercise-list">
             {result.exercises.map((exercise, exerciseIndex) => (
@@ -130,6 +139,15 @@ function TrainingResultPage() {
                   {exercise.sets.map((set, setIndex) => (
                     <div className="public-set" key={set.position}>
                       <strong>SET {setIndex + 1}</strong>
+                      {set.studentId ? (
+                        <span>
+                          {
+                            result.participants?.find(
+                              (person) => person.studentId === set.studentId
+                            )?.name
+                          }
+                        </span>
+                      ) : null}
                       {exercise.recording && set.measurements ? (
                         <span className="public-set-measurement recording">
                           {formatMeasurements(exercise.recording, set.measurements)}

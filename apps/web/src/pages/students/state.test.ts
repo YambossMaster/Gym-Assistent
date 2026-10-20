@@ -74,6 +74,7 @@ describe('Student purchase records', () => {
 
 const student = (overrides: Partial<Student> = {}): Student => ({
   id: 'student-1',
+  kind: 'person',
   name: '品妤',
   phone: '',
   goal: '提升肌力',
@@ -91,8 +92,23 @@ const student = (overrides: Partial<Student> = {}): Student => ({
 })
 
 describe('Student roster result selection', () => {
+  it('separates active people and groups while mixing archived subjects', () => {
+    const people = student({ id: 'person-1' })
+    const group = student({ id: 'group-1', kind: 'group', name: '週二共課' })
+    const archived = student({ id: 'archived-1', active: false })
+    const all = [people, group, archived]
+    expect(
+      selectStudentRosterResult({ students: all, view: 'person', query: '' }).students
+    ).toEqual([people])
+    expect(selectStudentRosterResult({ students: all, view: 'group', query: '' }).students).toEqual(
+      [group]
+    )
+    expect(
+      selectStudentRosterResult({ students: all, view: 'archived', query: '' }).students
+    ).toEqual([archived])
+  })
   it('distinguishes the first Student empty state', () => {
-    expect(selectStudentRosterResult({ students: [], view: 'active', query: '' }).state).toBe(
+    expect(selectStudentRosterResult({ students: [], view: 'person', query: '' }).state).toBe(
       'first-empty'
     )
   })
@@ -105,14 +121,14 @@ describe('Student roster result selection', () => {
 
   it('distinguishes a search with no match in the selected view', () => {
     expect(
-      selectStudentRosterResult({ students: [student()], view: 'active', query: '不存在' }).state
+      selectStudentRosterResult({ students: [student()], view: 'person', query: '不存在' }).state
     ).toBe('search-empty')
   })
 
   it('returns only matching Students from the selected view', () => {
     const result = selectStudentRosterResult({
       students: [student(), student({ id: 'student-2', name: '家豪', active: false })],
-      view: 'active',
+      view: 'person',
       query: '肌力'
     })
     expect(result).toMatchObject({ state: 'ready', students: [{ id: 'student-1' }] })

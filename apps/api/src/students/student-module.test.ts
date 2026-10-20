@@ -34,6 +34,7 @@ describe('StudentModule', () => {
 
     expect(student).toEqual({
       id: 'student-a',
+      kind: 'person',
       name: 'Alice',
       phone: '',
       goal: '',
@@ -46,6 +47,57 @@ describe('StudentModule', () => {
       version: 1,
       createdAt: '2026-09-07T10:00:00.000Z',
       updatedAt: '2026-09-07T10:00:00.000Z',
+    })
+  })
+
+  it('creates a group from active people in the same Workspace and preserves their own records', async () => {
+    const repository = new MemoryStudentRepository()
+    const students = new StudentModule({ repository })
+    const alice = await students.create(coachA, { name: 'Alice' })
+    const bob = await students.create(coachA, { name: 'Bob' })
+    const outsider = await students.create(coachB, { name: 'Outside' })
+
+    await expect(
+      students.create(coachA, {
+        name: 'Invalid',
+        kind: 'group',
+        memberIds: [alice.id, outsider.id],
+      }),
+    ).rejects.toMatchObject({ name: 'StudentGroupMemberError' })
+    const group = await students.create(coachA, {
+      name: 'Tuesday class',
+      kind: 'group',
+      memberIds: [alice.id, bob.id],
+    })
+    expect(group.kind).toBe('group')
+    await expect(students.detail(coachA, group.id)).resolves.toMatchObject({
+      student: { id: group.id, kind: 'group' },
+      members: [{ id: alice.id }, { id: bob.id }],
+    })
+    await expect(students.detail(coachB, group.id)).resolves.toBeNull()
+
+    const revised = await students.update(coachA, group.id, {
+      name: 'Tuesday class',
+      memberIds: [bob.id],
+      version: group.version,
+    })
+    expect(revised?.version).toBe(group.version + 1)
+    await expect(students.detail(coachA, group.id)).resolves.toMatchObject({
+      members: [{ id: bob.id }],
+    })
+  })
+
+  it('requires archiving once a person has a purchase', async () => {
+    const students = new StudentModule({ repository: new MemoryStudentRepository() })
+    const person = await students.create(coachA, { name: 'Alice' })
+    await students.createLessonPurchase(coachA, person.id, {
+      purchasedAt: '2026-10-20T00:00:00.000Z',
+      lessonCount: 1,
+      amountMinor: 1000,
+      currency: 'TWD',
+    })
+    await expect(students.delete(coachA, person.id, person.version)).rejects.toMatchObject({
+      name: 'StudentHasHistoryError',
     })
   })
 

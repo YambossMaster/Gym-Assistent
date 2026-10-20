@@ -29,7 +29,7 @@ export class PostgresPlanAccessRepository implements PlanAccessRepository {
       const result = await client.query<PlanRow>(
         `select g.kind,g.ends_at,
            (select count(*)::int from app_private.student s
-            where s.workspace_id=$1 and s.active) as active_students,
+            where s.workspace_id=$1 and s.active and s.kind='person') as active_students,
            (select count(*)::int from app_private.venue v
             where v.workspace_id=$1 and v.active) as active_venues
          from app_private.workspace w

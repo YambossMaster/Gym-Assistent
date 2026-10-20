@@ -12,6 +12,8 @@ export type WorkspaceId = string
 
 export interface NewStudent {
   id: string
+  kind: Student['kind']
+  memberIds: string[]
   name: string
   phone: string
   goal: string
@@ -25,10 +27,14 @@ export interface NewStudent {
 }
 
 export interface UpdatedStudent
-  extends Omit<NewStudent, 'id' | 'ageRange' | 'defaultVenueId' | 'singleLessonPrice'> {
+  extends Omit<
+    NewStudent,
+    'id' | 'kind' | 'memberIds' | 'ageRange' | 'defaultVenueId' | 'singleLessonPrice'
+  > {
   ageRange?: Student['ageRange'] | undefined
   defaultVenueId?: string | null | undefined
   singleLessonPrice?: Student['singleLessonPrice'] | undefined
+  memberIds?: string[] | undefined
   expectedVersion: number
 }
 
@@ -48,9 +54,34 @@ export interface UpdatedLessonPurchase extends Omit<NewLessonPurchase, 'id'> {
 }
 
 export class StudentVersionConflictError extends Error {
-  constructor() {
+  constructor(
+    readonly currentStudent?: Student,
+    readonly currentMemberIds?: string[],
+    readonly affectedSessions?: { id: string; status: string; version: number }[],
+  ) {
     super('Student was changed on another device. Reload it before choosing the next change.')
     this.name = 'StudentVersionConflictError'
+  }
+}
+
+export class StudentGroupMemberError extends Error {
+  constructor() {
+    super('群組成員必須是此教練名下使用中的學生。')
+    this.name = 'StudentGroupMemberError'
+  }
+}
+
+export class StudentGroupDraftConflictError extends Error {
+  constructor(readonly sessionIds: string[]) {
+    super('未來課已有被移出成員的訓練草稿；請先處理該課的組數。')
+    this.name = 'StudentGroupDraftConflictError'
+  }
+}
+
+export class StudentHasHistoryError extends Error {
+  constructor() {
+    super('此學生或群組已有正式紀錄，請改用封存。')
+    this.name = 'StudentHasHistoryError'
   }
 }
 export class LessonPurchaseVersionConflictError extends Error {

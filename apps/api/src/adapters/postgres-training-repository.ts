@@ -6,6 +6,7 @@ import {
   type RecordingConfig,
 } from '../training/recording.js'
 import { createHash, randomUUID } from 'node:crypto'
+import { allocateLessonSource } from '../scheduling/allocate-lesson-source.js'
 import type { Pool, PoolClient, QueryResult } from 'pg'
 import type { AuthenticatedIdentity } from '../identity/identity.js'
 import { trainingCatalog } from '../training/catalog.js'
@@ -363,12 +364,84 @@ export class PostgresTrainingRepository implements TrainingRepository {
       `session:${sessionId}:${complete ? 'complete' : 'save'}`,
       input,
       async (client) => {
+        const completionOwner = complete
+          ? await client.query<{ student_id: string }>(
+              `select student_id from app_private.course_session
+               where workspace_id=$1 and id=$2 and not is_legacy`,
+              [workspaceId, sessionId],
+            )
+          : null
+        if (complete) {
+          if (!completionOwner?.rows[0]) return null
+          await client.query(
+            `select id from app_private.student
+             where workspace_id=$1 and id=$2 for update`,
+            [workspaceId, completionOwner.rows[0].student_id],
+          )
+        }
         const sessionRow = await client.query(
-          `select * from app_private.course_session where workspace_id=$1 and id=$2 and not is_legacy for update`,
+          `select cs.*,owner.kind student_kind from app_private.course_session cs
+           join app_private.student owner on owner.workspace_id=cs.workspace_id and owner.id=cs.student_id
+           where cs.workspace_id=$1 and cs.id=$2 and not cs.is_legacy for update`,
           [workspaceId, sessionId],
         )
         const session = sessionRow.rows[0]
         if (!session) return null
+        if (completionOwner && completionOwner.rows[0]?.student_id !== session.student_id)
+          throw new TrainingVersionConflictError('version_conflict', {
+            reason: 'session_owner_changed',
+          })
+        const groupSession = session.student_kind === 'group'
+        const participants = groupSession
+          ? await client.query<{ student_id: string; attendance: string }>(
+              `select student_id,attendance from app_private.course_session_participant
+               where workspace_id=$1 and session_id=$2 order by student_id for update`,
+              [workspaceId, sessionId],
+            )
+          : { rows: [] }
+        const attendanceByStudent = new Map(
+          participants.rows.map((row) => [row.student_id, row.attendance]),
+        )
+        if (groupSession && !participants.rows.length)
+          throw new TrainingVersionConflictError('version_conflict', { reason: 'empty_group' })
+        for (const item of input.attendance ?? []) {
+          if (!groupSession || !attendanceByStudent.has(item.studentId))
+            throw new TrainingVersionConflictError('version_conflict', {
+              reason: 'participant_changed',
+            })
+          attendanceByStudent.set(item.studentId, item.status)
+        }
+        if (complete) {
+          for (const [studentId, status] of attendanceByStudent)
+            if (status === 'pending') attendanceByStudent.set(studentId, 'present')
+        }
+        const attendanceChanged = participants.rows.some(
+          (row) => attendanceByStudent.get(row.student_id) !== row.attendance,
+        )
+        const exercisesToSave = input.exercises.map((exercise) => ({
+          ...exercise,
+          sets: exercise.sets.flatMap((set) => {
+            const studentId = set.studentId ?? (groupSession ? null : String(session.student_id))
+            if (
+              !studentId ||
+              (groupSession && !attendanceByStudent.has(studentId)) ||
+              (!groupSession && studentId !== session.student_id)
+            )
+              throw new TrainingVersionConflictError('version_conflict', {
+                reason: 'set_owner_changed',
+              })
+            if (
+              (complete || session.status === 'completed') &&
+              attendanceByStudent.get(studentId) === 'absent'
+            )
+              return []
+            return [{ ...set, studentId }]
+          }),
+        }))
+        if (groupSession && Number(session.version) !== input.sessionVersion)
+          throw new TrainingVersionConflictError('version_conflict', {
+            sessionVersion: Number(session.version),
+          })
         if (complete && Number(session.version) !== input.sessionVersion)
           throw new TrainingVersionConflictError('version_conflict', {
             sessionVersion: Number(session.version),
@@ -404,30 +477,38 @@ export class PostgresTrainingRepository implements TrainingRepository {
         const setParents = new Map(
           existingSets.rows.map((row) => [String(row.id), String(row.exercise_id)]),
         )
+        const setOwners = new Map(
+          existingSets.rows.map((row) => [String(row.id), String(row.student_id)]),
+        )
         const existingMeasurements = new Map(
           existingSets.rows.map((row) => [String(row.id), row.measurements]),
         )
         let preference: Awaited<
           ReturnType<PostgresTrainingRepository['getPreferenceWith']>
         > | null = null
-        for (const exercise of input.exercises) {
+        for (const exercise of exercisesToSave) {
           const existing = existingById.get(exercise.id)
           if (existing && String(existing.definition_id) !== exercise.definitionId)
             throw new TrainingVersionConflictError('definition_conflict')
           for (const set of exercise.sets)
             if (setParents.has(set.id) && setParents.get(set.id) !== exercise.id)
               throw new TrainingVersionConflictError('definition_conflict')
+          for (const set of exercise.sets)
+            if (setOwners.has(set.id) && setOwners.get(set.id) !== set.studentId)
+              throw new TrainingVersionConflictError('version_conflict', {
+                reason: 'set_owner_changed',
+              })
         }
         const definitionIds = [
           ...new Set(
-            input.exercises.filter((x) => !existingById.has(x.id)).map((x) => x.definitionId),
+            exercisesToSave.filter((x) => !existingById.has(x.id)).map((x) => x.definitionId),
           ),
         ].sort()
         const definitions = new Map<string, Record<string, unknown>>()
         for (const definitionId of definitionIds) {
           const definition = await lockDefinition(client, workspaceId, definitionId)
           if (!definition) throw new TrainingVersionConflictError('definition_conflict')
-          const occurrence = input.exercises.find(
+          const occurrence = exercisesToSave.find(
             (x) => x.definitionId === definitionId && !existingById.has(x.id),
           )!
           if (
@@ -440,7 +521,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
           definitions.set(definitionId, definition)
         }
 
-        for (const exercise of input.exercises) {
+        for (const exercise of exercisesToSave) {
           const existing = existingById.get(exercise.id)
           const config = existing
             ? existing.recording_config
@@ -481,7 +562,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         const recordId = String(currentRecord?.id ?? randomUUID())
         const nextContent = stableJson({
           privateNote: input.privateNote,
-          exercises: input.exercises.map(({ definitionVersion: _, ...x }) => x),
+          exercises: exercisesToSave.map(({ definitionVersion: _, ...x }) => x),
         })
         const currentContent = stableJson({
           privateNote: String(currentRecord?.private_note ?? ''),
@@ -493,7 +574,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
             `insert into app_private.training_record(id,workspace_id,session_id,private_note) values($1,$2,$3,$4)`,
             [recordId, workspaceId, sessionId, input.privateNote],
           )
-        else if (changed)
+        else if (changed || attendanceChanged)
           await client.query(
             `update app_private.training_record set private_note=$3,version=version+1,updated_at=now() where workspace_id=$1 and id=$2`,
             [workspaceId, recordId, input.privateNote],
@@ -503,7 +584,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
             `delete from app_private.training_exercise where workspace_id=$1 and record_id=$2`,
             [workspaceId, recordId],
           )
-          for (const [position, exercise] of input.exercises.entries()) {
+          for (const [position, exercise] of exercisesToSave.entries()) {
             const source = existingById.get(exercise.id) ?? definitions.get(exercise.definitionId)!
             await client.query(
               `insert into app_private.training_exercise(id,workspace_id,record_id,position,definition_id,definition_name,equipment,body_parts,movement_type,performance_metric,recording_config) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
@@ -526,7 +607,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
             )
             for (const [setPosition, set] of exercise.sets.entries())
               await client.query(
-                `insert into app_private.training_set(id,workspace_id,exercise_id,position,planned_weight,planned_reps,actual_reps,rpe,result,unit,measurements) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+                `insert into app_private.training_set(id,workspace_id,exercise_id,position,planned_weight,planned_reps,actual_reps,rpe,result,unit,measurements,student_id) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
                 [
                   set.id,
                   workspaceId,
@@ -539,15 +620,37 @@ export class PostgresTrainingRepository implements TrainingRepository {
                   set.result,
                   set.unit,
                   set.measurements ? JSON.stringify(set.measurements) : null,
+                  set.studentId,
                 ],
               )
           }
         }
-        if (complete)
-          await client.query(
-            `update app_private.course_session set status='completed',completed_at=now(),version=version+1,updated_at=now() where workspace_id=$1 and id=$2`,
-            [workspaceId, sessionId],
+        if (attendanceChanged) {
+          for (const [studentId, status] of attendanceByStudent)
+            await client.query(
+              `update app_private.course_session_participant
+               set attendance=$4,attendance_edited=true,version=version+1
+               where workspace_id=$1 and session_id=$2 and student_id=$3
+                 and attendance is distinct from $4`,
+              [workspaceId, sessionId, studentId, status],
+            )
+        }
+        if (complete) {
+          const now = new Date()
+          await allocateLessonSource(
+            client,
+            workspaceId,
+            sessionId,
+            String(session.student_id),
+            session.venue_id as string | null,
+            new Date(String(session.ends_at)),
+            now,
           )
+          await client.query(
+            `update app_private.course_session set status='completed',completed_at=$3,version=version+1,updated_at=$3 where workspace_id=$1 and id=$2`,
+            [workspaceId, sessionId, now],
+          )
+        }
         return this.readSessionTraining(client, workspaceId, sessionId)
       },
     )
@@ -558,16 +661,46 @@ export class PostgresTrainingRepository implements TrainingRepository {
     sessionId: string,
     definitionId: string,
     metric: PerformanceMetric,
+    studentId?: string,
   ) {
     return this.scoped(workspaceId, async (client) => {
       const owns = await client.query(
-        `select 1 from app_private.course_session where workspace_id=$1 and id=$2 and not is_legacy`,
+        `select cs.student_id,owner.kind from app_private.course_session cs
+         join app_private.student owner on owner.workspace_id=cs.workspace_id and owner.id=cs.student_id
+         where cs.workspace_id=$1 and cs.id=$2 and not cs.is_legacy`,
         [workspaceId, sessionId],
       )
       if (!owns.rowCount) return null
+      const owner = owns.rows[0]!
+      const personId = owner.kind === 'person' ? String(owner.student_id) : studentId
+      if (!personId) return null
+      if (owner.kind === 'group') {
+        const participant = await client.query(
+          `select 1 from app_private.course_session_participant
+           where workspace_id=$1 and session_id=$2 and student_id=$3`,
+          [workspaceId, sessionId, personId],
+        )
+        if (!participant.rowCount) return null
+      } else if (studentId && studentId !== personId) return null
       const row = await client.query(
-        `select ts.planned_weight,coalesce(ts.actual_reps,ts.planned_reps) planned_reps,ts.unit from app_private.course_session current_session join app_private.course_session previous on previous.workspace_id=current_session.workspace_id and previous.student_id=current_session.student_id and previous.starts_at<current_session.starts_at and previous.status<>'cancelled' join app_private.training_record tr on tr.workspace_id=previous.workspace_id and tr.session_id=previous.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id and te.definition_id=$3 and te.performance_metric=$4 join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where current_session.workspace_id=$1 and current_session.id=$2 and te.position=(select min(x.position) from app_private.training_exercise x where x.workspace_id=te.workspace_id and x.record_id=te.record_id and x.definition_id=$3 and x.performance_metric=$4) order by previous.starts_at desc,previous.id desc,ts.position limit 100`,
-        [workspaceId, sessionId, definitionId, metric],
+        `select ts.planned_weight,coalesce(ts.actual_reps,ts.planned_reps) planned_reps,ts.unit
+         from app_private.course_session current_session
+         join app_private.course_session previous on previous.workspace_id=current_session.workspace_id
+           and previous.starts_at<current_session.starts_at and previous.status<>'cancelled'
+         join app_private.training_record tr on tr.workspace_id=previous.workspace_id and tr.session_id=previous.id
+         join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id
+           and te.definition_id=$3 and te.performance_metric=$4
+         join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id
+           and ts.student_id=$5
+         where current_session.workspace_id=$1 and current_session.id=$2
+           and (previous.student_id=$5 or exists(select 1 from app_private.course_session_participant p
+              where p.workspace_id=previous.workspace_id and p.session_id=previous.id
+                and p.student_id=$5 and p.attendance<>'absent'))
+           and te.position=(select min(x.position) from app_private.training_exercise x
+             where x.workspace_id=te.workspace_id and x.record_id=te.record_id
+               and x.definition_id=$3 and x.performance_metric=$4)
+         order by previous.starts_at desc,previous.id desc,ts.position limit 100`,
+        [workspaceId, sessionId, definitionId, metric, personId],
       )
       return row.rows.map((set) => ({
         plannedWeight: set.planned_weight === null ? null : Number(set.planned_weight),
@@ -578,11 +711,14 @@ export class PostgresTrainingRepository implements TrainingRepository {
   }
 
   async getStudentPerformance(workspaceId: string, studentId: string) {
-    const owns = await this.pool.query(
-      `select 1 from app_private.student where workspace_id=$1 and id=$2`,
-      [workspaceId, studentId],
+    const owns = await this.scoped(workspaceId, (client) =>
+      client.query<{ kind: string }>(
+        `select kind from app_private.student where workspace_id=$1 and id=$2`,
+        [workspaceId, studentId],
+      ),
     )
     if (!owns.rowCount) return null
+    if (owns.rows[0]?.kind === 'group') return []
     const points = await this.performancePoints(workspaceId, studentId)
     const groups = new Map<string, typeof points>()
     for (const point of points) {
@@ -698,7 +834,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     defaultUnit: WeightUnit,
   ) {
     const rows = await queryable.query(
-      `select cs.id session_id,cs.status session_status,cs.starts_at,te.definition_id,te.definition_name,te.performance_metric,ts.planned_weight,ts.actual_reps,ts.unit from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where cs.workspace_id=$1 and cs.student_id=$2 and cs.status in ('scheduled','completed') and not cs.is_legacy and te.recording_config is null and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
+      `select cs.id session_id,cs.status session_status,cs.starts_at,te.definition_id,te.definition_name,te.performance_metric,ts.planned_weight,ts.actual_reps,ts.unit from app_private.course_session cs join app_private.training_record tr on tr.workspace_id=cs.workspace_id and tr.session_id=cs.id join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id where cs.workspace_id=$1 and ts.student_id=$2 and cs.status in ('scheduled','completed') and not cs.is_legacy and te.recording_config is null and ts.result='completed' and (cs.student_id=$2 or exists(select 1 from app_private.course_session_participant p where p.workspace_id=cs.workspace_id and p.session_id=cs.id and p.student_id=$2 and p.attendance<>'absent')) order by cs.starts_at,cs.id,te.position,ts.position`,
       [workspaceId, studentId],
     )
     const groups = new Map<string, any[]>()
@@ -754,7 +890,9 @@ export class PostgresTrainingRepository implements TrainingRepository {
       join app_private.training_exercise te on te.workspace_id=tr.workspace_id and te.record_id=tr.id
       join app_private.training_set ts on ts.workspace_id=te.workspace_id and ts.exercise_id=te.id
       left join app_private.exercise_definition d on d.workspace_id=te.workspace_id and d.id=te.definition_id
-      where cs.workspace_id=$1 and cs.student_id=$2 and cs.status in ('scheduled','completed')
+      where cs.workspace_id=$1 and ts.student_id=$2 and cs.status in ('scheduled','completed')
+      and (cs.student_id=$2 or exists(select 1 from app_private.course_session_participant p
+          where p.workspace_id=cs.workspace_id and p.session_id=cs.id and p.student_id=$2 and p.attendance<>'absent'))
       and not cs.is_legacy and ts.result='completed' order by cs.starts_at,cs.id,te.position,ts.position`,
       [workspaceId, studentId],
     )
@@ -808,7 +946,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     sessionId: string,
   ): Promise<SessionTraining | null> {
     const sessionRows = await queryable.query(
-      `select cs.*,s.name student_name,
+      `select cs.*,s.name student_name,s.kind student_kind,
         coalesce((select sum(lesson_count)::int from app_private.lesson_purchase lp where lp.workspace_id=cs.workspace_id and lp.student_id=cs.student_id and lp.source_kind='manual'),0) purchased,
         (select count(*)::int from app_private.course_session x where x.workspace_id=cs.workspace_id and x.student_id=cs.student_id and x.status='completed') completed,
         (select count(*)::int from app_private.session_lesson_source a join app_private.course_session x on x.workspace_id=a.workspace_id and x.id=a.session_id where a.workspace_id=cs.workspace_id and a.student_id=cs.student_id and a.kind in ('manual','legacy_unallocated') and x.status='completed') package_debits,
@@ -835,7 +973,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     const currentRows = record
       ? await queryable.query(
           `select te.*,d.recording_config current_recording,
-            ts.id set_id,ts.planned_weight,ts.planned_reps,ts.actual_reps,
+            ts.id set_id,ts.student_id set_student_id,ts.planned_weight,ts.planned_reps,ts.actual_reps,
             ts.rpe,ts.result,ts.unit,ts.measurements
            from app_private.training_exercise te
            left join app_private.exercise_definition d on d.workspace_id=te.workspace_id and d.id=te.definition_id
@@ -853,6 +991,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
       if (row.set_id)
         current.sets.push({
           id: row.set_id,
+          student_id: row.set_student_id,
           exercise_id: row.id,
           planned_weight: row.planned_weight,
           planned_reps: row.planned_reps,
@@ -870,6 +1009,19 @@ export class PostgresTrainingRepository implements TrainingRepository {
         exercise.recording = row.current_recording
       return exercise
     })
+    const participantRows =
+      s.student_kind === 'group'
+        ? await queryable.query<{
+            student_id: string
+            name: string
+            attendance: 'pending' | 'present' | 'absent'
+          }>(
+            `select p.student_id,person.name,p.attendance from app_private.course_session_participant p
+           join app_private.student person on person.workspace_id=p.workspace_id and person.id=p.student_id
+           where p.workspace_id=$1 and p.session_id=$2 order by person.name,p.student_id`,
+            [workspaceId, sessionId],
+          )
+        : { rows: [] }
     const defaultUnit = (s.default_weight_unit ?? 'kg') as WeightUnit
     const historical = await this.performancePointsWith(
       queryable,
@@ -884,7 +1036,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
     )
       ? await this.measurementRows(queryable, workspaceId, String(s.student_id))
       : { rows: [] }
-    const summaries = exercises.map((exercise) => {
+    const summaries = (s.student_kind === 'group' ? [] : exercises).map((exercise) => {
       const liveConfig = currentByExercise.get(exercise.id)?.row
         .current_recording as RecordingConfig | null
       const progressRecording =
@@ -960,6 +1112,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
         id: String(s.id),
         studentId: String(s.student_id),
         studentName: String(s.student_name),
+        studentKind: s.student_kind as 'person' | 'group',
         startsAt: new Date(String(s.starts_at)),
         endsAt: new Date(String(s.ends_at)),
         location: String(s.location),
@@ -967,6 +1120,11 @@ export class PostgresTrainingRepository implements TrainingRepository {
         version: Number(s.version),
         isLegacy: false,
       },
+      participants: participantRows.rows.map((row) => ({
+        studentId: row.student_id,
+        name: row.name,
+        status: row.attendance,
+      })),
       lessonSummary: { purchased, completed, remaining: purchased - packageDebits },
       record: {
         id: record ? String(record.id) : null,
@@ -1082,6 +1240,7 @@ function mapExercise(row: any, sets: any[]): TrainingExercise {
     ...(row.recording_config ? { recording: row.recording_config as RecordingConfig } : {}),
     sets: sets.map((set) => ({
       id: String(set.id),
+      ...(set.student_id ? { studentId: String(set.student_id) } : {}),
       plannedWeight: set.planned_weight === null ? null : Number(set.planned_weight),
       plannedReps: set.planned_reps === null ? null : Number(set.planned_reps),
       actualReps: set.actual_reps === null ? null : Number(set.actual_reps),
@@ -1104,6 +1263,7 @@ function existingInput(exercises: any[], sets: any[]) {
         .sort((a, b) => Number(a.position) - Number(b.position))
         .map((set) => ({
           id: String(set.id),
+          ...(set.student_id ? { studentId: String(set.student_id) } : {}),
           plannedWeight: set.planned_weight === null ? null : Number(set.planned_weight),
           plannedReps: set.planned_reps === null ? null : Number(set.planned_reps),
           actualReps: set.actual_reps === null ? null : Number(set.actual_reps),

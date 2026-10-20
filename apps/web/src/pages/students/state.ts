@@ -16,10 +16,12 @@ export function selectStudentRosterResult({
   query
 }: {
   students: readonly Student[]
-  view: 'active' | 'archived'
+  view: 'person' | 'group' | 'archived'
   query: string
 }): { state: StudentRosterResultState; students: Student[] } {
-  const visible = students.filter((student) => student.active === (view === 'active'))
+  const visible = students.filter((student) =>
+    view === 'archived' ? !student.active : student.active && (student.kind ?? 'person') === view
+  )
   const keyword = query.trim().toLocaleLowerCase('zh-Hant')
   const filtered = keyword
     ? visible.filter((student) =>

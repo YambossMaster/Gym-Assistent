@@ -22,7 +22,8 @@ export class TodayModule {
       date: period.date,
       timeZone: settings.timeZone,
       summary: {
-        activeStudents: students.filter((student) => student.active).length,
+        activeStudents: students.filter((student) => student.active && student.kind !== 'group')
+          .length,
         incomePeriod: { startsOn: period.startsOn, endsOn: period.endsOn },
         incomeByCurrency,
         attentionCount: attention.length,

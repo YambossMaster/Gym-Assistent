@@ -127,6 +127,46 @@ describe('PostgresTrainingRepository session workspace read', () => {
 })
 
 describe('PostgresTrainingRepository autosave concurrency', () => {
+  it('locks the group entitlement owner before the Session on completion', async () => {
+    const calls: string[] = []
+    const query = vi.fn(async (sql: string) => {
+      calls.push(sql)
+      if (sql.startsWith('select student_id from app_private.course_session'))
+        return { rows: [{ student_id: 'group-1' }], rowCount: 1 }
+      if (sql.startsWith('select cs.*,owner.kind student_kind'))
+        return {
+          rows: [{ id: 'session-1', student_id: 'group-1', student_kind: 'group' }],
+          rowCount: 1,
+        }
+      return { rows: [], rowCount: 0 }
+    })
+    const repository = new PostgresTrainingRepository({
+      connect: vi.fn(async () => ({ query, release: vi.fn() })),
+    } as unknown as Pool)
+
+    await expect(
+      repository.saveSessionTraining(
+        'workspace-1',
+        'session-1',
+        {
+          privateNote: '',
+          exercises: [],
+          recordVersion: 0,
+          sessionVersion: 1,
+          operationId: '00000000-0000-4000-8000-000000000098',
+        },
+        true,
+      ),
+    ).rejects.toMatchObject({ reason: 'version_conflict' })
+    const ownerLock = calls.findIndex((sql) => sql.startsWith('select id from app_private.student'))
+    const sessionLock = calls.findIndex((sql) =>
+      sql.startsWith('select cs.*,owner.kind student_kind'),
+    )
+    expect(ownerLock).toBeGreaterThan(-1)
+    expect(sessionLock).toBeGreaterThan(ownerLock)
+    expect(calls.at(-1)).toBe('rollback')
+  })
+
   it('accepts a normal Training save after unrelated Session metadata changed', async () => {
     const query = vi.fn(async (sql: string) => {
       if (
@@ -142,12 +182,13 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
         return { rows: [], rowCount: 1 }
       if (sql.includes('from app_private.training_mutation_receipt'))
         return { rows: [], rowCount: 0 }
-      if (sql.startsWith('select * from app_private.course_session'))
+      if (sql.startsWith('select cs.*,owner.kind student_kind'))
         return {
           rows: [
             {
               id: 'session-1',
               student_id: 'student-1',
+              student_kind: 'person',
               starts_at: new Date('2026-09-19T02:00:00.000Z'),
               ends_at: new Date('2026-09-19T03:00:00.000Z'),
               location: 'FORM B',
@@ -236,8 +277,19 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
         return { rows: [], rowCount: 1 }
       if (sql.includes('from app_private.training_mutation_receipt'))
         return { rows: [], rowCount: 0 }
-      if (sql.startsWith('select * from app_private.course_session'))
-        return { rows: [{ id: sessionId, version: 1, status: 'scheduled' }], rowCount: 1 }
+      if (sql.startsWith('select cs.*,owner.kind student_kind'))
+        return {
+          rows: [
+            {
+              id: sessionId,
+              student_id: 'student-1',
+              student_kind: 'person',
+              version: 1,
+              status: 'scheduled',
+            },
+          ],
+          rowCount: 1,
+        }
       if (sql.startsWith('select * from app_private.training_record'))
         return { rows: [{ id: recordId, version: 1, private_note: '' }], rowCount: 1 }
       if (sql.startsWith('select * from app_private.training_exercise'))
@@ -262,6 +314,7 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
           rows: [
             {
               id: setId,
+              student_id: 'student-1',
               exercise_id: exerciseId,
               position: 0,
               planned_weight: 80,
