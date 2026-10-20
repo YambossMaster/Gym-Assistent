@@ -5,6 +5,7 @@ import { PostgresPublicAccessRepository } from '../adapters/postgres-public-acce
 import { PostgresSchedulingRepository } from '../adapters/postgres-scheduling-repository.js'
 import { newToken, tokenHash } from '../public-access/public-access-module.js'
 import { PublicCapabilityError } from '../public-access/public-access.js'
+import { SchedulingStudentChangeError } from '../scheduling/scheduling-repository.js'
 
 // This runs only after the Development dump has been restored to a disposable DB.
 const host = process.env.M11_RESTORE_DB_HOST
@@ -87,6 +88,62 @@ try {
   )
   assert.equal(attendance.rows[0]?.attendance, 'absent')
   console.log('PASS one-member all-absent group completion allocates exactly one group purchase.')
+
+  const newSession = async () =>
+    scheduling.createSession(workspaceId, {
+      id: randomUUID(),
+      studentId: groupId,
+      startsAt: new Date(now.getTime() + 86_400_000),
+      endsAt: new Date(now.getTime() + 90_000_000),
+      location: 'M11 isolated reassignment',
+      now,
+    })
+  const emptyGroupSession = await newSession()
+  const reassigned = await scheduling.updateSession(workspaceId, emptyGroupSession.id, {
+    studentId: personId,
+    startsAt: new Date(emptyGroupSession.startsAt!),
+    endsAt: new Date(emptyGroupSession.endsAt!),
+    location: 'M11 isolated reassignment',
+    expectedVersion: emptyGroupSession.version!,
+    now,
+  })
+  assert.equal(reassigned?.studentId, personId)
+  const oldSnapshot = await pool.query(
+    `select 1 from app_private.course_session_participant
+     where workspace_id=$1 and session_id=$2`,
+    [workspaceId, emptyGroupSession.id],
+  )
+  assert.equal(oldSnapshot.rowCount, 0)
+
+  const editedGroupSession = await newSession()
+  await pool.query(
+    `update app_private.course_session_participant
+     set attendance='absent',attendance_edited=true,version=version+1
+     where workspace_id=$1 and session_id=$2`,
+    [workspaceId, editedGroupSession.id],
+  )
+  await assert.rejects(
+    scheduling.updateSession(workspaceId, editedGroupSession.id, {
+      studentId: personId,
+      startsAt: new Date(editedGroupSession.startsAt!),
+      endsAt: new Date(editedGroupSession.endsAt!),
+      location: 'M11 isolated reassignment',
+      expectedVersion: editedGroupSession.version!,
+      now,
+    }),
+    (error) =>
+      error instanceof SchedulingStudentChangeError && error.reason === 'group_draft_present',
+  )
+  const retained = await pool.query<{ student_id: string; version: number }>(
+    `select student_id,version from app_private.course_session
+     where workspace_id=$1 and id=$2`,
+    [workspaceId, editedGroupSession.id],
+  )
+  assert.equal(retained.rows[0]?.student_id, groupId)
+  assert.equal(retained.rows[0]?.version, editedGroupSession.version)
+  console.log(
+    'PASS empty group Session reassigns atomically; edited attendance blocks reassignment.',
+  )
 
   const publicAccess = new PostgresPublicAccessRepository(pool)
   const token = newToken()
