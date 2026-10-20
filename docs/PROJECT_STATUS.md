@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-20 against deployed application commit
-> `d946b0e5790cd5929b042a690cfc0b5f651d2fde` and the Student purchase empty-state typography release.
+> Integrated Main router, reconciled 2026-10-21 against deployed application commit
+> `83d81dc6dd9f1d111620a6bfb37351677f38d33b` and the first-subscription trial ribbon release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -22,6 +22,8 @@ passed verify, browser UI, migration checks, Production preview and Fly deployme
 image label matches the Main SHA; readiness and independent `/api/ready`, `/`, `/login`, `/plans`
 readbacks returned 200. The released payment notice shows the approved wording and one-month trial,
 without a discount-code section. No new migration or Live transaction was made for this correction.
+
+The paid Plans cards now show the PO-accepted first-subscription trial ribbon. [PR #73](https://github.com/YambossMaster/Gym-Assistent/pull/73) merged as Main `83d81dc`; [Main CI #315](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39485301501) passed verify, browser UI, migration checks, Production preview and Fly deployment. Independent `/api/ready`, `/`, `/login`, `/plans`, and public config returned 200; the served JS contains the new ribbon text. No billing rule, migration, or Live transaction changed. The [M8-E workstream](status/M8/M8-E.md) records the local screenshots, conditional-offer limitation and release evidence.
 
 M8-E abandoned-checkout recovery [PR #66](https://github.com/YambossMaster/Gym-Assistent/pull/66)
 merged as `dae474fae96b3d6f08f6726b55e2ae69ad1c62cd`.
