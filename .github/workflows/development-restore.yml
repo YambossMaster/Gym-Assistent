@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/development-restore.yml'
+      - 'apps/api/src/e2e/m11-restored-api-smoke.ts'
       - 'scripts/m11-restored-*.sql'
       - 'supabase/migrations/**'
 
@@ -118,6 +119,12 @@ jobs:
           docker exec "$container" psql -U postgres -d postgres --single-transaction \
             --variable ON_ERROR_STOP=1 \
             --file /tmp/development-restore/m11-restored-group-roundtrip.sql
+          docker network create --internal m11_restore_api >/dev/null
+          docker network connect m11_restore_api "$container"
+          host="$(docker inspect -f '{{with index .NetworkSettings.Networks "m11_restore_api"}}{{.IPAddress}}{{end}}' "$container")"
+          test -n "$host"
+          M11_RESTORE_ISOLATED=1 M11_RESTORE_DB_HOST="$host" \
+            node --import tsx apps/api/src/e2e/m11-restored-api-smoke.ts
       - name: Remove plaintext backup from runner
         if: always()
         shell: bash
