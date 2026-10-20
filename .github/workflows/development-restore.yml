@@ -110,8 +110,13 @@ jobs:
             --file /tmp/development-restore/history_data.sql
           docker cp "$GITHUB_WORKSPACE/scripts/m11-restored-data-check.sql" \
             "$container:/tmp/development-restore/m11-restored-data-check.sql"
+          docker cp "$GITHUB_WORKSPACE/scripts/m11-restored-group-roundtrip.sql" \
+            "$container:/tmp/development-restore/m11-restored-group-roundtrip.sql"
           docker exec "$container" psql -U postgres -d postgres --variable ON_ERROR_STOP=1 \
             --file /tmp/development-restore/m11-restored-data-check.sql
+          docker exec "$container" psql -U postgres -d postgres --single-transaction \
+            --variable ON_ERROR_STOP=1 \
+            --file /tmp/development-restore/m11-restored-group-roundtrip.sql
       - name: Remove plaintext backup from runner
         if: always()
         shell: bash
