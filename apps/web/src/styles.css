@@ -11599,6 +11599,11 @@ body.is-reordering-exercise * {
   font-size: 13px;
   line-height: 1.55;
 }
+.student-purchase-empty {
+  color: #646a60;
+  font-size: 13px;
+  line-height: 1.55;
+}
 .student-series-row {
   width: 100%;
   min-height: 66px;

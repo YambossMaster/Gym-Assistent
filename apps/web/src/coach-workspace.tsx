@@ -763,7 +763,7 @@ export function StudentDetailPage({
               onDelete={(item) => setPurchaseToDelete({ id: item.id, version: item.version })}
             />
           ) : (
-            <p>尚無購課紀錄。</p>
+            <p className="student-purchase-empty">尚無購課紀錄。</p>
           )}
           {purchaseRecords.hasMore && (
             <button
