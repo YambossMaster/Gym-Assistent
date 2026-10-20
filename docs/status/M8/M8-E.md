@@ -1,12 +1,20 @@
 # M8-E 支付上線 Status — 當前規則與決定性驗證
 
-> 更新：2026-10-19（台北）。這是支付工作目前唯一的執行清單；R01–R17 的範圍仍由
+> 更新：2026-10-20（台北）。這是支付工作目前唯一的執行清單；R01–R17 的範圍仍由
 > [`ROADMAP.md`](../../ROADMAP.md) 與 [`M8-E-IMPLEMENTATION-CONTRACT.md`](../../M8-E-IMPLEMENTATION-CONTRACT.md)
 > 管理。PO 已於 2026-10-17 要求繼續逐項解決；以下記錄恢復後的聚焦證據。
 > 改寫前的 500 行逐次紀錄存於
 > [`archive/M8-E-2026-10-17-pre-priority-rules.md`](../archive/M8-E-2026-10-17-pre-priority-rules.md)；
 > 真實交易細節另見 [`M8-E-LOCAL-CHECKOUT.md`](../../M8-E-LOCAL-CHECKOUT.md) 和
 > [`2026-10 月工程日誌`](../log/2026-10.md)。歷史說法不得覆蓋本頁的最新決定。
+
+2026-10-20 棄單結帳恢復已透過 [PR #66](https://github.com/YambossMaster/Gym-Assistent/pull/66)
+合併 Main `dae474fae96b3d6f08f6726b55e2ae69ad1c62cd`；
+[Main CI #292](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39406922712) 與
+[Production release #12](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39407408898)
+通過，migration `20261019111117` 與 Fly 同版部署均已讀回。此工作流的 7/7 與未刻意驗證的
+少見舊 URL 個案見[專屬 Status](M8-E-CHECKOUT-RECOVERY.md)。固定 R 清單仍是 15 項通過、
+R08 條件結案、R09 待自然正額首扣／續扣；無需為此再建立交易。
 
 ## 2026-10-19 PO 上線時序決定與目前總清單
 
