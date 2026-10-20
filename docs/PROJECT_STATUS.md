@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-20 against deployed application commit
-> `00dff7f6f9b05904ba3ae5d4b385ea01b50b93fb` and the M8-E R09 paid-renewal recovery release.
+> `d946b0e5790cd5929b042a690cfc0b5f651d2fde` and the Student purchase empty-state typography release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -53,6 +53,14 @@ The Product Owner closed the remaining M8-D package reservations. Historical lim
 operational observations in [M8-D Status](status/M8/M8-D.md) are evidence, not an open M8-D Next.
 The frozen single-lesson Contract describes the delivered change; its old local preview is not a
 separate task.
+
+The single-Student purchase empty-text correction [PR #70](https://github.com/YambossMaster/Gym-Assistent/pull/70)
+merged as `d946b0e`; [Main CI #300](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39440052242)
+passed required checks, Production preview and Fly deployment from the same SHA. Independent
+`/api/ready`, `/` and `/login` returned 200. After refresh, the authenticated synthetic Student
+page showed both empty messages at 13px with matching color and line-height. The
+[release record](status/M8/M8-STUDENT-PURCHASE-EMPTY-TYPOGRAPHY.md) holds the scoped evidence and
+remaining device limitation. No migration or payment change was made.
 
 ## Active workstreams
 
