@@ -16,13 +16,14 @@
 少見舊 URL 個案見[專屬 Status](M8-E-CHECKOUT-RECOVERY.md)。固定 R 清單仍是 15 項通過、
 R08 條件結案、R09 部分；已發生的 Test Mode 自然續扣與未驗範圍見下節。
 
-### 2026-10-20 21:30 R09 自然續扣追查與已付後取消修正（branch-local；R09 仍部分）
+### 2026-10-20 21:45 R09 自然續扣追查與已付後取消修正（已發布；R09 仍部分）
 
 - **更正 10/19 讀回：** Test Mode 原 owner 訂閱 `2617411` 的自然續扣發票 `8765177` 在 10/19 13:01:43Z 建立時為 pending，於 14:03:47Z 已轉為 paid，TWD 114.89。上一輪只查到 13:15Z，因而漏報這個後續變化；「仍待事件」已不是準確狀態。供應商 Test webhook 指向失效暫時網址，Development 未收到本次真簽章事件。10/20 10:49Z 帳本仍只有首張已付發票與截至 10/19 13:01:11Z 的 initial period，故未自動延權。
 - **隔離補償與原因：** 僅使用 Development worker 與原 `intent_id`／workspace 綁定處理該訂閱和發票；先核對 provider 的 store、Test Mode、subscription、customer、variant、paid／renewal 與原 quote。日繳診斷 variant `2250530` 與標準 Pro 月繳 variant 不同，初次以標準設定處理時兩筆事件均以 `period_variant_mismatch` 安全拒絕；重新核對原 quote 為 `basic/month`、原訂閱帳本也是 `2250530` 後，才以僅限本次的 Test worker 映射重試。兩事件完成、發票 ledger 入帳，但原期間判定要求訂閱仍 active；該筆先取消下次續扣，隨後 provider 到期為 expired，故當時仍未建續期期間。
 - **修正與直接實證：** 本分支從 Main `1fc4b28` 只改 `period-authority.ts` 與聚焦測試：有匹配的正額 paid renewal invoice，且取消未縮短已付週期時，允許取消或到期狀態重建該週期；pending／錯 owner、variant、金額、終點仍不能延權。authority 26/26、lifecycle 27/27 及其餘 recovery／access 聚焦測試通過，API typecheck 通過；首次合併測試有一個與本改動無關的 5 秒 Fastify 測試逾時，單檔重跑通過。修正後以同一原 owner 及 Test provider 重新處理 `8765177`，Development 實得唯一 `renewal:8765177` 期間，2026-10-19 13:01:11Z 至 2026-10-20 13:01:11Z。10/20 13:29Z 查得唯一期間數 1、目前有效期間 0，符合已取消且到期的狀態。本次沒有 Production 資料、Live 訂閱或新 Test 交易變更。
 - **既有行為影響：** `renewalPeriod` 由 billing inbox worker 共用，影響正常 active 續扣、取消後晚到已付發票與 expired 後漏送補償。須保留 active paid 建期、pending／失敗不延權、跨 owner／錯價格拒絕、重放唯一期間；對應聚焦 authority／worker／access 回歸及這筆 Development 讀回。Web 與 schema 未改；Production 真實正額首扣及 Coach 在有效期間的 UI 權益仍沒有本次實證。
-- **清單與下一步：** 固定 R01–R17 仍為 15 通過、R08 條件結案、R09 部分。完成受影響測試及同版審查後依既有授權交付此程式修正，核對 exact-SHA CI／部署；再於另一筆仍在有效期間內的自然原始試用首扣或續扣事件，核對真簽章或明確標示的補償、原 owner 唯一期間及 Coach 權益。正常月／年週期、Live 正額收款不能由此日繳診斷取代。
+- **同版交付：** [PR #68](https://github.com/YambossMaster/Gym-Assistent/pull/68) 候選 `8e8871d` 的 [CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39431664494) 必要檢查全綠；squash merge 為 Main `00dff7f6f9b05904ba3ae5d4b385ea01b50b93fb`。[Main CI #296](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39432337018) 的 verify、migration dry-run、Production preview、browser scope 與 deploy 全部通過，無待套 migration。Fly release 61 已啟動且 service check passing，執行映像 `GH_SHA` 為相同 Main SHA；獨立 `/api/ready`、`/`、`/login` 均 HTTP 200。Production 付款開關仍 true；此次無 Live 交易。
+- **清單與下一步：** 固定 R01–R17 仍為 15 通過、R08 條件結案、R09 部分。下一筆仍在有效期間內的自然原始試用首扣或續扣事件，須核對真簽章或明確標示的補償、原 owner 唯一期間及 Coach 權益。正常月／年週期、Live 正額收款不能由此日繳診斷取代；目前無需 PO 操作。
 
 ## 2026-10-19 PO 上線時序決定與目前總清單
 
