@@ -29,6 +29,17 @@ export const fetchedDevelopmentHistory = [
 const expectedHistory = [...developmentHistory, ...fetchedDevelopmentHistory]
 const productionFoundation = '20261017181022_billing_live_test_foundation.sql'
 const abandonedCheckout = '20261019111117_billing_abandoned_checkout.sql'
+const authWorkspaceDelete = '20261021025133_m11_auth_workspace_delete_privilege.sql'
+
+export function validateScopedApply(history, requested) {
+  if (requested !== authWorkspaceDelete.slice(0, 14))
+    throw new Error('Unapproved Development migration apply target')
+  const pending = history.migrations
+    .filter((row) => row.local && !row.remote && row.local !== productionFoundation.slice(0, 14))
+    .map((row) => row.local)
+  if (pending.length !== 1 || pending[0] !== requested)
+    throw new Error(`Development apply requires only ${requested} pending`)
+}
 
 export function validateDevelopmentHistory(project, payload) {
   if (project !== developmentProject)
@@ -95,6 +106,10 @@ export function withDevelopmentHistory(root, files, fetchedRoot, run, excluded =
 }
 
 function main() {
+  const applyTarget = process.argv[2]?.startsWith('--apply-only=')
+    ? process.argv[2].slice('--apply-only='.length)
+    : null
+  if (process.argv.length > (applyTarget ? 3 : 2)) throw new Error('Unexpected arguments')
   const root = process.cwd()
   const project = readFileSync(resolve(root, 'supabase/.temp/project-ref'), 'utf8').trim()
   if (project !== developmentProject)
@@ -108,6 +123,7 @@ function main() {
   const history = JSON.parse(list)
   const files = validateDevelopmentHistory(project, history)
   const excluded = developmentDryRunExclusions(history)
+  if (applyTarget) validateScopedApply(history, applyTarget)
   const scratch = mkdtempSync(join(tmpdir(), 'm8d-dev-history-'))
   try {
     mkdirSync(resolve(scratch, 'supabase/migrations'), { recursive: true })
@@ -121,10 +137,15 @@ function main() {
       root,
       files,
       scratch,
-      () =>
+      () => {
         execFileSync(process.execPath, [cli, 'db', 'push', '--linked', '--dry-run'], {
           stdio: 'inherit',
-        }),
+        })
+        if (applyTarget)
+          execFileSync(process.execPath, [cli, 'db', 'push', '--linked', '--skip-vault', '--yes'], {
+            stdio: 'inherit',
+          })
+      },
       excluded,
     )
   } finally {

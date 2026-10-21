@@ -20,4 +20,13 @@ describe('loadConfig', () => {
       }).SUPABASE_JWT_AUDIENCE,
     ).toBe('authenticated')
   })
+
+  it('honors a bounded connection pool for a restricted Development role', () => {
+    const environment = {
+      DATABASE_URL: 'postgresql://localhost/gym_assistant',
+      SUPABASE_URL: 'https://example.supabase.co',
+    }
+    expect(loadConfig({ ...environment, DATABASE_POOL_MAX: '2' }).DATABASE_POOL_MAX).toBe(2)
+    expect(() => loadConfig({ ...environment, DATABASE_POOL_MAX: '21' })).toThrow()
+  })
 })

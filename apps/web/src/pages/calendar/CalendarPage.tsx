@@ -703,6 +703,11 @@ function Editor({
         variant="quick"
       >
         <div className="calendar-session-quickview">
+          {current.ownerKind === 'group' && current.participantNames?.length ? (
+            <p className="calendar-group-participants">
+              本堂成員：{current.participantNames.join('、')}
+            </p>
+          ) : null}
           <div className="calendar-quick-time">
             <CalendarClock aria-hidden="true" />
             <div className="calendar-quick-details">
@@ -961,7 +966,7 @@ function Editor({
           {draft.kind === 'block' ? (
             <>
               <label>
-                備註（選填）
+                備註
                 <input
                   value={draft.note}
                   onChange={(event) => onChange({ ...draft, note: event.target.value })}
@@ -1462,7 +1467,7 @@ function Timeline({
                     className={`calendar-session positioned ${calendarSessionVisualState(entry.session)}${entry.conflicts.length ? ' has-conflict' : ''}`}
                     style={timeStyle(local.start, local.end, hours)}
                     key={entry.session.id}
-                    aria-label={`${local.start}–${local.end} ${entry.session.studentName} ${entry.session.location || '未設定地點'}`}
+                    aria-label={`${local.start}–${local.end} ${entry.session.studentName} ${entry.session.participantNames?.join('、') ?? ''} ${entry.session.location || '未設定地點'}`}
                     onPointerDown={(event) => {
                       event.stopPropagation()
                       begin(event, date, local, entry.session.status === 'scheduled')
@@ -1476,7 +1481,12 @@ function Timeline({
                       <GripVertical aria-hidden="true" />
                     ) : null}
                     <time>{local.start}</time>
-                    <strong>{entry.session.studentName}</strong>
+                    <strong>
+                      {entry.session.studentName}
+                      {entry.session.participantNames?.length
+                        ? ` · ${entry.session.participantNames.length} 人`
+                        : ''}
+                    </strong>
                     <span>{entry.session.location || '未設定地點'}</span>
                   </button>
                 )
@@ -1547,7 +1557,12 @@ function Agenda({
                     onClick={() => onOpen(session)}
                   >
                     <time>{formatTime(session.startsAt, calendar.timeZone)}</time>
-                    <strong>{session.studentName}</strong>
+                    <strong>
+                      {session.studentName}
+                      {session.participantNames?.length
+                        ? ` · ${session.participantNames.length} 人`
+                        : ''}
+                    </strong>
                     <small>
                       {session.startsAt && session.endsAt
                         ? `${Math.round((Date.parse(session.endsAt) - Date.parse(session.startsAt)) / 60000)} 分`

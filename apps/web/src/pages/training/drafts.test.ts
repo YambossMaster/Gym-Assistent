@@ -19,6 +19,47 @@ const payload = (privateNote: string, recordVersion = 1) => ({
 })
 
 describe('Training autosave coordinator', () => {
+  it('treats group attendance and per-person ownership as saved draft content', () => {
+    const first = {
+      ...payload(''),
+      attendance: [{ studentId: 'person-1', status: 'present' as const }],
+      exercises: [
+        {
+          id: 'exercise',
+          definitionId: 'definition',
+          sets: [
+            {
+              id: 'set',
+              studentId: 'person-1',
+              plannedWeight: null,
+              plannedReps: null,
+              actualReps: null,
+              rpe: null,
+              result: null,
+              unit: 'kg' as const
+            }
+          ]
+        }
+      ]
+    }
+    expect(
+      sameTrainingContent(first, {
+        ...first,
+        attendance: [{ studentId: 'person-1', status: 'absent' }]
+      })
+    ).toBe(false)
+    expect(
+      sameTrainingContent(first, {
+        ...first,
+        exercises: [
+          {
+            ...first.exercises[0]!,
+            sets: [{ ...first.exercises[0]!.sets[0]!, studentId: 'person-2' }]
+          }
+        ]
+      })
+    ).toBe(false)
+  })
   it('recognizes database JSON key order as identical but preserves changed measurements and format', () => {
     const exercise = {
       id: 'exercise',

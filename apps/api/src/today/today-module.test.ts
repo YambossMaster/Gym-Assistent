@@ -31,11 +31,16 @@ describe('TodayModule', () => {
       repository,
       createId: (() => {
         let id = 0
-        return () => `student-${++id}`
+        return () => `00000000-0000-4000-8000-${String(++id).padStart(12, '0')}`
       })(),
     })
     const alice = await students.create(coach, { name: 'Alice' })
     const twoLessons = await students.create(coach, { name: 'Two lessons' })
+    await students.create(coach, {
+      name: 'Morning group',
+      kind: 'group',
+      memberIds: [alice.id, twoLessons.id],
+    })
     await students.create(coach, { name: 'Single lessons only' })
     const archived = await students.create(coach, { name: 'Archived' })
     await students.update(coach, archived.id, {

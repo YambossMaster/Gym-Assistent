@@ -203,7 +203,14 @@ export class PostgresCalendarIntegration {
     const sessions = (
       await c.query(
         `select s.id,s.starts_at,s.ends_at,s.status,
-      case when $4 then st.name else '' end student_name,case when $5 then s.location else '' end location
+      case when $4 then st.name || case when st.kind='group' then
+        coalesce((select ' · ' || string_agg(person.name, '、' order by person.name,person.id)
+          from app_private.course_session_participant participant
+          join app_private.student person on person.workspace_id=participant.workspace_id
+            and person.id=participant.student_id
+          where participant.workspace_id=s.workspace_id and participant.session_id=s.id), '')
+        else '' end else '' end student_name,
+      case when $5 then s.location else '' end location
       from app_private.course_session s join app_private.student st on st.workspace_id=s.workspace_id and st.id=s.student_id
       where s.workspace_id=$1 and s.starts_at < $3 and s.ends_at > $2 order by s.starts_at,s.id limit 10001`,
         [id, from, to, sharing.showNames, sharing.showLocation],

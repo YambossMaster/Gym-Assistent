@@ -50,6 +50,20 @@ export function useStudentDetailRouteQuery(session: Session, studentId: string) 
   })
 }
 
+export async function refreshStudentAfterSave(
+  queryClient: QueryClient,
+  coachId: string,
+  studentId: string,
+  student: StudentDetail['student']
+) {
+  const key = queryKeys.student(coachId, studentId)
+  queryClient.setQueryData<StudentDetail>(key, (current) =>
+    current ? { ...current, student } : current
+  )
+  // A group edit also changes the members projection. Refresh it before closing the editor.
+  await queryClient.invalidateQueries({ queryKey: key, refetchType: 'all' })
+}
+
 export function useStudentRouteMutations({
   session,
   studentId,
@@ -65,11 +79,8 @@ export function useStudentRouteMutations({
   const save = useMutation({
     mutationFn: (input: Parameters<typeof updateStudent>[2]) =>
       updateStudent(session.access_token, studentId, input),
-    onSuccess: (student) => {
-      queryClient.setQueryData<StudentDetail>(
-        queryKeys.student(session.user.id, studentId),
-        (current) => (current ? { ...current, student } : current)
-      )
+    onSuccess: async (student) => {
+      await refreshStudentAfterSave(queryClient, session.user.id, studentId, student)
       void queryClient.invalidateQueries({ queryKey: queryKeys.students(session.user.id) })
       void queryClient.invalidateQueries({ queryKey: planAccessKey(session.user.id) })
       invalidateTodayRoute(queryClient, session.user.id)

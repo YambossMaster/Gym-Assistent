@@ -124,9 +124,162 @@ describe('PostgresTrainingRepository session workspace read', () => {
     expect(result?.record.exercises).toHaveLength(1)
     expect(query).toHaveBeenCalledTimes(6)
   })
+
+  it('keeps each group participant previous best in the shared session projection', async () => {
+    const recording = { type: 'weight_reps', metrics: ['weight', 'reps'] }
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      if (
+        sql === 'begin' ||
+        sql === 'commit' ||
+        sql.includes("set_config('app.current_workspace_id'")
+      )
+        return { rows: [], rowCount: 0 }
+      if (sql.includes('left join app_private.training_record'))
+        return {
+          rows: [
+            {
+              id: 'session-now',
+              student_id: 'group-1',
+              student_name: 'Group',
+              student_kind: 'group',
+              starts_at: new Date('2026-10-22T02:00:00Z'),
+              ends_at: new Date('2026-10-22T03:00:00Z'),
+              location: '',
+              status: 'scheduled',
+              version: 1,
+              purchased: 0,
+              completed: 0,
+              package_debits: 0,
+              training_record_id: 'record-now',
+              training_record_version: 1,
+              training_private_note: '',
+              training_updated_at: new Date('2026-10-22T02:00:00Z'),
+              default_weight_unit: 'kg',
+              default_distance_unit: 'km',
+            },
+          ],
+          rowCount: 1,
+        }
+      if (sql.includes('left join app_private.training_set ts'))
+        return {
+          rows: [
+            {
+              id: 'exercise-now',
+              definition_id: 'squat',
+              definition_name: 'Squat',
+              equipment: 'Barbell',
+              body_parts: ['Legs'],
+              movement_type: 'compound',
+              performance_metric: 'weight',
+              recording_config: recording,
+              current_recording: recording,
+              set_id: null,
+            },
+          ],
+          rowCount: 1,
+        }
+      if (sql.startsWith('select p.student_id,person.name,p.attendance'))
+        return {
+          rows: [
+            { student_id: 'person-a', name: 'A', attendance: 'present' },
+            { student_id: 'person-b', name: 'B', attendance: 'present' },
+          ],
+          rowCount: 2,
+        }
+      if (sql.includes('te.recording_config is null')) return { rows: [], rowCount: 0 }
+      if (sql.includes('d.recording_config current_recording,ts.measurements')) {
+        const studentId = params?.[1]
+        const weight = studentId === 'person-a' ? 90 : studentId === 'person-b' ? 60 : null
+        return {
+          rows:
+            weight === null
+              ? []
+              : [
+                  {
+                    session_id: `prior-${studentId}`,
+                    session_status: 'completed',
+                    starts_at: new Date('2026-10-15T02:00:00Z'),
+                    definition_id: 'squat',
+                    recording_config: recording,
+                    measurements: {
+                      weight,
+                      reps: 5,
+                      duration: null,
+                      distance: null,
+                      rounds: null,
+                      weightUnit: 'kg',
+                      durationUnit: 'sec',
+                      distanceUnit: 'm',
+                    },
+                    result: 'completed',
+                  },
+                ],
+          rowCount: weight === null ? 0 : 1,
+        }
+      }
+      throw new Error(`Unexpected query: ${sql}`)
+    })
+    const repository = new PostgresTrainingRepository({
+      connect: vi.fn(async () => ({ query, release: vi.fn() })),
+    } as unknown as Pool)
+
+    const result = await repository.getSessionTraining('workspace-1', 'session-now')
+
+    expect(result?.exerciseSummaries).toEqual([])
+    expect(
+      result?.groupExerciseSummaries?.map((entry) => ({
+        studentId: entry.studentId,
+        previous: entry.series?.[0]?.previous,
+        ownSession: entry.series?.[0]?.points[0]?.sessionId,
+      })),
+    ).toEqual([
+      { studentId: 'person-a', previous: 90, ownSession: 'prior-person-a' },
+      { studentId: 'person-b', previous: 60, ownSession: 'prior-person-b' },
+    ])
+  })
 })
 
 describe('PostgresTrainingRepository autosave concurrency', () => {
+  it('locks the group entitlement owner before the Session on completion', async () => {
+    const calls: string[] = []
+    const query = vi.fn(async (sql: string) => {
+      calls.push(sql)
+      if (sql.startsWith('select student_id from app_private.course_session'))
+        return { rows: [{ student_id: 'group-1' }], rowCount: 1 }
+      if (sql.startsWith('select cs.*,owner.kind student_kind'))
+        return {
+          rows: [{ id: 'session-1', student_id: 'group-1', student_kind: 'group' }],
+          rowCount: 1,
+        }
+      return { rows: [], rowCount: 0 }
+    })
+    const repository = new PostgresTrainingRepository({
+      connect: vi.fn(async () => ({ query, release: vi.fn() })),
+    } as unknown as Pool)
+
+    await expect(
+      repository.saveSessionTraining(
+        'workspace-1',
+        'session-1',
+        {
+          privateNote: '',
+          exercises: [],
+          recordVersion: 0,
+          sessionVersion: 1,
+          operationId: '00000000-0000-4000-8000-000000000098',
+        },
+        true,
+      ),
+    ).rejects.toMatchObject({ reason: 'version_conflict' })
+    const ownerLock = calls.findIndex((sql) => sql.startsWith('select id from app_private.student'))
+    const sessionLock = calls.findIndex((sql) =>
+      sql.startsWith('select cs.*,owner.kind student_kind'),
+    )
+    expect(ownerLock).toBeGreaterThan(-1)
+    expect(sessionLock).toBeGreaterThan(ownerLock)
+    expect(calls.at(-1)).toBe('rollback')
+  })
+
   it('accepts a normal Training save after unrelated Session metadata changed', async () => {
     const query = vi.fn(async (sql: string) => {
       if (
@@ -142,12 +295,13 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
         return { rows: [], rowCount: 1 }
       if (sql.includes('from app_private.training_mutation_receipt'))
         return { rows: [], rowCount: 0 }
-      if (sql.startsWith('select * from app_private.course_session'))
+      if (sql.startsWith('select cs.*,owner.kind student_kind'))
         return {
           rows: [
             {
               id: 'session-1',
               student_id: 'student-1',
+              student_kind: 'person',
               starts_at: new Date('2026-09-19T02:00:00.000Z'),
               ends_at: new Date('2026-09-19T03:00:00.000Z'),
               location: 'FORM B',
@@ -236,8 +390,19 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
         return { rows: [], rowCount: 1 }
       if (sql.includes('from app_private.training_mutation_receipt'))
         return { rows: [], rowCount: 0 }
-      if (sql.startsWith('select * from app_private.course_session'))
-        return { rows: [{ id: sessionId, version: 1, status: 'scheduled' }], rowCount: 1 }
+      if (sql.startsWith('select cs.*,owner.kind student_kind'))
+        return {
+          rows: [
+            {
+              id: sessionId,
+              student_id: 'student-1',
+              student_kind: 'person',
+              version: 1,
+              status: 'scheduled',
+            },
+          ],
+          rowCount: 1,
+        }
       if (sql.startsWith('select * from app_private.training_record'))
         return { rows: [{ id: recordId, version: 1, private_note: '' }], rowCount: 1 }
       if (sql.startsWith('select * from app_private.training_exercise'))
@@ -262,6 +427,7 @@ describe('PostgresTrainingRepository autosave concurrency', () => {
           rows: [
             {
               id: setId,
+              student_id: 'student-1',
               exercise_id: exerciseId,
               position: 0,
               planned_weight: 80,

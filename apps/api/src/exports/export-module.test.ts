@@ -6,6 +6,8 @@ const identity = { userId: 'coach-1' }
 const studentId = '00000000-0000-4000-8000-000000000001'
 const definitionId = '00000000-0000-4000-8000-000000000002'
 const venueId = '00000000-0000-4000-8000-000000000003'
+const groupId = '00000000-0000-4000-8000-000000000004'
+const companionId = '00000000-0000-4000-8000-000000000005'
 const session = {
   id: 'session-1',
   studentId,
@@ -24,18 +26,31 @@ const block = {
   note: '私人行程',
 }
 
-function module(blocks = [block]) {
+function module(blocks = [block], group = false) {
+  const selectedSession = group
+    ? { ...session, studentId: groupId, studentName: '晨練組', studentKind: 'group' as const }
+    : session
   return new ExportModule({
     workspace: { getSettings: async () => ({ timeZone: 'Asia/Taipei' }) },
-    students: { list: async () => [{ id: studentId, name: '陳同學', active: false }] },
+    students: {
+      list: async () => [
+        { id: studentId, name: '陳同學', active: false, kind: 'person' },
+        ...(group ? [{ id: groupId, name: '晨練組', active: true, kind: 'group' }] : []),
+      ],
+    },
     scheduling: {
-      calendar: async () => ({ sessions: [{ session, conflicts: [] }], blocks }),
+      calendar: async () => ({ sessions: [{ session: selectedSession, conflicts: [] }], blocks }),
+      studentSchedule: async () => ({
+        sessions: [selectedSession],
+        nearestFuture: null,
+        history: [selectedSession],
+      }),
     },
     training: {
       listDefinitions: async () => ({ definitions: [{ id: definitionId, name: '深蹲' }] }),
       getSessionTraining: async () => ({
         session: {
-          ...session,
+          ...selectedSession,
           startsAt: new Date(session.startsAt),
           endsAt: new Date(session.endsAt),
         },
@@ -52,6 +67,7 @@ function module(blocks = [block]) {
               sets: [
                 {
                   id: 'set-1',
+                  ...(group ? { studentId } : {}),
                   plannedWeight: 80,
                   plannedReps: 5,
                   actualReps: 5,
@@ -60,10 +76,33 @@ function module(blocks = [block]) {
                   unit: 'kg',
                   measurements: undefined,
                 },
+                ...(group
+                  ? [
+                      {
+                        id: 'set-2',
+                        studentId: companionId,
+                        plannedWeight: 120,
+                        plannedReps: 3,
+                        actualReps: 3,
+                        rpe: 9,
+                        result: 'completed',
+                        unit: 'kg',
+                        measurements: undefined,
+                      },
+                    ]
+                  : []),
               ],
             },
           ],
         },
+        ...(group
+          ? {
+              participants: [
+                { studentId, name: '陳同學', status: 'present' },
+                { studentId: companionId, name: '林同學', status: 'present' },
+              ],
+            }
+          : {}),
       }),
       getStudentPerformance: async () => [
         {
@@ -108,6 +147,18 @@ function module(blocks = [block]) {
 const base = { format: 'json', start: '2026-10-05', end: '2026-10-05' }
 
 describe('Export selection rules', () => {
+  it('exports only the selected person sets from a shared group Session', async () => {
+    const exported = await module([block], true).select(identity, {
+      ...base,
+      type: 'training',
+      studentId,
+      includePrivateNotes: true,
+    })
+    expect(exported.rows).toHaveLength(1)
+    expect(exported.rows[0]).toMatchObject({ setId: 'set-1', plannedWeight: 80 })
+    expect(JSON.stringify(exported.records)).not.toContain('set-2')
+    expect(JSON.stringify(exported.records)).not.toContain('私人訓練筆記')
+  })
   it('rejects impossible and excessive local-day ranges before reading data', async () => {
     await expect(
       module().select(identity, { ...base, type: 'training', start: '2026-02-30' }),

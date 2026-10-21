@@ -17,6 +17,9 @@ import {
   LessonPurchaseAllocationConflictError,
   type StudentRepository,
   StudentVersionConflictError,
+  StudentGroupMemberError,
+  StudentGroupDraftConflictError,
+  StudentHasHistoryError,
   type UpdatedStudent,
   type WorkspaceId,
 } from '../students/student-repository.js'
@@ -31,6 +34,7 @@ import type { AccountLifecycleStatus } from '../account-lifecycle/account-lifecy
 
 interface StudentRow {
   id: string
+  kind: Student['kind']
   name: string
   phone: string
   goal: string
@@ -171,7 +175,7 @@ export class PostgresStudentRepository
 
   async listStudents(workspaceId: WorkspaceId) {
     const result = await this.#pool.query<StudentRow>(
-      `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version,
+      `SELECT id, kind, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version,
               created_at, updated_at,
               (SELECT MIN(session.starts_at)
                FROM app_private.course_session session
@@ -296,33 +300,67 @@ export class PostgresStudentRepository
   }
 
   async createStudent(workspaceId: WorkspaceId, input: NewStudent): Promise<Student> {
-    const result = await this.#pool.query<StudentRow>(
-      `INSERT INTO app_private.student (
-         id, workspace_id, name, phone, goal, private_note, active, line_linked,
+    const client = await this.#pool.connect()
+    try {
+      await client.query('begin')
+      await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
+      await client.query(
+        "select pg_advisory_xact_lock(hashtext('gym-m11-membership'),hashtext($1))",
+        [workspaceId],
+      )
+      if (input.kind === 'group') {
+        const members = await client.query<{ id: string }>(
+          `select id from app_private.student
+           where workspace_id=$1 and id=any($2::uuid[]) and kind='person' and active
+           order by id for update`,
+          [workspaceId, input.memberIds],
+        )
+        if (members.rowCount !== input.memberIds.length) throw new StudentGroupMemberError()
+      }
+      const result = await client.query<StudentRow>(
+        `INSERT INTO app_private.student (
+         id, workspace_id, name, phone, goal, private_note, active, line_linked, kind,
          age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency,
          created_at, updated_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $10, $11, $12, $13, $9, $9)
-       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version,
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $14, $10, $11, $12, $13, $9, $9)
+       RETURNING id, kind, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version,
                  created_at, updated_at`,
-      [
-        input.id,
-        workspaceId,
-        input.name,
-        input.phone,
-        input.goal,
-        input.privateNote,
-        input.active,
-        input.lineLinked,
-        input.now,
-        input.ageRange,
-        input.defaultVenueId,
-        input.singleLessonPrice?.amountMinor ?? null,
-        input.singleLessonPrice?.currency ?? null,
-      ],
-    )
-    const student = result.rows[0]
-    if (!student) throw new Error('Failed to create student')
-    return mapStudent(student)
+        [
+          input.id,
+          workspaceId,
+          input.name,
+          input.phone,
+          input.goal,
+          input.privateNote,
+          input.active,
+          input.lineLinked,
+          input.now,
+          input.ageRange,
+          input.defaultVenueId,
+          input.singleLessonPrice?.amountMinor ?? null,
+          input.singleLessonPrice?.currency ?? null,
+          input.kind,
+        ],
+      )
+      const student = result.rows[0]
+      if (!student) throw new Error('Failed to create student')
+      if (input.kind === 'group') {
+        for (const memberId of input.memberIds) {
+          await client.query(
+            `insert into app_private.student_group_member(workspace_id,group_id,student_id)
+           values($1,$2,$3)`,
+            [workspaceId, input.id, memberId],
+          )
+        }
+      }
+      await client.query('commit')
+      return mapStudent(student)
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   async getStudentDetail(
@@ -331,11 +369,21 @@ export class PostgresStudentRepository
   ): Promise<StudentDetail | null> {
     const [studentResult, purchaseRecords, summary] = await Promise.all([
       this.#pool.query<StudentRow>(
-        `SELECT id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at
+        `SELECT id, kind, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at
          FROM app_private.student WHERE workspace_id = $1 AND id = $2`,
         [workspaceId, studentId],
       ),
       new PostgresFinanceRepository(this.#pool).scoped(workspaceId, async (client) => {
+        const members = await client.query<StudentRow>(
+          `select s.id,s.kind,s.name,s.phone,s.goal,s.private_note,s.age_range,
+                  s.default_venue_id,s.single_lesson_amount_minor,s.single_lesson_currency,
+                  s.active,s.line_linked,s.version,s.created_at,s.updated_at
+           from app_private.student_group_member m
+           join app_private.student s on s.workspace_id=m.workspace_id and s.id=m.student_id
+           where m.workspace_id=$1 and m.group_id=$2 and m.removed_at is null
+           order by m.joined_at,s.id`,
+          [workspaceId, studentId],
+        )
         const purchases = await client.query<LessonPurchaseRow>(
           `SELECT p.id,p.purchased_at,p.lesson_count,p.amount_minor,p.currency,p.private_note,p.version,p.created_at,p.updated_at,p.collection_mode,p.entitlement_venue_id venue_id,p.source_kind,p.source_session_id,
           s.version source_session_version,a.version source_version
@@ -360,14 +408,43 @@ export class PostgresStudentRepository
            ORDER BY s.ends_at, a.session_id`,
           [workspaceId, studentId],
         )
-        return { purchases: purchases.rows, pending: pending.rows }
+        return { purchases: purchases.rows, pending: pending.rows, members: members.rows }
       }),
       this.lessonSummary(workspaceId, studentId),
     ])
     const student = studentResult.rows[0]
     if (!student || !summary) return null
+    const archiveImpact = await new PostgresFinanceRepository(this.#pool).scoped(
+      workspaceId,
+      (client) =>
+        client.query<{
+          fixed_schedules: string
+          future_sessions: string
+        }>(
+          `select
+        (select count(*) from app_private.schedule_series ss
+         where ss.workspace_id=$1 and ss.student_id=$2 and ss.active) fixed_schedules,
+        (select count(*) from app_private.course_session cs
+         where cs.workspace_id=$1 and cs.student_id=$2 and cs.status='scheduled'
+           and cs.starts_at>clock_timestamp()) +
+        (select count(*) from app_private.course_session_participant p
+         join app_private.course_session cs on cs.workspace_id=p.workspace_id and cs.id=p.session_id
+         where p.workspace_id=$1 and p.student_id=$2 and cs.status='scheduled'
+           and cs.starts_at>clock_timestamp() and not exists (
+             select 1 from app_private.course_session_participant other
+             where other.workspace_id=p.workspace_id and other.session_id=p.session_id
+               and other.student_id<>p.student_id
+           )) future_sessions`,
+          [workspaceId, studentId],
+        ),
+    )
     return {
+      archiveImpact: {
+        fixedSchedules: Number(archiveImpact.rows[0]?.fixed_schedules ?? 0),
+        futureSessions: Number(archiveImpact.rows[0]?.future_sessions ?? 0),
+      },
       student: mapStudent(student),
+      members: student.kind === 'group' ? purchaseRecords.members.map(mapStudent) : undefined,
       purchases: [
         ...purchaseRecords.purchases.map(mapLessonPurchase),
         ...purchaseRecords.pending.map(mapPendingSingleLesson),
@@ -381,8 +458,76 @@ export class PostgresStudentRepository
     studentId: string,
     input: UpdatedStudent,
   ): Promise<Student | null> {
-    const result = await this.#pool.query<StudentRow>(
-      `UPDATE app_private.student
+    const client = await this.#pool.connect()
+    try {
+      await client.query('begin')
+      await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
+      await client.query(
+        "select pg_advisory_xact_lock(hashtext('gym-m11-membership'),hashtext($1))",
+        [workspaceId],
+      )
+      const current = await client.query<StudentRow>(
+        `select id,kind,name,phone,goal,private_note,age_range,default_venue_id,
+                single_lesson_amount_minor,single_lesson_currency,active,line_linked,version,
+                created_at,updated_at
+         from app_private.student where workspace_id=$1 and id=$2 for update`,
+        [workspaceId, studentId],
+      )
+      const original = current.rows[0]
+      if (!original) {
+        await client.query('rollback')
+        return null
+      }
+      if (original.version !== input.expectedVersion) {
+        const members =
+          original.kind === 'group'
+            ? await client.query<{ student_id: string }>(
+                `select student_id from app_private.student_group_member
+                 where workspace_id=$1 and group_id=$2 and removed_at is null order by student_id`,
+                [workspaceId, studentId],
+              )
+            : null
+        const sessions =
+          original.kind === 'group'
+            ? await client.query<{ id: string; status: string; version: number }>(
+                `select id,status,version from app_private.course_session
+                 where workspace_id=$1 and student_id=$2 and status='scheduled'
+                   and starts_at>clock_timestamp() order by starts_at,id`,
+                [workspaceId, studentId],
+              )
+            : null
+        throw new StudentVersionConflictError(
+          mapStudent(original),
+          members?.rows.map((member) => member.student_id),
+          sessions?.rows,
+        )
+      }
+      if (original.kind === 'group' && (input.phone || input.ageRange || input.lineLinked))
+        throw new StudentGroupMemberError()
+      if (original.kind === 'group' && input.active && input.memberIds === undefined) {
+        const memberCount = await client.query<{ count: string }>(
+          `select count(*)::text count from app_private.student_group_member
+           where workspace_id=$1 and group_id=$2 and removed_at is null`,
+          [workspaceId, studentId],
+        )
+        if (Number(memberCount.rows[0]?.count ?? 0) === 0) throw new StudentGroupMemberError()
+      }
+      if (input.memberIds !== undefined) {
+        if (
+          original.kind !== 'group' ||
+          input.memberIds.length === 0 ||
+          new Set(input.memberIds).size !== input.memberIds.length
+        )
+          throw new StudentGroupMemberError()
+        const valid = await client.query<{ id: string }>(
+          `select id from app_private.student where workspace_id=$1
+           and id=any($2::uuid[]) and kind='person' and active order by id for update`,
+          [workspaceId, input.memberIds],
+        )
+        if (valid.rowCount !== input.memberIds.length) throw new StudentGroupMemberError()
+      }
+      const result = await client.query<StudentRow>(
+        `UPDATE app_private.student
        SET name = $3, phone = $4, goal = $5, private_note = $6, active = $7, line_linked = $8,
            age_range = CASE WHEN $11 THEN $12 ELSE age_range END,
            default_venue_id = CASE WHEN $14 THEN $13 ELSE default_venue_id END,
@@ -390,35 +535,152 @@ export class PostgresStudentRepository
            single_lesson_currency = CASE WHEN $15 THEN $17 ELSE single_lesson_currency END,
            version = version + 1, updated_at = $9
        WHERE workspace_id = $1 AND id = $2 AND version = $10
-       RETURNING id, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at`,
-      [
-        workspaceId,
-        studentId,
-        input.name,
-        input.phone,
-        input.goal,
-        input.privateNote,
-        input.active,
-        input.lineLinked,
-        input.now,
-        input.expectedVersion,
-        input.ageRange !== undefined,
-        input.ageRange ?? null,
-        input.defaultVenueId,
-        input.defaultVenueId !== undefined,
-        input.singleLessonPrice !== undefined,
-        input.singleLessonPrice?.amountMinor ?? null,
-        input.singleLessonPrice?.currency ?? null,
-      ],
+       RETURNING id, kind, name, phone, goal, private_note, age_range, default_venue_id, single_lesson_amount_minor, single_lesson_currency, active, line_linked, version, created_at, updated_at`,
+        [
+          workspaceId,
+          studentId,
+          input.name,
+          input.phone,
+          input.goal,
+          input.privateNote,
+          input.active,
+          input.lineLinked,
+          input.now,
+          input.expectedVersion,
+          input.ageRange !== undefined,
+          input.ageRange ?? null,
+          input.defaultVenueId,
+          input.defaultVenueId !== undefined,
+          input.singleLessonPrice !== undefined,
+          input.singleLessonPrice?.amountMinor ?? null,
+          input.singleLessonPrice?.currency ?? null,
+        ],
+      )
+      const student = result.rows[0]
+      if (!student) throw new StudentVersionConflictError()
+      if (input.memberIds !== undefined) {
+        await client.query(
+          `update app_private.student_group_member set removed_at=$3
+           where workspace_id=$1 and group_id=$2 and removed_at is null
+             and student_id<>all($4::uuid[])`,
+          [workspaceId, studentId, input.now, input.memberIds],
+        )
+        for (const memberId of input.memberIds) {
+          await client.query(
+            `insert into app_private.student_group_member(workspace_id,group_id,student_id)
+             select $1,$2,$3 where not exists (
+               select 1 from app_private.student_group_member
+               where workspace_id=$1 and group_id=$2 and student_id=$3 and removed_at is null
+             )`,
+            [workspaceId, studentId, memberId],
+          )
+        }
+        await this.syncFutureGroupSessions(client, workspaceId, studentId, input.memberIds)
+      }
+      if (original.active && !input.active) {
+        await client.query(
+          `update app_private.schedule_series set active=false,version=version+1,updated_at=$3
+           where workspace_id=$1 and student_id=$2 and active`,
+          [workspaceId, studentId, input.now],
+        )
+        await client.query(
+          `update app_private.course_session set status='cancelled',version=version+1,updated_at=$3
+           where workspace_id=$1 and student_id=$2 and status='scheduled' and starts_at>clock_timestamp()`,
+          [workspaceId, studentId, input.now],
+        )
+        if (original.kind === 'person') {
+          const groups = await client.query<{ group_id: string }>(
+            `select distinct group_id from app_private.student_group_member
+             where workspace_id=$1 and student_id=$2 and removed_at is null order by group_id`,
+            [workspaceId, studentId],
+          )
+          for (const group of groups.rows) {
+            await client.query(
+              'select id from app_private.student where workspace_id=$1 and id=$2 for update',
+              [workspaceId, group.group_id],
+            )
+            await client.query(
+              `update app_private.student_group_member set removed_at=$3
+               where workspace_id=$1 and group_id=$2 and student_id=$4 and removed_at is null`,
+              [workspaceId, group.group_id, input.now, studentId],
+            )
+            const remaining = await client.query<{ student_id: string }>(
+              `select student_id from app_private.student_group_member
+               where workspace_id=$1 and group_id=$2 and removed_at is null order by student_id`,
+              [workspaceId, group.group_id],
+            )
+            await this.syncFutureGroupSessions(
+              client,
+              workspaceId,
+              group.group_id,
+              remaining.rows.map((row) => row.student_id),
+            )
+            if (remaining.rowCount === 0) {
+              await client.query(
+                `update app_private.schedule_series set active=false,version=version+1,updated_at=$3
+                 where workspace_id=$1 and student_id=$2 and active`,
+                [workspaceId, group.group_id, input.now],
+              )
+            }
+            await client.query(
+              `update app_private.student set active=case when $4 then false else active end,
+               version=version+1,updated_at=$3
+               where workspace_id=$1 and id=$2`,
+              [workspaceId, group.group_id, input.now, remaining.rowCount === 0],
+            )
+          }
+        }
+      }
+      await client.query('commit')
+      return mapStudent(student)
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  private async syncFutureGroupSessions(
+    client: PoolClient,
+    workspaceId: WorkspaceId,
+    groupId: string,
+    memberIds: string[],
+  ): Promise<void> {
+    const sessions = await client.query<{ id: string }>(
+      `select id from app_private.course_session
+       where workspace_id=$1 and student_id=$2 and status='scheduled'
+         and starts_at>clock_timestamp() order by id for update`,
+      [workspaceId, groupId],
     )
-    const student = result.rows[0]
-    if (student) return mapStudent(student)
-    const exists = await this.#pool.query(
-      'SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2',
-      [workspaceId, studentId],
-    )
-    if (exists.rowCount) throw new StudentVersionConflictError()
-    return null
+    for (const session of sessions.rows) {
+      const draft = await client.query(
+        `select 1 from app_private.training_set ts
+         join app_private.training_exercise te on te.workspace_id=ts.workspace_id and te.id=ts.exercise_id
+         join app_private.training_record tr on tr.workspace_id=te.workspace_id and tr.id=te.record_id
+         where tr.workspace_id=$1 and tr.session_id=$2 and ts.student_id<>all($3::uuid[]) limit 1`,
+        [workspaceId, session.id, memberIds],
+      )
+      if (draft.rowCount) throw new StudentGroupDraftConflictError([session.id])
+      await client.query(
+        `delete from app_private.course_session_participant
+         where workspace_id=$1 and session_id=$2 and student_id<>all($3::uuid[])`,
+        [workspaceId, session.id, memberIds],
+      )
+      await client.query(
+        `insert into app_private.course_session_participant(workspace_id,session_id,student_id)
+         select $1,$2,member_id from unnest($3::uuid[]) member_id
+         on conflict (workspace_id,session_id,student_id) do nothing`,
+        [workspaceId, session.id, memberIds],
+      )
+      await client.query(
+        `update app_private.course_session
+         set status=case when cardinality($3::uuid[])=0 then 'cancelled' else status end,
+             version=version+1,updated_at=clock_timestamp()
+         where workspace_id=$1 and id=$2`,
+        [workspaceId, session.id, memberIds],
+      )
+    }
   }
 
   async deleteStudent(
@@ -426,17 +688,86 @@ export class PostgresStudentRepository
     studentId: string,
     expectedVersion: number,
   ): Promise<boolean> {
-    const result = await this.#pool.query(
-      'DELETE FROM app_private.student WHERE workspace_id = $1 AND id = $2 AND version = $3',
-      [workspaceId, studentId, expectedVersion],
-    )
-    if (result.rowCount) return true
-    const exists = await this.#pool.query(
-      'SELECT 1 FROM app_private.student WHERE workspace_id = $1 AND id = $2',
-      [workspaceId, studentId],
-    )
-    if (exists.rowCount) throw new StudentVersionConflictError()
-    return false
+    const client = await this.#pool.connect()
+    try {
+      await client.query('begin')
+      await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
+      await client.query(
+        "select pg_advisory_xact_lock(hashtext('gym-m11-membership'),hashtext($1))",
+        [workspaceId],
+      )
+      const current = await client.query<{ version: number; kind: string }>(
+        'select version,kind from app_private.student where workspace_id=$1 and id=$2 for update',
+        [workspaceId, studentId],
+      )
+      if (!current.rows[0]) {
+        await client.query('rollback')
+        return false
+      }
+      if (current.rows[0].version !== expectedVersion) throw new StudentVersionConflictError()
+      const history = await client.query<{ exists: boolean }>(
+        `select (
+          exists(select 1 from app_private.lesson_purchase where workspace_id=$1 and student_id=$2)
+          or exists(select 1 from app_private.course_session where workspace_id=$1 and student_id=$2)
+          or exists(select 1 from app_private.schedule_series where workspace_id=$1 and student_id=$2)
+          or exists(select 1 from app_private.course_session_participant where workspace_id=$1 and student_id=$2)
+          or exists(select 1 from app_private.training_set where workspace_id=$1 and student_id=$2)
+          or exists(select 1 from app_private.venue_coach_supplied_student where workspace_id=$1 and student_id=$2)
+        ) as exists`,
+        [workspaceId, studentId],
+      )
+      if (history.rows[0]?.exists) throw new StudentHasHistoryError()
+      const memberships =
+        current.rows[0].kind === 'person'
+          ? await client.query<{ group_id: string }>(
+              `select distinct group_id from app_private.student_group_member
+             where workspace_id=$1 and student_id=$2 and removed_at is null order by group_id`,
+              [workspaceId, studentId],
+            )
+          : null
+      for (const membership of memberships?.rows ?? []) {
+        await client.query(
+          'select id from app_private.student where workspace_id=$1 and id=$2 for update',
+          [workspaceId, membership.group_id],
+        )
+      }
+      await client.query('delete from app_private.student where workspace_id=$1 and id=$2', [
+        workspaceId,
+        studentId,
+      ])
+      for (const membership of memberships?.rows ?? []) {
+        const remaining = await client.query<{ student_id: string }>(
+          `select student_id from app_private.student_group_member
+           where workspace_id=$1 and group_id=$2 and removed_at is null order by student_id`,
+          [workspaceId, membership.group_id],
+        )
+        if (remaining.rowCount === 0) {
+          await client.query(
+            `update app_private.schedule_series set active=false,version=version+1,updated_at=clock_timestamp()
+             where workspace_id=$1 and student_id=$2 and active`,
+            [workspaceId, membership.group_id],
+          )
+          await client.query(
+            `update app_private.course_session set status='cancelled',version=version+1,updated_at=clock_timestamp()
+             where workspace_id=$1 and student_id=$2 and status='scheduled' and starts_at>clock_timestamp()`,
+            [workspaceId, membership.group_id],
+          )
+        }
+        await client.query(
+          `update app_private.student set active=case when $3 then false else active end,
+           version=version+1,updated_at=clock_timestamp()
+           where workspace_id=$1 and id=$2`,
+          [workspaceId, membership.group_id, remaining.rowCount === 0],
+        )
+      }
+      await client.query('commit')
+      return true
+    } catch (error) {
+      await client.query('rollback')
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   async createLessonPurchase(
@@ -617,6 +948,7 @@ export class PostgresStudentRepository
 function mapStudent(row: StudentRow): Student {
   return {
     id: row.id,
+    kind: row.kind,
     name: row.name,
     phone: row.phone,
     goal: row.goal,

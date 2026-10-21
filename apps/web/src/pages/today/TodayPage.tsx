@@ -478,6 +478,9 @@ function TodaySessionRow({
               {session.location || '未設定地點'}
               {trainingPlan ? ` · ${trainingPlanDescription(trainingPlan)}` : ''}
             </small>
+            {session.ownerKind === 'group' && session.participantNames?.length ? (
+              <small>本堂成員：{session.participantNames.join('、')}</small>
+            ) : null}
           </span>
         </span>
         <span className="today-session-meta">

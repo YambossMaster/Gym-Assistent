@@ -21,7 +21,7 @@ it('keeps absent price distinct from explicit zero and reads saved currency', as
       )
     )
     const form = host.querySelector('form')!
-    expect(host.textContent).toContain('學生課堂單價（選填）')
+    expect(host.textContent).toContain('學生課堂單價')
     expect(host.textContent).not.toContain('TWD')
     expect(host.textContent).not.toContain('幣別')
     expect(host.querySelector('[aria-label="學生課堂單價幣別"]')).toBeNull()

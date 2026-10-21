@@ -36,12 +36,14 @@ export type CapabilityLinkMetadata = {
 export type PublicTrainingResult = {
   coachDisplayName: string
   studentDisplayName: string
+  participants?: Array<{ studentId: string; name: string; attendance: 'present' | 'absent' }>
   session: { startsAt: Date; endsAt: Date; timeZone: string; durationMinutes: number }
   exercises: Array<{
     position: number
     recording?: import('../training/recording.js').RecordingConfig
     definitionName: string
     sets: Array<{
+      studentId?: string
       measurements?: import('../training/recording.js').Measurements
       position: number
       plannedWeight: number | null

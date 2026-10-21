@@ -95,6 +95,7 @@ export interface TrainingRepository {
     sessionId: string,
     definitionId: string,
     metric: PerformanceMetric,
+    studentId?: string,
   ): Promise<Array<{
     plannedWeight: number | null
     plannedReps: number | null

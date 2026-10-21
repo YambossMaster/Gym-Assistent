@@ -8,6 +8,7 @@ import { TodayModule } from '../today/today-module.js'
 import { WorkspaceModule } from '../workspace/workspace-module.js'
 import { PlanAccessModule } from './plan-access.js'
 import type { TrainingModule } from '../training/training-module.js'
+import type { SchedulingModule } from '../scheduling/scheduling-module.js'
 import type { SessionTraining } from '../training/training.js'
 
 const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
@@ -68,7 +69,7 @@ it('keeps inline Training bests on Free while withholding trajectory points', as
   })
 })
 
-function setup() {
+function setup(scheduling?: SchedulingModule) {
   const repository = new MemoryStudentRepository()
   let grant: { kind: 'promotional'; endsAt: Date } | { kind: 'permanent'; endsAt: null } | null =
     null
@@ -97,6 +98,7 @@ function setup() {
       deletionExecutor: { deleteCoach: async () => undefined },
     }),
     registrationEmails: { isRegistered: async () => false },
+    ...(scheduling ? { scheduling } : {}),
     planAccess,
   })
   servers.push(server)
@@ -116,6 +118,95 @@ it('does not expose a pre-payment plan mutation route', async () => {
     tier: 'free',
     source: 'free',
   })
+})
+
+it('gates group creation and later group writes while retaining downgraded data', async () => {
+  const { server, setGrant } = setup()
+  const person = await server.inject({
+    method: 'POST',
+    url: '/v1/students',
+    headers,
+    payload: { name: '成員' },
+  })
+  expect(person.statusCode).toBe(201)
+  const memberId = person.json().student.id as string
+  const groupPayload = { name: '共課群組', kind: 'group', memberIds: [memberId] }
+  const freeCreate = await server.inject({
+    method: 'POST',
+    url: '/v1/students',
+    headers,
+    payload: groupPayload,
+  })
+  expect(freeCreate.statusCode).toBe(403)
+  expect(freeCreate.json()).toEqual({ error: 'plan_required' })
+
+  setGrant({ kind: 'promotional', endsAt: new Date('2026-10-04T02:00:00.000Z') })
+  const created = await server.inject({
+    method: 'POST',
+    url: '/v1/students',
+    headers,
+    payload: groupPayload,
+  })
+  expect(created.statusCode).toBe(201)
+  const group = created.json().student as { id: string; version: number }
+  setGrant(null)
+  const archived = await server.inject({ url: `/v1/students/${group.id}`, headers })
+  expect(archived.statusCode).toBe(200)
+  expect(archived.json().detail.student.active).toBe(false)
+  const update = await server.inject({
+    method: 'PATCH',
+    url: `/v1/students/${group.id}`,
+    headers,
+    payload: { name: '改名', memberIds: [memberId], version: group.version },
+  })
+  expect(update.statusCode).toBe(403)
+  expect(update.json()).toEqual({ error: 'plan_required' })
+  const purchase = await server.inject({
+    method: 'POST',
+    url: `/v1/students/${group.id}/lesson-purchases`,
+    headers,
+    payload: {
+      purchasedAt: '2026-10-03T02:00:00.000Z',
+      lessonCount: 1,
+      amountMinor: 0,
+      currency: 'TWD',
+      privateNote: '',
+    },
+  })
+  expect(purchase.statusCode).toBe(403)
+  expect(purchase.json()).toEqual({ error: 'plan_required' })
+  expect((await server.inject({ url: `/v1/students/${group.id}`, headers })).statusCode).toBe(200)
+})
+
+it('rejects a group Series write addressed only by Series ID on Free', async () => {
+  let groupId = ''
+  const scheduling = {
+    seriesOwner: async () => groupId,
+  } as unknown as SchedulingModule
+  const { server, setGrant } = setup(scheduling)
+  const person = await server.inject({
+    method: 'POST',
+    url: '/v1/students',
+    headers,
+    payload: { name: '甲' },
+  })
+  setGrant({ kind: 'permanent', endsAt: null })
+  const group = await server.inject({
+    method: 'POST',
+    url: '/v1/students',
+    headers,
+    payload: { name: '共課', kind: 'group', memberIds: [person.json().student.id] },
+  })
+  groupId = group.json().student.id
+  setGrant(null)
+  const response = await server.inject({
+    method: 'DELETE',
+    url: '/v1/schedule-series/00000000-0000-4000-8000-000000000002',
+    headers,
+    payload: { confirmation: 'DELETE', version: 1 },
+  })
+  expect(response.statusCode).toBe(403)
+  expect(response.json()).toEqual({ error: 'plan_required' })
 })
 
 it('limits Free creation and preserves all Students when an Advanced offer expires', async () => {

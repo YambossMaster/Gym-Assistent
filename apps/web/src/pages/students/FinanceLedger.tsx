@@ -542,7 +542,7 @@ export function FinanceLedger({ session, data }: { session: Session; data: Month
                   </div>
                   {editor === 'new' && (
                     <label>
-                      說明（選填）
+                      說明
                       <textarea
                         maxLength={4000}
                         value={note}

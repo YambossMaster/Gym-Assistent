@@ -102,12 +102,14 @@ export class TrainingModule {
     sessionId: string,
     definitionId: string,
     metric: string,
+    studentId?: string,
   ) {
     return this.repository.getDefaults(
       await this.workspace(identity),
       sessionId,
       definitionId,
       metricSchema.parse(metric),
+      studentId,
     )
   }
   async getStudentPerformance(identity: AuthenticatedIdentity, studentId: string) {

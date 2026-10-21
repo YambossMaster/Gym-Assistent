@@ -1,0 +1,131 @@
+name: Development logical restore
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/development-restore.yml'
+      - 'apps/api/src/e2e/m11-restored-api-smoke.ts'
+      - 'scripts/m11-restored-*.sql'
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require Development credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          test "$SUPABASE_PROJECT_ID" = 'yvhijxhtelujfsaplzpi'
+      - name: Resolve Development IPv4 session pooler
+        env:
+          SUPABASE_POOLER_CACHE_ROOT: ${{ runner.temp }}
+        run: node scripts/cache-supabase-pooler.mjs
+      - run: npm ci
+      - name: Link Development project
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Restore verified pooler endpoint
+        run: cp "$RUNNER_TEMP/supabase/.temp/pooler-url" supabase/.temp/pooler-url
+      - name: Dump Development roles, schema, data and migration history
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/development-dump"
+          npx supabase db dump --linked --role-only -f "$RUNNER_TEMP/development-dump/roles.sql"
+          npx supabase db dump --linked -f "$RUNNER_TEMP/development-dump/schema.sql"
+          npx supabase db dump --linked --data-only --use-copy \
+            -x storage.buckets_vectors -x storage.vector_indexes \
+            -f "$RUNNER_TEMP/development-dump/data.sql"
+          npx supabase db dump --linked --schema supabase_migrations \
+            -f "$RUNNER_TEMP/development-dump/history_schema.sql"
+          npx supabase db dump --linked --data-only --use-copy --schema supabase_migrations \
+            -f "$RUNNER_TEMP/development-dump/history_data.sql"
+          cd "$RUNNER_TEMP/development-dump"
+          for file in roles.sql schema.sql data.sql history_schema.sql history_data.sql; do
+            test -s "$file"
+          done
+          sha256sum *.sql > SHA256SUMS
+      - name: Restore in a network-isolated local database
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          cd "$RUNNER_TEMP/development-dump"
+          sha256sum --check SHA256SUMS
+          # Local postgres cannot replay the managed logging grant. Change only
+          # the disposable restore copy, after checking the original checksum.
+          logging_grants="$(grep -Eic '^GRANT SET ON PARAMETER "?log_min_messages"? TO ' roles.sql || true)"
+          test "$logging_grants" -eq 1
+          test "$logging_grants" -eq "$(grep -ic 'log_min_messages' roles.sql || true)"
+          sed -E '/^GRANT SET ON PARAMETER "?log_min_messages"? TO /Id' roles.sql > restore-roles.sql
+          mkdir -p "$RUNNER_TEMP/restore-project/supabase/migrations"
+          cp "$GITHUB_WORKSPACE/supabase/config.toml" "$RUNNER_TEMP/restore-project/supabase/config.toml"
+          sed -i 's/^project_id = .*/project_id = "development_restore_probe"/' \
+            "$RUNNER_TEMP/restore-project/supabase/config.toml"
+          sed -i '/^\[db.migrations\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
+            "$RUNNER_TEMP/restore-project/supabase/config.toml"
+          sed -i '/^\[db.seed\]/,/^\[/{s/^enabled = true$/enabled = false/;}' \
+            "$RUNNER_TEMP/restore-project/supabase/config.toml"
+          cd "$GITHUB_WORKSPACE"
+          if ! env SUPABASE_ACCESS_TOKEN= SUPABASE_DB_PASSWORD= SUPABASE_PROJECT_ID= \
+            npx supabase db start --workdir "$RUNNER_TEMP/restore-project"; then
+            docker ps -a --format 'container {{.Names}}: {{.Status}}'
+            exit 1
+          fi
+          container="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}')"
+          test -n "$container"
+          test "$(printf '%s\n' "$container" | grep -c .)" -eq 1
+          networks="$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container")"
+          test -n "$networks"
+          while IFS= read -r network; do
+            test -n "$network" && docker network disconnect --force "$network" "$container"
+          done <<< "$networks"
+          test -z "$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container")"
+          docker exec "$container" mkdir -p /tmp/development-restore
+          docker cp "$RUNNER_TEMP/development-dump/." "$container:/tmp/development-restore/"
+          docker exec "$container" psql -U postgres -d postgres --single-transaction \
+            --variable ON_ERROR_STOP=1 \
+            --file /tmp/development-restore/restore-roles.sql \
+            --file /tmp/development-restore/schema.sql \
+            --command 'SET session_replication_role = replica' \
+            --file /tmp/development-restore/data.sql
+          docker exec "$container" psql -U postgres -d postgres --single-transaction \
+            --variable ON_ERROR_STOP=1 \
+            --file /tmp/development-restore/history_schema.sql \
+            --file /tmp/development-restore/history_data.sql
+          docker cp "$GITHUB_WORKSPACE/scripts/m11-restored-data-check.sql" \
+            "$container:/tmp/development-restore/m11-restored-data-check.sql"
+          docker cp "$GITHUB_WORKSPACE/scripts/m11-restored-group-roundtrip.sql" \
+            "$container:/tmp/development-restore/m11-restored-group-roundtrip.sql"
+          docker exec "$container" psql -U postgres -d postgres --variable ON_ERROR_STOP=1 \
+            --file /tmp/development-restore/m11-restored-data-check.sql
+          docker exec "$container" psql -U postgres -d postgres --single-transaction \
+            --variable ON_ERROR_STOP=1 \
+            --file /tmp/development-restore/m11-restored-group-roundtrip.sql
+          docker network create --internal m11_restore_api >/dev/null
+          docker network connect m11_restore_api "$container"
+          host="$(docker inspect -f '{{with index .NetworkSettings.Networks "m11_restore_api"}}{{.IPAddress}}{{end}}' "$container")"
+          test -n "$host"
+          M11_RESTORE_ISOLATED=1 M11_RESTORE_DB_HOST="$host" \
+            node --import tsx apps/api/src/e2e/m11-restored-api-smoke.ts
+      - name: Remove plaintext backup from runner
+        if: always()
+        shell: bash
+        run: rm -rf -- "$RUNNER_TEMP/development-dump" "$RUNNER_TEMP/restore-project"

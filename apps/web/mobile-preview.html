@@ -70,9 +70,20 @@
         <p>畫面尺寸：390 × 844。可在下方直接操作應用並切換頁面。</p>
       </header>
       <div class="frame-scroll">
-        <iframe title="FORM Coach Desk 手機畫面，390 × 844" src="/today"></iframe>
+        <iframe id="mobile-frame" title="FORM Coach Desk 手機畫面，390 × 844" src="/today"></iframe>
       </div>
-      <p>這是桌機瀏覽器中的手機尺寸預覽。<a href="/today">開啟一般畫面</a></p>
+      <p>這是桌機瀏覽器中的手機尺寸預覽。<a id="full-page-link" href="/today">開啟一般畫面</a></p>
     </main>
+    <script>
+      const sessionId = new URLSearchParams(location.search).get('session')
+      if (
+        sessionId &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)
+      ) {
+        const path = `/sessions/${sessionId}`
+        document.getElementById('mobile-frame').src = path
+        document.getElementById('full-page-link').href = path
+      }
+    </script>
   </body>
 </html>

@@ -41,6 +41,9 @@ const BillingReview =
   import.meta.env.DEV && localBillingEnabled
     ? lazy(() => import('./pages/settings/billing/review/BillingReview'))
     : null
+const GroupTrainingSolPreview = import.meta.env.DEV
+  ? lazy(() => import('./pages/training/GroupTrainingSolPreview'))
+  : null
 const LocalCheckout = localBillingEnabled
   ? lazy(() => import('./pages/settings/billing/LocalCheckoutPage'))
   : null
@@ -84,6 +87,16 @@ export function App() {
             element={
               <Suspense fallback={<AppLoadingScreen />}>
                 <BillingReview />
+              </Suspense>
+            }
+          />
+        )}
+        {GroupTrainingSolPreview && (
+          <Route
+            path="/__review/m11-group"
+            element={
+              <Suspense fallback={<AppLoadingScreen />}>
+                <GroupTrainingSolPreview />
               </Suspense>
             }
           />

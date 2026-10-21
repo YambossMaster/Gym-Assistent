@@ -1119,6 +1119,49 @@ listing is a separate Contract → Sol → CI package, not an automatic conseque
 deployment. LINE/Email/Push expansion, studio/multi-Coach roles, and health/medical data also need
 their own approved contracts and privacy review.
 
+### M11 — Student Groups and Shared Course Sessions — Contract frozen 2026-10-20
+
+**Integration priority:** Product Owner approved M11 integration ahead of the open M9 commercial
+refinement and conditional M10 decision. This is an explicit exception to the future-ID numeric
+release-order convention in Section 6; M9 and M10 retain their existing names, scope and own
+prerequisites. M11 Sol may proceed independently of M8-E's remaining natural paid-collection
+evidence. Before an M9 or M10 integration, reconcile any shared schema or Module changes against
+the integrated M11 contract and implementation. Independent work may overlap when interfaces are
+frozen; shared migrations, Module interfaces and deployment remain serialized.
+
+**Prerequisite and owner:** build on the delivered Student, Lesson, Scheduling, Training, Public
+Access and M8-D single-lesson baseline. The independent student-group-contract workstream owns
+M11 Sol and its [Status](status/STUDENT-GROUP.md); integration ownership follows the normal CI
+gate. This package does not reopen delivered M3–M8-D work.
+
+**Contract gate — complete:** the Product Owner froze the
+[student-group and shared-session Contract](STUDENT-GROUP-CONTRACT.md), including existing-student
+group membership, group-owned purchases and scheduling, one shared Session and Training Record,
+individual attendance and set ownership, per-person history, archive and deletion boundaries,
+tenant and kind constraints, responsive UI and acceptance evidence. The accepted desktop/mobile
+training prototypes supply the interaction baseline. Keep the minimal extension to existing
+routes, Modules and API unless a concrete incompatibility is proved.
+
+**2026-10-21 Product Owner amendment:** Student Groups and shared lessons are Pro/Prime features.
+Free group entry uses the existing Pro mark and upgrade dialog. On downgrade to Free, active groups
+are archived, their fixed schedules disabled, and future scheduled group lessons cancelled; history
+stays readable. Free cannot restore or operate a group. Restoring Pro allows manual group restoration
+and manual rescheduling only. Enforce this at the API and reconcile expiry without a Web visit.
+
+**Sol gate:** implement the Contract's eight bounded delivery areas end to end. Start with a
+read-only audit of existing person-only queries and deletion paths, then design the migration,
+kind/tenant constraints and verified training-set backfill. Implement group and member operations,
+owner-specific purchases and scheduling, attendance/completion, shared training entry, individual
+projections and exports, archive corrections, public capability projection and complete Web states.
+Use focused checks after each change; present the product-facing version to the Product Owner before
+the full verification gate.
+
+**CI gate and exit:** after Product Owner review approval, complete the Contract's database,
+migration, permission, API, Web, desktop/mobile/PWA and existing-flow evidence. Confirm exact-SHA
+remote checks and release evidence under the normal delivery authorization rules. M11 closes only
+when the approved Contract is implemented and verified with individual data, entitlement and
+historical records preserved; a documentation commit or local focused pass is not completion.
+
 ## 6. Sequencing and concurrency
 
 Work may proceed in parallel only after its Contract gate freezes shared interfaces. Separate
@@ -1157,8 +1200,9 @@ top-level milestone after M10 (M11).
 
 For new identifiers from M11 onward:
 
-- `M<number>` is a milestone/integration stage. Increasing numeric stages set integration and
+- `M<number>` is a milestone/integration stage. Increasing numeric stages normally set integration and
   release order, while contracted implementation may overlap under the concurrency rules above.
+  The Product Owner-approved M11 priority above is an explicit exception across legacy M9/M10.
 - `M<number>-<letter>` identifies a separately owned workstream within that stage. Letters are
   stable identifiers, not ranks or prerequisites: `M17-D` and `M17-F` may proceed in parallel.
   The milestone Contract lists which workstreams must pass before that stage closes. If one package

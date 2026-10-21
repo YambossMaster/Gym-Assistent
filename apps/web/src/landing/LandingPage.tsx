@@ -100,11 +100,11 @@ const plans = [
   {
     name: 'Pro',
     label: '進階',
-    description: '學員上限提高到 15 名，並開放本月收支與成長軌跡。',
+    description: '學員上限提高到 15 名，並開放學生群組、本月收支與成長軌跡。',
     price: 'NT$115',
     period: '／月',
     annual: '或 NT$1,150／年',
-    features: ['最多 15 名學員', '無限場地數量', '本月收支與成長軌跡'],
+    features: ['最多 15 名學員', '無限場地數量', '學生群組與多人共課', '本月收支與成長軌跡'],
     featured: true,
     prime: false
   },
@@ -118,6 +118,7 @@ const plans = [
     features: [
       '無限學員數量',
       '無限場地數量',
+      '學生群組與多人共課',
       '本月收支與成長軌跡',
       '收支報表、明細匯出與日曆整合'
     ],
@@ -503,7 +504,7 @@ export function LandingPage() {
           ))}
         </div>
         <p className="landing-pricing-note">
-          所有方案都包含學員、課程、排程與訓練紀錄。成長軌跡和本月收支需 Pro 或
+          所有方案都包含學員、課程、排程與訓練紀錄。學生群組、成長軌跡和本月收支需 Pro 或
           Prime；日曆整合與收支明細匯出需 Prime。
         </p>
       </section>
@@ -533,7 +534,7 @@ export function LandingPage() {
           <details>
             <summary>進階方案多了哪些功能？</summary>
             <p>
-              本月收支與成長軌跡需 Pro 或 Prime；日曆整合與收支明細匯出需
+              學生群組、本月收支與成長軌跡需 Pro 或 Prime；日曆整合與收支明細匯出需
               Prime。各方案的學員與場地數量限制請參考上方說明。
             </p>
           </details>

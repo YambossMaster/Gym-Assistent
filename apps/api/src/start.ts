@@ -39,6 +39,7 @@ import { PostgresBetaAdmissionRepository } from './beta-admission/postgres-beta-
 import { SupabaseVerifiedCoachEmail } from './beta-admission/supabase-verified-coach-email.js'
 import { PlanAccessModule } from './plan-access/plan-access.js'
 import { PostgresPlanAccessRepository } from './plan-access/postgres-plan-access-repository.js'
+import { reconcileFreeGroupPlans } from './plan-access/group-plan-reconciliation.js'
 import { ExportModule } from './exports/export-module.js'
 import { FinanceReportModule } from './exports/finance-report.js'
 import { PostgresCalendarIntegration } from './calendar-integration/postgres-calendar.js'
@@ -51,7 +52,7 @@ const billingConfig = billingEnabled ? localBillingConfiguration(process.env) : 
 const liveBilling = liveBillingConfiguration(process.env)
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
-  max: 10,
+  max: config.DATABASE_POOL_MAX,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
 })
@@ -73,6 +74,12 @@ const identityVerifier = new OidcIdentityVerifier({
   audience: config.SUPABASE_JWT_AUDIENCE,
   jwksUrl: `${supabaseIssuer}/.well-known/jwks.json`,
 })
+const students = new StudentModule({ repository })
+const planAccess = new PlanAccessModule(
+  new PostgresPlanAccessRepository(pool),
+  undefined,
+  verifiedBilling,
+)
 const server = buildServer({
   ...(billingLifecycle
     ? {
@@ -105,7 +112,7 @@ const server = buildServer({
     repository.resolveWorkspace(identity),
   ),
   identityVerifier,
-  students: new StudentModule({ repository }),
+  students,
   today: new TodayModule(repository),
   todayNotifications: new TodayNotificationModule(
     repository,
@@ -140,11 +147,7 @@ const server = buildServer({
     new SupabaseVerifiedCoachEmail(config.SUPABASE_URL, config.SUPABASE_SECRET_KEY),
     config.BETA_ADMISSION_SECRET,
   ),
-  planAccess: new PlanAccessModule(
-    new PostgresPlanAccessRepository(pool),
-    undefined,
-    verifiedBilling,
-  ),
+  planAccess,
   exports: new ExportModule({
     workspace: new WorkspaceModule({ repository }),
     students: new StudentModule({ repository }),
@@ -178,6 +181,38 @@ const server = buildServer({
 
 server.addHook('onClose', async () => {
   await pool.end()
+})
+let groupPlanSweepRunning = false
+const reconcileExpiredGroups = async () => {
+  if (groupPlanSweepRunning) return
+  groupPlanSweepRunning = true
+  try {
+    const result = await pool.query<{ owner_user_id: string }>(
+      `select distinct w.owner_user_id
+       from app_private.workspace w
+       join app_private.student s on s.workspace_id=w.id
+       where s.kind='group' and s.active`,
+    )
+    await reconcileFreeGroupPlans(
+      result.rows.map((row) => ({ userId: row.owner_user_id })),
+      planAccess,
+      students,
+    )
+  } finally {
+    groupPlanSweepRunning = false
+  }
+}
+server.addHook('onReady', async () => {
+  await reconcileExpiredGroups()
+})
+const groupPlanSweep = setInterval(() => {
+  void reconcileExpiredGroups().catch((error: unknown) => {
+    server.log.error({ err: error }, 'group plan reconciliation failed')
+  })
+}, 60_000)
+groupPlanSweep.unref()
+server.addHook('onClose', async () => {
+  clearInterval(groupPlanSweep)
 })
 billingLifecycle?.attach(server)
 

@@ -51,6 +51,7 @@ export const preferenceSchema = z.object({
 
 export const trainingSetInputSchema = z.object({
   id: uuid,
+  studentId: uuid.optional(),
   plannedWeight: weight,
   plannedReps: reps,
   actualReps: reps,
@@ -69,6 +70,10 @@ export const trainingExerciseInputSchema = z.object({
 export const saveTrainingSchema = z
   .object({
     privateNote: z.string().max(5000),
+    attendance: z
+      .array(z.object({ studentId: uuid, status: z.enum(['present', 'absent']) }))
+      .max(3)
+      .optional(),
     exercises: z
       .array(trainingExerciseInputSchema)
       .max(100)
@@ -84,6 +89,12 @@ export const saveTrainingSchema = z
     const ids = input.exercises.flatMap((exercise) => exercise.sets.map((set) => set.id))
     return new Set(ids).size === ids.length
   }, 'Set IDs must be unique.')
+  .refine(
+    (input) =>
+      !input.attendance ||
+      new Set(input.attendance.map((item) => item.studentId)).size === input.attendance.length,
+    'Attendance IDs must be unique.',
+  )
 
 export type PerformanceMetric = z.infer<typeof metricSchema>
 export type WeightUnit = z.infer<typeof unitSchema>
@@ -145,6 +156,7 @@ export type SessionTraining = {
     id: string
     studentId: string
     studentName: string
+    studentKind?: 'person' | 'group'
     startsAt: Date
     endsAt: Date
     location: string
@@ -152,6 +164,11 @@ export type SessionTraining = {
     version: number
     isLegacy: false
   }
+  participants?: Array<{
+    studentId: string
+    name: string
+    status: 'pending' | 'present' | 'absent'
+  }>
   lessonSummary: { purchased: number; completed: number; remaining: number }
   record: {
     id: string | null
@@ -163,6 +180,7 @@ export type SessionTraining = {
   defaultWeightUnit: WeightUnit
   defaultDistanceUnit: 'km' | 'mi'
   exerciseSummaries: ExerciseSummary[]
+  groupExerciseSummaries?: Array<ExerciseSummary & { studentId: string }>
   allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
 }
 

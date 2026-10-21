@@ -32,11 +32,21 @@ export type ChangedSession = {
 }
 
 export class SchedulingStudentChangeError extends Error {
-  constructor(readonly reason: 'student_not_found' | 'session_not_editable') {
+  constructor(
+    readonly reason:
+      | 'student_not_found'
+      | 'session_not_editable'
+      | 'group_draft_present'
+      | 'group_empty',
+  ) {
     super(
       reason === 'student_not_found'
         ? 'Student was not found in this Workspace.'
-        : 'Only a scheduled Session can change Student.',
+        : reason === 'group_empty'
+          ? '這堂群組課沒有參與者，請先確認群組名單。'
+          : reason === 'group_draft_present'
+            ? '這堂群組課已有訓練或出席草稿，請先處理內容再改派。'
+            : 'Only a scheduled Session can change Student.',
     )
     this.name = 'SchedulingStudentChangeError'
   }
@@ -91,6 +101,10 @@ export interface SchedulingRepository {
     studentId: string,
   ): Promise<LessonSummary | null>
   listSessions(workspaceId: SchedulingWorkspaceId, start: Date, end: Date): Promise<CourseSession[]>
+  listStudentSessions(
+    workspaceId: SchedulingWorkspaceId,
+    studentId: string,
+  ): Promise<CourseSession[]>
   getSession(workspaceId: SchedulingWorkspaceId, sessionId: string): Promise<CourseSession | null>
   createSession(workspaceId: SchedulingWorkspaceId, input: NewSession): Promise<CourseSession>
   updateSession(
@@ -111,6 +125,7 @@ export interface SchedulingRepository {
     version: number,
   ): Promise<boolean>
   listSeries(workspaceId: SchedulingWorkspaceId, studentId: string): Promise<ScheduleSeries[]>
+  getSeriesOwner(workspaceId: SchedulingWorkspaceId, seriesId: string): Promise<string | null>
   createSeriesAndAnchor(
     workspaceId: SchedulingWorkspaceId,
     series: NewScheduleSeries,

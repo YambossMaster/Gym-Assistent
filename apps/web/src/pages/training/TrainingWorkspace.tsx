@@ -124,6 +124,7 @@ export function TrainingWorkspace({
   sessionNotice?: string
   timeZone: string
 }) {
+  const access = usePlanAccess(session)
   if (query.isLoading) return <TrainingLoading />
   if (query.isError || !query.data)
     return (
@@ -144,6 +145,15 @@ export function TrainingWorkspace({
         )}
       </section>
     )
+  if (query.data.session.studentKind === 'group' && access.isLoading) return <TrainingLoading />
+  if (
+    query.data.session.studentKind === 'group' &&
+    !['completed', 'cancelled'].includes(query.data.session.status) &&
+    access.data?.tier === 'free'
+  )
+    return <PlanUpsellDialog title="學生群組" onClose={onBack} />
+  if (query.data.session.studentKind === 'group' && access.data?.tier === 'free')
+    return <GroupTrainingHistory training={query.data} onBack={onBack} timeZone={timeZone} />
   return (
     <ExclusiveTrainingEditor
       key={`${session.user.id}:${query.data.session.id}`}
@@ -155,6 +165,82 @@ export function TrainingWorkspace({
       sessionNotice={sessionNotice}
       timeZone={timeZone}
     />
+  )
+}
+
+function GroupTrainingHistory({
+  training,
+  onBack,
+  timeZone
+}: {
+  training: SessionTraining
+  onBack: () => void
+  timeZone: string
+}) {
+  return (
+    <section className="training-workspace group-training-history">
+      <button type="button" className="secondary-button compact" onClick={onBack}>
+        返回
+      </button>
+      <header>
+        <span className="eyebrow dark">TRAINING LOG</span>
+        <h1>訓練紀錄</h1>
+        <p>
+          {formatSessionDate(training.session.startsAt, timeZone)} · {training.session.studentName}
+        </p>
+        <p>群組已封存，過去紀錄可查看。</p>
+      </header>
+      {training.record.exercises.map((exercise) => (
+        <article className="group-training-history-card" key={exercise.id}>
+          <h2>{exercise.definitionName}</h2>
+          {exercise.sets.map((set) => {
+            const member = training.participants?.find(
+              (person) => person.studentId === set.studentId
+            )
+            const measurements = set.measurements
+            const values = exercise.recording
+              ? recordingTypes[exercise.recording.type].dimensions.map((dimension) => {
+                  const value = measurements?.[dimension]
+                  const unit =
+                    dimension === 'weight'
+                      ? measurements?.weightUnit
+                      : dimension === 'duration'
+                        ? measurements?.durationUnit
+                        : dimension === 'distance'
+                          ? measurements?.distanceUnit
+                          : ''
+                  return `${metricLabels[dimension]} ${value ?? '—'}${unit ? ` ${unit}` : ''}`
+                })
+              : [
+                  `重量 ${set.plannedWeight ?? '—'} ${set.unit}`,
+                  `次數 ${set.actualReps ?? set.plannedReps ?? '—'}`
+                ]
+            return (
+              <div className="group-training-history-set" key={set.id}>
+                <strong>{member?.name ?? '學生'}</strong>
+                {values.map((value) => (
+                  <span key={value}>{value}</span>
+                ))}
+                <span>RPE {set.rpe ?? '—'}</span>
+                <span>
+                  {set.result === 'completed'
+                    ? '已完成'
+                    : set.result === 'incomplete'
+                      ? '未完成'
+                      : '未標記'}
+                </span>
+              </div>
+            )
+          })}
+        </article>
+      ))}
+      {training.record.privateNote && (
+        <section className="group-training-history-card">
+          <h2>教練筆記</h2>
+          <p>{training.record.privateNote}</p>
+        </section>
+      )}
+    </section>
   )
 }
 
@@ -287,6 +373,11 @@ function TrainingEditor({
     [conflictReason, setConflictReason] = useState<string>('version_conflict'),
     [adoptingConflict, setAdoptingConflict] = useState(false),
     [mobileTab, setMobileTab] = useState<'training' | 'note'>('training'),
+    [groupView, setGroupView] = useState<'timeline' | 'student'>(() =>
+      localStorage.getItem(`group-training-view:${session.user.id}`) === 'student'
+        ? 'student'
+        : 'timeline'
+    ),
     [classInfoExpanded, setClassInfoExpanded] = useState(true),
     [noteFocused, setNoteFocused] = useState(false),
     [activeSetInput, setActiveSetInput] = useState<HTMLInputElement | null>(null),
@@ -296,6 +387,10 @@ function TrainingEditor({
     [storageError, setStorageError] = useState(false),
     [notice, setNotice] = useState(''),
     [trendId, setTrendId] = useState<string | null>(null),
+    [groupTrendSelection, setGroupTrendSelection] = useState<{
+      occurrenceId: string
+      studentId: string
+    } | null>(null),
     [trendLockedId, setTrendLockedId] = useState<string | null>(null),
     [completing, setCompleting] = useState(false),
     [dragOrder, setDragOrder] = useState<string[] | null>(null),
@@ -1126,6 +1221,25 @@ function TrainingEditor({
   }
   const complete = async () => {
     if (completing) return
+    const absent =
+      initial.participants?.filter(
+        (person) =>
+          draft.attendance?.find((item) => item.studentId === person.studentId)?.status === 'absent'
+      ) ?? []
+    const omitted = draft.exercises.reduce(
+      (count, exercise) =>
+        count +
+        exercise.sets.filter((set) => absent.some((person) => person.studentId === set.studentId))
+          .length,
+      0
+    )
+    if (
+      initial.session.studentKind === 'group' &&
+      !confirm(
+        `${absent.length === initial.participants?.length ? '全員缺席，仍要完成這堂課並扣群組一堂？' : '完成這堂群組課並扣一堂？'}${omitted ? `\n${omitted} 組缺席者的草稿結果將不納入成果。` : ''}`
+      )
+    )
+      return
     setCompleting(true)
     try {
       await coordinator.flush()
@@ -1180,6 +1294,16 @@ function TrainingEditor({
   )
   const totalSets = draft.exercises.reduce((count, exercise) => count + exercise.sets.length, 0)
   const trend = initial.exerciseSummaries.find((summary) => summary.occurrenceId === trendId)
+  const groupTrend = initial.groupExerciseSummaries?.find(
+    (summary) =>
+      summary.occurrenceId === groupTrendSelection?.occurrenceId &&
+      summary.studentId === groupTrendSelection.studentId
+  )
+  const activeTrend = groupTrend ?? trend
+  const trendStudentName = groupTrendSelection
+    ? (initial.participants?.find((person) => person.studentId === groupTrendSelection.studentId)
+        ?.name ?? '')
+    : initial.session.studentName
   const focusedExerciseId = focusedDefinitionId
     ? draft.exercises.find((exercise) => exercise.definitionId === focusedDefinitionId)?.id
     : undefined
@@ -1194,9 +1318,12 @@ function TrainingEditor({
     return () => cancelAnimationFrame(frame)
   }, [focusedExerciseId, initial.session.id])
   const openHistory = (historySessionId: string) => {
-    if (!trend?.definitionId) return
+    if (!activeTrend?.definitionId) return
     setTrendId(null)
-    navigate(`/sessions/${historySessionId}?exercise=${encodeURIComponent(trend.definitionId)}`)
+    setGroupTrendSelection(null)
+    navigate(
+      `/sessions/${historySessionId}?exercise=${encodeURIComponent(activeTrend.definitionId)}`
+    )
   }
   const selectMobileTab = (tab: 'training' | 'note', toggleSelected = true) => {
     if (tab === mobileTab) {
@@ -1209,6 +1336,54 @@ function TrainingEditor({
     }
     setMobileTab(tab)
   }
+  const renderGroupAttendance = () => (
+    <div className="group-training-attendance">
+      <span className="group-training-attendance-label">今日出席</span>
+      {initial.participants?.map((person, personIndex) => {
+        const absent =
+          draft.attendance?.find((item) => item.studentId === person.studentId)?.status === 'absent'
+        return (
+          <button
+            key={person.studentId}
+            type="button"
+            aria-pressed={!absent}
+            className={absent ? 'is-absent' : undefined}
+            aria-label={`${person.name}，${absent ? '缺席' : '出席'}，點擊切換`}
+            onClick={() => {
+              if (
+                !absent &&
+                initial.session.status === 'completed' &&
+                draft.exercises.some((exercise) =>
+                  exercise.sets.some((set) => set.studentId === person.studentId)
+                ) &&
+                !confirm(`將 ${person.name} 改為缺席並移除其正式組數結果？舊成果連結也會失效。`)
+              )
+                return
+              change({
+                ...draft,
+                attendance: initial.participants!.map((item) => ({
+                  studentId: item.studentId,
+                  status:
+                    item.studentId === person.studentId
+                      ? absent
+                        ? 'present'
+                        : 'absent'
+                      : (draft.attendance?.find((entry) => entry.studentId === item.studentId)
+                          ?.status ?? 'present')
+                })),
+                operationId: crypto.randomUUID()
+              })
+            }}
+          >
+            <span className={`group-member-avatar tone-${personIndex % 3}`} aria-hidden="true">
+              {person.name.slice(0, 1)}
+            </span>
+            <span className="group-attendance-name">{person.name}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
   return (
     <section
       ref={workspaceRef}
@@ -1318,29 +1493,40 @@ function TrainingEditor({
           {sessionNotice}
         </p>
       ) : null}
-      {classInfoExpanded && (
-        <div className="training-mobile-hero" aria-label="課堂基本資訊">
-          <div className="training-mobile-hero-session">
-            <CalendarClock aria-hidden="true" />
-            <div>
-              <span>{formatSessionDate(initial.session.startsAt, timeZone)}</span>
-              <strong>
-                {formatSessionTime(initial.session.startsAt, initial.session.endsAt, timeZone)}
-                <small>{initial.session.studentName}</small>
-              </strong>
-              <p>
-                <MapPin aria-hidden="true" />
-                {initial.session.location}
-                <span aria-hidden="true">·</span>
-                <span className={`state-indicator ${initial.session.status}`} />
-                {initial.session.status === 'completed'
-                  ? '已完成'
-                  : initial.session.status === 'cancelled'
-                    ? '已取消'
-                    : '進行中'}
-              </p>
+      {(classInfoExpanded ||
+        (initial.session.studentKind === 'group' && mobileTab === 'training')) && (
+        <div
+          className={`training-mobile-hero${classInfoExpanded ? '' : ' is-attendance-only'}`}
+          aria-label="課堂基本資訊"
+        >
+          {classInfoExpanded && (
+            <div className="training-mobile-hero-session">
+              <CalendarClock aria-hidden="true" />
+              <div>
+                <span>{formatSessionDate(initial.session.startsAt, timeZone)}</span>
+                <strong>
+                  {formatSessionTime(initial.session.startsAt, initial.session.endsAt, timeZone)}
+                  <small>{initial.session.studentName}</small>
+                </strong>
+                <p>
+                  <MapPin aria-hidden="true" />
+                  {initial.session.location}
+                  <span aria-hidden="true">·</span>
+                  <span className={`state-indicator ${initial.session.status}`} />
+                  {initial.session.status === 'completed'
+                    ? '已完成'
+                    : initial.session.status === 'cancelled'
+                      ? '已取消'
+                      : '進行中'}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+          {initial.session.studentKind === 'group' &&
+            initial.participants &&
+            mobileTab === 'training' && (
+              <div className="group-training-mobile-attendance">{renderGroupAttendance()}</div>
+            )}
         </div>
       )}
       <div className="session-body">
@@ -1415,9 +1601,47 @@ function TrainingEditor({
             <div>
               <span>TRAINING LOG</span>
               <h2>訓練紀錄</h2>
-              <p>依動作類型填寫本組數值，再標記完成結果。</p>
+              {initial.session.studentKind !== 'group' ? (
+                <p>依動作類型填寫本組數值，再標記完成結果。</p>
+              ) : null}
             </div>
+            {initial.session.studentKind === 'group' && (
+              <div
+                className="group-training-view group-training-desktop-view"
+                role="group"
+                aria-label="組數檢視"
+              >
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'timeline'}
+                  onClick={() => {
+                    setGroupView('timeline')
+                    localStorage.setItem(`group-training-view:${session.user.id}`, 'timeline')
+                  }}
+                >
+                  按時序
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'student'}
+                  onClick={() => {
+                    setGroupView('student')
+                    localStorage.setItem(`group-training-view:${session.user.id}`, 'student')
+                  }}
+                >
+                  按學生
+                </button>
+              </div>
+            )}
           </header>
+          {initial.session.studentKind === 'group' && initial.participants && (
+            <section
+              className="group-training-controls group-training-desktop-controls"
+              aria-label="共課出席"
+            >
+              {renderGroupAttendance()}
+            </section>
+          )}
           {storageError && (
             <p className="notice error">此裝置暫時無法保護尚未同步的內容，請保持頁面開啟。</p>
           )}
@@ -1520,6 +1744,33 @@ function TrainingEditor({
               </button>
             </section>
           )}
+          {initial.session.studentKind === 'group' && initial.participants && (
+            <div className="group-training-mobile-view-row">
+              <span>訓練清單</span>
+              <div className="group-training-view" role="group" aria-label="組數檢視">
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'timeline'}
+                  onClick={() => {
+                    setGroupView('timeline')
+                    localStorage.setItem(`group-training-view:${session.user.id}`, 'timeline')
+                  }}
+                >
+                  按時序
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'student'}
+                  onClick={() => {
+                    setGroupView('student')
+                    localStorage.setItem(`group-training-view:${session.user.id}`, 'student')
+                  }}
+                >
+                  按學生
+                </button>
+              </div>
+            </div>
+          )}
           {draft.exercises.length === 0 ? (
             <section className="training-empty">
               <Dumbbell />
@@ -1533,6 +1784,52 @@ function TrainingEditor({
                 加入動作
               </button>
             </section>
+          ) : initial.session.studentKind === 'group' && initial.participants ? (
+            <div className="group-training-exercises">
+              {draft.exercises.map((exercise, index) => (
+                <GroupExerciseCard
+                  key={exercise.id}
+                  exercise={exercise}
+                  index={index}
+                  mode={groupView}
+                  participants={initial.participants!}
+                  attendance={draft.attendance ?? []}
+                  preference={initial}
+                  summaries={
+                    initial.groupExerciseSummaries?.filter(
+                      (summary) => summary.occurrenceId === exercise.id
+                    ) ?? []
+                  }
+                  showLockedTrend={plan.data?.tier === 'free'}
+                  onShowTrend={(studentId) => {
+                    if (plan.data && plan.data.tier !== 'free')
+                      setGroupTrendSelection({ occurrenceId: exercise.id, studentId })
+                    else setTrendLockedId(exercise.id)
+                  }}
+                  onChange={(next) =>
+                    change({
+                      ...draft,
+                      exercises: draft.exercises.map((item) => (item.id === next.id ? next : item)),
+                      operationId: crypto.randomUUID()
+                    })
+                  }
+                  onRemove={() =>
+                    change({
+                      ...draft,
+                      exercises: draft.exercises.filter((item) => item.id !== exercise.id),
+                      operationId: crypto.randomUUID()
+                    })
+                  }
+                />
+              ))}
+              <button
+                className="training-add-exercise ui-action-add"
+                onClick={() => setPicker(true)}
+              >
+                <Plus />
+                加入動作
+              </button>
+            </div>
           ) : (
             <div
               ref={dragShellRef}
@@ -1676,14 +1973,19 @@ function TrainingEditor({
       {picker && (
         <ExercisePicker session={session} onPick={addDefinition} onClose={() => setPicker(false)} />
       )}
-      {trend && trend.recording ? (
+      {initial.session.studentKind === 'group' && trendLockedId && (
+        <PlanUpsellDialog title="成長軌跡" onClose={() => setTrendLockedId(null)} />
+      )}
+      {activeTrend && activeTrend.recording ? (
         <MultiMetricTrend
           session={session}
-          definitionId={trend.definitionId}
-          recording={trend.recording}
-          name={initial.record.exercises.find((e) => e.id === trend.occurrenceId)!.definitionName}
-          studentName={initial.session.studentName}
-          series={trend.series ?? []}
+          definitionId={activeTrend.definitionId}
+          recording={activeTrend.recording}
+          name={
+            initial.record.exercises.find((e) => e.id === activeTrend.occurrenceId)!.definitionName
+          }
+          studentName={trendStudentName}
+          series={activeTrend.series ?? []}
           updateNotice={
             saveState === 'pending' || saveState === 'saving'
               ? '正在儲存，成長軌跡將自動更新…'
@@ -1694,14 +1996,17 @@ function TrainingEditor({
                 ? '尚有未同步的紀錄，儲存成功後會更新成長軌跡。'
                 : undefined
           }
-          onClose={() => setTrendId(null)}
+          onClose={() => {
+            setTrendId(null)
+            setGroupTrendSelection(null)
+          }}
           onOpenHistory={openHistory}
         />
-      ) : trend ? (
+      ) : activeTrend ? (
         <PerformanceTrend
-          studentName={initial.session.studentName}
+          studentName={trendStudentName}
           name={
-            initial.record.exercises.find((exercise) => exercise.id === trend.occurrenceId)
+            initial.record.exercises.find((exercise) => exercise.id === activeTrend.occurrenceId)
               ?.definitionName ?? '成長軌跡'
           }
           updateNotice={
@@ -1714,9 +2019,12 @@ function TrainingEditor({
                 ? '尚有未同步的紀錄，儲存成功後會更新成長軌跡。'
                 : undefined
           }
-          points={trend.history}
-          metric={trend.metric}
-          onClose={() => setTrendId(null)}
+          points={activeTrend.history}
+          metric={activeTrend.metric}
+          onClose={() => {
+            setTrendId(null)
+            setGroupTrendSelection(null)
+          }}
           onOpenHistory={openHistory}
         />
       ) : null}
@@ -1746,6 +2054,399 @@ export function SessionLifecycleButton({
       {pending ? <LoaderCircle className="button-spinner" /> : complete ? <Check /> : <RotateCcw />}
       {pending ? '處理中…' : complete ? '完成上課' : '改回未完成'}
     </button>
+  )
+}
+
+export function GroupExerciseCard({
+  exercise,
+  index,
+  mode,
+  participants,
+  attendance,
+  preference,
+  summaries = [],
+  showLockedTrend = false,
+  onShowTrend,
+  onChange,
+  onRemove
+}: {
+  exercise: TrainingDraftPayload['exercises'][number]
+  index: number
+  mode: 'timeline' | 'student'
+  participants: NonNullable<SessionTraining['participants']>
+  attendance: NonNullable<TrainingDraftPayload['attendance']>
+  preference: SessionTraining
+  summaries?: NonNullable<SessionTraining['groupExerciseSummaries']>
+  showLockedTrend?: boolean
+  onShowTrend?: (studentId: string) => void
+  onChange: (value: TrainingDraftPayload['exercises'][number]) => void
+  onRemove: () => void
+}) {
+  const details = preference.record.exercises.find((item) => item.id === exercise.id)
+  const recording =
+    details?.recording ??
+    exercise.recording ??
+    legacyRecording(details?.performanceMetric ?? 'weight')
+  const updateSet = (setId: string, next: TrainingSet) =>
+    onChange({
+      ...exercise,
+      recording,
+      formatVersion: 2,
+      sets: exercise.sets.map((current) =>
+        current.id === setId ? normalizeSet(next, recording, preference) : current
+      )
+    })
+  const addSet = (studentId: string) => {
+    const previous = exercise.sets.filter((set) => set.studentId === studentId).at(-1)
+    onChange({
+      ...exercise,
+      recording,
+      formatVersion: 2,
+      sets: [
+        ...exercise.sets,
+        {
+          id: crypto.randomUUID(),
+          studentId,
+          measurements: previous?.measurements ?? emptyMeasurements(preference, recording.type),
+          plannedWeight: previous?.plannedWeight ?? null,
+          plannedReps: previous?.plannedReps ?? null,
+          actualReps: null,
+          rpe: null,
+          result: null,
+          unit: previous?.unit ?? preference.defaultWeightUnit
+        }
+      ]
+    })
+  }
+  const present = participants.filter(
+    (person) =>
+      attendance.find((entry) => entry.studentId === person.studentId)?.status !== 'absent'
+  )
+  const lastBest = (studentId: string) => {
+    const summary = summaries.find((item) => item.studentId === studentId)
+    const primary = summary?.series?.find((item) => item.metric === recording.metrics[0])
+    if (primary) return formatSeriesValue(primary.previous, primary.unit)
+    return summary?.previous == null
+      ? '—'
+      : formatValue(summary.previous, summary.metric, summary.unit)
+  }
+  const [trendMenuOpen, setTrendMenuOpen] = useState(false)
+  const trendMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!trendMenuOpen) return
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !trendMenuRef.current?.contains(event.target))
+        setTrendMenuOpen(false)
+    }
+    const closeEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setTrendMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      document.removeEventListener('keydown', closeEscape)
+    }
+  }, [trendMenuOpen])
+  const handleSetKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.key === 'Enter' &&
+      !event.nativeEvent.isComposing &&
+      event.target instanceof HTMLInputElement
+    ) {
+      event.preventDefault()
+      advanceTrainingSetInput(event.target)
+    }
+  }
+  return (
+    <article
+      className="training-exercise-card recording-v2 group-exercise-card"
+      data-exercise-id={exercise.id}
+    >
+      <header>
+        <span className="exercise-number">{String(index + 1).padStart(2, '0')}</span>
+        <div className="exercise-identity">
+          <h3>{exercise.definitionName || '訓練動作'}</h3>
+          <small>
+            {details ? `${details.bodyParts.join('、')} · ${details.equipment}` : '共用動作'}
+          </small>
+        </div>
+        {present.length > 0 && (
+          <div className="group-exercise-performance" aria-label="各學生上次最佳">
+            <div className="group-exercise-bests">
+              {present.map((person) => {
+                const tone =
+                  participants.findIndex((item) => item.studentId === person.studentId) % 3
+                return (
+                  <div
+                    className={`group-exercise-best tone-${tone}`}
+                    key={person.studentId}
+                    role="group"
+                    aria-label={`${person.name}的上次最佳`}
+                  >
+                    <span className={`group-member-avatar tone-${tone}`} aria-hidden="true">
+                      {person.name.slice(0, 1)}
+                    </span>
+                    <div>
+                      <span>上次最佳</span>
+                      <strong>{lastBest(person.studentId)}</strong>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {mode === 'timeline' && onShowTrend && (
+              <div className="group-exercise-trend-menu" ref={trendMenuRef}>
+                <button
+                  type="button"
+                  className="group-exercise-trend-trigger"
+                  aria-expanded={trendMenuOpen}
+                  aria-label="成長軌跡，選擇學生"
+                  onClick={() => setTrendMenuOpen((open) => !open)}
+                >
+                  <TrendingUp aria-hidden="true" /> 成長軌跡
+                </button>
+                {trendMenuOpen && (
+                  <div
+                    className="group-exercise-trend-options"
+                    role="group"
+                    aria-label="選擇學生的成長軌跡"
+                  >
+                    {present.map((person) => {
+                      const tone =
+                        participants.findIndex((item) => item.studentId === person.studentId) % 3
+                      return (
+                        <button
+                          type="button"
+                          className={`tone-${tone}`}
+                          key={person.studentId}
+                          onClick={() => {
+                            setTrendMenuOpen(false)
+                            onShowTrend(person.studentId)
+                          }}
+                        >
+                          <span className={`group-member-avatar tone-${tone}`} aria-hidden="true">
+                            {person.name.slice(0, 1)}
+                          </span>
+                          {person.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={`移除${exercise.definitionName}動作`}
+          onClick={() => {
+            if (!exercise.sets.length || confirm('移除這個動作與所有組數？')) onRemove()
+          }}
+        >
+          <XCircle />
+        </button>
+      </header>
+      {mode === 'timeline' ? (
+        <div
+          className="group-exercise-sequence"
+          onFocusCapture={(event) => selectTrainingSetValue(event.target)}
+          onKeyDownCapture={handleSetKey}
+        >
+          {present.length ? (
+            <div className="training-set-head" aria-hidden="true">
+              <span>
+                <span className="group-desktop-head">學生</span>
+                <span className="group-mobile-head">組</span>
+              </span>
+              <span
+                className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+              >
+                {recordingTypes[recording.type].dimensions.map((dimension) => (
+                  <span key={dimension}>{metricLabels[dimension]}</span>
+                ))}
+              </span>
+              <span>RPE</span>
+              <span>結果</span>
+              <span />
+            </div>
+          ) : null}
+          {exercise.sets
+            .filter((set) => present.some((person) => person.studentId === set.studentId))
+            .map((set) => {
+              const personIndex = participants.findIndex((item) => item.studentId === set.studentId)
+              const person = participants[personIndex]!
+              const ownNumber =
+                exercise.sets
+                  .filter((item) => item.studentId === set.studentId)
+                  .findIndex((item) => item.id === set.id) + 1
+              const ownSetCount = exercise.sets.filter(
+                (item) => item.studentId === set.studentId
+              ).length
+              return (
+                <div className="group-sequence-row" key={set.id}>
+                  <span
+                    className="group-sequence-person"
+                    title={person.name}
+                    aria-label={`${person.name}，第 ${ownNumber} 組`}
+                  >
+                    <span
+                      className={`group-member-avatar group-sequence-avatar tone-${personIndex % 3}`}
+                      aria-hidden="true"
+                    >
+                      {person.name.slice(0, 1)}
+                    </span>
+                    <span
+                      className={`group-member-avatar group-sequence-number tone-${personIndex % 3}`}
+                      aria-hidden="true"
+                    >
+                      {ownNumber}
+                    </span>
+                    <span className="group-sequence-person-label">
+                      <strong>{person.name}</strong>
+                      <small>第 {ownNumber} 組</small>
+                    </span>
+                  </span>
+                  <SetCard
+                    set={set}
+                    tone={personIndex % 3}
+                    index={ownNumber - 1}
+                    isLastSet={ownNumber === ownSetCount}
+                    recording={recording}
+                    values={measurementValues(set, recording, preference)}
+                    onChange={(next) => updateSet(set.id, next)}
+                    onRemove={() =>
+                      onChange({
+                        ...exercise,
+                        sets: exercise.sets.filter((item) => item.id !== set.id)
+                      })
+                    }
+                  />
+                </div>
+              )
+            })}
+          {present.length ? (
+            <div
+              className="group-exercise-add-buttons"
+              style={{ gridTemplateColumns: `repeat(${present.length}, minmax(0, 1fr))` }}
+            >
+              {present.map((person) => (
+                <button
+                  key={person.studentId}
+                  type="button"
+                  className={`group-exercise-add-button tone-${participants.findIndex((item) => item.studentId === person.studentId) % 3}`}
+                  onClick={() => addSet(person.studentId)}
+                >
+                  <span
+                    className={`group-member-avatar tone-${participants.findIndex((item) => item.studentId === person.studentId) % 3}`}
+                    aria-hidden="true"
+                  >
+                    {person.name.slice(0, 1)}
+                  </span>
+                  <Plus />
+                  {person.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="group-exercise-empty">目前沒有可記錄的出席學生</p>
+          )}
+        </div>
+      ) : (
+        <div className="group-exercise-students">
+          {present.length ? (
+            <div className="training-set-head" aria-hidden="true">
+              <span>組</span>
+              <span
+                className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+              >
+                {recordingTypes[recording.type].dimensions.map((dimension) => (
+                  <span key={dimension}>{metricLabels[dimension]}</span>
+                ))}
+              </span>
+              <span>RPE</span>
+              <span>結果</span>
+              <span />
+            </div>
+          ) : null}
+          {present.map((person) => {
+            const personIndex = participants.findIndex(
+              (item) => item.studentId === person.studentId
+            )
+            const own = exercise.sets.filter((set) => set.studentId === person.studentId)
+            return (
+              <section
+                key={person.studentId}
+                className="group-exercise-person"
+                aria-label={`${person.name}的組數`}
+              >
+                <header>
+                  <div className="group-exercise-person-meta">
+                    <span
+                      className={`group-member-avatar tone-${personIndex % 3}`}
+                      aria-hidden="true"
+                    >
+                      {person.name.slice(0, 1)}
+                    </span>
+                    <strong>{person.name}</strong>
+                    <span className="group-exercise-person-count">{own.length} 組</span>
+                    {onShowTrend && (
+                      <button
+                        type="button"
+                        className={`group-exercise-trend-one tone-${personIndex % 3}`}
+                        aria-label={`${person.name}的成長軌跡`}
+                        onClick={() => onShowTrend(person.studentId)}
+                      >
+                        <TrendingUp aria-hidden="true" />
+                        成長軌跡
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={`group-exercise-add-one tone-${personIndex % 3}`}
+                    aria-label={`新增${person.name}的一組`}
+                    onClick={() => addSet(person.studentId)}
+                  >
+                    <Plus aria-hidden="true" />
+                    新增一組
+                  </button>
+                </header>
+                <div
+                  className="training-sets-scroll"
+                  onFocusCapture={(event) => selectTrainingSetValue(event.target)}
+                  onKeyDownCapture={handleSetKey}
+                >
+                  {own.map((set, ownIndex) => (
+                    <SetCard
+                      key={set.id}
+                      set={set}
+                      tone={personIndex % 3}
+                      index={ownIndex}
+                      isLastSet={ownIndex === own.length - 1}
+                      recording={recording}
+                      values={measurementValues(set, recording, preference)}
+                      onChange={(next) => updateSet(set.id, next)}
+                      onRemove={() =>
+                        onChange({
+                          ...exercise,
+                          sets: exercise.sets.filter((item) => item.id !== set.id)
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+          {!present.length ? (
+            <p className="group-exercise-empty">目前沒有可記錄的出席學生</p>
+          ) : null}
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -1975,6 +2676,7 @@ function ExerciseCard({
 }
 function SetCard({
   set,
+  tone,
   recording,
   values,
   index,
@@ -1983,6 +2685,7 @@ function SetCard({
   onRemove
 }: {
   set: TrainingSet
+  tone?: number
   recording: RecordingConfig
   values: Measurements
   index: number
@@ -1992,7 +2695,9 @@ function SetCard({
 }) {
   const number = (value: string) => (value === '' ? null : Number(value))
   return (
-    <div className={`training-set-card ${set.result ?? ''}`}>
+    <div
+      className={`training-set-card ${set.result ?? ''}${tone === undefined ? '' : ` group-tone-${tone}`}`}
+    >
       <strong>{index + 1}</strong>
       <MeasurementInputs
         config={recording}
@@ -2440,6 +3145,14 @@ export function ExercisePicker({
 function toDraft(value: SessionTraining): TrainingDraftPayload {
   return {
     privateNote: value.record.privateNote,
+    ...(value.participants
+      ? {
+          attendance: value.participants.map((person) => ({
+            studentId: person.studentId,
+            status: person.status === 'absent' ? ('absent' as const) : ('present' as const)
+          }))
+        }
+      : {}),
     exercises: value.record.exercises.map((exercise) => ({
       id: exercise.id,
       definitionId: exercise.definitionId,

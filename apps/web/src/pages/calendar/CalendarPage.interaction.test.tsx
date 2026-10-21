@@ -214,7 +214,7 @@ describe('Calendar scheduling surface', () => {
       await act(async () => {
         ;[...dialog.querySelectorAll<HTMLButtonElement>('.composer-kind button')][2]!.click()
       })
-      expect(dialog.textContent).toContain('備註（選填）')
+      expect(dialog.textContent).toContain('備註')
       expect(dialog.querySelector<HTMLInputElement>('input[placeholder="不填也可以"]')).toBeNull()
       expect(
         dialog.querySelector<HTMLInputElement>('input[placeholder="不填也可以封鎖"]')

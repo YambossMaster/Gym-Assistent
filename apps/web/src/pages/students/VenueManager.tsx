@@ -1109,7 +1109,7 @@ function VenueEditor({
                     />
                   </label>
                   <label>
-                    場地位置或地址（選填）
+                    場地位置或地址
                     <input
                       type="text"
                       value={address}

@@ -68,6 +68,7 @@ const baseTrainingColumns = [
   'exerciseName',
   'recordingType',
   'setId',
+  'setStudentId',
   'setNumber',
   'plannedWeight',
   'plannedReps',
@@ -281,9 +282,9 @@ export class ExportModule {
         start: input.start,
         end: afterEnd,
       })
-      const selectedSessions = calendar.sessions
-        .map(({ session }) => session)
-        .filter((session) => !input.studentId || session.studentId === input.studentId)
+      const selectedSessions = input.studentId
+        ? ((await this.deps.scheduling.studentSchedule(identity, input.studentId))?.sessions ?? [])
+        : calendar.sessions.map(({ session }) => session)
       if (input.type === 'calendar') {
         const names = new Map(
           (await this.deps.finances.exportVisibleRows(identity)).venues.map(({ id, name }) => [
@@ -345,7 +346,31 @@ export class ExportModule {
               .slice(offset, offset + 8)
               .map((session) => this.deps.training.getSessionTraining(identity, session.id)),
           )
-          for (const record of batch) {
+          for (const original of batch) {
+            const record =
+              original && input.studentId && original.session.studentKind === 'group'
+                ? {
+                    ...original,
+                    record: {
+                      ...original.record,
+                      privateNote: '',
+                      exercises: original.record.exercises
+                        .map((exercise) => ({
+                          ...exercise,
+                          sets: exercise.sets.filter(
+                            (set) =>
+                              set.studentId === input.studentId &&
+                              original.participants?.some(
+                                (person) =>
+                                  person.studentId === input.studentId &&
+                                  person.status !== 'absent',
+                              ),
+                          ),
+                        }))
+                        .filter((exercise) => exercise.sets.length),
+                    },
+                  }
+                : original
             if (
               !record?.record.id ||
               !(record.record.exercises.length || record.record.privateNote)
@@ -378,6 +403,7 @@ export class ExportModule {
                   ...base,
                   ...exerciseFields,
                   setId: set.id,
+                  setStudentId: set.studentId ?? record.session.studentId,
                   setNumber: index + 1,
                   plannedWeight: set.plannedWeight,
                   plannedReps: set.plannedReps,
@@ -413,6 +439,7 @@ export class ExportModule {
             recordingType: exercise.recording?.type ?? null,
             sets: exercise.sets.map((set, index) => ({
               setId: set.id,
+              setStudentId: set.studentId ?? session.studentId,
               setNumber: index + 1,
               plannedWeight: set.plannedWeight,
               plannedReps: set.plannedReps,
@@ -431,7 +458,9 @@ export class ExportModule {
           ...(input.includePrivateNotes ? { privateNote: record.privateNote } : {}),
         }))
       } else {
-        const selectedIds = [...new Set(selectedSessions.map((s) => s.studentId))]
+        const selectedIds = input.studentId
+          ? [input.studentId]
+          : students.filter((student) => student.kind !== 'group').map((student) => student.id)
         for (const studentId of selectedIds) {
           const directory = (await this.deps.training.getStudentPerformance(
             identity,

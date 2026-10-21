@@ -164,15 +164,10 @@ export class SchedulingModule {
   async studentSchedule(identity: AuthenticatedIdentity, studentId: string) {
     const workspaceId = await this.repository.resolveWorkspace(identity)
     if (!(await this.repository.hasStudent(workspaceId, studentId))) return null
-    const sessions = (
-      await this.repository.listSessions(
-        workspaceId,
-        new Date('1970-01-01T00:00:00.000Z'),
-        new Date('9999-12-31T23:59:59.999Z'),
-      )
-    ).filter((session) => session.studentId === studentId && !session.isLegacy)
+    const sessions = await this.repository.listStudentSessions(workspaceId, studentId)
     const now = this.now()
     return {
+      sessions,
       nearestFuture:
         sessions.find(
           (session) =>
@@ -217,6 +212,10 @@ export class SchedulingModule {
     const workspaceId = await this.repository.resolveWorkspace(identity)
     if (!(await this.repository.hasStudent(workspaceId, studentId))) return null
     return this.repository.listSeries(workspaceId, studentId)
+  }
+  async seriesOwner(identity: AuthenticatedIdentity, seriesId: string) {
+    const workspaceId = await this.repository.resolveWorkspace(identity)
+    return this.repository.getSeriesOwner(workspaceId, seriesId)
   }
   async createSeries(identity: AuthenticatedIdentity, studentId: string, raw: unknown) {
     const input = createSeriesSchema.parse(raw)

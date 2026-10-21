@@ -498,7 +498,7 @@ describe('student HTTP interface', () => {
     expect(response.json()).toMatchObject({ error: 'invalid_request' })
   })
 
-  it('returns a coach-only student detail with a derived lesson balance and versioned deletion', async () => {
+  it('returns coach-only student detail and protects a purchased student from deletion', async () => {
     const server = createServer()
     const headers = { authorization: 'Bearer dev:00000000-0000-4000-8000-000000000001' }
     const created = await server.inject({
@@ -550,7 +550,8 @@ describe('student HTTP interface', () => {
       headers,
       payload: { confirmation: 'DELETE', version: student.version },
     })
-    expect(deleted.statusCode).toBe(204)
+    expect(deleted.statusCode).toBe(409)
+    expect(deleted.json()).toMatchObject({ error: 'student_has_history' })
   })
 
   it('corrects a lesson purchase with its version and returns the current purchase on a stale correction', async () => {

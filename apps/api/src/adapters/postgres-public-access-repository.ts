@@ -201,8 +201,12 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       requirePurposeAndState(link, 'training_result', now)
       await setWorkspace(client, link.workspace_id)
       const context = await client.query(
-        `select w.display_name coach_name,w.time_zone,s.starts_at,s.ends_at,s.status,
-          st.name student_name,tr.id record_id,tr.version record_version,tr.private_note
+        `select w.display_name coach_name,w.time_zone,s.starts_at,s.ends_at,s.status,s.version session_version,
+          st.name student_name,st.kind student_kind,st.version owner_version,
+          (select coalesce(sum(person.version + p.version),0) from app_private.course_session_participant p
+            join app_private.student person on person.workspace_id=p.workspace_id and person.id=p.student_id
+            where p.workspace_id=s.workspace_id and p.session_id=s.id) participant_version,
+          tr.id record_id,tr.version record_version,tr.private_note
          from app_private.course_session s
          join app_private.workspace w on w.id=s.workspace_id
          join app_private.student st on st.workspace_id=s.workspace_id and st.id=s.student_id
@@ -214,7 +218,7 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       if (
         !row ||
         row.status !== 'completed' ||
-        Number(row.record_version) !== link.resource_version
+        trainingResourceVersion(row) !== link.resource_version
       )
         throw new PublicCapabilityError('revoked_link', 410)
       const exercises = await client.query(
@@ -223,7 +227,7 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
         [link.workspace_id, row.record_id],
       )
       const sets = await client.query(
-        `select ts.exercise_id,ts.position,ts.planned_weight,ts.actual_reps,ts.unit,ts.rpe,ts.result,ts.measurements
+        `select ts.exercise_id,ts.position,ts.student_id,ts.planned_weight,ts.actual_reps,ts.unit,ts.rpe,ts.result,ts.measurements
          from app_private.training_set ts join app_private.training_exercise te
            on te.workspace_id=ts.workspace_id and te.id=ts.exercise_id
          where te.workspace_id=$1 and te.record_id=$2 order by te.position,ts.position,ts.id`,
@@ -231,9 +235,33 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       )
       const startsAt = new Date(String(row.starts_at))
       const endsAt = new Date(String(row.ends_at))
+      const participants =
+        row.student_kind === 'group'
+          ? await client.query(
+              `select p.student_id,person.name,p.attendance from app_private.course_session_participant p
+         join app_private.student person on person.workspace_id=p.workspace_id and person.id=p.student_id
+         where p.workspace_id=$1 and p.session_id=$2 order by person.name,p.student_id`,
+              [link.workspace_id, link.session_id],
+            )
+          : { rows: [] }
+      const allowed = new Set(
+        participants.rows
+          .filter((person) => person.attendance !== 'absent')
+          .map((person) => String(person.student_id)),
+      )
       const result: PublicTrainingResult = {
         coachDisplayName: String(row.coach_name),
         studentDisplayName: String(row.student_name),
+        ...(row.student_kind === 'group'
+          ? {
+              participants: participants.rows.map((person) => ({
+                studentId: String(person.student_id),
+                name: String(person.name),
+                attendance:
+                  person.attendance === 'absent' ? ('absent' as const) : ('present' as const),
+              })),
+            }
+          : {}),
         session: {
           startsAt,
           endsAt,
@@ -247,9 +275,14 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
             ? { recording: recordingConfigSchema.parse(exercise.recording_config) }
             : {}),
           sets: sets.rows
-            .filter((set) => String(set.exercise_id) === String(exercise.id))
+            .filter(
+              (set) =>
+                String(set.exercise_id) === String(exercise.id) &&
+                (row.student_kind !== 'group' || allowed.has(String(set.student_id))),
+            )
             .map((set) => ({
               position: Number(set.position),
+              ...(row.student_kind === 'group' ? { studentId: String(set.student_id) } : {}),
               ...(set.measurements
                 ? { measurements: measurementsSchema.parse(set.measurements) }
                 : {}),
@@ -395,8 +428,13 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
   ) {
     const session = await client.query(
       `select s.id,s.starts_at,s.ends_at,s.status,s.version,s.is_legacy,
+        owner.kind student_kind,owner.version owner_version,
+        (select coalesce(sum(person.version + p.version),0) from app_private.course_session_participant p
+          join app_private.student person on person.workspace_id=p.workspace_id and person.id=p.student_id
+          where p.workspace_id=s.workspace_id and p.session_id=s.id) participant_version,
         tr.id record_id,tr.version record_version
        from app_private.course_session s
+       join app_private.student owner on owner.workspace_id=s.workspace_id and owner.id=s.student_id
        left join app_private.training_record tr
          on tr.workspace_id=s.workspace_id and tr.session_id=s.id
        where s.workspace_id=$1 and s.id=$2 for update of s`,
@@ -499,12 +537,23 @@ function isSerializationFailure(error: unknown): error is { code: string } {
   return Boolean(error && typeof error === 'object' && 'code' in error && error.code === '40001')
 }
 
+function trainingResourceVersion(row: Record<string, unknown>) {
+  const recordVersion = Number(row.record_version)
+  if (row.student_kind !== 'group') return recordVersion
+  return (
+    recordVersion +
+    Number(row.session_version ?? row.version) +
+    Number(row.owner_version) +
+    Number(row.participant_version)
+  )
+}
+
 function eligibilityVersion(row: Record<string, unknown>, purpose: CapabilityPurpose, now: Date) {
   if (row.is_legacy) throw new PublicCapabilityError('not_eligible', 400)
   if (purpose === 'training_result') {
     if (row.status !== 'completed' || !row.record_id)
       throw new PublicCapabilityError('not_eligible', 400)
-    return Number(row.record_version)
+    return trainingResourceVersion(row)
   }
   if (row.status !== 'scheduled') throw new PublicCapabilityError('not_eligible', 400)
   return Number(row.version)

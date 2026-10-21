@@ -14,6 +14,8 @@ import {
   LessonPurchaseVersionConflictError,
   type StudentRepository,
   StudentVersionConflictError,
+  StudentGroupMemberError,
+  StudentHasHistoryError,
   type UpdatedStudent,
   type WorkspaceId,
 } from '../students/student-repository.js'
@@ -31,6 +33,7 @@ export class MemoryStudentRepository
 {
   readonly #workspaceByIdentity = new Map<string, WorkspaceId>()
   readonly #studentsByWorkspace = new Map<WorkspaceId, Student[]>()
+  readonly #membersByGroup = new Map<string, string[]>()
   readonly #purchasesByWorkspace = new Map<WorkspaceId, Map<string, LessonPurchase[]>>()
   readonly #completedSessionsByWorkspace = new Map<WorkspaceId, Map<string, number>>()
   readonly #settingsByWorkspace = new Map<WorkspaceId, WorkspaceSettings>()
@@ -143,8 +146,19 @@ export class MemoryStudentRepository
     if (!students) throw new Error('Workspace does not exist')
 
     const timestamp = input.now.toISOString()
+    if (
+      input.kind === 'group' &&
+      input.memberIds.some(
+        (id) =>
+          !students.some(
+            (student) => student.id === id && student.kind === 'person' && student.active,
+          ),
+      )
+    )
+      throw new StudentGroupMemberError()
     const student: Student = {
       id: input.id,
+      kind: input.kind,
       name: input.name,
       phone: input.phone,
       goal: input.goal,
@@ -159,6 +173,7 @@ export class MemoryStudentRepository
       updatedAt: timestamp,
     }
     students.push(student)
+    if (input.kind === 'group') this.#membersByGroup.set(input.id, [...input.memberIds])
     return { ...student }
   }
 
@@ -218,7 +233,20 @@ export class MemoryStudentRepository
     const purchases = this.#purchasesByWorkspace.get(workspaceId)?.get(studentId) ?? []
     const lessonSummary = await this.lessonSummary(workspaceId, studentId)
     if (!lessonSummary) return null
-    return { student: { ...student }, purchases: purchases.map(copyPurchase), lessonSummary }
+    return {
+      student: { ...student },
+      members:
+        student.kind === 'group'
+          ? (this.#membersByGroup.get(student.id) ?? []).flatMap((id) => {
+              const member = this.#studentsByWorkspace
+                .get(workspaceId)
+                ?.find((item) => item.id === id)
+              return member ? [{ ...member }] : []
+            })
+          : undefined,
+      purchases: purchases.map(copyPurchase),
+      lessonSummary,
+    }
   }
 
   async updateStudent(
@@ -232,8 +260,43 @@ export class MemoryStudentRepository
     const current = students[index]
     if (!current) return null
     if (current.version !== input.expectedVersion) throw new StudentVersionConflictError()
+    if (
+      current.kind === 'group' &&
+      input.active &&
+      (input.memberIds ?? this.#membersByGroup.get(current.id) ?? []).length === 0
+    )
+      throw new StudentGroupMemberError()
+    if (input.memberIds !== undefined) {
+      if (
+        current.kind !== 'group' ||
+        input.memberIds.length === 0 ||
+        new Set(input.memberIds).size !== input.memberIds.length ||
+        input.memberIds.some(
+          (id) =>
+            !students.some(
+              (person) => person.id === id && person.kind === 'person' && person.active,
+            ),
+        )
+      )
+        throw new StudentGroupMemberError()
+      this.#membersByGroup.set(current.id, [...input.memberIds])
+    }
+    if (current.active && !input.active && current.kind === 'person') {
+      for (const [groupId, members] of this.#membersByGroup) {
+        if (!members.includes(current.id)) continue
+        const remaining = members.filter((id) => id !== current.id)
+        this.#membersByGroup.set(groupId, remaining)
+        const group = students.find((student) => student.id === groupId)
+        if (group) {
+          group.active = group.active && remaining.length > 0
+          group.version += 1
+          group.updatedAt = input.now.toISOString()
+        }
+      }
+    }
     const next: Student = {
       id: current.id,
+      kind: current.kind,
       name: input.name,
       phone: input.phone,
       goal: input.goal,
@@ -264,7 +327,26 @@ export class MemoryStudentRepository
     const current = students[index]
     if (!current) return false
     if (current.version !== expectedVersion) throw new StudentVersionConflictError()
+    if (
+      (this.#purchasesByWorkspace.get(workspaceId)?.get(studentId)?.length ?? 0) > 0 ||
+      (this.#completedSessionsByWorkspace.get(workspaceId)?.get(studentId) ?? 0) > 0
+    )
+      throw new StudentHasHistoryError()
     students.splice(index, 1)
+    this.#membersByGroup.delete(studentId)
+    if (current.kind === 'person') {
+      for (const [groupId, members] of this.#membersByGroup) {
+        if (!members.includes(studentId)) continue
+        const remaining = members.filter((id) => id !== studentId)
+        this.#membersByGroup.set(groupId, remaining)
+        const group = students.find((student) => student.id === groupId)
+        if (group) {
+          group.active = group.active && remaining.length > 0
+          group.version += 1
+          group.updatedAt = new Date().toISOString()
+        }
+      }
+    }
     this.#purchasesByWorkspace.get(workspaceId)?.delete(studentId)
     this.#completedSessionsByWorkspace.get(workspaceId)?.delete(studentId)
     return true

@@ -78,6 +78,7 @@ export async function redeemBetaCode(accessToken: string, code: string): Promise
 
 export interface Student {
   id: string
+  kind: 'person' | 'group'
   name: string
   phone: string
   goal: string
@@ -116,10 +117,13 @@ export interface LessonPurchase {
 }
 
 export interface StudentDetail {
+  archiveImpact?: { fixedSchedules: number; futureSessions: number }
   student: Student
+  members?: Student[]
   purchases: LessonPurchase[]
   lessonSummary: { purchased: number; completed: number; remaining: number }
   schedule?: {
+    sessions?: CalendarSession[]
     nearestFuture: CalendarSession | null
     history: CalendarSession[]
   }
@@ -169,6 +173,9 @@ export interface CalendarSession {
   id: string
   studentId: string
   studentName: string
+  ownerKind?: 'person' | 'group'
+  participantAttendance?: 'pending' | 'present' | 'absent'
+  participantNames?: string[]
   seriesId: string | null
   startsAt: string | null
   endsAt: string | null
@@ -241,6 +248,8 @@ export type SessionTimingInput = {
 
 export interface CreateStudentInput {
   name: string
+  kind?: 'person' | 'group'
+  memberIds?: string[]
   phone?: string
   goal?: string
   privateNote?: string
@@ -282,6 +291,7 @@ export interface ExerciseLibrary {
   totals: { all: number; favorite: number; custom: number }
 }
 export interface TrainingSet {
+  studentId?: string
   measurements?: Measurements
   id: string
   plannedWeight: number | null
@@ -304,6 +314,7 @@ export interface TrainingExercise {
 }
 export interface SessionTraining {
   session: CalendarSession & {
+    studentKind?: 'person' | 'group'
     startsAt: string
     endsAt: string
     venueId?: string | null
@@ -313,6 +324,11 @@ export interface SessionTraining {
     isLegacy: false
   }
   lessonSummary: StudentDetail['lessonSummary']
+  participants?: Array<{
+    studentId: string
+    name: string
+    status: 'pending' | 'present' | 'absent'
+  }>
   record: {
     id: string | null
     version: number
@@ -334,10 +350,14 @@ export interface SessionTraining {
     personal: number | null
     history: Array<{ sessionId: string; startsAt: string; value: number; unit: WeightUnit | null }>
   }>
+  groupExerciseSummaries?: Array<
+    SessionTraining['exerciseSummaries'][number] & { studentId: string }
+  >
   allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
 }
 export type TrainingDraftPayload = {
   privateNote: string
+  attendance?: Array<{ studentId: string; status: 'present' | 'absent' }>
   exercises: Array<{
     id: string
     definitionId: string
@@ -398,12 +418,14 @@ export interface IssuedCapabilityLink {
 export interface PublicTrainingResult {
   coachDisplayName: string
   studentDisplayName: string
+  participants?: Array<{ studentId: string; name: string; attendance: 'present' | 'absent' }>
   session: { startsAt: string; endsAt: string; timeZone: string; durationMinutes: number }
   exercises: Array<{
     position: number
     definitionName: string
     recording?: RecordingConfig
     sets: Array<{
+      studentId?: string
       position: number
       measurements?: Measurements
       plannedWeight: number | null
@@ -462,6 +484,10 @@ interface AccountLifecycleResponse {
 }
 
 interface ErrorResponse {
+  sessionIds?: string[]
+  currentStudent?: Student
+  currentMemberIds?: string[]
+  affectedSessions?: { id: string; status: string; version: number }[]
   error?: string
   reason?: string
   message?: string
@@ -764,9 +790,11 @@ export async function getTrainingDefaults(
   accessToken: string,
   sessionId: string,
   definitionId: string,
-  metric: PerformanceMetric
+  metric: PerformanceMetric,
+  studentId?: string
 ) {
   const params = new URLSearchParams({ definitionId, metric })
+  if (studentId) params.set('studentId', studentId)
   return (
     await request<{
       defaults: Array<{

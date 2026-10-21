@@ -17,7 +17,10 @@ export const singleLessonPriceSchema = z.object({
 })
 export type SingleLessonPrice = z.infer<typeof singleLessonPriceSchema>
 
-export const createStudentSchema = z.object({
+export const studentKindSchema = z.enum(['person', 'group'])
+export type StudentKind = z.infer<typeof studentKindSchema>
+
+const studentFieldsSchema = z.object({
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40).default(''),
   goal: z.string().trim().max(1000).default(''),
@@ -29,7 +32,33 @@ export const createStudentSchema = z.object({
   lineLinked: z.boolean().default(false),
 })
 
-export const updateStudentSchema = createStudentSchema.extend({
+export const createStudentSchema = studentFieldsSchema
+  .extend({
+    kind: studentKindSchema.default('person'),
+    memberIds: z.array(z.uuid()).max(3).default([]),
+  })
+  .superRefine((value, context) => {
+    if (new Set(value.memberIds).size !== value.memberIds.length)
+      context.addIssue({ code: 'custom', path: ['memberIds'], message: 'Members must be unique.' })
+    if (
+      value.kind === 'group' &&
+      (value.memberIds.length === 0 || value.phone || value.ageRange || value.lineLinked)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['memberIds'],
+        message: 'A group needs one to three people and no personal contact fields.',
+      })
+    if (value.kind === 'person' && value.memberIds.length > 0)
+      context.addIssue({
+        code: 'custom',
+        path: ['memberIds'],
+        message: 'A person cannot contain members.',
+      })
+  })
+
+export const updateStudentSchema = studentFieldsSchema.extend({
+  memberIds: z.array(z.uuid()).min(1).max(3).optional(),
   ageRange: studentAgeRangeSchema.nullable().optional(),
   defaultVenueId: z.uuid().nullable().optional(),
   singleLessonPrice: singleLessonPriceSchema.nullable().optional(),
@@ -56,6 +85,7 @@ export type UpdateLessonPurchaseInput = z.input<typeof updateLessonPurchaseSchem
 
 export interface Student {
   id: string
+  kind: StudentKind
   name: string
   phone: string
   goal: string
@@ -102,12 +132,15 @@ export interface LessonIncomeSummary {
 }
 
 export interface StudentDetail {
+  archiveImpact?: { fixedSchedules: number; futureSessions: number }
   student: Student
+  members?: Student[] | undefined
   purchases: LessonPurchase[]
   lessonSummary: LessonSummary
 }
 
 export interface StudentRosterItem extends Student {
+  memberCount?: number
   lessonSummary: LessonSummary
   latestPurchaseLessonCount: number | null
   nextSessionAt: string | null
