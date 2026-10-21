@@ -6,6 +6,8 @@ import { expect, it, vi } from 'vitest'
 import type { Student } from './api'
 import { GroupMemberPicker } from './coach-workspace'
 
+vi.mock('./supabase', () => ({ supabase: { auth: {} } }))
+
 it('keeps one member selected and assigns blue, orange, then pink by selection order', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const host = document.createElement('div')

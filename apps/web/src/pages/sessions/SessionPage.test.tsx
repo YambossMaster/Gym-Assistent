@@ -7,6 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import { SessionEditor, SessionPage } from './SessionPage'
 import { SessionLifecycleButton } from '../training/TrainingWorkspace'
+import { queryKeys } from '../../query-keys'
 
 const requests = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -55,6 +56,55 @@ it('starts session detail and training reads together on the first route render'
     )
     expect(requests.getSession).toHaveBeenCalledTimes(1)
     expect(requests.getSessionTraining).toHaveBeenCalledTimes(1)
+  } finally {
+    await act(async () => root.unmount())
+    client.clear()
+  }
+})
+
+it('keeps a cached lesson visible when its background detail refresh fails', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  requests.getSession.mockRejectedValue(new Error('temporary proxy failure'))
+  requests.getSessionTraining.mockReturnValue(new Promise(() => undefined))
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+  })
+  const key = queryKeys.session(session.user.id, 'session-1')
+  client.setQueryData(key, {
+    session: {
+      id: 'session-1',
+      studentId: 'student-1',
+      studentName: '學生甲',
+      status: 'scheduled',
+      startsAt: '2026-10-23T01:00:00.000Z',
+      endsAt: '2026-10-23T02:00:00.000Z',
+      version: 1,
+      isLegacy: false
+    },
+    conflicts: [],
+    lessonSummary: { purchased: 1, completed: 0, remaining: 1 }
+  })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter initialEntries={['/sessions/session-1']}>
+            <Routes>
+              <Route
+                path="/sessions/:sessionId"
+                element={<SessionPage session={session} timeZone="Asia/Taipei" />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    )
+    await vi.waitFor(() => expect(client.getQueryState(key)?.status).toBe('error'))
+    expect(host.textContent).not.toContain('無法開啟課堂')
+    expect(host.textContent).toContain('載入訓練紀錄中')
   } finally {
     await act(async () => root.unmount())
     client.clear()

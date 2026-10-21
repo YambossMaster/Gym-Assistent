@@ -36,7 +36,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
   const trainingQuery = useSessionTraining(session, sessionId)
   const mutations = useSchedulingMutations(session)
   if (query.isLoading) return <TrainingLoading />
-  if (query.isError || !query.data)
+  if (!query.data)
     return (
       <Page
         title={
@@ -86,7 +86,9 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
         query={trainingQuery}
         timeZone={timeZone}
         onBack={() => navigate(-1)}
-        sessionNotice={notice}
+        sessionNotice={
+          notice || (query.isError ? '課堂資料暫時無法更新，顯示上次載入的內容。' : '')
+        }
         headerActions={
           <>
             <button

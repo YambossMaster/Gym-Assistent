@@ -1,5 +1,16 @@
 # M11 Student Group workstream
 
+> 2026-10-22 最新進度：Product Owner 已預先授權本 M11 的遠端推送、合併、Production migration 與部署；並單獨授權僅對新建 Development 合成帳號授予永久 Prime 作隔離驗證，結束後刪除該帳號及 Workspace。PR #72 已推送 `c5f1a4c`；該 SHA 的 Development restore、browser-ui、migration dry-run 通過，CI verify 因測試匯入 Supabase 設定時缺少 VITE 環境而失敗。修正及本機 Development 瀏覽器驗證進行中；新 SHA、CI、合併、Production 與安裝 PWA 尚待完成。下方較早段落保留當時證據，遇到衝突以本段及最新 Git／CI 為準。
+
+## 2026-10-22 隔離 Development 驗證與 CI 修正
+
+- 新合成 Prime Coach 僅在 Development 建立三名合成學生及「晨練組」，購課三堂，排一堂三人課；在 320×800 獨立瀏覽器操作出席、按時序／按學生、組數歸屬與完課。畫面及 body 寬度均為 320px，沒有水平溢出；切換兩種檢視後同一組數仍存在。資料回讀：群組餘額 purchased 3／completed 1／remaining 2，王同學缺席、林同學為組數 owner，三人個人歷史均能找到同一課，個人堂數未扣。尚非安裝 PWA 驗收。
+- 同課建立公開結果連結時未勾選教練備註分享；以能力 token 讀取公開投影回 200，含教練／學生、參與者、課堂與動作，未含私人購課備註。Bearer 連結與合成帳號密碼只保存在 Git 忽略的本機 fixture，未寫入 Status、PR 或日誌。
+- 驗證後以既有 fixture cleanup 刪除唯一獲授權的合成 Auth user；Development Auth 回讀 404、對應 Workspace count 0。Node 在印出刪除結果後發生 Windows libuv 關閉斷言並以 1 結束，但獨立回讀確認資料已清除。包含密碼的忽略檔 manifest 隨後已精確移除。
+- 完課後本機 Vite proxy 曾於 `/api/health` 回 502，隨後 GET 中止，課堂短暫落到整頁錯誤；直接 Development API `/ready` 後續回 200，重載後讀回完整已儲存課堂。據此調整 SessionPage：已有快取時，背景明細更新失敗保留課堂並顯示提示；新增聚焦回歸測試。此修正尚未取得新 SHA CI 證據。
+- `c5f1a4c` 的 GitHub CI run `39642107164`：browser-ui 與 migration-dry-run 通過，verify 於 `student-group-member-picker.test.tsx` 載入時因缺少 VITE Supabase 環境失敗；其餘 Web 96 套 436 例及 API 檢查通過。Development restore run `39642107667` 通過。測試已 mock 非測試目標的 Supabase auth，以便 CI 無私有環境變數執行。SessionPage 及成員選取兩個聚焦套件於沙箱外 7/7 通過；Web build/typecheck 通過，僅有既存 Vite 大 chunk 警告。沙箱內的 Windows 暫存 rename EPERM 未進入測試，不視為產品失敗。新 SHA CI 待完成。
+- 下一步：提交並推送 CI 修正，確認 exact-SHA CI；其後依已授權範圍合併、確認 Production migration 前置條件、發布同 SHA，最後交接安裝手機 PWA 實機驗收。公開改期、公開連結失效、匯出及封存邊界目前依聚焦 API／資料庫測試和先前 Development 證據，尚未在本次合成帳號獨立瀏覽器逐一重演；依風險與已有證據決定是否補測，不將其誤報為本輪瀏覽器通過。
+
 > 2026-10-22 CI gate 進行中交接：Sol 位於獨立工作樹 `output/m11-student-group`、分支 `codex/student-group-sol`。本版已提交為 `74e9ad0`，並在 `52de12b` 與 `origin/main` `872a255` 合併；工作樹其後的 Status 進度另待提交。Product Owner 已表示本版瀏覽器預覽驗收「通過」，並明確保留手機課堂版面試作。既有 [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft，遠端舊 SHA 的 CI 不涵蓋新提交。
 
 ## Gate 與清單
