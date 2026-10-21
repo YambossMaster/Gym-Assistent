@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-21 against deployed application commit
-> `e46c686e64cda6968e1a68619a9eafb88196867d` and the Google account chooser correction.
+> Integrated Main router, reconciled 2026-10-22 against deployed application commit
+> `2f1fb24dda4f293a0d2d45aa4192907c9776636f` and the M11 Student Group release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -67,6 +67,8 @@ page showed both empty messages at 13px with matching color and line-height. The
 remaining device limitation. No migration or payment change was made.
 
 ## Active workstreams
+
+M11 Student Groups [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) merged as Main `2f1fb24`; [Main CI #325](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39648245349) passed verify, browser UI, Development dry-run and Production preview. [Production backup #25](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39648461248) passed isolated restore. [Production release #13](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39649133820) applied all four M11 migrations and deployed that exact SHA to Fly release 65. Supabase migration history and Fly image were read back; `/api/ready`, `/` and `/login` returned 200. Product Owner approved the browser preview and mobile layout; **installed mobile PWA acceptance remains open**. The [M11 workstream](status/STUDENT-GROUP.md) owns its exact handoff and limitations.
 
 | Workstream   | Owns                                                                         | State and entry                                                                                                                                                                                                                               |
 | ------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
