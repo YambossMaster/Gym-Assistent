@@ -1,6 +1,15 @@
 # M11 Student Group workstream
 
-> 2026-10-22 最新進度：Product Owner 已預先授權本 M11 的遠端推送、合併、Production migration 與部署；並單獨授權僅對新建 Development 合成帳號授予永久 Prime 作隔離驗證，結束後刪除該帳號及 Workspace。PR #72 已推送 `c5f1a4c`；該 SHA 的 Development restore、browser-ui、migration dry-run 通過，CI verify 因測試匯入 Supabase 設定時缺少 VITE 環境而失敗。修正及本機 Development 瀏覽器驗證進行中；新 SHA、CI、合併、Production 與安裝 PWA 尚待完成。下方較早段落保留當時證據，遇到衝突以本段及最新 Git／CI 為準。
+> 2026-10-22 Production 交接：Product Owner 已授權本 M11 的遠端推送、合併、Production migration 與部署。PR #72 的 head `713d57e` 通過 CI／Development restore，合併為 Main `2f1fb24dda4f293a0d2d45aa4192907c9776636f`。同 SHA Main CI、遷移預覽、遷移前備份／隔離還原、四筆 Production migration、Fly release 65 部署及 readiness 均通過。剩下的第 8 面向是 Product Owner 在**已安裝手機 PWA**驗收實際三人群組課堂；瀏覽器尺寸預覽不取代此項。下方早期段落保留當時證據，遇到時態衝突以本段及 2026-10-22 發布紀錄為準。
+
+## 2026-10-22 Production 發布與實機交接（目前有效）
+
+- [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 的最終 head `713d57ed8e40a3fa71feed2332a6eb2a2bfec319`：[PR CI #324](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39647391308) verify、browser-ui、Development migration dry-run 成功；[Development restore #10](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39647391082) 成功。PR squash 合併為 Main `2f1fb24dda4f293a0d2d45aa4192907c9776636f`，原工作樹已改在 `codex/m11-release-evidence` 記錄發布，未修改髒的主 checkout。
+- [Main CI #325](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39648245349) verify、browser-ui、Development migration dry-run 與 Production migration preview 全通過，因有遷移而按設計跳過自動部署；預覽只列 M11 四版 `20261020143716`、`20261020163317`、`20261021010300`、`20261021025133`。正式變更前的 [Production logical backup #25](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39648461248) 含隔離還原，完成成功。
+- [Production migration release #13](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39649133820) 以該 Main full SHA、`APPLY`、當時 repo billing live 值 `true` 執行；再次驗證四個 Main job、Fly 執行環境與 Production pooler，重跑預覽後套用四筆 M11 migration，部署同 SHA。Production Supabase migration list 獨立回讀有四版，專案狀態 ACTIVE_HEALTHY。Fly 最新 release 65 的 image `deployment-01M5FT3967GYKRV32JDXB39PZA` 與 workflow 輸出相同；機器通過部署 health。獨立 GET `/api/ready` 200 JSON，`/` 與 `/login` 均 200 HTML（`Accept: text/html`）。這是服務可用與同 SHA 發布證據，並非已安裝 PWA 的操作證據。
+- 原八個交付面向的實作、Development 核心流程與遠端／Production gate 已完成；第 8 項只剩 Product Owner 安裝手機 PWA 實機驗收。請在已安裝的 PWA 更新後，以你自己的 Pro／Prime 帳號檢查：建立或編輯二至三人群組、購課與排課、課堂出席、按時序／按學生、每人組數保存與重開、完課後群組扣一堂；留意從收支「設定單價」進入編輯時成員仍已選。不要在既有帶草稿的課堂代選衝突。
+- 公開改期、公開連結失效、匯出及封存邊界已有 Development API／資料庫測試或較早真流程分項證據，本次隔離三人瀏覽器沒有逐一重演；若實機或 Production 使用者流程發現偏差，按 M11 修正處理。未用 Production 合成帳號製造新購課或課堂資料。
+- **Next：**Product Owner 回報安裝手機 PWA 的實機結果。通過後依 Roadmap/Status 收束 M11；若有缺陷，保留本次 Production SHA 與證據，另以最小修正走 PR、exact-SHA CI 與發布。
 
 ## 2026-10-22 隔離 Development 驗證與 CI 修正
 
@@ -11,7 +20,7 @@
 - `c5f1a4c` 的 GitHub CI run `39642107164`：browser-ui 與 migration-dry-run 通過，verify 於 `student-group-member-picker.test.tsx` 載入時因缺少 VITE Supabase 環境失敗；其餘 Web 96 套 436 例及 API 檢查通過。Development restore run `39642107667` 通過。測試已 mock 非測試目標的 Supabase auth，以便 CI 無私有環境變數執行。SessionPage 及成員選取兩個聚焦套件於沙箱外 7/7 通過；Web build/typecheck 通過，僅有既存 Vite 大 chunk 警告。沙箱內的 Windows 暫存 rename EPERM 未進入測試，不視為產品失敗。新 SHA CI 待完成。
 - 下一步：提交並推送 CI 修正，確認 exact-SHA CI；其後依已授權範圍合併、確認 Production migration 前置條件、發布同 SHA，最後交接安裝手機 PWA 實機驗收。公開改期、公開連結失效、匯出及封存邊界目前依聚焦 API／資料庫測試和先前 Development 證據，尚未在本次合成帳號獨立瀏覽器逐一重演；依風險與已有證據決定是否補測，不將其誤報為本輪瀏覽器通過。
 
-> 2026-10-22 CI gate 進行中交接：Sol 位於獨立工作樹 `output/m11-student-group`、分支 `codex/student-group-sol`。本版已提交為 `74e9ad0`，並在 `52de12b` 與 `origin/main` `872a255` 合併；工作樹其後的 Status 進度另待提交。Product Owner 已表示本版瀏覽器預覽驗收「通過」，並明確保留手機課堂版面試作。既有 [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft，遠端舊 SHA 的 CI 不涵蓋新提交。
+> 以下為 2026-10-22 CI gate 執行期間的歷史交接；遠端與 Production 狀態已由上方發布紀錄取代。
 
 ## Gate 與清單
 
@@ -23,7 +32,7 @@
 
 八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。前 7 項已有分支實作；第 8 項的 Development 真 API、真登入主流程、隔離還原與分支 CI 已取得證據。前端裝置／完整流程及 Production 證據仍未取得，不得視為 M11 整體完成。總數仍為 8，未新增工作包。
 
-## 2026-10-22 最後驗收交接（目前有效）
+## 2026-10-22 最後驗收交接（歷史階段）
 
 ### 最新 Main 整合與隔離驗證
 
