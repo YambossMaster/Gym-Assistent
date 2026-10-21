@@ -7,7 +7,7 @@
 - Problem: after signing out of Form Coach Desk, Google may silently reuse the browser's prior account. A Coach who chose the wrong account needs a visible way to select another.
 - Frozen behavior: every click on `使用 Google 繼續` requests Google's account chooser. Preserve the app return origin and top-level redirect for an embedded login. Site sign-out still ends the selected Supabase session; Google controls its own sessions and chooser UI.
 - Affected entry: Web login Google OAuth. No API, schema, provider configuration, payment or other login-method change.
-- Known work (3): baseline and impact (done), implementation and focused checks (done), Product Owner review and local/full browser verification (done with the actual A-to-B Workspace switch unverified because no Development Google test accounts exist). Remote exact-SHA CI and delivery remain separate gates.
+- Known work (3): baseline and impact (done), implementation and focused checks (done), Product Owner review and full verification (done to the available evidence boundary). Actual A-to-B Workspace switching remains unverified because no Development Google test accounts exist.
 
 ## Sol and verification evidence
 
@@ -19,8 +19,10 @@
 - Candidate Web served on IPv6 `localhost:5173`; unrelated IPv4 `127.0.0.1:5173` from an M11 worktree was left untouched. Local source read confirmed the candidate served `select_account`.
 - Chrome reached Google's actual `選擇帳戶` page with `使用其他帳戶` on two fresh clicks. The provider URL contained `prompt=select_account` and the Development callback/localhost return.
 
-## Open gate and exact next action
+## Release evidence and remaining limit
 
 - No Google account was selected. Browser choices were pre-existing personal accounts, and the Product Owner confirmed there are no Development Google test accounts. Actual A-to-B Workspace switching, authenticated refresh/recovery and embedded-context live return remain unverified. Related unit tests do not replace provider/browser proof.
-- Local candidate is committed on `codex/google-account-chooser` and rebased onto remote Main `602d467a03de70e2299d30df679b596ca51c3eae`. The rebase completed without conflict; no remote branch was changed.
-- Product Owner authorized branch push, PR merge and Production deployment on 2026-10-21. Next: push this exact candidate, confirm PR required checks, merge only that checked head, confirm exact Main CI and Fly deployment/readiness, then independent public readback. Do not change Production secrets or Google settings. If two isolated Development Google test accounts become available, finish A-to-B Workspace switching before claiming that part of acceptance.
+- Product Owner authorized branch push, PR merge and Production deployment on 2026-10-21. Candidate `f134ef6a97687057aaf52a4cdc77403ce4d3deb8` was delivered through [PR #75](https://github.com/YambossMaster/Gym-Assistent/pull/75); PR CI #319 passed verify, browser UI and migration dry-run. The PR was squash merged as Main `e46c686e64cda6968e1a68619a9eafb88196867d`.
+- [Main CI #320](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39578842261) passed verify, browser UI, Development migration dry-run, no-pending Production migration preview and Fly deployment/readiness. Fly release 64 has a passing service check; its running image has `GH_SHA=e46c686e64cda6968e1a68619a9eafb88196867d`.
+- Independent Production readback: `/api/ready`, `/` and `/login` each returned HTTP 200 (HTML routes requested with `Accept: text/html`). The public entry JavaScript contains `select_account`. This establishes that the updated Web bundle is served, but does not establish an authenticated account switch.
+- Delivery is complete for the approved correction. If two isolated Development Google test accounts become available, verify A-to-B selection, Workspace identity and authenticated refresh/recovery before claiming those scenarios; no current release gate remains open.
