@@ -37,6 +37,7 @@ export function PlanPanel({
   canChoosePlan,
   onChooseFree,
   subscription,
+  showFirstSubscriptionOffer = false,
   preparationOnly = false,
   preparing = false,
   preparationError = ''
@@ -49,6 +50,7 @@ export function PlanPanel({
   canChoosePlan?: (selection: { tier: 'basic' | 'advanced'; interval: 'month' | 'year' }) => boolean
   onChooseFree?: () => void
   subscription?: BillingSnapshot['subscription']
+  showFirstSubscriptionOffer?: boolean
   preparationOnly?: boolean
   preparing?: boolean
   preparationError?: string
@@ -188,6 +190,9 @@ export function PlanPanel({
           </article>
           <article className="settings-plan-card is-featured">
             <div className="settings-plan-card-heading">
+              {showFirstSubscriptionOffer && !subscription && (
+                <span className="settings-plan-trial-badge">首訂首月免費</span>
+              )}
               {currentBadge('basic') && (
                 <span className="settings-plan-current-badge">{currentBadge('basic')}</span>
               )}
@@ -240,6 +245,9 @@ export function PlanPanel({
           <article className="settings-plan-card is-prime">
             <div className="settings-plan-card-heading">
               <span className="settings-plan-card-tag">完整功能</span>
+              {showFirstSubscriptionOffer && !subscription && (
+                <span className="settings-plan-trial-badge">首訂首月免費</span>
+              )}
               {currentBadge('advanced') && (
                 <span className="settings-plan-current-badge">{currentBadge('advanced')}</span>
               )}
@@ -541,6 +549,12 @@ export function PlansPage({ session }: { session: Session }) {
         preparationError={preparationError}
         preparationOnly={localBillingEnabled && !localBillingServiceEnabled}
         subscription={localBillingServiceEnabled ? billingQuery.data?.subscription : undefined}
+        showFirstSubscriptionOffer={
+          localBillingEnabled &&
+          localBillingServiceEnabled &&
+          billingQuery.isSuccess &&
+          planQuery.data?.source !== 'permanent'
+        }
         onChooseFree={
           localBillingServiceEnabled && billingQuery.isSuccess && !planQuery.isError
             ? () => {

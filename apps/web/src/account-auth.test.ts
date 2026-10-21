@@ -62,14 +62,14 @@ describe('Coach account auth actions', () => {
     await expect(verifySignupEmail(auth, 'coach@example.com', 'wrong')).rejects.toThrow('6 位數')
   })
 
-  it('starts Google sign-in with the current app origin as its return path', async () => {
+  it('requests Google account selection and returns to the current app origin', async () => {
     const auth = createAuth()
 
     await signInWithGoogle(auth, 'https://app.example.com')
 
     expect(auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'https://app.example.com' }
+      options: { redirectTo: 'https://app.example.com', queryParams: { prompt: 'select_account' } }
     })
   })
 
@@ -86,7 +86,11 @@ describe('Coach account auth actions', () => {
 
     expect(auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'https://app.example.com', skipBrowserRedirect: true }
+      options: {
+        redirectTo: 'https://app.example.com',
+        queryParams: { prompt: 'select_account' },
+        skipBrowserRedirect: true
+      }
     })
     expect(navigateTop).toHaveBeenCalledWith('https://auth.example.com/authorize')
   })

@@ -183,6 +183,7 @@ export default function BillingReview() {
                       overCapacity: false
                     }}
                     subscription={reviewSubscription}
+                    showFirstSubscriptionOffer={scenario !== 'permanent'}
                     loading={false}
                     error={false}
                     onRetry={() => {}}
