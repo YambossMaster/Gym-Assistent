@@ -1437,13 +1437,69 @@ function TrainingEditor({
             <div>
               <span>TRAINING LOG</span>
               <h2>訓練紀錄</h2>
-              <p>依動作類型填寫本組數值，再標記完成結果。</p>
+              {initial.session.studentKind !== 'group' ? (
+                <p>依動作類型填寫本組數值，再標記完成結果。</p>
+              ) : null}
             </div>
+            {initial.session.studentKind === 'group' && (
+              <div
+                className="group-training-view group-training-desktop-view"
+                role="group"
+                aria-label="組數檢視"
+              >
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'timeline'}
+                  onClick={() => {
+                    setGroupView('timeline')
+                    localStorage.setItem('group-training-view', 'timeline')
+                  }}
+                >
+                  按時序
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={groupView === 'student'}
+                  onClick={() => {
+                    setGroupView('student')
+                    localStorage.setItem('group-training-view', 'student')
+                  }}
+                >
+                  按學生
+                </button>
+              </div>
+            )}
           </header>
           {initial.session.studentKind === 'group' && initial.participants && (
             <section className="group-training-controls" aria-label="共課出席與檢視">
+              <div className="group-training-mobile-heading">
+                <span>今日出席</span>
+                <div className="group-training-view" role="group" aria-label="組數檢視">
+                  <button
+                    type="button"
+                    aria-pressed={groupView === 'timeline'}
+                    onClick={() => {
+                      setGroupView('timeline')
+                      localStorage.setItem('group-training-view', 'timeline')
+                    }}
+                  >
+                    按時序
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={groupView === 'student'}
+                    onClick={() => {
+                      setGroupView('student')
+                      localStorage.setItem('group-training-view', 'student')
+                    }}
+                  >
+                    按學生
+                  </button>
+                </div>
+              </div>
               <div className="group-training-attendance">
-                {initial.participants.map((person) => {
+                <span className="group-training-attendance-label">今日出席</span>
+                {initial.participants.map((person, personIndex) => {
                   const absent =
                     draft.attendance?.find((item) => item.studentId === person.studentId)
                       ?.status === 'absent'
@@ -1452,6 +1508,8 @@ function TrainingEditor({
                       key={person.studentId}
                       type="button"
                       aria-pressed={!absent}
+                      className={absent ? 'is-absent' : undefined}
+                      aria-label={`${person.name}，${absent ? '缺席' : '出席'}，點擊切換`}
                       onClick={() => {
                         if (
                           !absent &&
@@ -1481,32 +1539,17 @@ function TrainingEditor({
                         })
                       }}
                     >
-                      {person.name} · {absent ? '缺席' : '出席'}
+                      <span
+                        className={`group-member-avatar tone-${personIndex % 3}`}
+                        aria-hidden="true"
+                      >
+                        {person.name.slice(0, 1)}
+                      </span>
+                      <span className="group-attendance-name">{person.name}</span>
+                      <small>{absent ? '缺席' : '出席'}</small>
                     </button>
                   )
                 })}
-              </div>
-              <div className="group-training-view" role="group" aria-label="組數檢視">
-                <button
-                  type="button"
-                  aria-pressed={groupView === 'timeline'}
-                  onClick={() => {
-                    setGroupView('timeline')
-                    localStorage.setItem('group-training-view', 'timeline')
-                  }}
-                >
-                  按時序
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={groupView === 'student'}
-                  onClick={() => {
-                    setGroupView('student')
-                    localStorage.setItem('group-training-view', 'student')
-                  }}
-                >
-                  按學生
-                </button>
               </div>
             </section>
           )}
@@ -1981,23 +2024,29 @@ export function GroupExerciseCard({
           onFocusCapture={(event) => selectTrainingSetValue(event.target)}
           onKeyDownCapture={handleSetKey}
         >
-          <div className="training-set-head" aria-hidden="true">
-            <span>學生</span>
-            <span
-              className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
-            >
-              {recordingTypes[recording.type].dimensions.map((dimension) => (
-                <span key={dimension}>{metricLabels[dimension]}</span>
-              ))}
-            </span>
-            <span>RPE</span>
-            <span>結果</span>
-            <span />
-          </div>
+          {present.length ? (
+            <div className="training-set-head" aria-hidden="true">
+              <span>
+                <span className="group-desktop-head">學生</span>
+                <span className="group-mobile-head">組</span>
+              </span>
+              <span
+                className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+              >
+                {recordingTypes[recording.type].dimensions.map((dimension) => (
+                  <span key={dimension}>{metricLabels[dimension]}</span>
+                ))}
+              </span>
+              <span>RPE</span>
+              <span>結果</span>
+              <span />
+            </div>
+          ) : null}
           {exercise.sets
             .filter((set) => present.some((person) => person.studentId === set.studentId))
             .map((set) => {
-              const person = participants.find((item) => item.studentId === set.studentId)!
+              const personIndex = participants.findIndex((item) => item.studentId === set.studentId)
+              const person = participants[personIndex]!
               const ownNumber =
                 exercise.sets
                   .filter((item) => item.studentId === set.studentId)
@@ -2005,8 +2054,22 @@ export function GroupExerciseCard({
               return (
                 <div className="group-sequence-row" key={set.id}>
                   <span className="group-sequence-person" title={person.name}>
-                    <strong>{person.name}</strong>
-                    <small>第 {ownNumber} 組</small>
+                    <span
+                      className={`group-member-avatar group-sequence-avatar tone-${personIndex % 3}`}
+                      aria-hidden="true"
+                    >
+                      {person.name.slice(0, 1)}
+                    </span>
+                    <span
+                      className={`group-member-avatar group-sequence-number tone-${personIndex % 3}`}
+                      aria-hidden="true"
+                    >
+                      {ownNumber}
+                    </span>
+                    <span className="group-sequence-person-label">
+                      <strong>{person.name}</strong>
+                      <small>第 {ownNumber} 組</small>
+                    </span>
                   </span>
                   <SetCard
                     set={set}
@@ -2025,50 +2088,83 @@ export function GroupExerciseCard({
                 </div>
               )
             })}
-          <div className="group-exercise-add-buttons">
-            {present.map((person) => (
-              <button
-                key={person.studentId}
-                type="button"
-                className="text-button set-add ui-action-add"
-                onClick={() => addSet(person.studentId)}
-              >
-                <Plus />
-                {person.name}加一組
-              </button>
-            ))}
-          </div>
+          {present.length ? (
+            <div
+              className="group-exercise-add-buttons"
+              style={{ gridTemplateColumns: `repeat(${present.length}, minmax(0, 1fr))` }}
+            >
+              {present.map((person) => (
+                <button
+                  key={person.studentId}
+                  type="button"
+                  className={`text-button set-add ui-action-add tone-${participants.findIndex((item) => item.studentId === person.studentId) % 3}`}
+                  onClick={() => addSet(person.studentId)}
+                >
+                  <span
+                    className={`group-member-avatar tone-${participants.findIndex((item) => item.studentId === person.studentId) % 3}`}
+                    aria-hidden="true"
+                  >
+                    {person.name.slice(0, 1)}
+                  </span>
+                  <Plus />
+                  {person.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="group-exercise-empty">目前沒有可記錄的出席學生</p>
+          )}
         </div>
       ) : (
-        participants.map((person) => {
-          const absent =
-            attendance.find((entry) => entry.studentId === person.studentId)?.status === 'absent'
-          const own = exercise.sets.filter((set) => set.studentId === person.studentId)
-          return (
-            <section key={person.studentId} className="group-exercise-person">
-              <h4>
-                {person.name}
-                {absent ? <small>缺席</small> : null}
-              </h4>
-              {!absent && (
+        <div className="group-exercise-students">
+          {present.length ? (
+            <div className="training-set-head" aria-hidden="true">
+              <span>組</span>
+              <span
+                className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
+              >
+                {recordingTypes[recording.type].dimensions.map((dimension) => (
+                  <span key={dimension}>{metricLabels[dimension]}</span>
+                ))}
+              </span>
+              <span>RPE</span>
+              <span>結果</span>
+              <span />
+            </div>
+          ) : null}
+          {present.map((person) => {
+            const personIndex = participants.findIndex(
+              (item) => item.studentId === person.studentId
+            )
+            const own = exercise.sets.filter((set) => set.studentId === person.studentId)
+            return (
+              <section key={person.studentId} className="group-exercise-person">
+                <header>
+                  <div>
+                    <span
+                      className={`group-member-avatar tone-${personIndex % 3}`}
+                      aria-hidden="true"
+                    >
+                      {person.name.slice(0, 1)}
+                    </span>
+                    <strong>{person.name}</strong>
+                    <span>{own.length} 組</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`group-exercise-add-one tone-${personIndex % 3}`}
+                    aria-label={`新增${person.name}的一組`}
+                    onClick={() => addSet(person.studentId)}
+                  >
+                    <Plus aria-hidden="true" />
+                    新增一組
+                  </button>
+                </header>
                 <div
                   className="training-sets-scroll"
                   onFocusCapture={(event) => selectTrainingSetValue(event.target)}
                   onKeyDownCapture={handleSetKey}
                 >
-                  <div className="training-set-head" aria-hidden="true">
-                    <span>組</span>
-                    <span
-                      className={`measurement-head measurement-head--${recordingTypes[recording.type].dimensions.length}`}
-                    >
-                      {recordingTypes[recording.type].dimensions.map((dimension) => (
-                        <span key={dimension}>{metricLabels[dimension]}</span>
-                      ))}
-                    </span>
-                    <span>RPE</span>
-                    <span>結果</span>
-                    <span />
-                  </div>
                   {own.map((set, ownIndex) => (
                     <SetCard
                       key={set.id}
@@ -2086,19 +2182,14 @@ export function GroupExerciseCard({
                       }
                     />
                   ))}
-                  <button
-                    type="button"
-                    className="text-button set-add ui-action-add"
-                    onClick={() => addSet(person.studentId)}
-                  >
-                    <Plus />
-                    新增一組
-                  </button>
                 </div>
-              )}
-            </section>
-          )
-        })
+              </section>
+            )
+          })}
+          {!present.length ? (
+            <p className="group-exercise-empty">目前沒有可記錄的出席學生</p>
+          ) : null}
+        </div>
       )}
     </article>
   )

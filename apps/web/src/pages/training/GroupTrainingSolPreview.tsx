@@ -77,16 +77,42 @@ export default function GroupTrainingSolPreview() {
             <h2>訓練紀錄</h2>
             <p>晨練組 · 3 位學生 · 一堂共用動作</p>
           </div>
+          <div
+            className="group-training-view group-training-desktop-view"
+            role="group"
+            aria-label="組數檢視"
+          >
+            <button aria-pressed={mode === 'timeline'} onClick={() => setMode('timeline')}>
+              按時序
+            </button>
+            <button aria-pressed={mode === 'student'} onClick={() => setMode('student')}>
+              按學生
+            </button>
+          </div>
         </header>
         <section className="group-training-controls" aria-label="共課出席與檢視">
+          <div className="group-training-mobile-heading">
+            <span>今日出席</span>
+            <div className="group-training-view" role="group" aria-label="組數檢視">
+              <button aria-pressed={mode === 'timeline'} onClick={() => setMode('timeline')}>
+                按時序
+              </button>
+              <button aria-pressed={mode === 'student'} onClick={() => setMode('student')}>
+                按學生
+              </button>
+            </div>
+          </div>
           <div className="group-training-attendance">
-            {people.map((person) => {
+            <span className="group-training-attendance-label">今日出席</span>
+            {people.map((person, personIndex) => {
               const absent =
                 attendance.find((item) => item.studentId === person.studentId)?.status === 'absent'
               return (
                 <button
                   key={person.studentId}
                   aria-pressed={!absent}
+                  aria-label={`${person.name}，${absent ? '缺席' : '出席'}，點擊切換`}
+                  className={absent ? 'is-absent' : undefined}
                   onClick={() =>
                     setAttendance((current) =>
                       current.map((item) =>
@@ -97,18 +123,17 @@ export default function GroupTrainingSolPreview() {
                     )
                   }
                 >
-                  {person.name} · {absent ? '缺席' : '出席'}
+                  <span
+                    className={`group-member-avatar tone-${personIndex % 3}`}
+                    aria-hidden="true"
+                  >
+                    {person.name.slice(0, 1)}
+                  </span>
+                  <span className="group-attendance-name">{person.name}</span>
+                  <small>{absent ? '缺席' : '出席'}</small>
                 </button>
               )
             })}
-          </div>
-          <div className="group-training-view" role="group" aria-label="組數檢視">
-            <button aria-pressed={mode === 'timeline'} onClick={() => setMode('timeline')}>
-              按時序
-            </button>
-            <button aria-pressed={mode === 'student'} onClick={() => setMode('student')}>
-              按學生
-            </button>
           </div>
         </section>
         <div className="group-training-exercises">

@@ -4,11 +4,11 @@
 
 ## Gate 與清單
 
-| Gate     | 狀態                                                                                                                                                                    |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                         |
-| Sol      | 前 7 項後端及現有前端行為已有分支實作；Development 真 DB API、真 Auth 主流程與隔離還原／adapter 邊界通過。下一階段為 Product Owner 指定的前端呈現調整。                 |
-| CI／發布 | PR #72 為草稿；最新後端驗收提交 `a4404b3` 的 verify、browser-ui、Development migration-dry-run、isolated restore 均通過。Production migration、預覽、部署及合併未執行。 |
+| Gate     | 狀態                                                                                                                                                                                    |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                                         |
+| Sol      | 前 7 項後端及現有前端行為已有分支實作；Today／週期課真 API 與真登入瀏覽器、Auth 整帳刪除與隔離還原通過。前端範本對齊候選已在 5173，可供 Product Owner 檢視。                            |
+| CI／發布 | PR #72 為草稿；後端／功能提交 `6420b32` 的 verify、browser-ui、Development migration-dry-run、isolated restore 均通過。新前端候選、Production migration、預覽、部署及合併尚無 CI 證據。 |
 
 八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。前 7 項已有分支實作；第 8 項的 Development 真 API、真登入主流程、隔離還原與分支 CI 已取得證據。前端裝置／完整流程及 Production 證據仍未取得，不得視為 M11 整體完成。總數仍為 8，未新增工作包。
 
@@ -59,6 +59,10 @@ Sol 聚焦證據（2026-10-20 至 21，本機分支）：API／Web TypeScript ty
 
 同日補驗：另一次性真 Auth Coach 登入 390px Calendar，週視圖本週 10/19–10/25 顯示 10/21 群組課，按「下一個期間」後 10/26–11/1 顯示 10/28 同時段、同群組的一堂週期課；忽略的截圖為 `output/m11-calendar-series-next-week-390.png`。此為瀏覽器真登入的週期顯示證據；自動產生、快照及封存語意由前述真 API／DB 直接驗證。測後精確 Auth、Workspace、Student、Series、intent 均為 0；含密碼的忽略 manifest 已刪。仍需前端視覺對齊及最後裝置驗收。
 
+後端／功能檢查點 `6420b321c590c1cdf4954c9fdbd4390d97e287be` 已推到草稿 PR #72。[CI #318](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39536937303) 的 verify、browser-ui、Development migration-dry-run 均 success；Production preview／deploy skipped。[Development logical restore #8](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39536937338) restore success。這是該 SHA 的證據，不涵蓋後續前端調整。
+
+前端對齊候選（同日、尚未推送）：正式 `TrainingWorkspace` 群組分支及 `/__review/m11-group` 預覽，對齊已接受的動作優先雙模式範本：桌面標題旁／手機出席列的檢視切換、姓名頭像與缺席狀態、桌面按時序的姓名及本人組號、手機單行組數、按學生的每人標題新增、共用草稿。保留原 `SetCard` 及單人紀錄分支。聚焦 Web typecheck、Prettier、`git diff --check` 通過；隔離預覽在 1440、390、320px 的兩模式 `scrollWidth=innerWidth`，320px 負重 45／30／20 顯示完整；按學生新增一組後切回按時序仍存在，缺席隱藏與恢復原組數均通過。忽略截圖 `output/m11-aligned-{1440,390,320}-{timeline,student}.png`。這是預覽互動與版面證據，需 Product Owner 檢視目前 5173 版本；真登入正式群組訓練頁及安裝 PWA 尚未針對本次 UI 修改重驗。
+
 驗收另揭露 Auth Admin 刪除含 Workspace／群組課資料的 synthetic Coach 會因 `supabase_auth_admin` 無 `app_private` 權限而回 500。新增 `20261021025133_m11_auth_workspace_delete_privilege.sql`：僅在 `auth.users` 刪除交易中，以 private schema 的 trigger 函式刪除 `old.id` 所屬 Workspace；一般 anon／authenticated 無直接函式執行權。Development linked dry-run 只列此一 migration，再以限定單一 pending 版本的腳本套用；Migration history 讀回已套用。新建一人群組及週期課的 synthetic Coach 後，Auth Admin DELETE 回 200，精確 Auth／Workspace／群組／Series／Session／分類 intent 讀回皆 0；另一組 Today 真登入 fixture 清理後讀回也為 0。Security Advisor 沒有新 M11 警告，既存 leaked-password-protection WARN 仍在。這是原第 7／8 項整帳刪除相容缺陷，八項總數不變；Production 未套用。為維持 Product Owner 要求的 5173 預覽，僅本機忽略設定使用的限兩連線臨時 DB role `m11_preview_20261021` 尚在，須在關閉預覽後撤銷刪除；synthetic Auth fixture 已全數清理。
 
 ## 已確立與待辦
@@ -88,4 +92,4 @@ Sol 聚焦證據（2026-10-20 至 21，本機分支）：API／Web TypeScript ty
 
 ## 下一步
 
-下一個動作：依既有訓練紀錄與已接受多人訓練範本調整前端呈現。之後再做完整 320px 流程、安裝手機 PWA、目前變更的 exact-SHA CI 與正式釋出檢查。Product Owner 已預授權本 M11 分支推送，仍須先報告提交與檢查結果並確認推送後 CI；Production migration／部署／merge 不屬本次授權。5173／3000 的 Development 預覽目前保留供校對，預覽結束後須停服務並刪除 `m11_preview_20261021` 臨時角色及忽略的本機憑證設定。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。
+下一個動作：請 Product Owner 檢視 `http://127.0.0.1:5173/__review/m11-group` 的雙模式／390／320px 前端對齊候選並給具體修正或明確說可進完整驗證。此為本包 UI 版本審閱關卡；在此之前不把新 UI 視為正式瀏覽器／PWA gate 通過。收到修正則改後做聚焦重查；獲核准後做真登入正式訓練頁、完整 320px／安裝手機 PWA、exact-SHA CI 與正式釋出檢查。後端檢查點已由 Product Owner 預授權推送並有綠燈 CI；Production migration／部署／merge 不屬本次授權。5173／3000 的 Development 預覽目前保留供校對，預覽結束後須停服務並刪除 `m11_preview_20261021` 臨時角色及忽略的本機憑證設定。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。

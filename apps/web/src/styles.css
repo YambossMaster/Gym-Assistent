@@ -21255,6 +21255,417 @@ button:disabled {
     grid-row: 2;
   }
 }
+.session-workspace .training-heading:has(.group-training-desktop-view) {
+  align-items: center;
+  gap: 12px;
+}
+.group-training-view {
+  flex: none;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #d8dacf;
+  border-radius: 9px;
+  background: #eeefe8;
+}
+.group-training-view button {
+  min-height: 36px;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #70776b;
+  font-size: 12px;
+}
+.group-training-view button[aria-pressed='true'] {
+  background: #fff;
+  color: #283126;
+  box-shadow: 0 1px 3px #1d26151c;
+}
+.group-training-mobile-heading {
+  display: none;
+}
+.group-training-attendance {
+  gap: 9px;
+}
+.group-training-attendance-label {
+  margin-right: 2px;
+  color: #777c70;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.group-training-attendance button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.group-training-attendance button:hover,
+.group-training-attendance button:focus-visible {
+  border-color: #abbc86;
+  background: #eef3df;
+}
+.group-training-attendance button.is-absent {
+  color: #8b9087;
+  text-decoration: none;
+}
+.group-training-attendance button.is-absent .group-member-avatar {
+  filter: grayscale(1);
+  opacity: 0.48;
+}
+.group-training-attendance button small {
+  color: #8b9087;
+  font-size: 9px;
+}
+.group-member-avatar {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #6e8250;
+  border-radius: 50%;
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+.group-member-avatar.tone-0 {
+  background: #252b24;
+}
+.group-member-avatar.tone-1 {
+  background: #353b32;
+}
+.group-member-avatar.tone-2 {
+  background: #464d40;
+}
+.session-workspace .group-exercise-card {
+  overflow: visible;
+}
+.group-exercise-sequence,
+.group-exercise-students {
+  padding: 8px 16px 16px;
+}
+.group-exercise-students > .training-set-head {
+  min-width: 440px;
+  grid-template-columns: 18px minmax(0, 1fr) 54px 136px 28px;
+}
+.group-exercise-person {
+  padding: 8px 0;
+  border-top: 1px solid rgba(21, 23, 17, 0.08);
+}
+.group-exercise-person > header {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.group-exercise-person > header > div {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.group-exercise-person > header > div > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-exercise-person > header > div > span:last-child {
+  margin-left: 2px;
+  color: #8b9184;
+  white-space: nowrap;
+}
+.group-exercise-add-one {
+  flex: none;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid #a9c07a;
+  border-radius: 5px;
+  background: #edf4db;
+  color: #354329;
+  font-size: 10px;
+  font-weight: 750;
+  box-shadow: 0 1px 3px #1d26151a;
+  cursor: pointer;
+}
+.group-exercise-add-one svg {
+  width: 12px;
+  height: 12px;
+}
+.group-exercise-add-buttons {
+  display: grid;
+  gap: 8px;
+}
+.group-exercise-add-buttons button {
+  min-width: 0;
+  min-height: 36px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid #b9c999;
+  border-radius: 6px;
+  background: #f4f7ea;
+  color: #354329;
+  font-size: 10px;
+  box-shadow: 0 1px 3px #1d26151a;
+}
+.group-exercise-add-buttons button .group-member-avatar {
+  width: 19px;
+  height: 19px;
+  font-size: 9px;
+}
+.group-exercise-add-buttons button svg {
+  width: 16px;
+  height: 16px;
+}
+.group-exercise-empty {
+  margin: 3px 0 7px;
+  color: #858b7d;
+  font-size: 12px;
+  text-align: center;
+}
+.group-sequence-person {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.group-sequence-person-label {
+  min-width: 0;
+  display: grid;
+}
+.group-sequence-person-label strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.group-sequence-person-label small {
+  color: #8b9184;
+  font-size: 9px;
+}
+.group-sequence-number,
+.group-mobile-head {
+  display: none;
+}
+@media (max-width: 720px) {
+  .group-training-desktop-view,
+  .group-training-attendance-label {
+    display: none;
+  }
+  .group-training-mobile-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .group-training-mobile-heading > span {
+    color: #777c70;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .group-training-mobile-heading .group-training-view {
+    flex-wrap: nowrap;
+  }
+  .group-training-mobile-heading .group-training-view button {
+    min-height: 30px;
+    padding: 4px 9px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .group-training-controls {
+    gap: 7px;
+  }
+  .group-training-attendance {
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .group-training-attendance button {
+    min-height: 36px;
+    padding: 3px 4px;
+  }
+  .group-training-attendance button small {
+    display: none;
+  }
+  .group-attendance-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .group-exercise-sequence,
+  .group-exercise-students {
+    padding: 7px 10px 12px;
+    overflow: visible;
+  }
+  .group-exercise-card .group-exercise-count {
+    display: none;
+  }
+  .group-exercise-sequence .training-set-head,
+  .group-exercise-students > .training-set-head {
+    min-width: 0;
+    grid-template-columns: 18px minmax(0, 1fr) 36px 64px 24px;
+    gap: 6px;
+  }
+  .group-exercise-sequence .training-set-head > span:first-child {
+    display: block;
+  }
+  .group-desktop-head {
+    display: none;
+  }
+  .group-mobile-head {
+    display: inline;
+  }
+  .group-exercise-sequence .training-set-head > .measurement-head,
+  .group-exercise-students > .training-set-head > .measurement-head {
+    grid-column: 2;
+  }
+  .group-exercise-sequence .training-set-head > span:nth-child(3),
+  .group-exercise-students > .training-set-head > span:nth-child(3) {
+    grid-column: 3;
+  }
+  .group-exercise-sequence .training-set-head > span:nth-child(4),
+  .group-exercise-students > .training-set-head > span:nth-child(4) {
+    grid-column: 4;
+  }
+  .group-sequence-row {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .group-sequence-person {
+    margin: 0;
+    padding: 0;
+  }
+  .group-sequence-avatar,
+  .group-sequence-person-label {
+    display: none;
+  }
+  .group-sequence-number {
+    display: inline-grid;
+    width: 18px;
+    height: 18px;
+    font-size: 8px;
+  }
+  .session-workspace .group-sequence-row .training-set-card {
+    grid-template-columns: minmax(0, 1fr) 36px 64px 24px;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .group-sequence-row .training-set-card > .measurement-inputs {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .group-sequence-row .training-set-card > label {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .group-sequence-row .training-set-card > .result-toggle {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .session-workspace .group-sequence-row .training-set-card > .icon-button {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .group-exercise-person {
+    padding: 6px 0;
+  }
+  .group-exercise-person .training-sets-scroll {
+    overflow: visible;
+  }
+  .session-workspace .group-exercise-person .training-set-card {
+    grid-template-columns: 18px minmax(0, 1fr) 36px 64px 24px;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .session-workspace .group-exercise-person .training-set-card > strong {
+    grid-column: 1;
+    grid-row: 1;
+    width: 18px;
+  }
+  .group-exercise-person .training-set-card > .measurement-inputs {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .group-exercise-person .training-set-card > label {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .group-exercise-person .training-set-card > .result-toggle {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .session-workspace .group-exercise-person .training-set-card > .icon-button {
+    grid-column: 5;
+    grid-row: 1;
+  }
+  .group-exercise-add-buttons button {
+    padding: 4px;
+  }
+  .group-exercise-add-buttons button .group-member-avatar {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .group-exercise-sequence .training-set-head,
+  .group-exercise-students > .training-set-head,
+  .session-workspace .group-exercise-person .training-set-card {
+    grid-template-columns: 18px minmax(0, 1fr) 32px 56px 20px;
+    gap: 4px;
+  }
+  .group-sequence-row {
+    gap: 4px;
+  }
+  .session-workspace .group-sequence-row .training-set-card {
+    grid-template-columns: minmax(0, 1fr) 32px 56px 20px;
+    gap: 4px;
+  }
+  .group-exercise-card .measurement-inputs {
+    column-gap: 4px;
+  }
+  .group-exercise-card .measurement-inputs input {
+    padding-inline: 2px;
+    font-size: 12px;
+  }
+  .group-exercise-card .measurement-unit-suffix {
+    padding: 0 4px 0 0;
+    font-size: 9px;
+  }
+  .session-workspace .group-exercise-card .training-set-card > label {
+    width: 32px;
+    max-width: 32px;
+    padding-inline: 3px;
+  }
+  .session-workspace .group-exercise-card .result-toggle {
+    width: 56px;
+    grid-template-columns: repeat(2, 26px);
+    gap: 4px;
+  }
+  .session-workspace .group-exercise-card .result-toggle button {
+    width: 26px;
+  }
+  .session-workspace .group-exercise-card .training-set-card > .icon-button {
+    width: 20px;
+  }
+}
 .calendar-group-participants {
   margin: 0 0 12px;
   color: #49635c;
