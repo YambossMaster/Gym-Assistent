@@ -22,7 +22,7 @@ export function StudentSingleLessonPriceField({
   return (
     <>
       <label>
-        學生課堂單價（選填）
+        學生課堂單價
         <input
           aria-label="學生課堂單價"
           type="text"

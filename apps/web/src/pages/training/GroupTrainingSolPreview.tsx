@@ -130,7 +130,6 @@ export default function GroupTrainingSolPreview() {
                     {person.name.slice(0, 1)}
                   </span>
                   <span className="group-attendance-name">{person.name}</span>
-                  <small>{absent ? '缺席' : '出席'}</small>
                 </button>
               )
             })}
@@ -166,7 +165,7 @@ export default function GroupTrainingSolPreview() {
             }
           >
             <Plus />
-            再加入一個槓鈴深蹲
+            加入動作
           </button>
         </div>
       </main>

@@ -29,7 +29,7 @@ export function selectStudentRosterResult({
       )
     : visible
 
-  if (students.length === 0) return { state: 'first-empty', students: [] }
+  if (students.length === 0 && view !== 'group') return { state: 'first-empty', students: [] }
   if (filtered.length > 0) return { state: 'ready', students: filtered }
   return { state: keyword ? 'search-empty' : 'filter-empty', students: [] }
 }

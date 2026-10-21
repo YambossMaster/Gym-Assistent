@@ -1,4 +1,12 @@
-import { ArrowRight, ChartNoAxesCombined, FileDown, TrendingUp, WalletCards, X } from 'lucide-react'
+import {
+  ArrowRight,
+  ChartNoAxesCombined,
+  FileDown,
+  TrendingUp,
+  UsersRound,
+  WalletCards,
+  X
+} from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -116,6 +124,12 @@ function featurePresentation(title: string) {
         description: '整理每月購課、場地支出與收支紀錄。',
         previewLabel: '收支明細',
         Icon: WalletCards
+      }
+    case '學生群組':
+      return {
+        description: '把最多三位學生組成共課群組，共用排課與購課，並保留每人的訓練紀錄。',
+        previewLabel: '學生群組',
+        Icon: UsersRound
       }
     case '個人運動表現':
       return {

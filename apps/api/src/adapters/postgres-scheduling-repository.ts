@@ -424,6 +424,13 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
     )
     return rows.rows.map(mapSeries)
   }
+  async getSeriesOwner(workspaceId: string, seriesId: string) {
+    const result = await this.pool.query<{ student_id: string }>(
+      'select student_id from app_private.schedule_series where workspace_id=$1 and id=$2',
+      [workspaceId, seriesId],
+    )
+    return result.rows[0]?.student_id ?? null
+  }
   async createSeriesAndAnchor(workspaceId: string, series: NewScheduleSeries, anchor: NewSession) {
     const client = await this.pool.connect()
     try {
@@ -522,16 +529,26 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
     },
   ) {
     const timeZone = await this.getTimeZone(workspaceId)
+    const ownerId = input.active ? await this.getSeriesOwner(workspaceId, seriesId) : null
     const client = await this.pool.connect()
     try {
       await client.query('begin')
+      if (
+        input.active &&
+        ownerId &&
+        !(await lockEligibleSessionOwner(client, workspaceId, ownerId))
+      )
+        throw new SchedulingStudentChangeError('student_not_found')
       const current = await client.query(
         `select id,student_id,anchor_starts_at,local_weekday,local_start_time,duration_minutes,
           interval_weeks,auto_schedule_horizon,venue_id,customer_source,location,active,version
          from app_private.schedule_series where workspace_id=$1 and id=$2 for update`,
         [workspaceId, seriesId],
       )
-      if (!current.rows[0]) return null
+      if (!current.rows[0]) {
+        await client.query('rollback')
+        return null
+      }
       const existing = mapSeries(current.rows[0])
       if (existing.version !== input.expectedVersion)
         throw new SchedulingVersionConflictError(existing)
@@ -544,7 +561,10 @@ export class PostgresSchedulingRepository implements SchedulingRepository {
           ? [workspaceId, seriesId, input.now, input.effectiveFromSessionId]
           : [workspaceId, seriesId, input.now],
       )
-      if (input.effectiveFromSessionId && !pivot.rows[0]) return null
+      if (input.effectiveFromSessionId && !pivot.rows[0]) {
+        await client.query('rollback')
+        return null
+      }
       const effectiveAnchor = pivot.rows[0]
         ? rebaseSeriesAnchor(
             input.anchorStartsAt,

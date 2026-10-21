@@ -53,6 +53,7 @@ import {
 } from '../scheduling/scheduling-repository.js'
 import { TrainingModule } from '../training/training-module.js'
 import type { SessionTraining } from '../training/training.js'
+import { withoutTrainingHistory } from './training-visibility.js'
 import { TrainingVersionConflictError } from '../training/training-repository.js'
 import { PublicAccessModule } from '../public-access/public-access-module.js'
 import { PublicCapabilityError, PublicRateLimitError } from '../public-access/public-access.js'
@@ -129,6 +130,7 @@ const createStudentBodySchema = {
     memberIds: {
       type: 'array',
       items: { type: 'string', format: 'uuid' },
+      minItems: 1,
       maxItems: 3,
       uniqueItems: true,
     },
@@ -165,6 +167,7 @@ const updateStudentBodySchema = {
     memberIds: {
       type: 'array',
       items: { type: 'string', format: 'uuid' },
+      minItems: 1,
       maxItems: 3,
       uniqueItems: true,
     },
@@ -297,16 +300,7 @@ export function buildServer({
   })
   const exporting = new Set<string>()
   const visibleTraining = async (identity: { userId: string }, record: SessionTraining) =>
-    (await planAccess?.get(identity))?.tier === 'free'
-      ? {
-          ...record,
-          exerciseSummaries: record.exerciseSummaries.map((summary) => ({
-            ...summary,
-            history: [],
-            series: summary.series?.map((series) => ({ ...series, points: [] })),
-          })),
-        }
-      : record
+    (await planAccess?.get(identity))?.tier === 'free' ? withoutTrainingHistory(record) : record
 
   if (alphaAllowedCoachIds) {
     server.addHook('preHandler', async (request, reply) => {
@@ -347,9 +341,43 @@ export function buildServer({
   if (planAccess) {
     server.addHook('preHandler', async (request) => {
       const policy = routePolicy(request.method, request.routeOptions.url)
-      if (policy === 'allow') return
+      const reconciliationRead =
+        request.method === 'GET' &&
+        [
+          '/v1/plan',
+          '/v1/students',
+          '/v1/students/:studentId',
+          '/v1/today',
+          '/v1/calendar',
+        ].includes(request.routeOptions.url ?? '')
+      if (policy === 'allow' && !reconciliationRead) return
       const identity = await identityVerifier.verify(request.headers.authorization)
       const plan = await planAccess.get(identity)
+      if (plan.tier === 'free') {
+        await students.archiveActiveGroupsForFreePlan(identity)
+        const params = request.params as
+          | { studentId?: string; sessionId?: string; seriesId?: string }
+          | undefined
+        const body = request.body as { studentId?: string; kind?: string } | undefined
+        if (policy === 'create-student' && body?.kind === 'group')
+          throw new PlanAccessError('plan_required')
+        const ownerId =
+          params?.studentId ??
+          body?.studentId ??
+          (params?.seriesId && scheduling
+            ? await scheduling.seriesOwner(identity, params.seriesId)
+            : undefined) ??
+          (params?.sessionId && scheduling
+            ? (await scheduling.session(identity, params.sessionId))?.session.studentId
+            : undefined)
+        if (
+          policy !== 'allow' &&
+          ownerId &&
+          (await students.detail(identity, ownerId))?.student.kind === 'group'
+        )
+          throw new PlanAccessError('plan_required')
+      }
+      if (policy === 'allow') return
       if (policy === 'premium') {
         if (plan.tier === 'free') throw new PlanAccessError('plan_required')
         return

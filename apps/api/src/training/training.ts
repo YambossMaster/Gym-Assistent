@@ -180,6 +180,7 @@ export type SessionTraining = {
   defaultWeightUnit: WeightUnit
   defaultDistanceUnit: 'km' | 'mi'
   exerciseSummaries: ExerciseSummary[]
+  groupExerciseSummaries?: Array<ExerciseSummary & { studentId: string }>
   allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
 }
 

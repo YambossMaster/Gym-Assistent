@@ -111,6 +111,12 @@ describe('Student roster result selection', () => {
     expect(selectStudentRosterResult({ students: [], view: 'person', query: '' }).state).toBe(
       'first-empty'
     )
+    expect(selectStudentRosterResult({ students: [], view: 'group', query: '' }).state).toBe(
+      'filter-empty'
+    )
+    expect(selectStudentRosterResult({ students: [], view: 'group', query: '週二' }).state).toBe(
+      'search-empty'
+    )
   })
 
   it('distinguishes an empty active/archive filter', () => {

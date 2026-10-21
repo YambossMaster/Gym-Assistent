@@ -966,7 +966,7 @@ function Editor({
           {draft.kind === 'block' ? (
             <>
               <label>
-                備註（選填）
+                備註
                 <input
                   value={draft.note}
                   onChange={(event) => onChange({ ...draft, note: event.target.value })}

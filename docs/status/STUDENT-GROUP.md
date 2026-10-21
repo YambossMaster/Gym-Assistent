@@ -1,16 +1,81 @@
 # M11 Student Group workstream
 
-> 2026-10-21，Sol 位於獨立工作樹 `output/m11-student-group`、分支 `codex/student-group-sol`；已對齊 `origin/main` `6c3703c`。Product Owner 已授權推送的 PR #72 草稿，後端驗收程式提交為 `a4404b3`；工作樹原主 checkout 與 Contract 工作樹未更動。
+> 2026-10-22 CI gate 進行中交接：Sol 位於獨立工作樹 `output/m11-student-group`、分支 `codex/student-group-sol`，HEAD `0dd6e52ef532f6f4dcd9dae1e126bab518c1d5ec`。Product Owner 已表示本版自行驗收「通過」，並明確保留手機課堂版面試作。此為未提交的 M11 候選；保留其他 checkout 的改動。既有 [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft，舊版 CI 成功不涵蓋這批本機修改。
 
 ## Gate 與清單
 
-| Gate     | 狀態                                                                                                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                                         |
-| Sol      | 前 7 項後端及現有前端行為已有分支實作；Today／週期課真 API 與真登入瀏覽器、Auth 整帳刪除與隔離還原通過。前端範本對齊候選已在 5173，可供 Product Owner 檢視。                            |
-| CI／發布 | PR #72 為草稿；後端／功能提交 `6420b32` 的 verify、browser-ui、Development migration-dry-run、isolated restore 均通過。新前端候選、Production migration、預覽、部署及合併尚無 CI 證據。 |
+| Gate     | 狀態                                                                                                                                                                                                                                     |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                                                                                          |
+| Sol      | 八個面向的前七項已有本工作樹實作。Development 真 DB／真 Auth 主流程、舊資料相容、多人訓練、Free 降級與封存取得分項證據；Product Owner 2026-10-22 表示本版自行驗收通過，手機課堂新版確定保留。                                            |
+| CI／發布 | 現版完整本機 API 402／402、Web 436／436、build 和 Development migration dry-run 通過；完整瀏覽器／安裝 PWA 及 exact-SHA 遠端 CI 尚未通過。PR #72 為 draft；舊 SHA 的 CI 不涵蓋當前未提交候選。Production migration、部署及合併均未執行。 |
 
 八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。前 7 項已有分支實作；第 8 項的 Development 真 API、真登入主流程、隔離還原與分支 CI 已取得證據。前端裝置／完整流程及 Production 證據仍未取得，不得視為 M11 整體完成。總數仍為 8，未新增工作包。
+
+## 2026-10-22 最後驗收交接（目前有效）
+
+### Product Owner 驗收通過後的 CI gate 進度
+
+- Product Owner 2026-10-22 明確表示自行驗收「通過」，手機多人課堂試作保留；隨後確認這次驗收只有瀏覽器／手機尺寸預覽。這解除同版進入完整驗證的檢視關卡，不代表安裝 PWA、資料庫、CI 或 Production 已自動通過。原八項交付面向不變；第 8 項目前仍進行中。
+- 現版 `check:affected --plan` 選 API 與 Web 全套。首次預檢抓到四檔格式問題，已只格式化該四檔。API／Web typecheck、格式、`git diff --check` 和腳本測試通過；沙箱內 API Vitest 66 檔均因暫存 `rename EPERM` 未進入斷言，於沙箱外以逐檔模式重跑 API 66 檔 402/402、Web 97 檔 436/436 通過。預設輸出模式的沙箱外檢查因 API PDF 測試長時間無逐檔進度而中止；逐檔實跑是有效的測試結果。`npm run build` API／Web 均成功，Vite 另有既存大 chunk 警告。
+- 已核對工作樹連結 Development 專案 `yvhijxhtelujfsaplzpi`；`npm run db:push:dry:development` 回報 `upToDate=true, dryRun=true, migrations=[]`，無資料庫寫入。腳本暫時隱藏的 billing foundation migration 已復位，無遷移檔工作樹變動。
+- 320px 新獨立 Chrome 分頁的課堂先載入、再顯示「暫時無法讀取課堂」；按頁面「重新載入」一次後同樣失敗。Development API `/ready` 在沙箱外讀回 200 `ready`。因此**320px 現版課堂沒有驗收證據**，不能把課堂讀取失敗歸因於版面或當作通過。未操作原本有本機草稿的分頁，測試分頁已關閉並恢復瀏覽器 viewport。
+- 待完成的第 8 項依時序為：①以隔離 Development 資料跑現版端到端群組建立／編輯、購課、排課、出席／兩模式組數／完課重開、公開連結／改期、封存／Free→Prime 恢復與個人匯出，補 320px 可讀課堂；②整理確切 commit 與檢查結果，依專案規則取得遠端 push 授權後確認同 SHA PR CI；③依 Production migration／部署 gate 與所需授權發布；④**部署完成後**才請 Product Owner 在已安裝手機 PWA 驗收實際流程。使用者既有課堂草稿衝突不代選處理。手機不能連到尚未部署的 M11 版本，實機驗收不是目前的前置要求。
+- 2026-10-22 Product Owner 已在同一對話中預先授權 M11 後續遠端推送／合併、Production migration 與部署；完成各自必要檢查後無須重問。實機 PWA 驗收仍須等部署完成再交接。授權不豁免精確 SHA CI、Production 前置檢查、遷移順序或資料保存條件。
+- **目前下一步**：保存已通過本機檢查的未提交候選、與最新 `origin/main` 整合並重查受影響處；診斷隔離課堂 320px 讀取並完成不碰使用者既有草稿的 Development 瀏覽器流程。具備有效候選後依上述授權執行 PR／Production 關卡，不在部署前要求手機 PWA 驗收。
+
+### 手機多人課堂的可回復版面試作
+
+- Product Owner 指出原本「今日出席」與「按時序／按學生」被放在同一灰底區塊，混合課堂狀態和訓練清單控制。這屬既有第 4／5 面向的手機排版修正，八項總數不變。本輪四步：①備份現版，②出席移入白色課堂標頭並把切換移到卡片前，③局部檢查，④390px 檢視；四步已執行，Product Owner 已決定保留。
+- 改動僅在正式 `TrainingWorkspace.tsx` 與 `styles.css`。桌面保留原出席列和標題旁切換；手機標頭展開時顯示時間／地點／狀態與下方出席，標頭收合後出席仍保留可操作。兩處出席共用同一個原有 handler；沒有修改出席／組數資料規則。手機的切換列移到訓練卡片前，沿用原有偏好儲存。
+- 試作前兩檔已存到忽略的 `output/m11-layout-trial/{TrainingWorkspace.tsx,styles.css}`，若 Product Owner 不喜歡，可精確覆回兩檔而不丟失更早的 M11 未提交改動。Web TypeScript typecheck、兩檔 Prettier、`git diff --check` 通過。獨立 Chrome 5174 的 390×844 預覽已目視展開與收合狀態；三人出席同列、切換在第一張卡片上方。只切換課堂標頭展開狀態，沒有變更出席、組數或儲存課堂。該分頁已保留供檢視。
+- 這是桌機瀏覽器中的 390px 預覽，尚非安裝手機 PWA 或 320px 驗收；Product Owner 已接受本版，後續第 8 項驗證進度以上節為準。遠端 CI、Production migration／部署／合併仍未執行。
+
+### 收支「設定單價」進入群組編輯未預選成員
+
+- Product Owner 在最後驗收發現：收支紀錄的「設定單價」帶 `edit=price` 跳至既有群組時，編輯表單呈現零位已選成員，儲存按鈕停用；一般群組詳頁按「編輯」則會保留原成員。影響為教練不得不重選成員，且若誤操作可能把單價修改變成成員修改。這是原第 1 項群組管理的高優先級入口缺陷；八項總數不變。
+- 原因是 `StudentDetailPage` 的 URL 意圖 effect 只執行 `setProfileEditing(true)`，一般編輯按鈕才有呼叫 `setGroupMemberIds(detail.members)`。現在 URL 入口在開啟前同樣以已載入明細的成員 ID 初始化，不更動資料庫、Finance 連結或群組修改規則。
+- 新增 `student-group-price-entry.test.tsx` 以相同群組明細檢查兩種入口。修正前普通編輯通過，`edit=price` 的已選清單是 `[]`、測試失敗；修正後兩項皆通過，儲存按鈕可用。僅填 NT$1,500 的測試命令包含 `singleLessonPrice`，不帶 `memberIds`。Web typecheck、Prettier、`git diff --check` 通過。
+- 在獨立 Chrome 本機 5173 分頁，從 2026-10 收支明細的該群組單堂來源點「設定單價」，抵達編輯群組後原三位成員皆為已選，儲存按鈕可用；沒有提交表單或改動 Development 資料。這是本機 UI 與聚焦測試證據，安裝 PWA、完整流程及目前候選 exact-SHA CI 仍待第 8 項 Gate。預覽分頁已留供 Product Owner 檢視，原使用者分頁未更動。
+
+### 23:53 共同目標範例修正
+
+- Product Owner 指出群組建立表單的「共同目標」仍顯示個人簡介範例「設計師、晨型人、喜歡跑步」，與欄位用途不符。建立與編輯群組的兩個 placeholder 都已改為「例如：一起減脂、一起變壯」；個人「學生簡介」的兩處範例不變。這是原第 1 項的文字修正，八項總數不變。
+- 本機 5173 真登入建立表單的 `input[name=goal]` 讀回新 placeholder；程式碼確認編輯群組亦使用新範例。變更檔 Prettier 和 `git diff --check` 通過。沒有送出表單、改動資料或進入完整 gate；最新群組表單文案仍待 Product Owner 檢視。
+
+### 23:31 群組空狀態引導（本輪新增）
+
+- Product Owner 指出群組數為零時的「這個分類尚無資料」浪費了主要區域。這屬原第 1 項群組管理的入門引導修正，八項總數不變。群組分類無資料時顯示用途說明與直接開啟既有「新增學生群組」表單的按鈕。Product Owner 隨後指定更直白的文案：標題「適合固定『一對二』或『一對三』的課程型態」、副標題「將一起上課的學生加入同一個群組，便能一起排課、紀錄、購課與扣堂。」名單完全空白時選到群組也使用此引導；搜尋無結果仍顯示清除搜尋，一般學生首次空白與已封存空白不變。Free 群組入口仍依已核准的方案限制導向升級。
+- 影響範圍：`coach-workspace.tsx` 的學生名單群組空狀態、`pages/students/state.ts` 的空名單分類、`styles.css` 的群組文案寬度。未改共用 `.empty-state` 樣式、建立命令、群組權限或資料庫。保留的代表流程：一般學生首次空白仍可建立學生；搜尋未命中仍可清除；群組空白按鈕開啟現有群組表單。
+- 聚焦驗證：學生名單 state 測試 10/10、Web typecheck、四個變更檔 Prettier 與 `git diff --check` 通過。第一次 Vitest 因沙箱暫存檔 `EPERM rename` 未進入測試，按既有 Windows 執行方式於沙箱外重跑通過。Chrome 的本機 5173 桌面及 5174 內嵌 390×844 預覽均顯示引導；390px 按鈕開啟「新增學生群組」及 1–3 位成員選取表單。這是本機瀏覽器預覽，不是安裝 PWA、全流程 gate 或本版 exact-SHA CI。CIM 程序工作目錄查詢遭拒，但兩頁實際顯示本次新文案。
+- 2026-10-21 23:34 依 Product Owner 指定文案替換後，5173 桌面與 5174 的 390×844 模擬預覽都已直接檢視：桌面單行標題，手機兩行標題，副標題與按鈕均在卡片內可見。本次只改文字，既有按鈕開啟表單的前述驗證仍適用。下一步是 Product Owner 檢視最新文案，再做下方第 8 項現版最後驗收；新的完整 gate 不沿用變更前的 UI 接受或舊 PR CI。遠端 push／merge 仍須依交付規則另行授權。
+
+### 本次帳號恢復與環境
+
+- 僅在 **Development** 專案 `yvhijxhtelujfsaplzpi`，以既有 `beta:operator grant-permanent` 恢復「張三教練」的永久 Prime 資格；目標 Auth user `a3a1b75e-1e40-4458-bc22-01b6b868faa0`、Workspace `4ba6de2b-520d-4c65-88d0-1fd7d529ae0b`，與降級測試使用的帳號相同。寫入後直接讀回 `app_private.beta_grant.kind=permanent`、`ends_at=null`、`prior_ends_at=null`，最新 audit 為 `grant_permanent`，時間 `2026-10-21 15:13:56.674743+00`、actor `Codex-local-M11-test`、原因為 Product Owner 要求完成本機 Free 測試後恢復永久 Prime。本機真登入 5173「設定 → 方案與帳單」顯示「Prime 方案／使用中／永久資格／無期限」。第一次受限 shell 的 DNS `ENOTFOUND` 沒有寫入；同一既有 operator 指令在核准的沙箱外執行一次成功，未重複授權。Production 帳號、付款及方案資料未動。
+- Free 降級時自動封存的群組 `5a8c6471-e33a-47e6-b952-98abaea172f8` 在恢復 Prime 後仍為 `active=false`；符合「升級後由教練手動恢復並重排，未來課不自動重建」的既定規則。本次未恢復群組、未排課、未更動其成員或歷史。降級時的三名成員、未來 scheduled 0／cancelled 2／active Series 0 與 API 403／唯讀 200 的實證見下方 2026-10-21 Free 測試紀錄；Prime 恢復後的群組寫入流程尚待隔離資料驗收。
+- 5173 桌面與 5174 手機框預覽使用本 M11 Web，後端為 Development API；390×844 是 Chrome 模擬，並非已安裝 PWA。預覽專用 DB role `m11_preview_20261021` 尚保留，連線上限在讀取故障後由 2 調為 8；審閱結束須精確清理並核對。先前 5174 原課堂分頁有與伺服器不同的本機草稿／儲存衝突，不得代選「採用目前內容」或「載入最新紀錄」；對該課堂做寫入驗收前先由 Product Owner 決定保留哪份。
+
+### 已完成實作與證據邊界
+
+| 面向               | 本機候選／已有證據                                                                                                                                                                                                                                         | 最後驗收仍需                                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 群組與成員       | 同一 Student 主體的 1–3 人群組、版本／Workspace／歷史刪除防護、增減成員與自動封存；正式名單、詳頁、編輯器及年齡區間、備註、捲動提示、個人表現入口均已依 Product Owner 回饋對齊。Development 編輯第三人持久化、聚焦 API／Web 測試及 5173／5174 檢視有證據。 | 隔離真登入完整建立／Enter 新增／改名／移除至一人與最後一人限制；封存個人導致空群組的真 DB 交易。                                                                                |
+| 2 購課與餘額       | 群組 owner 購課、零價／缺價、完課扣群組一堂與場地一筆、重開回補；Development DB／HTTP 與真登入主流程已驗。                                                                                                                                                 | 現版前端群組購課、餘額及個人隔離的完整回歸。                                                                                                                                    |
+| 3 排課與快照       | 單次／週期課、Today／Calendar、成員快照、封存取消未來課且 Series 停用；真 DB 並行、真 Auth 週視圖／390px／320px 有分項證據。Free 降級的真帳號 scheduled 0、cancelled 2。                                                                                   | Prime 手動恢復與重排後的真 DB／真登入流程，更多關鍵競爭交錯；避免動用使用者既有封存群組。                                                                                       |
+| 4 出席與完課       | 同一 Session 一次扣堂、缺席者歷史保留但無成績、兩個完課入口、重開與結果修正；Development HTTP／隔離還原 DB 有證據。                                                                                                                                        | 當前 UI 的出席、兩模式輸入、儲存衝突、完課／重開完整操作。                                                                                                                      |
+| 5 多人訓練         | 已接受的動作優先雙模式、一份草稿、每人組數與上次最佳、成長軌跡及同色控制；5173 正式路由、5174 的 390px 三人同列與無水平溢出、聚焦測試及 Product Owner 本版視覺認可。                                                                                       | 現版三人真課堂全流程、320px、安裝手機 PWA；不把模擬器當實機。                                                                                                                   |
+| 6 公開能力         | 群組成果 allowlist、缺席狀態、跨 Workspace 404、舊連結失效與原個人成果隔離，在 Development HTTP／隔離 DB 驗過。                                                                                                                                            | 分享／改期前端完整操作及正式回歸。                                                                                                                                              |
+| 7 封存／匯出／相容 | 四筆 M11 migration 已在 Development 套用；舊 1,190 組回填保持、FK／RLS／整帳刪除與非空群組邏輯還原通過；Free 禁建／禁改／禁恢復／禁購課／禁排課及封存唯讀 200 已由真帳號／API 驗證。                                                                       | 現版群組歷史非空時的 Free 唯讀實證、個人匯出全流程、Production migration 前置與回復驗證。                                                                                       |
+| 8 完整驗證與交付   | 早期基線本機 `npm run check`／`npm run build`、API 392／Web 430 測試通過，舊 PR SHA 的適用 CI 與 Development logical restore 成功；最近各 UI 修正有 typecheck、格式、聚焦測試及 5173／5174 檢視。                                                          | 對當前候選重新跑完整受影響檢查與 build、Development migration dry-run／真 DB 流程、實際裝置、完整 Browser gate、當前 exact-SHA PR CI、Production gate。舊結果不可充當現版證據。 |
+
+### 2026-10-21 交接快照（已由 2026-10-22 Gate 進度取代）
+
+1. **下一步：最後驗收**。Product Owner 已表示目前 UI 修正可接受、準備進入最後驗收；本次先完成帳號恢復與交接，尚未啟動本版完整 Gate。下一次明確指示開始時，先保存當前候選與核對 Contract／Roadmap 的已核准變更，再依第 8 面向以隔離 Development 資料跑完整 Free→封存→歷史唯讀→Prime→手動恢復／重排、1–3 人編輯、購課／排課／完課／多人組數／分享／匯出；在 5173、5174、320px 與安裝 PWA 檢查。需保留使用者原課堂草稿，測試只操作隔離資料。
+2. 目前是未提交工作樹，舊 PR #72 的 `verify`／`browser-ui`／`migration-dry-run`／`restore` 僅支持各自舊 SHA；當前候選仍須 exact-SHA CI。Production 四筆 M11 migration、資料操作、部署、merge 均未發生。遠端推送或合併需另呈現檢查結果、確切提交與動作並取得 Product Owner 授權；本次請求只授權 Development 帳號恢復與交接。
+3. 真帳號的 Free 封存測試群組沒有已完成歷史，因此「降級後可讀既有完成紀錄」目前由 API／投影測試支持，尚非該帳號瀏覽器實證；安裝 PWA、320px 現版與到期排程的持續運行亦未由本次驗證證明。預覽服務及臨時 DB role 待驗收完畢後清理，清理前核對忽略的 synthetic fixture manifest 與使用者草稿；不能以此為由刪掉真資料。
+
+此節及以下日期段落保留當時觀察與分項證據；可執行下一步與授權界線以最上方 2026-10-22 Gate 進度為準。
 
 正式驗證進度（2026-10-21）：Product Owner 明確放行。Development 專案 `yvhijxhtelujfsaplzpi` 在隔離 migration 清單的 dry-run 分別只列出 M11 基礎與第一筆後續修正，前兩筆已套用；第三筆見下段，Production 未變。套用前 1,190 筆舊訓練組數、16 筆 Student、163 筆 Session，舊組數權益主體皆可唯一追溯；套用後仍為 1,190 筆、0 筆空歸屬／錯歸屬、0 筆群組（既有資料仍是個人）。新表 RLS 已開、兩條政策存在，`anon`／`authenticated` 對兩表沒有 SELECT。回滾式 `supabase/tests/student-group-contract.sql` 在 Development 通過：三人上限、群組不得作自然人成員／出席者／組數 owner、跨 Workspace、種類不可改、舊 API 個人組數自動指派、正式歷史硬刪阻擋、空白成員刪除、Auth→Workspace 完整刪除及他 Workspace 保留；測後 0 筆測試學生／Auth 殘留，舊組數仍 1,190 筆。測試首次揭露既有 `training_exercise`→`exercise_definition` FK 妨礙整帳刪除，已用後續 migration 改為可延遲檢查並重測通過。這是原第 7／8 項高優先級資料保存邊界，不增加總數。
 
@@ -90,6 +155,56 @@ Sol 聚焦證據（2026-10-20 至 21，本機分支）：API／Web TypeScript ty
 
 上述為 Sol 起始時的回歸影響圖；目前 Development migration 及部分真 DB API 已取得證據，登入後 browser／device 尚未驗證。正式回歸範圍依 `docs/VERIFICATION_WORKFLOW.md`。
 
-## 下一步
+## 2026-10-21 前端迭代紀錄（歷史；現行 Next 見頂部交接）
 
-下一個動作：請 Product Owner 檢視 `http://127.0.0.1:5173/__review/m11-group` 的雙模式／390／320px 前端對齊候選並給具體修正或明確說可進完整驗證。此為本包 UI 版本審閱關卡；在此之前不把新 UI 視為正式瀏覽器／PWA gate 通過。收到修正則改後做聚焦重查；獲核准後做真登入正式訓練頁、完整 320px／安裝手機 PWA、exact-SHA CI 與正式釋出檢查。後端檢查點已由 Product Owner 預授權推送並有綠燈 CI；Production migration／部署／merge 不屬本次授權。5173／3000 的 Development 預覽目前保留供校對，預覽結束後須停服務並刪除 `m11_preview_20261021` 臨時角色及忽略的本機憑證設定。主 checkout、Contract 及已接受的 UI 範本工作樹保持原狀。
+2026-10-21 前端範本偏差修正（工作樹未提交，基底 HEAD `0dd6e52`）：Product Owner 指出既有桌面／手機多人訓練 UI 已驗收，正式實作應直接對齊，不再自行設計。逐項對照 `codex/group-training-ui-template` 的兩份接受文件和實際元件後，群組頭像及每人新增鍵改回藍／橘／莓紅，缺席只以明暗和無障礙名稱呈現，手機控制文字與按鈕尺寸、空狀態及 RPE 底色收斂至範本；修正正式候選在 760px 預覽中的桌面組數列橫向捲動。正式群組仍共用原 `SetCard`、一份草稿和原本的儲存 API；範本未設計的正式操作沿用原訓練紀錄。Web typecheck、Prettier、`git diff --check` 通過；既有 5173 預覽於 760px 讀回訓練卡片、組數列與頁面無橫向溢出。390／320px 與真登入、安裝 PWA 尚未針對本次修正重驗；本次嘗試建立 390px 隔離瀏覽器視窗遭瀏覽器 URL 安全政策拒絕，沒有改用其他入口繞過。不得把舊截圖當作本版驗收。
+
+2026-10-21 完整對齊續行（未提交）：Product Owner 指出三個截圖差異僅是例子，要求整個畫面對齊既有已接受範本，並要求在 5173 的正式路由審閱。重新核對 `codex/group-training-ui-template` 的元件、桌面與手機文件後，撤銷預覽中的臆造「再加入一個／一組槓鈴深蹲」，恢復範本與單人紀錄共用的「加入動作」；修正 Mode A 每人新增鍵的藍／橘／莓紅淡底、Mode B 頭像白字、手機出席列與組數欄。新建隔離 Development synthetic Coach／三人群組／Session，直接在 `http://127.0.0.1:5173/sessions/c65bbeac-5b02-4555-886b-75bb458f7c74` 以真 Auth、真 API 加入低背槓深蹲及三人各一組，發現正式雙欄頁在約 568px 右側面板有橫向溢出，而預覽未暴露；改依面板容器寬度切換組數排版及表頭，並修正移除鍵靠右。正式路由在 1265px 視窗下，兩模式卡片 568/568、文件 1265/1265，三色按鈕淡底與頭像白字 computed style 均核對；切換缺席隱藏王同學組數、恢復後 30kg／10 次仍在，林同學 45kg／8 次／RPE 7／已完成，陳同學 20kg／12 次，儲存後重載仍在。Web typecheck、Prettier、`git diff --check` 通過。忽略的正式頁截圖為 `output/m11-formal-{timeline,student}-desktop.png`；審閱帳號資訊僅在忽略的 `output/m11-formal-training-manifest.json`，審閱結束須以 `output/m11-formal-training-fixture.mjs cleanup` 精確刪除及讀回確認。這些是桌面正式路由的聚焦證據；本版 390／320px 實機與安裝 PWA、完整 CI 尚未取得，不將舊示意截圖當成本版驗收。
+
+2026-10-21 多人訓練手機預覽續行（未提交，分支 `codex/student-group-sol`，HEAD `0dd6e52`）：Product Owner 認可 5173 桌面版多人訓練紀錄，指出 5174 瀏覽器模擬 PWA 仍是舊單人介面，要求本次只修多人訓練手機版。查明 5173 的 Vite 來自本 M11 工作樹，5174 原由 `C:\Users\User\.codex\worktrees\pwa-notes-help-fixes\Gym Assistent` 提供；兩者共用 3000 API，因此資料同步但前端不同。精確停止舊 5174 PID 26684，改由本工作樹 Vite PID 39304 提供 5174，首頁及 `/mobile-preview.html` 均回應 200。主 checkout 既有修改中的 `start-gym-assistant-mobile.cmd` 只改 `PREVIEW_ROOT` 指向 `output\m11-student-group`，其餘主 checkout 修改未碰；此本機啟動路徑日後整合／移除 M11 工作樹時需重新檢查。
+
+本工作樹的 `apps/web/mobile-preview.html` 新增嚴格 UUID `?session=` 參數，讓原 390×844 模擬器直接顯示正式 `/sessions/:id`；無參數仍維持 `/today`。正式手機版 `.group-training-controls` 修正 Grid 軌道縮窄出席姓名的問題。Chrome 在 `http://127.0.0.1:5174/mobile-preview.html?session=88ddbdd7-763b-4432-b2bd-0a6135afdb81` 以真登入／真 API 看到兩位出席學生、低背槓深蹲三組及既有 12kg／12 次／RPE 1；按時序與按學生均可切換，按學生每位的新增鍵與已記錄組數可見，頁面未見橫向溢出。未對 Product Owner 真課堂做寫入操作。Web typecheck、變更檔 Prettier 與 `git diff --check` 已重查通過。這是桌機 Chrome 中 390×844 模擬器的聚焦 UI 證據；320px、安裝手機 PWA、完整流程、CI 與 Production 均未因此通過。原八項盤點不變；目前只待 Product Owner 檢視本次多人訓練手機版，回饋後再修正，其他前端區塊依其指示暫不處理。
+
+2026-10-21 Product Owner 手機紀錄補正與封存顯示診斷（未提交，HEAD `0dd6e52`）：本次六項有限清單為 ①核對 5173 正式來源與群組封存恢復投影，②每人於動作的上次最佳，③兩模式的個人成長軌跡入口，④記住按時序／按學生偏好，⑤每人同色完成鍵及灰色未完成鍵，⑥聚焦測試、桌面／390px 審閱與交接。前五項已實作並取得以下聚焦證據；第六項的本機聚焦檢查已過，仍待 Product Owner 檢視及其後完整 gate。這些皆屬既有第 1／5／8 面向，八項總數不變。
+
+封存恢復顯示原因：Development 資料庫直接讀回目標群組 `5a8c6471-e33a-47e6-b952-98abaea172f8` 仍為 `kind=group`、`active=true`、兩名有效成員；沒有種類變更或資料損毀。5173 當時由舊 M8-E 工作樹的 Vite 供應，其 Web 尚未識別 M11 group，故把群組畫成個人 Student，學生名單也沒有「學生群組」分頁。精確停止該舊 5173 PID 18052，改由本 M11 `apps/web` Vite PID 10884 供應；同一群組的 5173 詳細頁現顯示 `GROUP / ACTIVE` 與兩名成員，名單分為「學生 6／學生群組 1／已封存 1」，群組僅在群組分頁。本機主 checkout 的 `start-gym-assistant.cmd` 備援路徑已指向 `output/m11-student-group`；既有 5174 手機備援也指向此工作樹。這兩個啟動器屬主 checkout 本機未提交修改，M11 工作樹搬移時需重查；未改資料庫或 Production。
+
+正式多人訓練頁：群組 Session GET 現提供依成員 ID 隔離的動作歷史與每人上堂最佳；動作標題空白區顯示出席成員的同色頭像及「上次最佳」，無歷史顯示 `—`。按學生於每人欄標題提供同色成長軌跡；按時序在動作右側提供共用下拉選單再選學生，沿用既有單人成長圖表及方案權限。兩模式偏好儲存在該 Coach 的 localStorage，重開保留。已完成鍵用該成員新增一組的淡色背景，未完成鍵用灰色。未對原單人訓練 UI 作新設計。
+
+聚焦證據：M11 正式 5173 synthetic Session `c65bbeac-5b02-4555-886b-75bb458f7c74` 的桌面和 390×844 手機模擬器均讀回三位出席者、上次最佳位置、按學生每人按鈕、按時序共用下拉學生名單；按學生後重載仍為按學生。此隔離 Coach 是 Free，選學生後打開既有 Pro 方案提示；已解鎖的成長圖表互動仍待可用的 Pro／Prime 測試身分或完整 gate 驗證。三人皆尚無先前完成課，畫面顯示 `—`；API adapter 聚焦測試以兩人先前完成課 90／60 驗證互不串值。檢查共享 HTTP 投影時發現新群組歷史未套用原單人 Free 權限遮蔽，已在 `visibleTraining` 的共用轉換補上，保留上次最佳但遮蔽各人 history 與 series points，聚焦測試通過。此屬原第 ③／⑥ 項的必要高優先級權限檢查，不新增八項面向。API repository 5/5、可見性 1/1、Web 元件 1/1、API／Web typecheck、`git diff --check` 均通過。忽略的審閱截圖為 `output/m11-group-review-{mobile,timeline-mobile}.png` 與 `output/m11-group-restored-list.png`。這是瀏覽器 390px 模擬與本機 Development 資料，尚非安裝 PWA、320px、完整 CI 或 Production 證據。
+
+5174 既有使用者分頁追查：API 因本次開發中的檔案變動熱重啟時暫時顯示「暫時無法讀取課堂」；API 恢復後同一正式路由已讀回兩位出席者、兩個動作與新「上次最佳／成長軌跡」區。該分頁原已有尚未同步的本機草稿，現在顯示 2/5 組已記錄與「儲存衝突」；Development DB 的伺服器版本 13 同樣有五組，但結果欄仍為空，故兩份內容**不同**。檢查時沒有按「採用目前內容」或「載入最新紀錄」；額外開啟的同課分頁已關閉，避免持續競爭。保留原分頁和草稿，待 Product Owner 判斷是否採用本機結果。此衝突影響真課堂的儲存驗收，不能以 synthetic 課堂通過代替。
+
+下一個動作：請 Product Owner 先檢視目前 5173 正式群組詳細頁／學生名單、5173 synthetic Session 與 5174 既有手機預覽的兩種多人紀錄，再指出本區差異；Agent 依回饋修正。5174 原分頁的本機 2/5 組結果與伺服器空結果有衝突，請保留分頁並決定是否要採用目前內容；Agent 不代選。待本版獲認可，再依其指示處理其他前端區塊；正式完整驗證、遠端推送、Production migration／部署／merge 仍未授權。5173／5174／3000 Development 服務及隔離審閱帳號保留供檢視；審閱結束後按前述 manifest 精確清理。
+
+2026-10-21 Product Owner 再次要求對齊原單人紀錄的七項 UI 細節（未提交，基底 HEAD `0dd6e52`）：①移除動作頁首「2 人有紀錄」，②上次最佳移出動作名稱下方，對齊原單人頁首數據欄，保留各人的飽和藍／橘頭像，③按時序的共用「成長軌跡」改回原單人頁首的黃綠圓角膠囊，④下拉選項用同色頭像及正常字級、點外側或 Escape 收合，⑤模式切換字級調回一致，⑥按學生的軌跡入口移至學生名稱與組數旁並改為文字入口，與右側「新增一組」分開，⑦「未完成」選中改為高對比深灰底白字。七項已寫入正式 `GroupExerciseCard` 與共用 CSS；沒有重做單人紀錄或新建示意頁。元件聚焦測試 1/1、Web TypeScript noEmit 通過；桌面 Chrome 真登入 5173 兩模式已目視，按時序下拉頭像／字級及點外側收合已核對，最後恢復使用者原本「按學生」偏好，未改課堂資料。忽略的截圖：`output/m11-group-alignment-{student,timeline}.png`。
+
+本次第八項驗證／交接仍部分未完成：隔離 synthetic Session 在手機預覽回報「暫時無法讀取課堂」；本機服務在受限 shell 的 curl 回傳 000，但核准的本機讀取確認 5173 與 API `/ready` 均為 200，故不能推斷服務停止。既有 5174 Chrome 分頁目前在學生列表，且先前該課堂有不同步草稿；未重開同課第二分頁或操作該衝突。390px 與安裝 PWA 本版仍待 Product Owner 在既有分頁檢視，完整 Gate、CI、遠端推送與 Production 均未開始。下一個動作：以目前 5173 正式多人紀錄桌面結果供 Product Owner 檢視，確認這七項是否對齊；保留原 5174 草稿衝突供本人決定。接著在安全的單一手機分頁完成 390px 檢視，再依回饋修正本區；其他前端區塊暫不處理。
+
+2026-10-21 Product Owner 最新桌面／手機九處細節回饋（未提交，基底 HEAD `0dd6e52`）：有限工作清單依重複項合併為 ①桌面／手機只顯示頭像及「上次最佳」且壓縮至三人同列與共用軌跡入口，②桌面／手機檢視切換加粗，③「未完成」選中改白底、學生對應色外框與文字，④按學生的成長軌跡改白底、對應色橢圓外框，⑤手機表頭對齊資料欄，⑥聚焦驗證及交接。前五項已實作；元件測試涵蓋三名學生的最佳紀錄及語意標示。表頭錯位是窄容器四欄 CSS 規則以較高優先級覆蓋五欄資料列，已改成同一五欄配置。正式 5173 桌面和既有 5174 Chrome 390px 分頁曾成功讀回兩人真課堂：兩模式頭像與最佳值、白底同色軌跡、白底同色未完成、切換字重、手機表頭與輸入欄已目視核對；手機切換後恢復原本按時序偏好，沒有改組數。忽略截圖：`output/m11-group-compact-{desktop,mobile}.png`。三人真課堂的實際瀏覽器寬度尚無證據，不能把元件測試當成實機版面驗收。
+
+聚焦 Web TypeScript noEmit 與 GroupExerciseCard 測試 1/1 通過。檢查末段 5173／5174 同課頁均轉為「暫時無法讀取課堂」；API `/ready` 仍回 200 `{"status":"ready"}`，5174 入口也回 200，但頁面復原鍵未恢復內容。此刻不宣稱當前課堂可讀或最後 CSS 調整已在真課堂重看；不操作既有草稿／衝突。下一個動作：先恢復同課頁可讀，於 390px 及三人情境核對同列無溢出和表頭位置；再請 Product Owner 檢視本輪多人紀錄細節。完整 Gate、安裝 PWA、遠端交付、Production 與其他前端區塊仍在本次範圍外。
+
+同日復原補證：讀取 3000 監聽程序的啟動鏈確認仍為本 M11 工作樹 `scripts/run-local-api.cmd`，沒有取代為其他工作樹。已儲存的 5173 課堂完整重載後恢復 3/3 組與多人紀錄；5174 原預覽分頁改以 `?session=b14557ed-77ec-47ae-96c5-26cd34ec2554` 開回同課，亦恢復 390px 正式頁面。最後 CSS 版的手機表頭已與重量、次數、RPE、結果輸入位置對齊；兩位學生最佳數據與成長軌跡同一行、無橫向溢出，白底同色未完成鍵仍可見。原 5174 分頁最後恢復按時序；沒有編輯組數、處理先前另一課的衝突或修改資料庫。復原後的 `output/m11-group-compact-{desktop,mobile}.png` 已覆寫為本版正式畫面。餘下唯一此輪 UI 實際寬度未知為三人真課堂；三人元件資料及無換行樣式有聚焦驗證，不能視為三人瀏覽器驗收。下一個動作：Product Owner 檢視 5173／5174 本版回饋；若需三人 390px 的瀏覽器證據，先以隔離三人成員課堂完成而不修改現有真課堂。
+
+三人寬度補證：原有隔離 Development Coach 的 5173 正式 Session `c65bbeac-5b02-4555-886b-75bb458f7c74` 恢復可讀，在 `mobile-preview.html?session=...` 的 390×844 框中顯示林／王／陳三名出席者；三個頭像＋「上次最佳」數據和共用「成長軌跡」含 Pro 標記同一列，卡片無橫向溢出。截圖 `output/m11-group-compact-three-mobile.png` 已忽略。此為桌機瀏覽器 390px 模擬，不等於安裝 PWA／320px；數據來自隔離審閱課堂，不改 Product Owner 真課堂。此輪六項清單的實作與聚焦瀏覽器檢查已完成，下一步只需 Product Owner 檢視本版並給 UI 回饋；完整 CI Gate／遠端交付維持待其檢視後另行授權。
+
+2026-10-21 下一輪 Product Owner 回饋（本工作樹尚未提交）：有限清單為 ①多人紀錄手機勾／叉圖示置中及選中叉叉使用同學生色淡底，②查明群組編輯新增第三人未回顯並驗證增減，③群組詳頁「群組成員」卡片取代基本資料中的純文字連結，④縮小多人共用成長軌跡的 Pro 鎖標，⑤聚焦檢查與交接。已修正 ①／③／④ 的正式 Web CSS／詳頁，沒有改單人紀錄配色；群組詳頁僅顯示目前成員，每張可進入對應學生頁。② 根因是 `useStudentRouteMutations` 儲存成功時只更新 detail cache 的 `student`，保留舊 `members`；改為先更新主體再重新取得完整 detail，完成後才關閉編輯器。真 5173 詳頁重新讀取後顯示周子晴、吳佳蓉、張宇軒三人；編輯器亦勾選三人，證明 Product Owner 前次加入第三人已持久化，未在檢查中改動正式群組。該群組舊課堂仍為兩人，符合已開始課堂的參與快照不回寫 Contract。API `StudentModule` 聚焦案例現含二增至三、改名再移至一及跨 Workspace 拒絕；11/11 通過。Web detail cache 回讀回歸 2/2、Web TypeScript noEmit、Prettier、`git diff --check` 通過。5173 桌面與 5174 390px 正式群組詳頁已目視三張成員卡，無橫向溢出。既有 5174 手機紀錄原分頁可見新淡色選中叉叉與按鈕框，但滑鼠游標遮住叉圖示，光學置中仍待 Product Owner 檢視；其畫面亦顯示本機資料服務暫時無法連線通知，未對課堂資料操作。新增同課分頁被既有編輯鎖擋住，已關閉新分頁，保留原分頁與草稿；Pro 鎖標未在本次帳號上呈現，縮小樣式僅完成程式修正。下一步：Product Owner 檢視保留的 5173／5174 群組詳頁與原本手機紀錄分頁的勾叉及 Pro 標記；依回饋修正後，待明確放行才開始完整 Gate。正式資料未新增／移除成員，未推送、未部署；三人 DB 交易與未來課同步的新一輪真 DB 驗證未執行，沿用上文既有後端證據。
+
+2026-10-21 Product Owner 方案決定與本輪 Sol 候選（未提交，基底 HEAD `0dd6e52`）：原八個面向不變，本輪有限清單為 ①群組詳頁備註與成員／運動表現卡片，②精簡群組編輯並可就地新增自然人，③修正三人訓練呈現，④將群組入口／方案文案改為 Pro／Prime 並沿用既有標記及升級 Banner，⑤降級後自動封存與 API 防護，⑥聚焦驗證及 Product Owner 檢視。①–⑤ 已寫入工作樹：詳頁重顯備註，兩處成員名單共用既有卡片；編輯表單改緊湊選取及新增學生；群組訓練不再逐個顯示 Pro 鎖，Free 入口和恢復鍵顯示 Pro 標記並打開原升級視窗，方案頁、結帳頁及公開方案文案加入「學生群組與多人共課」。群組 Pro 失效時，API 寫入前依方案封存使用中群組，既有封存交易停用 Series 並取消未來 scheduled 課；額外依 Series ID 查回 owner 擋住繞路。API 啟動及每分鐘執行無需 Web 請求的到期對帳；Free 群組舊課訓練畫面改為唯讀，詳頁保留備註、成員和歷史，但不提供恢復／編輯／排課／購課。重新升 Pro 只允許教練手動恢復及重排，不自動重建。
+
+聚焦證據：API／Web TypeScript noEmit、Prettier、`git diff --check`、Vitest 4 檔 15 例通過，含不發 HTTP 的到期封存和只以 Series ID 寫入的 403。追加「降級後直接 GET 群組詳頁」測試曾抓到唯讀頁被誤擋成 403；已將群組阻擋限於寫入，重測 API 方案測試 2 檔 6 例通過，唯讀詳頁回 200 並已封存。5173 真登入群組詳頁讀回三張成員卡及備註，5174 Chrome 390×844 模擬正式群組課顯示三人上次最佳、每人軌跡及結果欄。瀏覽器檢查沒有修改使用者課堂／群組資料。這些測試未證明 Production 到期排程實際持續執行、真 DB 同交易取消未來課、Free 帳號完整 Upsell 操作、320px 或安裝 PWA；本輪第 ⑥ 項仍需 Product Owner 檢視和後續完整 Gate。未推送、未部署、未套 Production migration。下一個動作：Product Owner 檢視目前 5173／5174 候選並指出視覺或流程偏差；Agent 修正後，依其明確放行進入完整 DB／瀏覽器／裝置／CI 驗證，遠端推送仍另需授權。保留舊 5174 草稿衝突，不代選處理；既有隔離測試帳號與本機服務維持供檢視，審閱結束後照前述 manifest 清理。
+
+後續邊界補正：恢復 Pro 但尚未手動恢復群組時，舊 Series 原可依 ID 重新啟用。`updateSeries` 現於更新交易前定位 owner，交易內先鎖定且確認 owner 仍使用中，再鎖 Series，避免封存／重啟競爭；資料庫 adapter 聚焦測試證實封存群組的啟用要求回滾且沒有 UPDATE。最後 API 3 檔 14 例、API typecheck 與 `git diff --check` 通過。此處仍須後續 Development 真 DB 並行及封存／重排流程驗證。
+
+2026-10-21 群組前端新一輪 Product Owner 七點回饋（工作樹未提交，HEAD `0dd6e52`）：本輪有限清單為 ①學生群組分類卡片去除重複種類標籤並採群組目標空值文案，②詳頁運動表現標題與既有固定課程／課程紀錄對齊，成員按鈕直接開啟現有個人運動表現目錄，③備註標題對齊群組成員且成員有設定時以小字呈現年齡區間，④群組編輯器移除多人訓練專用彩色頭像、新增學生姓名 Enter 直接建立、三人滿額控制顯著停用，⑤學生課堂單價與共同目標於桌面同列、手機堆疊，取消遮住欄位的「向下滑看更多」提示，⑥正式 Web 表單移除可由無紅星推知的「（選填）」標籤，⑦聚焦檢查並交 Product Owner 視覺檢視。①–⑥ 已實作，⑦ 的型別與聚焦檢查已完成：API／Web typecheck、Vitest 3 檔 13 例、`git diff --check` 通過。Vitest 首次在 Windows 沙箱以暫存 rename `EPERM` 中止，改走核准的沙箱外執行後全數通過。真登入 5173 桌機與 5174 的 390px 手機預覽均讀到新群組詳頁；點「運動表現」成員鍵直接彈出「周子晴・個人運動表現」，URL 保持群組頁。5174 編輯器目視滿三人時姓名輸入與新增鍵停用、表單欄位排版及提示不遮擋；未實際新增測試學生或修改使用者群組資料，因此 Enter 新增及儲存後資料持久化仍以程式流程和既有群組增減 API 證據支持，尚待隔離資料完整瀏覽器驗收。這是 390px 模擬，不等於安裝 PWA；完整 Gate／CI／遠端推送與 Production 均未啟動。下一個動作：Product Owner 檢視目前 5173／5174 候選的本輪視覺與操作；依回饋修正後，再依其明確放行執行完整 Gate，遠端推送仍需另行授權。
+
+2026-10-21 Product Owner 最新三圖修正（工作樹未提交，HEAD `0dd6e52`）：本輪有限清單為 ①群組成員改為必填 1–3 人，取消原生瀏覽器確認視窗並在 API／repository 保證不可手動移除最後一人；自然人封存／刪除導致空群組時自動封存群組並取消未來課，②只在群組編輯選取器依選取順序使用藍／橘／桃紅，詳頁「群組成員」與「運動表現」恢復原彩色成員頭像，③運動表現補上既有英文 eyebrow、縮小說明並預載各成員紀錄，④聚焦測試、桌機／手機檢視與交 Product Owner。①–③ 已寫入工作樹，Contract 已依本次明確決定更新；API／Web typecheck、API 13/13 與 Web 6/6 聚焦測試、Prettier、`git diff --check` 通過。5173 真登入編輯器實際取消至剩 1 人，最後一項變 disabled，沒有原生確認視窗；未儲存即關閉。5173 與 5174 的 390×844 預覽均目視詳頁兩處彩色頭像及運動表現卡片，手機點吳佳蓉後立即出現既有個人運動表現紀錄。未修改使用者群組或課堂資料。第 ④ 項的 Product Owner 檢視仍待完成；真 PostgreSQL 自動封存交易、320px／安裝 PWA、完整 Gate／CI／Production 仍未驗證，未推送或部署。下一步：Product Owner 檢視 5173 詳頁與編輯器、5174 手機預覽；按回饋修正並取得明確放行後再跑完整 Gate，遠端推送另需授權。
+
+2026-10-21 群組編輯捲動提示回歸修正（同一未提交候選）：先前為避開遮住欄位，`.scheduling-dialog.profile.ui-dialog-has-more::after` 被設為 `content: none`，使「向下滑看更多」完全消失。保留既有 `useDialogBehavior` 的剩餘內容判斷，改在編輯與新增群組表單的欄位捲動區和固定操作列之間放獨立提示槽；手機寬度僅在 `ui-dialog-has-more` 時顯示，不疊在欄位上。5174 的 390×844 真登入瀏覽器預覽：頂部提示可見、捲到底消失，末端單價／目標／備註與操作鍵均可見且未被覆蓋。Web typecheck、`student-dialog-layout.test.ts` 3/3、`git diff --check` 通過。未儲存或變更使用者群組資料，未推送；Next 仍為 Product Owner 檢視此版本，再決定是否放行完整 Gate。
+
+2026-10-21 張三教練真 Development 降級檢查與兩項 UI 追加修正（`codex/student-group-sol`，HEAD `0dd6e52`，工作樹未提交）：有限清單 ①撤銷此 Workspace 的測試用永久 Pro grant 並核對群組／未來課狀態，②檢查 5173／5174 Free 入口、封存詳頁與 Upsell，③以同帳號對正式 API 路由做拒絕寫入檢查，④群組詳頁運動表現加小 Pro 鎖、Free 名單分類改「群組」＋小 Pro 鎖且不顯示 0，⑤聚焦檢查與留下審閱版；①–⑤ 已完成。Development Workspace `4ba6de2b-520d-4c65-88d0-1fd7d529ae0b` 的永久 beta grant 由既有 operator revoke 指令撤銷，方案實測 `free/free`；群組 `5a8c6471-e33a-47e6-b952-98abaea172f8` 為 `kind=group, active=false`，三位成員仍在、未來 scheduled 0、cancelled 2、active Series 0。真 Development API 共用路由以該 owner 身分直接注入：GET 方案與封存群組均 200；建立群組、修改／恢復、群組購課與週期排課皆 403 `plan_required`，未建立測試群組或課堂。取消課的訓練寫入回 404 `not_found`，不足以單獨證明既有課訓練寫入的權限；該路由另有聚焦單元測試。5173 與 5174 皆看見封存群組資料、Free 標記與既有 Upsell；5174 從「已封存」列表實際點入群組成功。兩項 UI 修正 Web typecheck、Prettier、`git diff --check` 通過；API 方案路由 Vitest 5/5 通過。5174 一度反覆讀取失敗，查得 Development 專用臨時 DB role `m11_preview_20261021` 原限 2 連線、舊連線占滿；為預覽改為限 8。Product Owner 授權只清除已閒置且最後操作 `DISCARD ALL` 的舊連線，但執行前重查該類連線已自行消失，因此沒有強制終止任何連線；5174 隨後實際讀取成功。Production 未動、沒有遠端交付。此群組沒有已完成歷史課，故舊紀錄可見性尚未以此帳號實證；安裝 PWA、完整 CI Gate 仍待放行。Next：Product Owner 檢視目前 Free 狀態的 5173／5174，若有偏差繼續修正；若接受同版，依明確放行進行完整 Gate，遠端 push 仍另需授權。Development 預覽結束時清理臨時 DB role 前，需一併核對此限額設定。
+
+2026-10-21 學生列表手機工具列微調（同一未提交 Sol 候選，HEAD `0dd6e52`）：有限清單 ①對照 Product Owner 7.85 秒錄影及 5174 現況，②修正三分類與搜尋框的寬度交換動畫、消除工具列與頂部列間的 10px sticky 間距，③5174 實際展開／收合並做聚焦格式檢查；①–③ 完成，未新增工作包。原因為分類列在開始收縮時立即套用 `visibility:hidden` 和按鈕縮字／隱藏數字，而搜尋框以不同的 flex 屬性擴張；現兩者同步動畫，待收縮結束才隱藏分類列，且移除按鈕內容的瞬間變化。5174 Chrome 390×844 真登入預覽中已目視展開、收合及頂部貼齊，Prettier 與 `git diff --check` 通過。檢視期間 Development 學生請求短暫顯示「暫時無法讀取」並保留既有卡片；未將此 UI 檢查當成資料層驗收。安裝 PWA、完整 Gate、遠端交付仍未執行；Next 維持 Product Owner 檢視這一版，若接受同版才進完整 Gate。
+
+2026-10-21 群組詳頁三處視覺回饋（同一未提交 Sol 候選，HEAD `0dd6e52`）：本輪有限清單 ①封存方案提示改成有標題、Pro 標記、說明及清楚的「查看方案」按鈕，②手機空課程紀錄卡減少最小高度與內距，③恢復群組文字與 Pro 標記改以 flex 置中，④5173 桌機和 5174 390×844 真登入畫面／既有 Upsell 入口確認，⑤聚焦檢查及交 Product Owner 審閱；①–⑤ 已完成，原八項工作包數不變。兩個入口點擊後均顯示既有學生群組升級視窗；沒有恢復群組或變更資料。Web typecheck、Prettier（受影響 TSX/CSS）、`git diff --check` 通過。手機卡片與提示已目視檢查，未執行安裝 PWA 或完整 Gate。Next：Product Owner 檢視目前 5173／5174 候選；接受後按既有授權界線進行完整 Gate，遠端 push 另需授權。

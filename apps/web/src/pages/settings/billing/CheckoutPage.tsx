@@ -261,7 +261,7 @@ export function CheckoutPage({
             </div>
             <ul className="settings-plan-features">
               {(displayedTier === 'basic'
-                ? ['最多 15 名學員', '無限場地數量', '本月收支與成長軌跡']
+                ? ['最多 15 名學員', '無限場地數量', '學生群組與多人共課', '本月收支與成長軌跡']
                 : ['不限學員與場地', '包含 Pro 的所有功能', '收支報表', '行事曆整合']
               ).map((feature) => (
                 <li key={feature}>

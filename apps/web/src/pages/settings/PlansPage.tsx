@@ -201,11 +201,13 @@ export function PlanPanel({
               {selectedInterval === 'year' && <em>約 NT$96／月</em>}
             </div>
             <ul className="settings-plan-features">
-              {['最多 15 名學員', '無限場地數量', '本月收支與成長軌跡'].map((feature) => (
-                <li key={feature}>
-                  <CircleCheck aria-hidden="true" /> {feature}
-                </li>
-              ))}
+              {['最多 15 名學員', '無限場地數量', '學生群組與多人共課', '本月收支與成長軌跡'].map(
+                (feature) => (
+                  <li key={feature}>
+                    <CircleCheck aria-hidden="true" /> {feature}
+                  </li>
+                )
+              )}
             </ul>
             {plan?.source !== 'permanent' &&
               (!subscription ||
@@ -251,13 +253,18 @@ export function PlanPanel({
               {selectedInterval === 'year' && <em>約 NT$121／月</em>}
             </div>
             <ul className="settings-plan-features">
-              {['無限學員數量', '無限場地數量', '本月收支與成長軌跡', '收支報表', '行事曆整合'].map(
-                (feature) => (
-                  <li key={feature}>
-                    <CircleCheck aria-hidden="true" /> {feature}
-                  </li>
-                )
-              )}
+              {[
+                '無限學員數量',
+                '無限場地數量',
+                '學生群組與多人共課',
+                '本月收支與成長軌跡',
+                '收支報表',
+                '行事曆整合'
+              ].map((feature) => (
+                <li key={feature}>
+                  <CircleCheck aria-hidden="true" /> {feature}
+                </li>
+              ))}
             </ul>
             {plan?.source !== 'permanent' &&
               (!subscription ||

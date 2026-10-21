@@ -213,6 +213,10 @@ export class SchedulingModule {
     if (!(await this.repository.hasStudent(workspaceId, studentId))) return null
     return this.repository.listSeries(workspaceId, studentId)
   }
+  async seriesOwner(identity: AuthenticatedIdentity, seriesId: string) {
+    const workspaceId = await this.repository.resolveWorkspace(identity)
+    return this.repository.getSeriesOwner(workspaceId, seriesId)
+  }
   async createSeries(identity: AuthenticatedIdentity, studentId: string, raw: unknown) {
     const input = createSeriesSchema.parse(raw)
     const workspaceId = await this.repository.resolveWorkspace(identity)

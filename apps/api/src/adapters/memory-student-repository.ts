@@ -260,9 +260,16 @@ export class MemoryStudentRepository
     const current = students[index]
     if (!current) return null
     if (current.version !== input.expectedVersion) throw new StudentVersionConflictError()
+    if (
+      current.kind === 'group' &&
+      input.active &&
+      (input.memberIds ?? this.#membersByGroup.get(current.id) ?? []).length === 0
+    )
+      throw new StudentGroupMemberError()
     if (input.memberIds !== undefined) {
       if (
         current.kind !== 'group' ||
+        input.memberIds.length === 0 ||
         new Set(input.memberIds).size !== input.memberIds.length ||
         input.memberIds.some(
           (id) =>
@@ -276,10 +283,15 @@ export class MemoryStudentRepository
     }
     if (current.active && !input.active && current.kind === 'person') {
       for (const [groupId, members] of this.#membersByGroup) {
-        this.#membersByGroup.set(
-          groupId,
-          members.filter((id) => id !== current.id),
-        )
+        if (!members.includes(current.id)) continue
+        const remaining = members.filter((id) => id !== current.id)
+        this.#membersByGroup.set(groupId, remaining)
+        const group = students.find((student) => student.id === groupId)
+        if (group) {
+          group.active = group.active && remaining.length > 0
+          group.version += 1
+          group.updatedAt = input.now.toISOString()
+        }
       }
     }
     const next: Student = {
@@ -322,6 +334,19 @@ export class MemoryStudentRepository
       throw new StudentHasHistoryError()
     students.splice(index, 1)
     this.#membersByGroup.delete(studentId)
+    if (current.kind === 'person') {
+      for (const [groupId, members] of this.#membersByGroup) {
+        if (!members.includes(studentId)) continue
+        const remaining = members.filter((id) => id !== studentId)
+        this.#membersByGroup.set(groupId, remaining)
+        const group = students.find((student) => student.id === groupId)
+        if (group) {
+          group.active = group.active && remaining.length > 0
+          group.version += 1
+          group.updatedAt = new Date().toISOString()
+        }
+      }
+    }
     this.#purchasesByWorkspace.get(workspaceId)?.delete(studentId)
     this.#completedSessionsByWorkspace.get(workspaceId)?.delete(studentId)
     return true

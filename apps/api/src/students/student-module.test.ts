@@ -55,6 +55,7 @@ describe('StudentModule', () => {
     const students = new StudentModule({ repository })
     const alice = await students.create(coachA, { name: 'Alice' })
     const bob = await students.create(coachA, { name: 'Bob' })
+    const charlie = await students.create(coachA, { name: 'Charlie' })
     const outsider = await students.create(coachB, { name: 'Outside' })
 
     await expect(
@@ -76,14 +77,87 @@ describe('StudentModule', () => {
     })
     await expect(students.detail(coachB, group.id)).resolves.toBeNull()
 
-    const revised = await students.update(coachA, group.id, {
+    const expanded = await students.update(coachA, group.id, {
       name: 'Tuesday class',
-      memberIds: [bob.id],
+      memberIds: [alice.id, bob.id, charlie.id],
       version: group.version,
     })
-    expect(revised?.version).toBe(group.version + 1)
+    expect(expanded?.version).toBe(group.version + 1)
     await expect(students.detail(coachA, group.id)).resolves.toMatchObject({
+      members: [{ id: alice.id }, { id: bob.id }, { id: charlie.id }],
+    })
+
+    const revised = await students.update(coachA, group.id, {
+      name: 'Wednesday class',
+      memberIds: [bob.id],
+      version: expanded!.version,
+    })
+    expect(revised?.version).toBe(expanded!.version + 1)
+    await expect(students.detail(coachA, group.id)).resolves.toMatchObject({
+      student: { name: 'Wednesday class' },
       members: [{ id: bob.id }],
+    })
+  })
+
+  it('requires a member on manual edits and archives a group when its last member is archived', async () => {
+    const students = new StudentModule({ repository: new MemoryStudentRepository() })
+    const alice = await students.create(coachA, { name: 'Alice' })
+    const bob = await students.create(coachA, { name: 'Bob' })
+    const group = await students.create(coachA, {
+      name: 'Small group',
+      kind: 'group',
+      memberIds: [alice.id],
+    })
+    await expect(
+      students.update(coachA, group.id, {
+        name: group.name,
+        memberIds: [],
+        version: group.version,
+      }),
+    ).rejects.toMatchObject({ name: 'ZodError' })
+
+    await students.update(coachA, alice.id, {
+      name: alice.name,
+      active: false,
+      version: alice.version,
+    })
+    const archived = (await students.detail(coachA, group.id))!
+    expect(archived.student.active).toBe(false)
+    expect(archived.members).toEqual([])
+    await expect(
+      students.update(coachA, group.id, {
+        name: group.name,
+        active: true,
+        version: archived.student.version,
+      }),
+    ).rejects.toMatchObject({ name: 'StudentGroupMemberError' })
+
+    const refilled = await students.update(coachA, group.id, {
+      name: group.name,
+      memberIds: [bob.id],
+      active: false,
+      version: archived.student.version,
+    })
+    const restored = await students.update(coachA, group.id, {
+      name: group.name,
+      active: true,
+      version: refilled!.version,
+    })
+    expect(restored?.active).toBe(true)
+  })
+
+  it('archives a group when its last member is deleted before any class or purchase', async () => {
+    const students = new StudentModule({ repository: new MemoryStudentRepository() })
+    const alice = await students.create(coachA, { name: 'Alice' })
+    const group = await students.create(coachA, {
+      name: 'Small group',
+      kind: 'group',
+      memberIds: [alice.id],
+    })
+    await expect(students.delete(coachA, alice.id, alice.version)).resolves.toBe(true)
+    await expect(students.detail(coachA, group.id)).resolves.toMatchObject({
+      student: { active: false },
+      members: [],
     })
   })
 

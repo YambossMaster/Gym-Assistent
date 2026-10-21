@@ -125,6 +125,7 @@ export interface SchedulingRepository {
     version: number,
   ): Promise<boolean>
   listSeries(workspaceId: SchedulingWorkspaceId, studentId: string): Promise<ScheduleSeries[]>
+  getSeriesOwner(workspaceId: SchedulingWorkspaceId, seriesId: string): Promise<string | null>
   createSeriesAndAnchor(
     workspaceId: SchedulingWorkspaceId,
     series: NewScheduleSeries,

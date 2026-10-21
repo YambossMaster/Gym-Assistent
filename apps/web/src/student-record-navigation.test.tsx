@@ -92,6 +92,41 @@ it('keeps the performance card visible on Free and opens a dismissible upgrade d
   }
 })
 
+it('opens the existing personal performance directory directly from a group entry', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  planState.tier = 'advanced'
+  performanceQuery.current = { data: [], isLoading: false, isError: false, refetch: vi.fn() }
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  const onClose = vi.fn()
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <StudentPerformance
+            session={{ user: { id: 'coach' } } as Session}
+            studentId="student-1"
+            studentName="學生甲"
+            dialogOnly
+            onClose={onClose}
+          />
+        </MemoryRouter>
+      )
+    )
+    expect(host.querySelector('.performance-portal')).toBeNull()
+    expect(host.querySelector('[role="dialog"]')?.textContent).toContain('學生甲・個人運動表現')
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('[role="dialog"] button[aria-label="關閉"]')!.click()
+    )
+    expect(onClose).toHaveBeenCalledOnce()
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('opens a Student trajectory history row in its original class and exercise', async () => {
   performanceQuery.current = {
     data: [

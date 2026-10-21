@@ -15,6 +15,7 @@ import {
   updateLessonPurchaseSchema,
 } from './student.js'
 import type { StudentRepository } from './student-repository.js'
+import { StudentVersionConflictError } from './student-repository.js'
 
 export interface StudentModuleDependencies {
   repository: StudentRepository
@@ -40,6 +41,38 @@ export class StudentModule {
   async list(identity: AuthenticatedIdentity): Promise<StudentRosterItem[]> {
     const workspaceId = await this.#repository.resolveWorkspace(identity)
     return this.#repository.listStudents(workspaceId)
+  }
+
+  async archiveActiveGroupsForFreePlan(identity: AuthenticatedIdentity): Promise<number> {
+    const groups = (await this.list(identity)).filter(
+      (student) => student.kind === 'group' && student.active,
+    )
+    let archived = 0
+    for (const group of groups) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const current = (await this.detail(identity, group.id))?.student
+        if (!current?.active) break
+        try {
+          await this.update(identity, current.id, {
+            name: current.name,
+            phone: current.phone,
+            goal: current.goal,
+            privateNote: current.privateNote,
+            ageRange: current.ageRange,
+            defaultVenueId: current.defaultVenueId,
+            singleLessonPrice: current.singleLessonPrice,
+            lineLinked: current.lineLinked,
+            active: false,
+            version: current.version,
+          })
+          archived++
+          break
+        } catch (error) {
+          if (!(error instanceof StudentVersionConflictError) || attempt === 1) throw error
+        }
+      }
+    }
+    return archived
   }
 
   async create(identity: AuthenticatedIdentity, rawInput: CreateStudentInput): Promise<Student> {

@@ -1142,6 +1142,12 @@ tenant and kind constraints, responsive UI and acceptance evidence. The accepted
 training prototypes supply the interaction baseline. Keep the minimal extension to existing
 routes, Modules and API unless a concrete incompatibility is proved.
 
+**2026-10-21 Product Owner amendment:** Student Groups and shared lessons are Pro/Prime features.
+Free group entry uses the existing Pro mark and upgrade dialog. On downgrade to Free, active groups
+are archived, their fixed schedules disabled, and future scheduled group lessons cancelled; history
+stays readable. Free cannot restore or operate a group. Restoring Pro allows manual group restoration
+and manual rescheduling only. Enforce this at the API and reconcile expiry without a Web visit.
+
 **Sol gate:** implement the Contract's eight bounded delivery areas end to end. Start with a
 read-only audit of existing person-only queries and deletion paths, then design the migration,
 kind/tenant constraints and verified training-set backfill. Implement group and member operations,

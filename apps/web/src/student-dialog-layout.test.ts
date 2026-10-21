@@ -17,8 +17,9 @@ describe('student profile dialog layout', () => {
 
     expect(profileScrollRegions).toHaveLength(2)
     expect(workspace).toMatch(
-      /<form className="student-detail-profile-form"[\s\S]*?<div className="student-detail-profile-fields" data-dialog-scroll-region>[\s\S]*?<\/div>[\s\S]*?<footer>/
+      /<form className="student-detail-profile-form"[\s\S]*?<div className="student-detail-profile-fields" data-dialog-scroll-region>[\s\S]*?<\/div>\s*<div className="student-profile-scroll-cue" aria-hidden="true">[\s\S]*?<\/div>\s*<footer>/
     )
+    expect(workspace.match(/className="student-profile-scroll-cue"/g)).toHaveLength(2)
   })
 
   it('bounds the mobile scrollbar between the dialog header and action footer', () => {
@@ -30,6 +31,9 @@ describe('student profile dialog layout', () => {
     )
     expect(styles).toMatch(
       /\.student-detail-profile-form\s+>\s+footer[\s\S]*?position:\s*static;[\s\S]*?flex:\s*0 0 auto/
+    )
+    expect(styles).toMatch(
+      /\.scheduling-dialog\.profile\.ui-dialog-has-more \.student-profile-scroll-cue\s*\{\s*visibility:\s*visible;/
     )
   })
 

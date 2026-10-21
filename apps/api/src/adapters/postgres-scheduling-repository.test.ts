@@ -2,6 +2,40 @@ import type { Pool } from 'pg'
 import { expect, it, vi } from 'vitest'
 import { PostgresSchedulingRepository } from './postgres-scheduling-repository.js'
 import { SchedulingVersionConflictError } from '../scheduling/scheduling-repository.js'
+import { SchedulingStudentChangeError } from '../scheduling/scheduling-repository.js'
+
+it('does not reactivate an archived group Series after Pro is restored', async () => {
+  const calls: string[] = []
+  const query = vi.fn(async (sql: string) => {
+    calls.push(sql)
+    if (sql.startsWith('select kind,active from app_private.student'))
+      return { rows: [{ kind: 'group', active: false }], rowCount: 1 }
+    return { rows: [], rowCount: 0 }
+  })
+  const repository = new PostgresSchedulingRepository({
+    query: async (sql: string) =>
+      sql.startsWith('select student_id from app_private.schedule_series')
+        ? { rows: [{ student_id: 'group-1' }] }
+        : { rows: [{ time_zone: 'Asia/Taipei' }] },
+    connect: async () => ({ query, release: vi.fn() }),
+  } as unknown as Pool)
+  await expect(
+    repository.updateSeries('workspace-1', 'series-1', {
+      anchorStartsAt: new Date('2026-10-21T10:00:00.000Z'),
+      localWeekday: 3,
+      localStartTime: '18:00',
+      durationMinutes: 60,
+      intervalWeeks: 1,
+      autoScheduleHorizon: 'NONE',
+      location: 'FORM A',
+      active: true,
+      expectedVersion: 1,
+      now: new Date('2026-10-21T00:00:00.000Z'),
+    }),
+  ).rejects.toBeInstanceOf(SchedulingStudentChangeError)
+  expect(calls.some((sql) => sql.startsWith('update app_private.schedule_series'))).toBe(false)
+  expect(calls.at(-1)).toBe('rollback')
+})
 
 it('reconciles a group Series without borrowing another pool connection during its transaction', async () => {
   const calls: string[] = []

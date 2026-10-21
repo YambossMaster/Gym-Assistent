@@ -58,7 +58,7 @@ export const createStudentSchema = studentFieldsSchema
   })
 
 export const updateStudentSchema = studentFieldsSchema.extend({
-  memberIds: z.array(z.uuid()).max(3).optional(),
+  memberIds: z.array(z.uuid()).min(1).max(3).optional(),
   ageRange: studentAgeRangeSchema.nullable().optional(),
   defaultVenueId: z.uuid().nullable().optional(),
   singleLessonPrice: singleLessonPriceSchema.nullable().optional(),

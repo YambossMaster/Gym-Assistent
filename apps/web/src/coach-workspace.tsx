@@ -38,6 +38,7 @@ import {
   TimerReset,
   Trash2,
   UserRound,
+  UsersRound,
   X,
   XCircle
 } from 'lucide-react'
@@ -48,6 +49,7 @@ import {
   createStudent,
   deleteAccountImmediately,
   getStudentDetail,
+  getStudentPerformance,
   getWorkspaceSettings,
   listScheduleSeries,
   type LessonPurchase,
@@ -116,13 +118,21 @@ export function StudentsPage({
   const [createOpen, setCreateOpen] = useState(false)
   const [createPlanLocked, setCreatePlanLocked] = useState(false)
   const [financeUpsellOpen, setFinanceUpsellOpen] = useState(false)
+  const [groupUpsellOpen, setGroupUpsellOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
   const mobileSearchButtonRef = useRef<HTMLButtonElement>(null)
   const managementLinksRef = useRef<HTMLDivElement>(null)
   const { students: studentsQuery } = useStudentsRouteQuery(session)
   const plan = usePlanAccess(session)
+  useEffect(() => {
+    if (plan.data?.tier === 'free') void studentsQuery.refetch()
+  }, [plan.data?.tier])
   const openCreate = () => {
+    if (view === 'group' && plan.data?.tier === 'free') {
+      setGroupUpsellOpen(true)
+      return
+    }
     if (
       plan.data?.overCapacity ||
       (view !== 'group' &&
@@ -178,6 +188,9 @@ export function StudentsPage({
       {financeUpsellOpen && (
         <PlanUpsellDialog title="本月收支" onClose={() => setFinanceUpsellOpen(false)} />
       )}
+      {groupUpsellOpen && (
+        <PlanUpsellDialog title="學生群組" onClose={() => setGroupUpsellOpen(false)} />
+      )}
       <div className="toolbar" data-search-open={mobileSearchOpen}>
         <label className="search-box">
           <Search aria-hidden="true" />
@@ -200,17 +213,32 @@ export function StudentsPage({
         </label>
         <div className="student-view-switch" role="group" aria-label="學生分類" data-view={view}>
           <button type="button" onClick={() => setView('person')} aria-pressed={view === 'person'}>
-            學生 <span>{activeCount}</span>
+            學生 <span className="student-view-count">{activeCount}</span>
           </button>
-          <button type="button" onClick={() => setView('group')} aria-pressed={view === 'group'}>
-            學生群組 <span>{groupCount}</span>
+          <button
+            type="button"
+            className={plan.data?.tier === 'free' ? 'student-view-group-locked' : undefined}
+            onClick={() =>
+              plan.data?.tier === 'free' ? setGroupUpsellOpen(true) : setView('group')
+            }
+            aria-pressed={view === 'group'}
+          >
+            {plan.data?.tier === 'free' ? (
+              <>
+                群組 <PlanAccessMark compact />
+              </>
+            ) : (
+              <>
+                學生群組 <span className="student-view-count">{groupCount}</span>
+              </>
+            )}
           </button>
           <button
             type="button"
             onClick={() => setView('archived')}
             aria-pressed={view === 'archived'}
           >
-            已封存 <span>{archivedCount}</span>
+            已封存 <span className="student-view-count">{archivedCount}</span>
           </button>
         </div>
         <button
@@ -257,6 +285,20 @@ export function StudentsPage({
             建立學生 <ArrowRight />
           </button>
         </section>
+      ) : rosterResult.state === 'filter-empty' && view === 'group' ? (
+        <section className="empty-state student-group-empty">
+          <UsersRound aria-hidden="true" />
+          <h2>適合固定「一對二」或「一對三」的課程型態</h2>
+          <p>將一起上課的學生加入同一個群組，便能一起排課、紀錄、購課與扣堂。</p>
+          <button
+            type="button"
+            className="primary-button compact ui-action-add"
+            onClick={openCreate}
+          >
+            <Plus aria-hidden="true" />
+            新增學生群組
+          </button>
+        </section>
       ) : rosterResult.state === 'filter-empty' || rosterResult.state === 'search-empty' ? (
         <section className="empty-state">
           <UserRound />
@@ -277,6 +319,7 @@ export function StudentsPage({
               accessToken={session.access_token}
               coachId={session.user.id}
               timeZone={timeZone}
+              showKind={view === 'archived'}
             />
           ))}
         </section>
@@ -315,6 +358,7 @@ export function StudentsPage({
       {createOpen && (
         <CreateStudentDialog
           accessToken={session.access_token}
+          coachId={session.user.id}
           kind={view === 'group' ? 'group' : 'person'}
           people={students.filter(
             (student) => student.active && (student.kind ?? 'person') === 'person'
@@ -341,13 +385,15 @@ function StudentCard({
   index,
   accessToken,
   coachId,
-  timeZone
+  timeZone,
+  showKind
 }: {
   student: Student
   index: number
   accessToken: string
   coachId: string
   timeZone: string
+  showKind: boolean
 }) {
   const queryClient = useQueryClient()
   const prefetch = () =>
@@ -364,11 +410,11 @@ function StudentCard({
     >
       <span className="student-index">{String(index + 1).padStart(2, '0')}</span>
       <div className="large-avatar">{student.name.slice(-2)}</div>
-      {(student.kind === 'group' || !student.active) && (
+      {showKind && (
         <span className="student-kind-mark">{student.kind === 'group' ? '學生群組' : '學生'}</span>
       )}
       <h2>{student.name}</h2>
-      <p>{student.goal || '尚未填寫學生簡介'}</p>
+      <p>{student.goal || (student.kind === 'group' ? '尚未填寫共同目標' : '尚未填寫學生簡介')}</p>
       <div className="student-balance">
         <div>
           <span>剩餘堂數</span>
@@ -422,6 +468,7 @@ export function StudentDetailPage({
 }) {
   const { studentId = '' } = useParams()
   const plan = usePlanAccess(session)
+  const queryClient = useQueryClient()
   const defaultFinanceCurrency = useDefaultFinanceCurrency()
   const { hash, search } = useLocation()
   const navigate = useNavigate()
@@ -437,6 +484,8 @@ export function StudentDetailPage({
     workspaceWallTime(new Date().toISOString(), timeZone).slice(11)
   )
   const [profileEditing, setProfileEditing] = useState(false)
+  const [groupUpsellOpen, setGroupUpsellOpen] = useState(false)
+  const [performanceMember, setPerformanceMember] = useState<Student | null>(null)
   const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
   const [purchaseToDelete, setPurchaseToDelete] = useState<{ id: string; version: number } | null>(
     null
@@ -446,10 +495,37 @@ export function StudentDetailPage({
   const [purchaseEditor, setPurchaseEditor] = useState<LessonPurchase | null>(null)
   const [purchaseConflict, setPurchaseConflict] = useState<LessonPurchase | null>(null)
   const detailQuery = useStudentDetailRouteQuery(session, studentId)
+  useEffect(() => {
+    if (!plan.data || plan.data.tier === 'free' || detailQuery.data?.student.kind !== 'group')
+      return
+    for (const member of detailQuery.data.members ?? []) {
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.studentPerformance(session.user.id, member.id),
+        queryFn: () => getStudentPerformance(session.access_token, member.id),
+        staleTime: 60_000
+      })
+    }
+  }, [
+    detailQuery.data?.members,
+    detailQuery.data?.student.kind,
+    plan.data?.tier,
+    queryClient,
+    session.access_token,
+    session.user.id
+  ])
+  useEffect(() => {
+    if (
+      plan.data?.tier === 'free' &&
+      detailQuery.data?.student.kind === 'group' &&
+      detailQuery.data.student.active
+    )
+      void detailQuery.refetch()
+  }, [plan.data?.tier, detailQuery.data?.student.kind, detailQuery.data?.student.active])
   const rosterQuery = useStudentsRouteQuery(session).students
   useEffect(() => {
     const params = new URLSearchParams(search)
     if (params.get('edit') !== 'price' || !detailQuery.data) return
+    setGroupMemberIds(detailQuery.data.members?.map((member) => member.id) ?? [])
     setProfileEditing(true)
     params.delete('edit')
     navigate({ search: params.toString() }, { replace: true })
@@ -486,6 +562,8 @@ export function StudentDetailPage({
   if (routeState === 'error' || !detailQuery.data)
     return <StudentDetailError onRetry={() => void detailQuery.refetch()} />
   const detail = detailQuery.data
+  if (detail.student.kind === 'group' && plan.isLoading) return <StudentDetailSkeleton />
+  const lockedGroup = detail.student.kind === 'group' && plan.data?.tier === 'free'
   const purchaseRecords = selectStudentPurchaseRecords(detail.purchases)
   const submitting =
     saveMutation.isPending ||
@@ -506,17 +584,7 @@ export function StudentDetailPage({
           .map((person) => person.id)
           .sort()
           .join(',')
-    if (membersChanged && groupMemberIds.length === 0) {
-      const futureCount =
-        detail.schedule?.sessions?.filter(
-          (item) =>
-            item.status === 'scheduled' &&
-            item.startsAt &&
-            new Date(item.startsAt).getTime() > Date.now()
-        ).length ?? 0
-      if (!confirm(`移除所有成員後，${futureCount} 堂未來群組課將取消，也無法新增課堂。確定繼續？`))
-        return
-    }
+    if (detail.student.kind === 'group' && groupMemberIds.length === 0) return
     saveMutation.mutate(
       {
         name: String(values.get('name') || '').trim(),
@@ -565,6 +633,10 @@ export function StudentDetailPage({
   }
   const changeActive = (active: boolean) => {
     setNotice('')
+    if (active && detail.student.kind === 'group' && (detail.members?.length ?? 0) === 0) {
+      setNotice('請先在群組成員加入至少一位學生，再恢復群組。')
+      return
+    }
     saveMutation.mutate({
       name: detail.student.name,
       phone: detail.student.phone,
@@ -583,6 +655,9 @@ export function StudentDetailPage({
   }
   return (
     <section className="page student-detail-page">
+      {groupUpsellOpen && (
+        <PlanUpsellDialog title="學生群組" onClose={() => setGroupUpsellOpen(false)} />
+      )}
       <Link
         className="student-detail-back"
         to={
@@ -625,38 +700,29 @@ export function StudentDetailPage({
           </div>
         </div>
         <section
-          className="student-detail-profile"
-          aria-label={detail.student.kind === 'group' ? '群組基本資料' : '學生個人資料'}
+          className={`student-detail-profile${detail.student.kind === 'group' ? ' is-group' : ''}`}
+          aria-label={detail.student.kind === 'group' ? '群組成員' : '學生個人資料'}
         >
           <div className="student-detail-profile-heading">
-            <span>基本資料</span>
-            <button
-              type="button"
-              className="secondary-button compact"
-              onClick={() => {
-                saveMutation.reset()
-                setGroupMemberIds(detail.members?.map((member) => member.id) ?? [])
-                setProfileEditing(true)
-              }}
-            >
-              <Pencil aria-hidden="true" />
-              編輯
-            </button>
+            <span>{detail.student.kind === 'group' ? '群組成員' : '基本資料'}</span>
+            {!lockedGroup && (
+              <button
+                type="button"
+                className="secondary-button compact"
+                onClick={() => {
+                  saveMutation.reset()
+                  setGroupMemberIds(detail.members?.map((member) => member.id) ?? [])
+                  setProfileEditing(true)
+                }}
+              >
+                <Pencil aria-hidden="true" />
+                編輯
+              </button>
+            )}
           </div>
           <div className="student-detail-profile-facts">
             {detail.student.kind === 'group' ? (
-              <div className="student-group-members">
-                <span>目前成員</span>
-                {(detail.members ?? []).length === 0 ? (
-                  <strong>尚無成員</strong>
-                ) : (
-                  (detail.members ?? []).map((member) => (
-                    <Link key={member.id} to={`/students/${member.id}`}>
-                      {member.name}
-                    </Link>
-                  ))
-                )}
-              </div>
+              <GroupMemberLinks members={detail.members ?? []} />
             ) : (
               <>
                 <div className="student-detail-contact">
@@ -677,7 +743,7 @@ export function StudentDetailPage({
         </section>
         {profileEditing && (
           <SchedulingDialog
-            title="編輯基本資料"
+            title={detail.student.kind === 'group' ? '編輯群組' : '編輯基本資料'}
             variant="profile"
             onClose={() => setProfileEditing(false)}
           >
@@ -696,32 +762,17 @@ export function StudentDetailPage({
                   />
                 </label>
                 {detail.student.kind === 'group' && (
-                  <fieldset className="student-group-member-picker">
-                    <legend>目前成員（最多 3 位）</legend>
-                    {(rosterQuery.data ?? [])
-                      .filter((person) => person.active && (person.kind ?? 'person') === 'person')
-                      .map((person) => (
-                        <label key={person.id}>
-                          <input
-                            type="checkbox"
-                            checked={groupMemberIds.includes(person.id)}
-                            disabled={
-                              !groupMemberIds.includes(person.id) && groupMemberIds.length >= 3
-                            }
-                            onChange={(event) =>
-                              setGroupMemberIds((current) =>
-                                event.target.checked
-                                  ? [...current, person.id]
-                                  : current.filter((id) => id !== person.id)
-                              )
-                            }
-                          />
-                          <span>{person.name}</span>
-                        </label>
-                      ))}
-                  </fieldset>
+                  <GroupMemberPicker
+                    accessToken={session.access_token}
+                    coachId={session.user.id}
+                    people={rosterQuery.data ?? []}
+                    selectedIds={groupMemberIds}
+                    onChange={setGroupMemberIds}
+                  />
                 )}
-                <div className="field-row student-profile-core-row">
+                <div
+                  className={`field-row student-profile-core-row${detail.student.kind === 'group' ? ' is-group' : ''}`}
+                >
                   {detail.student.kind === 'person' && (
                     <>
                       <label>
@@ -748,17 +799,31 @@ export function StudentDetailPage({
                     initial={detail.student.singleLessonPrice}
                     defaultCurrency={defaultFinanceCurrency}
                   />
+                  {detail.student.kind === 'group' && (
+                    <label>
+                      共同目標
+                      <input
+                        name="goal"
+                        defaultValue={detail.student.goal}
+                        maxLength={1000}
+                        autoComplete="off"
+                        placeholder="例如：一起減脂、一起變壯"
+                      />
+                    </label>
+                  )}
                 </div>
-                <label>
-                  {detail.student.kind === 'group' ? '共同目標' : '學生簡介'}
-                  <input
-                    name="goal"
-                    defaultValue={detail.student.goal}
-                    maxLength={1000}
-                    autoComplete="off"
-                    placeholder="例如：設計師、晨型人、喜歡跑步"
-                  />
-                </label>
+                {detail.student.kind === 'person' && (
+                  <label>
+                    學生簡介
+                    <input
+                      name="goal"
+                      defaultValue={detail.student.goal}
+                      maxLength={1000}
+                      autoComplete="off"
+                      placeholder="例如：設計師、晨型人、喜歡跑步"
+                    />
+                  </label>
+                )}
                 <label>
                   備註
                   <textarea
@@ -809,6 +874,9 @@ export function StudentDetailPage({
                   </p>
                 )}
               </div>
+              <div className="student-profile-scroll-cue" aria-hidden="true">
+                向下滑看更多 ↓
+              </div>
               <footer>
                 <button
                   type="button"
@@ -817,7 +885,12 @@ export function StudentDetailPage({
                 >
                   取消
                 </button>
-                <button className="primary-button compact ui-action-save" disabled={submitting}>
+                <button
+                  className="primary-button compact ui-action-save"
+                  disabled={
+                    submitting || (detail.student.kind === 'group' && groupMemberIds.length === 0)
+                  }
+                >
                   {saveMutation.isPending ? (
                     '儲存中…'
                   ) : (
@@ -832,6 +905,24 @@ export function StudentDetailPage({
           </SchedulingDialog>
         )}
       </header>
+      {lockedGroup && (
+        <div className="student-group-plan-notice" role="status">
+          <div className="student-group-plan-notice-copy">
+            <span className="student-group-plan-notice-icon" aria-hidden="true">
+              <KeyRound />
+            </span>
+            <div>
+              <strong>
+                群組已封存 <PlanAccessMark compact />
+              </strong>
+              <p>過去紀錄仍可查看。升級至 Pro 或 Prime 後可手動恢復，未來課需重排。</p>
+            </div>
+          </div>
+          <button type="button" onClick={() => setGroupUpsellOpen(true)}>
+            查看方案 <ArrowRight aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <section className="detail-page-grid">
         <StudentSchedule
           session={session}
@@ -840,17 +931,41 @@ export function StudentDetailPage({
           timeZone={timeZone}
           defaultSessionMinutes={defaultSessionMinutes}
           schedule={detail.schedule}
+          readOnly={lockedGroup}
         />
         {detail.student.kind === 'group' ? (
           <section className="detail-section student-group-performance">
-            <h2>運動表現</h2>
-            <p>每位成員的成績保存在自己的運動表現中。</p>
-            {(detail.members ?? []).map((member) => (
-              <Link key={member.id} to={`/students/${member.id}#performance`}>
-                {member.name}
-                <ArrowRight aria-hidden="true" />
-              </Link>
-            ))}
+            <div className="student-group-performance-heading">
+              <span className="eyebrow dark">PERFORMANCE / MOVEMENT RECORDS</span>
+              <h2>運動表現 {lockedGroup && <PlanAccessMark compact />}</h2>
+            </div>
+            <p>查看各成員的個人運動表現。</p>
+            <div className="student-group-members">
+              {(detail.members ?? []).map((member, index) => (
+                <button
+                  type="button"
+                  className="student-group-member-link"
+                  key={member.id}
+                  onClick={() => setPerformanceMember(member)}
+                >
+                  <span className={`group-member-avatar tone-${index % 3}`} aria-hidden="true">
+                    {member.name.slice(0, 1)}
+                  </span>
+                  <strong>{member.name}</strong>
+                  <ArrowRight aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+            {performanceMember && (
+              <StudentPerformance
+                key={performanceMember.id}
+                session={session}
+                studentId={performanceMember.id}
+                studentName={performanceMember.name}
+                dialogOnly
+                onClose={() => setPerformanceMember(null)}
+              />
+            )}
           </section>
         ) : (
           <StudentPerformance
@@ -866,19 +981,21 @@ export function StudentDetailPage({
               <span className="eyebrow dark">PURCHASE LEDGER</span>
               <h2>購課紀錄</h2>
             </div>
-            <button
-              type="button"
-              className="detail-add-button"
-              onClick={() => {
-                purchaseMutation.reset()
-                setPurchaseDate(new Date().toLocaleDateString('sv-SE', { timeZone }))
-                setPurchaseCreateOpen(true)
-              }}
-            >
-              <Plus aria-hidden="true" />
-              <span className="detail-add-button-full">新增購課</span>
-              <span className="detail-add-button-short">新增</span>
-            </button>
+            {!lockedGroup && (
+              <button
+                type="button"
+                className="detail-add-button"
+                onClick={() => {
+                  purchaseMutation.reset()
+                  setPurchaseDate(new Date().toLocaleDateString('sv-SE', { timeZone }))
+                  setPurchaseCreateOpen(true)
+                }}
+              >
+                <Plus aria-hidden="true" />
+                <span className="detail-add-button-full">新增購課</span>
+                <span className="detail-add-button-short">新增</span>
+              </button>
+            )}
           </div>
           {(venueQuery.data?.studentVenueBalances ?? []).filter(
             (balance) => balance.studentId === studentId
@@ -899,6 +1016,7 @@ export function StudentDetailPage({
               timeZone={timeZone}
               venues={venueQuery.data?.venues ?? []}
               submitting={submitting}
+              readOnly={lockedGroup}
               canCorrectSingle={plan.data?.tier === 'basic' || plan.data?.tier === 'advanced'}
               onEdit={(item) => {
                 setPurchaseConflict(null)
@@ -938,6 +1056,7 @@ export function StudentDetailPage({
               timeZone={timeZone}
               venues={venueQuery.data?.venues ?? []}
               submitting={submitting}
+              readOnly={lockedGroup}
               canCorrectSingle={plan.data?.tier === 'basic' || plan.data?.tier === 'advanced'}
               onEdit={(item) => {
                 setPurchaseHistoryOpen(false)
@@ -954,15 +1073,26 @@ export function StudentDetailPage({
       )}
       <div className="student-detail-management" aria-label="學生狀態管理">
         <div className="student-detail-hero-actions">
-          <button
-            type="button"
-            className="secondary-button compact"
-            disabled={submitting}
-            onClick={() => (detail.student.active ? setArchiveOpen(true) : changeActive(true))}
-          >
-            {detail.student.active ? '封存' : '恢復'}
-          </button>
-          {!detail.student.active && (
+          {lockedGroup ? (
+            <button
+              type="button"
+              className="secondary-button compact student-group-restore-locked"
+              onClick={() => setGroupUpsellOpen(true)}
+            >
+              <span>恢復群組</span>
+              <PlanAccessMark compact />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="secondary-button compact"
+              disabled={submitting}
+              onClick={() => (detail.student.active ? setArchiveOpen(true) : changeActive(true))}
+            >
+              {detail.student.active ? '封存' : '恢復'}
+            </button>
+          )}
+          {!lockedGroup && !detail.student.active && (
             <button
               type="button"
               className="text-button danger-button ui-action-delete"
@@ -1173,6 +1303,7 @@ export function PurchaseLedgerRows({
   timeZone,
   venues,
   submitting,
+  readOnly = false,
   canCorrectSingle,
   onEdit,
   onDelete
@@ -1181,6 +1312,7 @@ export function PurchaseLedgerRows({
   timeZone: string
   venues: readonly Venue[]
   submitting: boolean
+  readOnly?: boolean
   canCorrectSingle: boolean
   onEdit: (purchase: LessonPurchase) => void
   onDelete: (purchase: LessonPurchase) => void
@@ -1212,7 +1344,7 @@ export function PurchaseLedgerRows({
       </span>
       <small className="purchase-ledger-note">{item.privateNote || '—'}</small>
       <span className="purchase-ledger-actions">
-        {(!isSingleLessonPurchase(item) || canCorrectSingle) && (
+        {!readOnly && (!isSingleLessonPurchase(item) || canCorrectSingle) && (
           <button
             type="button"
             className="purchase-ledger-icon"
@@ -1223,7 +1355,7 @@ export function PurchaseLedgerRows({
             <Pencil aria-hidden="true" />
           </button>
         )}
-        {!isSingleLessonPurchase(item) && (
+        {!readOnly && !isSingleLessonPurchase(item) && (
           <button
             className="purchase-ledger-icon danger-button"
             type="button"
@@ -1373,13 +1505,15 @@ function StudentSchedule({
   studentName,
   timeZone,
   defaultSessionMinutes,
-  schedule
+  schedule,
+  readOnly = false
 }: {
   session: Session
   studentId: string
   studentName: string
   timeZone: string
   defaultSessionMinutes: number
+  readOnly?: boolean
   schedule?: {
     nearestFuture: import('./api').CalendarSession | null
     history: import('./api').CalendarSession[]
@@ -1404,11 +1538,13 @@ function StudentSchedule({
           <span className="eyebrow dark">FIXED SCHEDULE</span>
           <h2 id="student-schedule-title">固定課程時間</h2>
         </div>
-        <button className="detail-add-button ui-action-add" onClick={() => setEditor('new')}>
-          <Plus aria-hidden="true" />
-          <span className="detail-add-button-full">新增時段</span>
-          <span className="detail-add-button-short">新增</span>
-        </button>
+        {!readOnly && (
+          <button className="detail-add-button ui-action-add" onClick={() => setEditor('new')}>
+            <Plus aria-hidden="true" />
+            <span className="detail-add-button-full">新增時段</span>
+            <span className="detail-add-button-short">新增</span>
+          </button>
+        )}
       </div>
       <div className="student-series-list">
         {seriesQuery.isLoading ? (
@@ -1451,14 +1587,16 @@ function StudentSchedule({
                 <span className={`student-series-status${series.active ? ' is-active' : ''}`}>
                   {series.active ? '使用中' : '已停用'}
                 </span>
-                <button
-                  type="button"
-                  className="student-series-edit"
-                  onClick={() => setEditor(series)}
-                  aria-label={`編輯${when} ${series.localStartTime}固定時段`}
-                >
-                  <Pencil aria-hidden="true" />
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="student-series-edit"
+                    onClick={() => setEditor(series)}
+                    aria-label={`編輯${when} ${series.localStartTime}固定時段`}
+                  >
+                    <Pencil aria-hidden="true" />
+                  </button>
+                )}
               </div>
             )
           })
@@ -2379,14 +2517,155 @@ export function SettingsPage({ session }: { session: Session }) {
   )
 }
 
+function GroupMemberLinks({ members }: { members: Student[] }) {
+  return (
+    <div className="student-group-members">
+      {members.length === 0 ? (
+        <strong>尚無成員</strong>
+      ) : (
+        members.map((member, index) => (
+          <Link className="student-group-member-link" key={member.id} to={`/students/${member.id}`}>
+            <span className={`group-member-avatar tone-${index % 3}`} aria-hidden="true">
+              {member.name.slice(0, 1)}
+            </span>
+            <strong>{member.name}</strong>
+            {member.ageRange && <small>{studentAgeRangeLabel(member.ageRange)}</small>}
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        ))
+      )}
+    </div>
+  )
+}
+
+export function GroupMemberPicker({
+  accessToken,
+  coachId,
+  people,
+  selectedIds,
+  onChange
+}: {
+  accessToken: string
+  coachId: string
+  people: Student[]
+  selectedIds: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const queryClient = useQueryClient()
+  const [created, setCreated] = useState<Student[]>([])
+  const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState('')
+  const available = [...people, ...created].filter(
+    (person, index, all) =>
+      person.active &&
+      (person.kind ?? 'person') === 'person' &&
+      all.findIndex((candidate) => candidate.id === person.id) === index
+  )
+  const createPerson = async () => {
+    const name = newName.trim()
+    if (!name || selectedIds.length >= 3) return
+    setCreating(true)
+    setError('')
+    try {
+      const person = await createStudent(accessToken, { name, kind: 'person' })
+      setCreated((current) => [...current, person])
+      queryClient.setQueryData<Student[]>(queryKeys.students(coachId), (current = []) => [
+        ...current,
+        person
+      ])
+      void queryClient.invalidateQueries({ queryKey: planAccessKey(coachId) })
+      invalidateTodayRoute(queryClient, coachId)
+      onChange([...selectedIds, person.id])
+      setNewName('')
+    } catch (reason) {
+      setError(readError(reason))
+    } finally {
+      setCreating(false)
+    }
+  }
+  return (
+    <fieldset className="student-group-member-picker">
+      <legend>
+        <RequiredFieldLabel>群組成員（1–3 位）</RequiredFieldLabel>
+      </legend>
+      <div className="student-group-member-choices">
+        {available.map((person) => {
+          const selected = selectedIds.includes(person.id)
+          const tone = selectedIds.indexOf(person.id)
+          return (
+            <button
+              key={person.id}
+              type="button"
+              className={`student-group-member-choice${selected ? ` tone-${tone}` : ''}`}
+              aria-pressed={selected}
+              disabled={
+                (selected && selectedIds.length === 1) || (!selected && selectedIds.length >= 3)
+              }
+              onClick={() =>
+                onChange(
+                  selected
+                    ? selectedIds.filter((id) => id !== person.id)
+                    : [...selectedIds, person.id]
+                )
+              }
+            >
+              {selected && (
+                <span className={`group-member-avatar tone-${tone}`} aria-hidden="true">
+                  {person.name.slice(0, 1)}
+                </span>
+              )}
+              <span>{person.name}</span>
+              {selected && <Check aria-hidden="true" />}
+            </button>
+          )
+        })}
+      </div>
+      <div className="student-group-member-create">
+        <input
+          aria-label="新學生姓名"
+          placeholder="新學生姓名"
+          value={newName}
+          maxLength={120}
+          disabled={creating || selectedIds.length >= 3}
+          onChange={(event) => setNewName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+            event.preventDefault()
+            event.stopPropagation()
+            void createPerson()
+          }}
+        />
+        <button
+          type="button"
+          className="secondary-button compact"
+          disabled={!newName.trim() || creating || selectedIds.length >= 3}
+          onClick={() => void createPerson()}
+        >
+          <Plus aria-hidden="true" />
+          新增學生
+        </button>
+      </div>
+      <small>新學生會保留在學生名單，取消群組編輯也不會刪除。</small>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+    </fieldset>
+  )
+}
+
 function CreateStudentDialog({
   accessToken,
+  coachId,
   kind,
   people,
   onClose,
   onCreated
 }: {
   accessToken: string
+  coachId: string
   kind: 'person' | 'group'
   people: Student[]
   onClose: () => void
@@ -2439,32 +2718,17 @@ function CreateStudentDialog({
             <input name="name" required maxLength={120} autoComplete="off" />
           </label>
           {kind === 'group' && (
-            <fieldset className="student-group-member-picker">
-              <legend>群組成員（最多 3 位）</legend>
-              {people.length === 0 ? (
-                <p>先建立一位學生，再組成共課群組。</p>
-              ) : (
-                people.map((person) => (
-                  <label key={person.id}>
-                    <input
-                      type="checkbox"
-                      checked={memberIds.includes(person.id)}
-                      disabled={!memberIds.includes(person.id) && memberIds.length >= 3}
-                      onChange={(event) =>
-                        setMemberIds((current) =>
-                          event.target.checked
-                            ? [...current, person.id]
-                            : current.filter((id) => id !== person.id)
-                        )
-                      }
-                    />
-                    <span>{person.name}</span>
-                  </label>
-                ))
-              )}
-            </fieldset>
+            <GroupMemberPicker
+              accessToken={accessToken}
+              coachId={coachId}
+              people={people}
+              selectedIds={memberIds}
+              onChange={setMemberIds}
+            />
           )}
-          <div className="field-row student-profile-core-row">
+          <div
+            className={`field-row student-profile-core-row${kind === 'group' ? ' is-group' : ''}`}
+          >
             {kind === 'person' && (
               <>
                 <label>
@@ -2478,27 +2742,46 @@ function CreateStudentDialog({
               </>
             )}
             <StudentSingleLessonPriceField defaultCurrency={defaultFinanceCurrency} />
+            {kind === 'group' && (
+              <label>
+                共同目標
+                <input
+                  name="goal"
+                  maxLength={1000}
+                  autoComplete="off"
+                  placeholder="例如：一起減脂、一起變壯"
+                />
+              </label>
+            )}
           </div>
-          <label>
-            {kind === 'group' ? '共同目標' : '學生簡介'}
-            <input
-              name="goal"
-              maxLength={1000}
-              autoComplete="off"
-              placeholder="例如：設計師、晨型人、喜歡跑步"
-            />
-          </label>
+          {kind === 'person' && (
+            <label>
+              學生簡介
+              <input
+                name="goal"
+                maxLength={1000}
+                autoComplete="off"
+                placeholder="例如：設計師、晨型人、喜歡跑步"
+              />
+            </label>
+          )}
           <label>
             備註
             <textarea name="privateNote" maxLength={4000} />
           </label>
           {error && <p className="form-error">{error}</p>}
         </div>
+        <div className="student-profile-scroll-cue" aria-hidden="true">
+          向下滑看更多 ↓
+        </div>
         <footer>
           <button className="secondary-button ui-action-cancel" type="button" onClick={onClose}>
             取消
           </button>
-          <button className="primary-button compact ui-action-add" disabled={submitting}>
+          <button
+            className="primary-button compact ui-action-add"
+            disabled={submitting || (kind === 'group' && memberIds.length === 0)}
+          >
             {submitting ? (
               '處理中…'
             ) : (
@@ -2536,11 +2819,15 @@ function formatMoney(amountMinor: number, currency: string) {
 export function StudentPerformance({
   session,
   studentId,
-  studentName
+  studentName,
+  dialogOnly = false,
+  onClose
 }: {
   session: Session
   studentId: string
   studentName: string
+  dialogOnly?: boolean
+  onClose?: () => void
 }) {
   const plan = usePlanAccess(session)
   const query = useStudentPerformance(
@@ -2554,7 +2841,7 @@ export function StudentPerformance({
     navigate(`/sessions/${historySessionId}?exercise=${encodeURIComponent(definitionId)}`)
   }
   const [selected, setSelected] = useState<PerformanceEntry | null>(null)
-  const [allOpen, setAllOpen] = useState(false)
+  const [allOpen, setAllOpen] = useState(dialogOnly)
   const [upsellOpen, setUpsellOpen] = useState(false)
   const [sortBy, setSortBy] = useState<'count' | 'latest'>('count')
   const firstLoad = query.data === undefined && query.isLoading
@@ -2632,54 +2919,61 @@ export function StudentPerformance({
         </p>
       </section>
     )
+  if (dialogOnly && plan.data?.tier === 'free')
+    return <PlanUpsellDialog title="個人運動表現" onClose={() => onClose?.()} />
   return (
     <section id="performance" className="performance-directory" aria-label="動作表現">
-      <button
-        className={`performance-portal${firstLoad && plan.data?.tier !== 'free' ? ' is-loading' : ''}`}
-        type="button"
-        disabled={firstLoad && plan.data?.tier !== 'free'}
-        aria-busy={firstLoad && plan.data?.tier !== 'free'}
-        onClick={() => {
-          if (plan.data?.tier === 'free') setUpsellOpen(true)
-          else if (firstLoadError) void query.refetch()
-          else setAllOpen(true)
-        }}
-      >
-        <span className="performance-portal-copy">
-          <small>PERFORMANCE / MOVEMENT RECORDS</small>
-          <strong>個人運動表現 {plan.data?.tier === 'free' && <PlanAccessMark />}</strong>
-          <span role={firstLoadError ? 'alert' : undefined}>
-            {firstLoadError && plan.data?.tier !== 'free'
-              ? '無法載入動作表現，請重試。'
-              : '查看所有動作的紀錄與成長軌跡'}
+      {!dialogOnly && (
+        <button
+          className={`performance-portal${firstLoad && plan.data?.tier !== 'free' ? ' is-loading' : ''}`}
+          type="button"
+          disabled={firstLoad && plan.data?.tier !== 'free'}
+          aria-busy={firstLoad && plan.data?.tier !== 'free'}
+          onClick={() => {
+            if (plan.data?.tier === 'free') setUpsellOpen(true)
+            else if (firstLoadError) void query.refetch()
+            else setAllOpen(true)
+          }}
+        >
+          <span className="performance-portal-copy">
+            <small>PERFORMANCE / MOVEMENT RECORDS</small>
+            <strong>個人運動表現 {plan.data?.tier === 'free' && <PlanAccessMark />}</strong>
+            <span role={firstLoadError ? 'alert' : undefined}>
+              {firstLoadError && plan.data?.tier !== 'free'
+                ? '無法載入動作表現，請重試。'
+                : '查看所有動作的紀錄與成長軌跡'}
+            </span>
           </span>
-        </span>
-        <span className="performance-portal-count">
-          {firstLoad && plan.data?.tier !== 'free' ? (
-            <span className="performance-loading-mark" aria-hidden="true" />
-          ) : (
-            <strong>
-              {plan.data?.tier === 'free' ? '—' : firstLoadError ? '重試' : entries.length}
-            </strong>
-          )}
-          <small>
-            {plan.data?.tier === 'free'
-              ? '項動作'
-              : firstLoad
-                ? '載入中'
-                : firstLoadError
-                  ? '重新載入'
-                  : '項動作'}
-          </small>
-        </span>
-        <ArrowRight aria-hidden="true" />
-      </button>
+          <span className="performance-portal-count">
+            {firstLoad && plan.data?.tier !== 'free' ? (
+              <span className="performance-loading-mark" aria-hidden="true" />
+            ) : (
+              <strong>
+                {plan.data?.tier === 'free' ? '—' : firstLoadError ? '重試' : entries.length}
+              </strong>
+            )}
+            <small>
+              {plan.data?.tier === 'free'
+                ? '項動作'
+                : firstLoad
+                  ? '載入中'
+                  : firstLoadError
+                    ? '重新載入'
+                    : '項動作'}
+            </small>
+          </span>
+          <ArrowRight aria-hidden="true" />
+        </button>
+      )}
       {upsellOpen && <PlanUpsellDialog title="個人運動表現" onClose={() => setUpsellOpen(false)} />}
       {allOpen && (
         <SchedulingDialog
           variant="performance"
           title={`${studentName}・個人運動表現`}
-          onClose={() => setAllOpen(false)}
+          onClose={() => {
+            setAllOpen(false)
+            onClose?.()
+          }}
         >
           <div className="performance-directory-intro">
             <div>
@@ -2700,7 +2994,18 @@ export function StudentPerformance({
               <strong>{String(entries.length).padStart(2, '0')}</strong>
             </div>
           </div>
-          {entries.length ? (
+          {firstLoad ? (
+            <div className="empty-state">
+              <p>正在讀取動作紀錄…</p>
+            </div>
+          ) : firstLoadError ? (
+            <div className="empty-state">
+              <p role="alert">無法載入動作表現。</p>
+              <button type="button" onClick={() => void query.refetch()}>
+                重試
+              </button>
+            </div>
+          ) : entries.length ? (
             <div className="performance-list performance-all-list">{entries.map(renderEntry)}</div>
           ) : (
             <div className="empty-state">
@@ -2726,7 +3031,10 @@ export function StudentPerformance({
             selected.series ??
             []
           }
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            setSelected(null)
+            onClose?.()
+          }}
           onOpenHistory={(historySessionId) => openHistory(selected.definitionId, historySessionId)}
         />
       ) : (
@@ -2736,7 +3044,10 @@ export function StudentPerformance({
             session={session}
             studentId={studentId}
             entry={selected}
-            onClose={() => setSelected(null)}
+            onClose={() => {
+              setSelected(null)
+              onClose?.()
+            }}
             onOpenHistory={(historySessionId) =>
               openHistory(selected.definitionId, historySessionId)
             }

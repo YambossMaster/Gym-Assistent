@@ -45,7 +45,8 @@ export function useStudentPerformance(session: Session, studentId: string, enabl
   return useQuery({
     queryKey: queryKeys.studentPerformance(session.user.id, studentId),
     queryFn: () => getStudentPerformance(session.access_token, studentId),
-    enabled
+    enabled,
+    staleTime: 60_000
   })
 }
 export function useStudentTrend(

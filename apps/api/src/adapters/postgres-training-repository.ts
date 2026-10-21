@@ -1104,6 +1104,81 @@ export class PostgresTrainingRepository implements TrainingRepository {
         })),
       }
     })
+    const groupExerciseSummaries: NonNullable<SessionTraining['groupExerciseSummaries']> = []
+    if (s.student_kind === 'group' && exercises.length) {
+      for (const person of participantRows.rows) {
+        const personHistory = await this.performancePointsWith(
+          queryable,
+          workspaceId,
+          person.student_id,
+          defaultUnit,
+        )
+        const personMeasurements = await this.measurementRows(
+          queryable,
+          workspaceId,
+          person.student_id,
+        )
+        for (const exercise of exercises) {
+          const liveConfig = currentByExercise.get(exercise.id)?.row
+            .current_recording as RecordingConfig | null
+          const recording =
+            exercise.recording ??
+            (liveConfig && ['weight_reps', 'reps'].includes(liveConfig.type)
+              ? liveConfig
+              : undefined)
+          const history = personHistory.filter(
+            (point) =>
+              point.definitionId === exercise.definitionId &&
+              point.metric === exercise.performanceMetric,
+          )
+          const previous = history
+            .filter(
+              (point) =>
+                point.sessionStatus === 'completed' &&
+                new Date(point.startsAt).getTime() < new Date(String(s.starts_at)).getTime(),
+            )
+            .at(-1)
+          const series = recording
+            ? this.seriesFor(personMeasurements.rows, exercise.definitionId, recording, {
+                defaultWeightUnit: defaultUnit,
+                defaultDistanceUnit: s.default_distance_unit as any,
+              }).map((item) => ({
+                ...item,
+                current: item.points.find((point) => point.sessionId === sessionId)?.value ?? null,
+                previous:
+                  item.points
+                    .filter(
+                      (point) =>
+                        point.startsAt < new Date(String(s.starts_at)).toISOString() &&
+                        personMeasurements.rows.some(
+                          (row) =>
+                            row.session_id === point.sessionId &&
+                            row.session_status === 'completed',
+                        ),
+                    )
+                    .at(-1)?.value ?? null,
+              }))
+            : undefined
+          groupExerciseSummaries.push({
+            studentId: person.student_id,
+            occurrenceId: exercise.id,
+            definitionId: exercise.definitionId,
+            metric: exercise.performanceMetric,
+            unit: exercise.performanceMetric === 'weight' ? defaultUnit : null,
+            current: null,
+            previous: previous?.value ?? null,
+            personal: null,
+            history: history.map(({ sessionId: id, startsAt, value, unit }) => ({
+              sessionId: id,
+              startsAt: new Date(startsAt),
+              value,
+              unit,
+            })),
+            ...(recording && series ? { recording, series } : {}),
+          })
+        }
+      }
+    }
     const purchased = Number(s.purchased),
       completed = Number(s.completed),
       packageDebits = Number(s.package_debits)
@@ -1136,6 +1211,7 @@ export class PostgresTrainingRepository implements TrainingRepository {
       defaultWeightUnit: defaultUnit,
       defaultDistanceUnit: s.default_distance_unit as any,
       exerciseSummaries: summaries,
+      ...(s.student_kind === 'group' ? { groupExerciseSummaries } : {}),
       allowedActions: {
         canEditTraining: s.status !== 'cancelled',
         canComplete: s.status === 'scheduled',

@@ -504,8 +504,20 @@ export class PostgresStudentRepository
       }
       if (original.kind === 'group' && (input.phone || input.ageRange || input.lineLinked))
         throw new StudentGroupMemberError()
+      if (original.kind === 'group' && input.active && input.memberIds === undefined) {
+        const memberCount = await client.query<{ count: string }>(
+          `select count(*)::text count from app_private.student_group_member
+           where workspace_id=$1 and group_id=$2 and removed_at is null`,
+          [workspaceId, studentId],
+        )
+        if (Number(memberCount.rows[0]?.count ?? 0) === 0) throw new StudentGroupMemberError()
+      }
       if (input.memberIds !== undefined) {
-        if (original.kind !== 'group' || new Set(input.memberIds).size !== input.memberIds.length)
+        if (
+          original.kind !== 'group' ||
+          input.memberIds.length === 0 ||
+          new Set(input.memberIds).size !== input.memberIds.length
+        )
           throw new StudentGroupMemberError()
         const valid = await client.query<{ id: string }>(
           `select id from app_private.student where workspace_id=$1
@@ -603,10 +615,18 @@ export class PostgresStudentRepository
               group.group_id,
               remaining.rows.map((row) => row.student_id),
             )
+            if (remaining.rowCount === 0) {
+              await client.query(
+                `update app_private.schedule_series set active=false,version=version+1,updated_at=$3
+                 where workspace_id=$1 and student_id=$2 and active`,
+                [workspaceId, group.group_id, input.now],
+              )
+            }
             await client.query(
-              `update app_private.student set version=version+1,updated_at=$3
+              `update app_private.student set active=case when $4 then false else active end,
+               version=version+1,updated_at=$3
                where workspace_id=$1 and id=$2`,
-              [workspaceId, group.group_id, input.now],
+              [workspaceId, group.group_id, input.now, remaining.rowCount === 0],
             )
           }
         }
@@ -672,8 +692,12 @@ export class PostgresStudentRepository
     try {
       await client.query('begin')
       await client.query("select set_config('app.current_workspace_id',$1,true)", [workspaceId])
-      const current = await client.query<{ version: number }>(
-        'select version from app_private.student where workspace_id=$1 and id=$2 for update',
+      await client.query(
+        "select pg_advisory_xact_lock(hashtext('gym-m11-membership'),hashtext($1))",
+        [workspaceId],
+      )
+      const current = await client.query<{ version: number; kind: string }>(
+        'select version,kind from app_private.student where workspace_id=$1 and id=$2 for update',
         [workspaceId, studentId],
       )
       if (!current.rows[0]) {
@@ -693,10 +717,49 @@ export class PostgresStudentRepository
         [workspaceId, studentId],
       )
       if (history.rows[0]?.exists) throw new StudentHasHistoryError()
+      const memberships =
+        current.rows[0].kind === 'person'
+          ? await client.query<{ group_id: string }>(
+              `select distinct group_id from app_private.student_group_member
+             where workspace_id=$1 and student_id=$2 and removed_at is null order by group_id`,
+              [workspaceId, studentId],
+            )
+          : null
+      for (const membership of memberships?.rows ?? []) {
+        await client.query(
+          'select id from app_private.student where workspace_id=$1 and id=$2 for update',
+          [workspaceId, membership.group_id],
+        )
+      }
       await client.query('delete from app_private.student where workspace_id=$1 and id=$2', [
         workspaceId,
         studentId,
       ])
+      for (const membership of memberships?.rows ?? []) {
+        const remaining = await client.query<{ student_id: string }>(
+          `select student_id from app_private.student_group_member
+           where workspace_id=$1 and group_id=$2 and removed_at is null order by student_id`,
+          [workspaceId, membership.group_id],
+        )
+        if (remaining.rowCount === 0) {
+          await client.query(
+            `update app_private.schedule_series set active=false,version=version+1,updated_at=clock_timestamp()
+             where workspace_id=$1 and student_id=$2 and active`,
+            [workspaceId, membership.group_id],
+          )
+          await client.query(
+            `update app_private.course_session set status='cancelled',version=version+1,updated_at=clock_timestamp()
+             where workspace_id=$1 and student_id=$2 and status='scheduled' and starts_at>clock_timestamp()`,
+            [workspaceId, membership.group_id],
+          )
+        }
+        await client.query(
+          `update app_private.student set active=case when $3 then false else active end,
+           version=version+1,updated_at=clock_timestamp()
+           where workspace_id=$1 and id=$2`,
+          [workspaceId, membership.group_id, remaining.rowCount === 0],
+        )
+      }
       await client.query('commit')
       return true
     } catch (error) {

@@ -350,6 +350,9 @@ export interface SessionTraining {
     personal: number | null
     history: Array<{ sessionId: string; startsAt: string; value: number; unit: WeightUnit | null }>
   }>
+  groupExerciseSummaries?: Array<
+    SessionTraining['exerciseSummaries'][number] & { studentId: string }
+  >
   allowedActions: { canEditTraining: boolean; canComplete: boolean; canReopen: boolean }
 }
 export type TrainingDraftPayload = {
