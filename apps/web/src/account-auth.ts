@@ -25,7 +25,11 @@ export interface CoachAuthClient {
   verifyOtp(params: { email: string; token: string; type: 'email' }): Promise<AuthSessionResponse>
   signInWithOAuth(params: {
     provider: 'google'
-    options: { redirectTo: string; skipBrowserRedirect?: boolean }
+    options: {
+      redirectTo: string
+      skipBrowserRedirect?: boolean
+      queryParams: { prompt: 'select_account' }
+    }
   }): Promise<GoogleOAuthResponse>
   resetPasswordForEmail(email: string, options: { redirectTo: string }): Promise<AuthResponse>
   resend(params: {
@@ -78,7 +82,11 @@ export async function signInWithGoogle(
 ): Promise<void> {
   const response = await auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo, ...(navigateTop ? { skipBrowserRedirect: true } : {}) }
+    options: {
+      redirectTo,
+      queryParams: { prompt: 'select_account' },
+      ...(navigateTop ? { skipBrowserRedirect: true } : {})
+    }
   })
   if (response.error) throw new Error(response.error.message)
   if (navigateTop) {
