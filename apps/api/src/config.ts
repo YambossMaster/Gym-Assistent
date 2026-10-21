@@ -10,6 +10,7 @@ const baseConfigSchema = z.object({
   HOST: z.string().min(1).default('127.0.0.1'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_URL: z.string().min(1),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(10),
   SUPABASE_URL: z.string().url(),
   SUPABASE_JWT_AUDIENCE: z.string().min(1).default('authenticated'),
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),

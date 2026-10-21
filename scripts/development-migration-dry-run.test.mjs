@@ -9,6 +9,7 @@ import {
   fetchedDevelopmentHistory,
   developmentDryRunExclusions,
   validateDevelopmentHistory,
+  validateScopedApply,
   withDevelopmentHistory,
 } from './development-migration-dry-run.mjs'
 const history = {
@@ -58,6 +59,23 @@ test('excludes only the unapplied Production foundation after Development checko
         row.local === '20261017181022' ? { ...row, remote: row.local } : row,
       ),
     }),
+  )
+})
+test('scoped Development apply refuses any second pending migration', () => {
+  const current = {
+    migrations: [
+      ...history.migrations,
+      { local: '20261017181022', remote: '' },
+      { local: '20261021025133', remote: '' },
+    ],
+  }
+  assert.doesNotThrow(() => validateScopedApply(current, '20261021025133'))
+  assert.throws(() => validateScopedApply(current, '20261021025134'))
+  assert.throws(() =>
+    validateScopedApply(
+      { migrations: [...current.migrations, { local: '20261021030000', remote: '' }] },
+      '20261021025133',
+    ),
   )
 })
 test('stages an exact copy only during dry-run and cleans it on failure without touching other migrations', () => {

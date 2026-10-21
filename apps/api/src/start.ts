@@ -51,7 +51,7 @@ const billingConfig = billingEnabled ? localBillingConfiguration(process.env) : 
 const liveBilling = liveBillingConfiguration(process.env)
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
-  max: 10,
+  max: config.DATABASE_POOL_MAX,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
 })
