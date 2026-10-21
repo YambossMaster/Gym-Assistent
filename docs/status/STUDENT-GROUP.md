@@ -1,18 +1,24 @@
 # M11 Student Group workstream
 
-> 2026-10-22 CI gate 進行中交接：Sol 位於獨立工作樹 `output/m11-student-group`、分支 `codex/student-group-sol`，HEAD `0dd6e52ef532f6f4dcd9dae1e126bab518c1d5ec`。Product Owner 已表示本版自行驗收「通過」，並明確保留手機課堂版面試作。此為未提交的 M11 候選；保留其他 checkout 的改動。既有 [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft，舊版 CI 成功不涵蓋這批本機修改。
+> 2026-10-22 CI gate 進行中交接：Sol 位於獨立工作樹 `output/m11-student-group`、分支 `codex/student-group-sol`。本版已提交為 `74e9ad0`，並在 `52de12b` 與 `origin/main` `872a255` 合併；工作樹其後的 Status 進度另待提交。Product Owner 已表示本版瀏覽器預覽驗收「通過」，並明確保留手機課堂版面試作。既有 [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) 為 draft，遠端舊 SHA 的 CI 不涵蓋新提交。
 
 ## Gate 與清單
 
-| Gate     | 狀態                                                                                                                                                                                                                                     |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                                                                                          |
-| Sol      | 八個面向的前七項已有本工作樹實作。Development 真 DB／真 Auth 主流程、舊資料相容、多人訓練、Free 降級與封存取得分項證據；Product Owner 2026-10-22 表示本版自行驗收通過，手機課堂新版確定保留。                                            |
-| CI／發布 | 現版完整本機 API 402／402、Web 436／436、build 和 Development migration dry-run 通過；完整瀏覽器／安裝 PWA 及 exact-SHA 遠端 CI 尚未通過。PR #72 為 draft；舊 SHA 的 CI 不涵蓋當前未提交候選。Production migration、部署及合併均未執行。 |
+| Gate     | 狀態                                                                                                                                                                                                                                                                                                                       |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract | Product Owner 於 2026-10-20 核准 [M11 正式 Contract](../STUDENT-GROUP-CONTRACT.md)；已編入 [Roadmap](../ROADMAP.md)，可進 Sol。                                                                                                                                                                                            |
+| Sol      | 八個面向的前七項已有本工作樹實作。Development 真 DB／真 Auth 主流程、舊資料相容、多人訓練、Free 降級與封存取得分項證據；Product Owner 2026-10-22 表示本版自行驗收通過，手機課堂新版確定保留。                                                                                                                              |
+| CI／發布 | 合併最新 Main 後 `check:affected` 通過：API 402／402、Web 437／437、型別、格式、差異檢查通過；`npm run build` API／Web 通過。Development migration dry-run 在合併前通過且 Main 沒有改動遷移。完整隔離瀏覽器／安裝 PWA 及 exact-SHA 遠端 CI 尚未通過。PR #72 遠端仍為舊 SHA；Production migration、部署及 PR 合併均未執行。 |
 
 八個已知交付面向：群組管理、群組購課、排課、出席與完課、多人訓練、公開能力、封存／匯出相容、完整驗證。前 7 項已有分支實作；第 8 項的 Development 真 API、真登入主流程、隔離還原與分支 CI 已取得證據。前端裝置／完整流程及 Production 證據仍未取得，不得視為 M11 整體完成。總數仍為 8，未新增工作包。
 
 ## 2026-10-22 最後驗收交接（目前有效）
+
+### 最新 Main 整合與隔離驗證
+
+- `74e9ad0` 收納 Product Owner 已接受的 M11 候選；`52de12b` 無衝突合併最新 `origin/main` `872a255`，其中 PlansPage 與共用 CSS 的交疊自動整合。合併後 `npm run check:affected` 最終 exit 0：腳本 23/23、API 66 檔 402/402、Web 97 檔 437/437、API／Web typecheck、Prettier 及 `git diff --check` 均通過。`npm run build` API／Web exit 0，僅有既存 Vite 大 chunk 警告。
+- Chrome 原使用者課堂 `791682ad-e899-4d0e-a49e-eed3035d205d` 在獨立分頁仍顯示「暫時無法讀取課堂」，同帳號學生名單可讀；沒有更動原本帶草稿的分頁。原隔離 fixture 的 Auth user `f7ff017f-7d8b-40f2-99ef-43034968ceb8` 已精確清理，Development Auth GET 404、對應 Workspace count 0。新建的隔離測試帳號有 3 名合成學生，但 Free 方案建立群組得到預期 403 `plan_required`；不得把這當成群組故障。其永久 Prime 測試資格被自動核准審查拒絕，原因是缺少針對該合成帳號和永久範圍的明確授權；已向 Product Owner 請求精確同意，待答覆前不執行授權或變通授權。新 fixture 仍待最後清理。
+- Playwright 獨立瀏覽器登入先前隔離 fixture，在 320×800 讀到封存群組課的歷史訓練紀錄；這只證明 320px 歷史唯讀狀態，不證明進行中課堂出席／兩檢視與組數輸入。後續須以授權的合成 Prime 帳號或其他符合 Contract 的隔離路徑驗證。
 
 ### Product Owner 驗收通過後的 CI gate 進度
 
@@ -22,7 +28,7 @@
 - 320px 新獨立 Chrome 分頁的課堂先載入、再顯示「暫時無法讀取課堂」；按頁面「重新載入」一次後同樣失敗。Development API `/ready` 在沙箱外讀回 200 `ready`。因此**320px 現版課堂沒有驗收證據**，不能把課堂讀取失敗歸因於版面或當作通過。未操作原本有本機草稿的分頁，測試分頁已關閉並恢復瀏覽器 viewport。
 - 待完成的第 8 項依時序為：①以隔離 Development 資料跑現版端到端群組建立／編輯、購課、排課、出席／兩模式組數／完課重開、公開連結／改期、封存／Free→Prime 恢復與個人匯出，補 320px 可讀課堂；②整理確切 commit 與檢查結果，依專案規則取得遠端 push 授權後確認同 SHA PR CI；③依 Production migration／部署 gate 與所需授權發布；④**部署完成後**才請 Product Owner 在已安裝手機 PWA 驗收實際流程。使用者既有課堂草稿衝突不代選處理。手機不能連到尚未部署的 M11 版本，實機驗收不是目前的前置要求。
 - 2026-10-22 Product Owner 已在同一對話中預先授權 M11 後續遠端推送／合併、Production migration 與部署；完成各自必要檢查後無須重問。實機 PWA 驗收仍須等部署完成再交接。授權不豁免精確 SHA CI、Production 前置檢查、遷移順序或資料保存條件。
-- **目前下一步**：保存已通過本機檢查的未提交候選、與最新 `origin/main` 整合並重查受影響處；診斷隔離課堂 320px 讀取並完成不碰使用者既有草稿的 Development 瀏覽器流程。具備有效候選後依上述授權執行 PR／Production 關卡，不在部署前要求手機 PWA 驗收。
+- **目前下一步**：待 Product Owner 回覆隔離合成帳號 Prime 授權後完成 Development 真登入群組流程與 320px 進行中課堂；同步更新 PR #72 並確認 exact-SHA CI。通過後依已授權範圍合併、跑 Production migration release 及同 SHA 部署。部署後才交接已安裝手機 PWA 實機驗收。若測試資格未獲同意，先清理新 fixture 並記錄受影響的驗收缺口。
 
 ### 手機多人課堂的可回復版面試作
 
