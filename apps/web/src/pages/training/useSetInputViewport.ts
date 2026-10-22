@@ -1,154 +1,131 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
-import {
-  getSetInputDockInset,
-  getSetInputFocusAdjustment,
-  getSetInputScrollAdjustment
-} from './set-input-navigation'
+import { getSetInputFocusAdjustment } from './set-input-navigation'
 
-/** Own one keyboard session, including focus handoff before the browser focuses a hidden field. */
+// One scroll owner for the entire keyboard session. Field changes never release
+// the document lock or recreate the viewport listeners.
 export function useSetInputViewport(
   workspaceRef: RefObject<HTMLElement | null>,
-  input: HTMLInputElement | null
+  input: HTMLInputElement | null,
+  onKeyboardClose: () => void
 ) {
-  const geometry = useRef<{
-    layoutHeight: number
-    visualHeight: number
-    scrollSpace: number
+  const activeInput = useRef(input)
+  activeInput.current = input
+  const close = useRef(onKeyboardClose)
+  close.current = onKeyboardClose
+  const controller = useRef<{
+    place: (target: HTMLInputElement) => void
+    cancel: () => void
   } | null>(null)
-  const preparedInput = useRef<HTMLInputElement | null>(null)
-  const prepareFocus = useRef<(next: HTMLInputElement) => void>(() => {})
-  const cancelPlacement = useRef<() => void>(() => {})
+  const prepared = useRef<HTMLInputElement | null>(null)
+  const restingHeight = useRef(document.documentElement.clientHeight || window.innerHeight)
+  const enabled = input !== null && window.matchMedia('(max-width: 720px)').matches
 
   useLayoutEffect(() => {
     const workspace = workspaceRef.current
-    if (!workspace) return
-    if (!input || !window.matchMedia('(max-width: 720px)').matches) {
-      geometry.current = null
-      preparedInput.current = null
-      prepareFocus.current = () => {}
-      cancelPlacement.current = () => {}
-      workspace.style.setProperty('--session-keyboard-inset', '0px')
-      workspace.style.setProperty('--session-keyboard-space', '0px')
-      return
-    }
+    if (!enabled || !workspace) return
     const viewport = window.visualViewport
-    let firstFocus = geometry.current === null
-    geometry.current ??= {
-      layoutHeight: document.documentElement.clientHeight || window.innerHeight,
-      visualHeight: viewport?.height ?? window.innerHeight,
-      scrollSpace: 88
+    const root = document.documentElement
+    const body = document.body
+    const originalY = window.scrollY
+    const originalTop = workspace.getBoundingClientRect().top
+    const bodyStyles = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width
     }
-    const session = geometry.current
-    let aligned = preparedInput.current === input
-    preparedInput.current = null
-    let dockFrame = 0
-    let alignmentFrame = 0
-    let timer: ReturnType<typeof setTimeout> | undefined
-
-    const positionDock = () => {
-      cancelAnimationFrame(dockFrame)
-      dockFrame = requestAnimationFrame(() => {
-        if (!input.isConnected) return
-        // clientHeight describes the CSS layout viewport. iOS innerHeight can
-        // temporarily shrink to visualViewport.height during a scroll gesture.
-        const layoutHeight = document.documentElement.clientHeight || session.layoutHeight
-        // The installed PWA has no collapsing browser toolbar. Retain the open
-        // keyboard's smallest height instead of treating drag transients as closure.
-        session.visualHeight = Math.min(session.visualHeight, viewport?.height ?? layoutHeight)
-        const inset = getSetInputDockInset({
-          layoutHeight,
-          visualHeight: session.visualHeight,
-          visualOffsetTop: viewport?.offsetTop ?? 0
-        })
-        workspace.style.setProperty('--session-keyboard-inset', `${inset}px`)
-        if (session.layoutHeight - session.visualHeight > 120) {
-          session.scrollSpace = Math.max(
-            session.scrollSpace,
-            Math.ceil(session.layoutHeight - Math.min(180, session.visualHeight * 0.4) + 48)
-          )
-        }
-        workspace.style.setProperty('--session-keyboard-space', `${session.scrollSpace}px`)
-      })
-    }
-    const scrollInput = (target: HTMLInputElement, align: boolean) => {
-      const dock = workspace.querySelector<HTMLElement>('.set-input-advance-dock')
+    const layoutHeight = restingHeight.current
+    let keyboardSeen = false
+    let pending: HTMLInputElement | null = activeInput.current
+    let settle: ReturnType<typeof setTimeout> | undefined
+    let height = viewport?.height ?? window.innerHeight
+    let top = viewport?.offsetTop ?? 0
+    const place = (target: HTMLInputElement) => {
+      pending = target
+      if (!keyboardSeen) return
+      clearTimeout(settle)
+      pending = null
       const rect = target.getBoundingClientRect()
-      const top = viewport?.offsetTop ?? 0
-      const bottom = top + session.visualHeight
-      const bounds = {
+      const delta = getSetInputFocusAdjustment({
         inputTop: rect.top,
         inputBottom: rect.bottom,
         visibleTop: top + 12,
-        visibleBottom: Math.min(bottom, dock?.getBoundingClientRect().top ?? bottom) - 12
+        visibleBottom: top + height - 88
+      })
+      if (Math.abs(delta) > 2) workspace.scrollTop += delta
+    }
+    const cancel = () => {
+      pending = null
+      clearTimeout(settle)
+    }
+    const update = () => {
+      height = viewport?.height ?? window.innerHeight
+      top = viewport?.offsetTop ?? 0
+      const open = layoutHeight - height > 120
+      if (keyboardSeen && !open) {
+        close.current()
+        return
       }
-      const delta = align ? getSetInputFocusAdjustment(bounds) : getSetInputScrollAdjustment(bounds)
-      if (delta) window.scrollBy({ top: delta, behavior: 'instant' })
+      keyboardSeen ||= open
+      workspace.style.setProperty('--session-input-top', `${top}px`)
+      workspace.style.setProperty('--session-input-height', `${height}px`)
+      // Internal padding, never document padding; the final row can reach the
+      // same anchor as the first without moving the keyboard's containing page.
+      workspace.style.setProperty('--session-keyboard-space', `${Math.ceil(height)}px`)
+      if (pending && keyboardSeen) {
+        clearTimeout(settle)
+        settle = setTimeout(() => {
+          if (pending && document.activeElement === pending) place(pending)
+        }, 100)
+      }
     }
-    const scheduleAlignment = () => {
-      if (aligned) return
-      clearTimeout(timer)
-      timer = setTimeout(() => {
-        alignmentFrame = requestAnimationFrame(() => {
-          if (!input.isConnected || document.activeElement !== input) return
-          aligned = true
-          scrollInput(input, firstFocus)
-        })
-      }, 160)
-    }
-    // Reveal before focus. The next field is already clear of the keyboard when
-    // WebKit focuses/selects it, so there is no delayed second page correction.
-    prepareFocus.current = (next) => {
-      clearTimeout(timer)
-      cancelAnimationFrame(alignmentFrame)
-      aligned = true
-      scrollInput(next, false)
-      preparedInput.current = next
-    }
-    const onViewportChange = () => {
-      positionDock()
-      scheduleAlignment()
-    }
-    const onManualScroll = () => {
-      aligned = true
-      clearTimeout(timer)
-      cancelAnimationFrame(alignmentFrame)
-    }
-    cancelPlacement.current = onManualScroll
-    const onOrientationChange = () => {
-      session.layoutHeight = document.documentElement.clientHeight || window.innerHeight
-      session.visualHeight = viewport?.height ?? session.layoutHeight
-      session.scrollSpace = 88
-      firstFocus = true
-      aligned = false
-      onViewportChange()
-    }
-    positionDock()
-    scheduleAlignment()
-    viewport?.addEventListener('resize', onViewportChange)
-    viewport?.addEventListener('scroll', onViewportChange)
-    window.addEventListener('resize', onViewportChange)
-    window.addEventListener('scroll', positionDock)
-    window.addEventListener('orientationchange', onOrientationChange)
-    workspace.addEventListener('touchmove', onManualScroll, { passive: true })
-    workspace.addEventListener('wheel', onManualScroll, { passive: true })
+    update()
+    root.classList.add('is-session-set-editing')
+    body.style.position = 'fixed'
+    body.style.top = `${-originalY}px`
+    body.style.width = '100%'
+    // Preserve the content position while changing the scroll owner.
+    workspace.scrollTop = Math.max(0, -originalTop + top)
+    controller.current = { place, cancel }
+    viewport?.addEventListener('resize', update)
+    viewport?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    workspace.addEventListener('touchmove', cancel, { passive: true })
+    workspace.addEventListener('wheel', cancel, { passive: true })
     return () => {
-      prepareFocus.current = () => {}
-      cancelPlacement.current = () => {}
-      cancelAnimationFrame(dockFrame)
-      cancelAnimationFrame(alignmentFrame)
-      clearTimeout(timer)
-      viewport?.removeEventListener('resize', onViewportChange)
-      viewport?.removeEventListener('scroll', onViewportChange)
-      window.removeEventListener('resize', onViewportChange)
-      window.removeEventListener('scroll', positionDock)
-      window.removeEventListener('orientationchange', onOrientationChange)
-      workspace.removeEventListener('touchmove', onManualScroll)
-      workspace.removeEventListener('wheel', onManualScroll)
+      cancel()
+      controller.current = null
+      prepared.current = null
+      viewport?.removeEventListener('resize', update)
+      viewport?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      workspace.removeEventListener('touchmove', cancel)
+      workspace.removeEventListener('wheel', cancel)
+      const restoreY = originalY + workspace.scrollTop + originalTop - top
+      root.classList.remove('is-session-set-editing')
+      Object.assign(body.style, bodyStyles)
+      workspace.scrollTop = 0
+      for (const property of [
+        '--session-input-top',
+        '--session-input-height',
+        '--session-keyboard-space'
+      ])
+        workspace.style.removeProperty(property)
+      window.scrollTo({ top: Math.max(0, restoreY), behavior: 'instant' })
     }
-  }, [input, workspaceRef])
+  }, [enabled, workspaceRef])
+
+  useLayoutEffect(() => {
+    if (!input) return
+    if (prepared.current === input) prepared.current = null
+    else controller.current?.place(input)
+  }, [input])
 
   return {
-    prepareFocus: (next: HTMLInputElement) => prepareFocus.current(next),
-    cancelPlacement: () => cancelPlacement.current()
+    placeInput: (target: HTMLInputElement) => controller.current?.place(target),
+    prepareFocus: (next: HTMLInputElement) => {
+      controller.current?.place(next)
+      prepared.current = next
+    },
+    cancelPlacement: () => controller.current?.cancel()
   }
 }

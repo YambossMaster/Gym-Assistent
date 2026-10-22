@@ -18457,8 +18457,32 @@ button:disabled {
     display: none;
   }
 
-  .session-workspace.is-set-input-focused {
+  html.is-session-set-editing .session-workspace.is-set-input-focused {
+    position: fixed;
+    z-index: 35;
+    top: var(--session-input-top, 0px);
+    right: 0;
+    left: 0;
+    height: var(--session-input-height, 100dvh);
+    min-height: 0;
     padding-bottom: var(--session-keyboard-space);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    overflow-anchor: none;
+    scroll-behavior: auto;
+    background: #eeede6;
+  }
+
+  html.is-session-set-editing,
+  html.is-session-set-editing body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html.is-session-set-editing .app-shell .session-workspace .session-topbar {
+    position: static;
+    transform: none;
+    transition: none;
   }
 
   .session-workspace.is-set-input-focused .session-bottom {
@@ -18467,10 +18491,13 @@ button:disabled {
 
   .set-input-advance-dock {
     position: fixed;
+    touch-action: none;
     z-index: 24;
+    top: calc(var(--session-input-top) + var(--session-input-height) - 8px);
     right: 10px;
-    bottom: calc(max(var(--session-keyboard-inset), env(safe-area-inset-bottom)) + 8px);
+    bottom: auto;
     left: 10px;
+    transform: translateY(-100%);
     min-height: 56px;
     padding: 6px 6px 6px 15px;
     display: flex;
