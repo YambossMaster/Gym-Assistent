@@ -475,6 +475,62 @@ it('allows free manual scrolling until another focus action, with no correction 
   expect(inputs[1]!.getBoundingClientRect().top - viewport.offsetTop).toBe(anchor)
 })
 
+it('rechecks a focused field after delayed native scrolling instead of accepting a covered field', async () => {
+  const { workspace, inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const anchor = inputs[0]!.getBoundingClientRect().top
+  await act(async () => vi.advanceTimersByTimeAsync(400))
+  workspace.scrollTop -= 220
+  expect(inputs[0]!.getBoundingClientRect().top).toBeGreaterThan(anchor)
+  workspace.dispatchEvent(new Event('scroll'))
+  await act(async () => vi.advanceTimersByTimeAsync(150))
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(anchor)
+})
+
+it('aligns the next field again after the keyboard finishes resizing', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  await act(async () =>
+    host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+  )
+  viewport.height = 400
+  viewport.offsetTop = 75
+  workspace.scrollTop -= 180
+  viewport.dispatchEvent(new Event('resize'))
+  await act(async () => vi.advanceTimersByTimeAsync(150))
+  const rect = inputs[1]!.getBoundingClientRect()
+  expect(document.activeElement).toBe(inputs[1])
+  expect(rect.top - viewport.offsetTop).toBe(132)
+  expect(rect.bottom).toBeLessThan(viewport.offsetTop + viewport.height - 88)
+})
+
+it('preserves the last row on completion with only the missing document scroll range', async () => {
+  const { workspace, inputs } = await setEditingGeometry()
+  Object.defineProperty(document.documentElement, 'scrollHeight', {
+    configurable: true,
+    get: () => 844 + (parseFloat(workspace.style.marginBottom) || 0)
+  })
+  try {
+    await act(async () => inputs.at(-1)!.focus())
+    const before = inputs.at(-1)!.getBoundingClientRect().top
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+    )
+    const destination = inputs.at(-1)!.getBoundingClientRect().top - before
+    expect(window.scrollTo).toHaveBeenLastCalledWith({ top: destination, behavior: 'instant' })
+    expect(parseFloat(workspace.style.marginBottom)).toBe(destination)
+    expect(workspace.dataset.setInputResting).toBe('true')
+    expect(document.body.style.position).toBe('')
+    await act(async () => inputs.at(-1)!.focus())
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+    )
+    expect(parseFloat(workspace.style.marginBottom)).toBe(destination)
+  } finally {
+    Reflect.deleteProperty(document.documentElement, 'scrollHeight')
+  }
+})
+
 it('keeps keyboard geometry through innerHeight transients without recreating the session', async () => {
   const { workspace, inputs, viewport } = await setEditingGeometry()
   await act(async () => inputs[0]!.focus())
