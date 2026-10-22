@@ -368,6 +368,31 @@ it('anchors both viewport edges after a lower caret pans iOS without changing ke
   expect(style.getPropertyValue('--session-note-viewport-top')).toBe('')
 })
 
+it('keeps the set input dock anchored as the iOS visual viewport pans between fields', async () => {
+  const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
+  vi.stubGlobal('visualViewport', viewport)
+  vi.stubGlobal('innerHeight', 844)
+  vi.stubGlobal('scrollBy', vi.fn())
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  const inputs = host.querySelectorAll<HTMLInputElement>('.training-set-card input')
+  const workspace = host.querySelector<HTMLElement>('.session-workspace')!
+
+  await act(async () => inputs[0]!.focus())
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('364px')
+
+  viewport.offsetTop = 96
+  viewport.dispatchEvent(new Event('scroll'))
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('268px')
+
+  await act(async () => inputs[1]!.focus())
+  viewport.offsetTop = 151
+  viewport.dispatchEvent(new Event('scroll'))
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('213px')
+})
+
 it('starts editing an empty canvas immediately and leaves it read-only again on return', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
   await act(async () => host.querySelector<HTMLElement>('.mobile-note-canvas')!.click())

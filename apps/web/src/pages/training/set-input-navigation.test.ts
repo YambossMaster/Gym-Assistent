@@ -2,6 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import {
   advanceTrainingSetInput,
+  getSetInputDockInset,
   getSetInputScrollAdjustment,
   selectTrainingSetValue
 } from './set-input-navigation'
@@ -57,4 +58,21 @@ it('moves through dimensions and RPE across sets but stops at the exercise bound
 it('scrolls a focused field clear of the keyboard action dock', () => {
   expect(getSetInputScrollAdjustment(334, 310)).toBe(36)
   expect(getSetInputScrollAdjustment(280, 310)).toBe(0)
+})
+
+it.each([0, 55, 96, 151])(
+  'anchors the action dock to the visible keyboard edge after a %ipx iOS pan',
+  (visualOffsetTop) => {
+    const layoutHeight = 844
+    const visualHeight = 480
+    const inset = getSetInputDockInset({ layoutHeight, visualHeight, visualOffsetTop })
+    const dockBottom = layoutHeight - inset - 8
+    const visibleKeyboardTop = visualOffsetTop + visualHeight
+
+    expect(dockBottom).toBe(visibleKeyboardTop - 8)
+  }
+)
+
+it('does not add a keyboard inset when Android resizes the layout viewport', () => {
+  expect(getSetInputDockInset({ layoutHeight: 480, visualHeight: 480, visualOffsetTop: 0 })).toBe(0)
 })
