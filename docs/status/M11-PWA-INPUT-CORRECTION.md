@@ -1,6 +1,35 @@
 # M11 學生群組與手機 PWA 輸入：完整問題紀錄及接手檢查清單
 
-## 2026-10-22 21:46 再次實機退回：選取／完成偶發失位、原生訊息禁止（目前工作）
+## 2026-10-22 目前發布：release 75 已部署；21:46實機問題待新版確認
+
+**本節為目前狀態。五項工程／交付工作已完成；沒有宣告原生iPhone或M11結案。** [正式入口](https://formcoachdesk.com)，應用Main **ea853e8216c8151fe064ab47e91f05922c5617f7**，Fly **release 75 complete**。公開buildId **local-1792681874134**，入口 **/assets/index-Bz9fg-ib.js**。使用者取消底部留白優化，本次沒有回收留白，也沒有更改CSS、既有操作列或input外框。
+
+### 完成的五項工作及證據
+
+1. **影片與紅色重現完成。** 21:45／21:46影片的偶發選取失位、完成回頂及IMG_0655原生confirm均重新列為缺陷。pristine Main在三項viewport回歸、四項原生訊息檢查失敗；受控晚到document reset令最後欄163.5→1983.5px。相同重播修後163.5→163.5，位移0px。未聲稱取得iPhone原生事件trace。
+2. **修正數值session生命週期。** 聚焦中的暫時全高viewport保留最後開鍵盤高度，window scroll亦重查焦點意圖。完成後以剛才欄位的螢幕相對位置交還document，最長2.5s處理晚到關閉事件；新gesture、重新聚焦、unmount立即取消。手動滑動不追、保留最少尾部空間。沒有常駐輪詢或頁高優化。
+3. **移除產品原生訊息。** 五處Training confirm統一採用既有站內Confirmation：單人／群組移除、群組完成、已完成改缺席、衝突捨棄。Training及ExportDownloads不再註冊原生beforeunload提示；保留IndexedDB草稿、outbox、自動儲存／恢復提示與匯出取消。root工具層新增全站AST policy，會攔下原生alert／confirm／prompt／beforeunload；舊版再次FAIL、新版PASS。
+4. **鎖定環境完整工程重查完成。** npm ci後確認Web TypeScript7.0.2／工具5.9.3。affected exit0：格式、whitespace、Web型別、10檔126/126，工作流程23/23，獨立policy1/1。再重跑24/24三模式八格式／189欄九點命中、不同值保存reload、同列穩定、72次直接選取、16次群組切換；15/15 temporal完成0px、27欄延後Next、Shell首末欄6/6、1440px／320px／筆記同伴；36/36關閉競態／快速重進／手動取消；6組站內確認取消／接受、可見與焦點；100ms及2.5s未回應保存的真IndexedDB重載恢復2/2，全部通過。最終原始JSON與摘要已凍結於忽略的 **output/playwright/2441d38/**。模擬viewport及fixture API不是實機OSK或新的DB／扣堂證據。
+5. **exact-SHA CI、合併、部署及獨立讀回完成。** [PR #95](https://github.com/YambossMaster/Gym-Assistent/pull/95) 最終head **2441d388001b506745cfa245446ed9581a1fe64b**，[PR CI #365](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39800232035)成功：full check/build、root41／API402／Web499、browser7、migration no-op。合併後Web與候選diff為空。[Main CI #366](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39801710987)五個jobs全部success，Production history匹配且無pending，才部署。Fly machine started、image GH_SHA精確匹配、service passing；正式/api/ready、/、/login均200，公開／origin版本與入口JS一致，SHA256 **79c5b12570e757133f61ec87c56fa70707586c33f5c90279e8ba7d6c6e33190e**。讀回 **output/github/m11-session-race-production-readback.json**。無API、schema、Auth、依賴版本或部署設定變更。
+
+PR CI #364的測試工具失敗保留：最初本機提供5.9，但Web lock為7.0，policy誤用native compiler不提供的JS API；因此未合併／未部署。搬至既有root工具層、npm ci對齊並重新紅綠及全量重跑後，才採用#365／#366綠燈。未跳過失敗，沒有將第一次本機127/127當成最終鎖定證據。個別GitHub job metadata短暫落後時另核對canonical run conclusion與完整原始log；Main最終五項job success已直接讀回。
+
+### 保留未勾的實機檢查
+
+| 項目         | release75需確認的可觀察結果                                          | 狀態                                      |
+| ------------ | -------------------------------------------------------------------- | ----------------------------------------- |
+| [x] P01      | 已接受操作列高度及位置，保留                                         | 已由使用者接受                            |
+| [ ] P02／P05 | 上中下、最後欄、快速關閉重進／再點同欄：整個輸入框可見、無遮擋或消失 | release74實機FAIL；75待驗                 |
+| [ ] P03      | Next同列不動、跨列可見，手動滑動不被拉回                             | 工程重跑通過；原生仍未完整核准            |
+| [ ] P04      | 完成／原生關閉只收鍵盤與dock，動畫及稍後事件後仍保留剛才欄位，不回頂 | release74實機FAIL；75待驗                 |
+| [ ] P06／K15 | 首末欄完整外框／input不被自己的容器裁切                              | 工程九點及容器範圍通過；原生未勾          |
+| [ ] P07      | 移除動作顯示站內「取消／移除動作」，取消保留組數；沒有原生Cancel／OK | 工程全站policy及6組流程通過；75手機待確認 |
+
+原F／K／I中未取得原生證據的項目維持未勾選。**唯一Next：** Product Owner從多工關閉PWA再重開，保留網站資料；重驗直接選取、完成及站內移除提示（可只取消，不必刪真實資料／扣堂）。回報後才更新實機項目。發布已確認，不需再提供遠端授權、帳號或清除草稿。已保存本地交付分支 `codex/m11-session-race-release`，文件整合不改應用程式。
+
+以下保留當時狀態與決策；下方「目前／Next」均屬歷史快照，現況以上節唯一Next為準。
+
+## 2026-10-22 21:46 實機退回與修正過程：選取／完成偶發失位、原生訊息禁止（歷史）
 
 **本節取代下方 release 74「工程完成」的當前結論。** Product Owner 的 `21-46-06`（35.63s）及 `21-45-29`（19.24s）錄影再次證明選取偶發不可見、完成後回頂；IMG_0655 顯示移除動作仍使用原生 confirm。原生 P02／P04／P05 重新標為 **FAIL**，其餘未證明的實機項目維持未勾選。操作列與 input 外框沿用已接受版本；**底部留白優化已由使用者明確取消，本輪不回收留白**。
 
