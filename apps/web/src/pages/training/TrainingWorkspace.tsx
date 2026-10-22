@@ -1299,6 +1299,10 @@ function TrainingEditor({
     )
   }
   const selectMobileTab = (tab: 'training' | 'note', toggleSelected = true) => {
+    if (activeSetInput) {
+      activeSetInput.blur()
+      setActiveSetInput(null)
+    }
     if (tab === mobileTab) {
       if (toggleSelected) setClassInfoExpanded((expanded) => !expanded)
       return
@@ -1464,6 +1468,11 @@ function TrainingEditor({
           className="session-mobile-tabs"
           role="tablist"
           aria-label="課堂工作區"
+          onMouseDownCapture={(event) => {
+            // Preserve the numeric scroll surface until the tab's click runs;
+            // blurring on mousedown would move the tab before release.
+            if (activeSetInput) event.preventDefault()
+          }}
           onKeyDown={(event) => {
             const next =
               event.key === 'ArrowLeft' || event.key === 'Home'

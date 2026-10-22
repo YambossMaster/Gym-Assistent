@@ -592,6 +592,17 @@ it('keeps editing when a focus-time layout change retargets the release click to
   expect(host.querySelector('.set-input-advance-dock')).toBe(dock)
 })
 
+it('ends numeric editing when explicitly switching to the Coach Note tab', async () => {
+  const { inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const tab = host.querySelector<HTMLButtonElement>('[aria-controls="session-note-panel"]')!
+  await act(async () => tab.click())
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+  expect(host.querySelector('.set-input-advance-dock')).toBeNull()
+  expect(document.body.style.position).toBe('')
+  expect(document.activeElement).not.toBe(inputs[0])
+})
+
 it('finishes a native dismissal when viewport expansion arrives before blur', async () => {
   const { inputs, viewport } = await setEditingGeometry()
   await act(async () => inputs[0]!.focus())

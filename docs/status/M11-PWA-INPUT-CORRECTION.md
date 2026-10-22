@@ -13,6 +13,16 @@ Product Owner 已明確指示「請先完成完整驗證後，再進行部署」
 
 下方「待檢視／未授權」為此前本機交接快照，已由本節最新指示取代。分支仍為 `codex/m11-input-incident-status`；正式站因限制環境 DNS 讀取失敗尚未取得新事實，改用允許的網路路徑重查，不把 DNS 錯誤當產品故障。
 
+### 完整驗證發現的同伴缺陷（部署前攔下）
+
+- 已建立 [PR #90](https://github.com/YambossMaster/Gym-Assistent/pull/90)，首版 head `449821ba52fd4e00d458979725631455b3bd7cf8` 的 [CI #353](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39761476160) 通過 full check/build（root 40、API 402、Web 480 測試）、browser-ui 與無 migration 的正式 no-op。尚未合併／部署。
+- `m11-full-verify.js` 完整 24 組（3 檢視 × 8 格式）通過 189 個逐欄不同值、精確 touch Next、每例保存 reload、16 個群組檢視往返、72 個上中下直接 touch、自由手動滑動及完成。這些仍是 Windows WebKit、模擬 viewport 與攔截 API；非實機／DB 證據。
+- **P1，同伴流程失敗，維持部署關卡 2 未通過：** `m11-full-peer-verify.js` 在數值輸入中切「教練筆記」時失敗；最小 `m11-note-switch-repro.js` 證明 mouse click／touch tap 都不切換（`aria-selected=false`）。mousedown 的原生 button focus 提前 blur 數值框，釋放 click 前解除 body 鎖導致按鈕移位；程式切換 tab 亦未明確清除數值模式，新 Workspace 回歸在修正前證明 tab 已選但 dock 留著。這是已規劃第 2／5 項直接 consumer，沒有增加 Roadmap 範圍。
+- **最小修正：** 僅數值輸入期間，tablist mousedown 阻止提前搶焦點，等原有 click 執行分頁切換；明確選 tab 時 blur 數值框並清除數值模式。數值列的 retarget click 仍保留輸入，鍵盤 tab 導覽保留。
+- 修正後最小測試 2/2（明確切筆記結束、數值 row click 不結束）；相同真 click／tap 均一次切到筆記（`aria-selected=true`、note visible、numeric=false）。新增一個正式回歸，本輪新增共 31 個。最終 affected preflight exit 0：格式、whitespace、Web typecheck、7 檔 **98/98** 通過。整組同伴檢查亦通過：1440px Enter 精確前進、改值保存 reload、dock 隱藏與 body 不鎖；320px 群組兩模式各 9 欄實際可見／命中／前進／完成；390px 數值→筆記切換、工具列、清除數值鎖與實際筆記輸入保存。接續新 head CI 及完整矩陣重查；舊 head 綠燈不作新版本證據。
+- GitHub connector 建 PR 重試後仍 `403 Resource not accessible by integration`；以既有 Git credential（僅記憶體、無輸出／存檔）呼叫官方 REST 建立同一工作分支 PR，已附加至本 chat。Git push exit 0，`credential-cache unavailable; no unix socket support` 為前置 helper 訊息，既有後續 helper 已成功送達並讀回 SHA。
+- 正常網路唯讀已確認部署前 Fly running image `GH_SHA=9447eb72c0968610a360dddfe978053cb3429630`；公開 app-version buildId 是本地格式 `local-1792658253914`，不能拿它當 Git SHA。發布後以 Main CI、Fly image label 與公開資產合併建立版本證據。
+
 ## 2026-10-22 恢復工程：本機候選完成，待檢視與完整交付
 
 Product Owner 已在新對話明確要求接手、徹底檢查與修正；下方歷史「停止修改」限制已由本次恢復指示取代。遠端 push、merge、部署及完整 CI gate 尚未獲本版授權。
