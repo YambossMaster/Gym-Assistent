@@ -56,8 +56,30 @@ it('moves through dimensions and RPE across sets but stops at the exercise bound
 })
 
 it('scrolls a focused field clear of the keyboard action dock', () => {
-  expect(getSetInputScrollAdjustment(334, 310)).toBe(36)
-  expect(getSetInputScrollAdjustment(280, 310)).toBe(0)
+  expect(
+    getSetInputScrollAdjustment({
+      inputTop: 290,
+      inputBottom: 334,
+      visibleTop: 12,
+      visibleBottom: 310
+    })
+  ).toBe(24)
+  expect(
+    getSetInputScrollAdjustment({
+      inputTop: 240,
+      inputBottom: 280,
+      visibleTop: 12,
+      visibleBottom: 310
+    })
+  ).toBe(0)
+  expect(
+    getSetInputScrollAdjustment({
+      inputTop: 4,
+      inputBottom: 44,
+      visibleTop: 12,
+      visibleBottom: 310
+    })
+  ).toBe(-8)
 })
 
 it.each([0, 55, 96, 151])(
@@ -69,7 +91,7 @@ it.each([0, 55, 96, 151])(
     const dockBottom = layoutHeight - inset - 8
     const visibleKeyboardTop = visualOffsetTop + visualHeight
 
-    expect(dockBottom).toBe(visibleKeyboardTop - 8)
+    expect(dockBottom).toBe(visibleKeyboardTop - 72)
   }
 )
 

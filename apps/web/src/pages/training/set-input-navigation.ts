@@ -9,13 +9,29 @@ export function advanceTrainingSetInput(target: EventTarget | null) {
   if (!exercise) return
   const inputs = Array.from(exercise.querySelectorAll<HTMLInputElement>('.training-set-card input'))
   const next = inputs[inputs.indexOf(target) + 1]
-  if (next) next.focus()
+  if (next) next.focus({ preventScroll: true })
   else target.blur()
 }
 
-export function getSetInputScrollAdjustment(inputBottom: number, dockTop: number) {
-  return Math.max(0, Math.ceil(inputBottom - dockTop + 12))
+export function getSetInputScrollAdjustment({
+  inputTop,
+  inputBottom,
+  visibleTop,
+  visibleBottom
+}: {
+  inputTop: number
+  inputBottom: number
+  visibleTop: number
+  visibleBottom: number
+}) {
+  if (inputBottom > visibleBottom) return Math.ceil(inputBottom - visibleBottom)
+  if (inputTop < visibleTop) return Math.floor(inputTop - visibleTop)
+  return 0
 }
+
+// The iOS numeric keyboard can place its native navigation bar above the
+// reported visual viewport edge. Keep the app's action dock clear of that bar.
+export const SET_INPUT_KEYBOARD_CLEARANCE = 64
 
 export function getSetInputDockInset({
   layoutHeight,
@@ -30,7 +46,10 @@ export function getSetInputDockInset({
   if (keyboardHeight <= 120) return 0
   // A fixed element is positioned in the layout viewport. The keyboard edge is
   // the *bottom* of the visual viewport, which can pan without changing height.
-  return Math.max(0, Math.round(layoutHeight - visualOffsetTop - visualHeight))
+  return Math.max(
+    0,
+    Math.round(layoutHeight - visualOffsetTop - visualHeight + SET_INPUT_KEYBOARD_CLEARANCE)
+  )
 }
 
 export function describeTrainingSetInput(target: EventTarget | null) {
