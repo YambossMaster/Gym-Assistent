@@ -1,17 +1,17 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-23 against deployed application commit
-> `c501ee5f0d7d43802303230168f5c526ee06c1c4` and the M11 viewport commit / pre-blur position correction.
+> `db1a8f59bf1ff4bc65fa0fd0d6ea153382b50669` and the M11 dismissal / reentry geometry correction.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
-## M11 release 76 已部署，五項時序缺陷已紅綠驗證；原生實機待驗（2026-10-23）
+## M11 release 77 已部署，關閉逐幀／跨動作重進修正；實機待驗（2026-10-23）
 
-使用者以五段23:15–23:36影片再次退回選取遮擋與完成跳位；本輪開始正式站為release75。原因矩陣逐項涵蓋事件／座標、觸控、捲動owner、React、Shell及版本。五個新回歸先證明舊碼失敗：viewport屬性晚於事件提交、無事件的晚到原生捲動、微小touchmove誤取消、關閉擴大再次置中、blur後才保存位置。修正為編輯期間讀取每個frame的新幾何、辨識實際滑動、擴大不下移，以及使用blur前最後位置。保留已接受dock／外框／尾部空間與站內確認。
+Product Owner以01:15／01:16影片退回release76：完成時中途滑動，以及第二動作輸入區／操作列整體偏移。新重現舊版3/9，關閉短暫168–250px後回正；補驗再攔下原生blur空窗170px、React close前30px，以及慢速動畫早於固定期限結束保護。修正保持內部捲動到真正全高、逐幀保留列位置、先套幾何再關閉，以及按實際幾何進度收尾；frame／dock實際原點獨立校正。使用者要求加入「為何正常」對照：兩引擎皆舊版18/30、新版30/30；同步事件／仍focus或全關正常，事件延後／null-focus關閉空窗才失敗。第一／第二動作在無原點偏移時皆正常，原生偏移生成仍待證。故障注入不是手機原生trace，保留既有UI與尾部空間。
 
-[PR #97](https://github.com/YambossMaster/Gym-Assistent/pull/97) 最終ff89089／[PR CI #369](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39815531198)及應用Main c501ee5f0d7d43802303230168f5c526ee06c1c4／[Main CI #370](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39816970871)全部必要檢查成功（root41／API402／Web504、完整check/build、browser、migration no-op、Production preview）後部署。Fly release76 complete，同SHA started／service passing，獨立三入口200、公開／origin版本與資產一致。affected110測試、Chrome新時序首中末36/36、WebKit12/12及按學生5/5、24格式／189欄、15時序、36競態、Shell6和同伴流程通過；編輯穩定時無重複style寫入，關閉停止frame觀測。
+[PR #99](https://github.com/YambossMaster/Gym-Assistent/pull/99) 494aa0a／[PR CI #374](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39830458841)成功後合併為應用Main db1a8f59bf1ff4bc65fa0fd0d6ea153382b50669；[Main CI #375](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39831223666)五jobs成功後部署。Fly release 77 complete，同SHA started／service passing；獨立三入口200、公開／origin版本資產一致。affected131測試、Chrome／WebKit新重現9/9、各108循環、一般與慢速兩種關閉6/6／108動畫取樣0px；24格式／189欄、歷史時序／競態／Next及同伴全通過，穩定0重寫style、完成後0觀測frame。
 
-**六項工程／交付完成；原生iPhone PWA未宣告通過或M11結案。** 保留release74／75失敗與未勾項，不把合成viewport當作手機OSK證據。唯一Next為關閉多工PWA再重開，驗單人及群組兩檢視的選取、Next、完成與[唯一檢查清單](status/M11-PWA-INPUT-CORRECTION.md)。保留網站資料，不需刪真實課堂或扣堂。新版buildId local-1792687925378，入口 /assets/index-Db1ycerI.js。本輪無API／schema／Auth／CSS／依賴版本／部署設定變更。
+**六項工程／交付完成，手機驗收仍開放。** [唯一檢查清單](status/M11-PWA-INPUT-CORRECTION.md)保留release74／75／76失敗，操作列P01已重新開啟；不把終點回正或合成viewport當作原生通過。唯一Next：Product Owner多工關閉再開PWA，驗單人與群組兩模式的跨動作連續輸入、Next、完成中途及最終位置；不清網站資料。buildId local-1792694323802，入口 /assets/index-BOtnx1RO.js。本輪無API／schema／Auth／依賴／部署設定變更。
 
 ## Released baseline
 
