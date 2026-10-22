@@ -14,7 +14,7 @@
 4. **全部通過：重跑受影響檢查。** 三模式八格式／189欄／保存 reload、Next 與全框九點、首次／末欄、延後 scroll、分段 viewport／pan、快速完成重進、手動取消、桌機／320px／筆記、Shell 邊界；新站內確認取消／接受與離線草稿 reload。Windows WebKit／模擬 viewport／攔截 API 證據不等於 iPhone OSK 或新的 DB／扣堂證據。
 5. **待驗證後交付：** affected check、exact-head PR／Main CI、Fly 同 SHA／資產／健康讀回；部署後交付可辨識版本給實機重驗。不能把工程 PASS 勾成原生 PWA PASS。
 
-**目前 Next：** 本輪第1–4項工程工作已完成；最終 affected preflight exit 0（format／whitespace／Web typecheck、11檔127/127正式測試，包括全站原生訊息policy與關閉helper生命週期）。修正了新policy測試錯用Web未提供的node型別，改用Vite來源盤點；並行診斷曾使既有測試超時，正式重跑127/127通過才計入結果。接續既有授權第5項：commit／push工作分支、exact-head PR full CI，通過後合併並由Main必要檢查後部署／讀回。無需 Product Owner 操作真實課堂或提供新帳號。未修改 API／schema／Auth／群組建立介面／CSS／部署設定。
+**目前 Next：** 已完成npm ci（Web TypeScript7.0.2／root工具5.9.3），policy移至scripts並重新先紅後綠。最終鎖定環境affected exit 0：format／whitespace／Web typecheck、10檔126/126 Web測試、23/23工作流程測試，另獨立policy 1/1通過。產品碼與2757b1a相同；接續在同PR提交工具相容修正、exact-head完整CI，同時鎖定環境重跑受影響瀏覽器；兩者全部成功後才合併／部署／讀回。無需 Product Owner 操作真實課堂或提供新帳號。未改API／schema／Auth／群組建立介面／CSS／依賴版本／部署設定。
 
 外部資料只用於設計可失敗的時序重播：[WebKit #254861](https://bugs.webkit.org/show_bug.cgi?id=254861)、[#226689](https://bugs.webkit.org/show_bug.cgi?id=226689)；[MDN beforeunload](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event) 確認 preventDefault 會觸發瀏覽器訊息，不能在瀏覽器關閉事件中以非同步站內對話框取代。既有本地草稿／站內操作確認分別處理其可恢復與需決定的操作。
 
@@ -29,6 +29,10 @@
 | 未同步草稿／離頁 | 輸入123後100ms，以及2.5s已送出未回應兩案：真 IndexedDB已有草稿、beforeunload不被preventDefault、無原生API呼叫，真reload後恢復123及站內恢復提示，2/2通過。保留既有store／outbox，不要求清網站資料。                                                                                                            |
 
 JSON證據在忽略的 `output/playwright/m11-placement-{matrix,temporal,next,shell,peer}-results.json`、`m11-session-race-results.json`、`m11-inapp-dialogs-results.json`、`m11-draft-reload-results.json`。先前多瀏覽器並行時一個既有矩陣unit超過5s，未算通過；最後關閉診斷瀏覽器後以正式 affected preflight 統一重跑。原生實機 P02／P04／P05 仍為 FAIL／待新版驗收，沒有自動勾選。
+
+### 遠端 CI 攔下的工具相容問題（未合併／未部署）
+
+PR #95 head 2757b1a 的 PR CI #364 / run 39797381313：browser 7/7通過，API402通過，但Web型別檢查FAIL。原因為本機node_modules實際提供TypeScript5.9，Web lock指定7.0.2；新增policy測試呼叫7.0不提供的JS compiler API。這不是產品回歸通過證據，亦不能用本機127/127掩蓋。第4／5項重新開啟：執行鎖定npm ci，將全站AST policy搬至既有儲存庫script層（root/API既有5.9 JS compiler），不改依賴／產品碼；重跑policy紅綠及affected、再送新exact-head full CI。
 
 ## 2026-10-22 release 74 發布快照（歷史，已由21:46實機退回）
 
