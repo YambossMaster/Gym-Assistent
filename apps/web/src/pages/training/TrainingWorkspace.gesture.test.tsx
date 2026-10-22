@@ -381,6 +381,7 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
   await act(async () => inputs[0]!.focus())
   await frame()
   expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('428px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-space')).toBe('712px')
   await act(async () => vi.advanceTimersByTimeAsync(160))
   await frame()
   const scrollsAfterFocus = scrollBy.mock.calls.length
@@ -389,6 +390,7 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
   expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('332px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-space')).toBe('712px')
   expect(scrollBy).toHaveBeenCalledTimes(scrollsAfterFocus)
 
   await act(async () => inputs[1]!.focus())
@@ -398,11 +400,14 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
   expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('277px')
 })
 
-it('checks visibility once per focused field and never corrects manual scrolling', async () => {
+it('aligns the first and subsequent fields once without correcting manual scrolling', async () => {
   const viewport = Object.assign(new EventTarget(), { height: 700, offsetTop: 0 })
   vi.stubGlobal('visualViewport', viewport)
   vi.stubGlobal('innerHeight', 844)
-  const scrollBy = vi.fn()
+  let scrollOffset = 0
+  const scrollBy = vi.fn(({ top }: { top: number }) => {
+    scrollOffset += top
+  })
   vi.stubGlobal('scrollBy', scrollBy)
   await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
   const inputs = host.querySelectorAll<HTMLInputElement>('.training-set-card input')
@@ -410,11 +415,7 @@ it('checks visibility once per focused field and never corrects manual scrolling
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
     this: HTMLElement
   ) {
-    const top = this.classList.contains('set-input-advance-dock')
-      ? 560
-      : this === inputs[1]
-        ? inputTop
-        : 480
+    const top = this.classList.contains('set-input-advance-dock') ? 560 : inputTop - scrollOffset
     return {
       x: 0,
       y: top,
@@ -431,19 +432,26 @@ it('checks visibility once per focused field and never corrects manual scrolling
   await act(async () => inputs[0]!.focus())
   await act(async () => vi.advanceTimersByTimeAsync(160))
   await frame()
-  expect(scrollBy).not.toHaveBeenCalled()
+  expect(scrollBy).toHaveBeenCalledOnce()
+  expect(scrollBy).toHaveBeenCalledWith({ top: 288, behavior: 'instant' })
 
-  inputTop = 550
+  inputTop = 480
   await act(async () => inputs[1]!.focus({ preventScroll: true }))
   await act(async () => vi.advanceTimersByTimeAsync(160))
   await frame()
   expect(scrollBy).toHaveBeenCalledOnce()
-  expect(scrollBy).toHaveBeenCalledWith({ top: 42, behavior: 'instant' })
+
+  inputTop = 850
+  await act(async () => inputs[0]!.focus({ preventScroll: true }))
+  await act(async () => vi.advanceTimersByTimeAsync(160))
+  await frame()
+  expect(scrollBy).toHaveBeenCalledTimes(2)
+  expect(scrollBy).toHaveBeenLastCalledWith({ top: 370, behavior: 'instant' })
 
   viewport.offsetTop = 96
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
-  expect(scrollBy).toHaveBeenCalledOnce()
+  expect(scrollBy).toHaveBeenCalledTimes(2)
 })
 
 it('starts editing an empty canvas immediately and leaves it read-only again on return', async () => {

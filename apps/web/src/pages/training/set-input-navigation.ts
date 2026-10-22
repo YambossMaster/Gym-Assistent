@@ -29,6 +29,37 @@ export function getSetInputScrollAdjustment({
   return 0
 }
 
+// Give every focused set row the same resting position. When there is room,
+// align it in the upper half of the space above the keyboard dock; otherwise
+// only move far enough to keep the input clear of the dock.
+export function getSetInputFocusAdjustment({
+  inputTop,
+  inputBottom,
+  visibleTop,
+  visibleBottom
+}: {
+  inputTop: number
+  inputBottom: number
+  visibleTop: number
+  visibleBottom: number
+}) {
+  const visibilityAdjustment = getSetInputScrollAdjustment({
+    inputTop,
+    inputBottom,
+    visibleTop,
+    visibleBottom
+  })
+  const targetTop = visibleTop + Math.min(180, Math.max(0, (visibleBottom - visibleTop) * 0.4))
+  const alignmentAdjustment = Math.round(inputTop - targetTop)
+  // A very short visible area cannot fit the field at the preferred anchor.
+  if (
+    inputBottom - alignmentAdjustment > visibleBottom ||
+    inputTop - alignmentAdjustment < visibleTop
+  )
+    return visibilityAdjustment
+  return alignmentAdjustment
+}
+
 // The iOS numeric keyboard can place its native navigation bar above the
 // reported visual viewport edge. Keep the app's action dock clear of that bar.
 export const SET_INPUT_KEYBOARD_CLEARANCE = 64

@@ -7251,6 +7251,7 @@ textarea:focus {
 /* M7.5 Session workspace: route-scoped FORM workbench convergence. */
 .session-workspace {
   --session-keyboard-inset: 0px;
+  --session-keyboard-space: 0px;
   min-height: 100vh;
   padding-bottom: 76px;
   background: #eae8df;
@@ -18454,6 +18455,10 @@ button:disabled {
 
   .app-shell:has(.session-workspace:is(.is-note-tab, .is-set-input-focused)) .bottom-nav {
     display: none;
+  }
+
+  .session-workspace.is-set-input-focused {
+    padding-bottom: var(--session-keyboard-space);
   }
 
   .session-workspace.is-set-input-focused .session-bottom {
