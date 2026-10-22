@@ -1,15 +1,17 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `89e08b6270e7287a878887d13851a8f675f2c863` and the M11 input/tab handoff correction release.
+> `ea853e8216c8151fe064ab47e91f05922c5617f7` and the M11 session race / native-dialog correction release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
-## M11 release 74 已部署，完整工程清單通過，iPhone PWA 待驗（2026-10-22）
+## M11 release 75 已部署，工程重查通過；21:46實機問題待新版驗證（2026-10-22）
 
-已按兩支實機影片修正直接選取／Next 後被遮擋、完成回跳與返回頁首遮擋；完整補驗另攔下 input 52px minimum 超出 38px 外框，以及只修 measurement 後 RPE 同列位移，均已修正再驗。最終 PR #93／應用 Main 89e08b6270e7287a878887d13851a8f675f2c863，PR CI #360 和 Main run 39781532911 全部必要 jobs 成功（root 40／API 402／Web 484），Fly release 74 同 SHA started／passing，獨立三入口 200、公開／origin 資產相同。重跑 24 組／189 欄全框九點、15 temporal、27 Next、Shell 6 案與桌機／窄手機／筆記，全部通過；完成位移 0px。無 API／migration／Auth 變更。
+使用者再次回報release74偶發選取失位／完成回頂及原生confirm，並取消底部留白優化。此次修正聚焦中的全高viewport transient、晚到window scroll，以及完成／重新聚焦交接的競態；保留已接受dock、外框與尾部空間。五處Training確認統一採站內Confirmation，移除Training／ExportDownloads的原生離頁提示，保留本地草稿恢復與匯出取消，新增全站原生訊息policy。
 
-原生鍵盤仍待安裝 iPhone PWA 實機確認，未宣告問題或 M11 結案。正式 buildId local-1792673603571；關閉多工 PWA 再重開即可驗證，不清網站資料。完整清單、所有失敗歷史、版本及唯一下一步見 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md)。
+PR #95最終2441d38／PR CI #365與應用Main ea853e8216c8151fe064ab47e91f05922c5617f7／Main CI #366全部必要檢查成功（root41／API402／Web499、browser7、migration no-op、Production無pending），才部署。Fly release75 complete，同SHA started／service passing，獨立三入口200、公開／origin版本與資產一致。鎖定依賴後重跑24格式／189欄、15時序、36競態、27Next、Shell6、桌機／窄手機／筆記、6組站內確認及2組真IndexedDB恢復皆通過。最初#364測試compiler API不相容被CI攔下，修正測試工具及對齊依賴後重跑，未略過。
+
+**原生iPhone PWA未宣告通過或M11結案。** P02／P04／P05保留release74 FAIL，P07新增原生訊息重驗；其餘未證明項目維持未勾。現在關閉多工PWA再重開即可驗證，保留網站資料，不需刪真實課堂或扣堂。buildId local-1792681874134，入口 /assets/index-Bz9fg-ib.js。完整證據、失敗歷史與唯一Next見[完整Status](status/M11-PWA-INPUT-CORRECTION.md)。無API／schema／Auth／CSS／依賴版本／部署設定變更。
 
 ## Released baseline
 
