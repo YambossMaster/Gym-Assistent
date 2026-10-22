@@ -593,6 +593,10 @@ it('corrects a late native document reset after completion and cancels recovery 
   viewport.height = 650
   viewport.dispatchEvent(new Event('resize'))
   window.dispatchEvent(new Event('scroll'))
+  expect(document.body.style.position).toBe('fixed')
+  expect(window.scrollTo).not.toHaveBeenCalled()
+  viewport.height = 844
+  viewport.dispatchEvent(new Event('resize'))
   expect(window.scrollTo).toHaveBeenCalled()
   vi.mocked(window.scrollTo).mockClear()
   window.dispatchEvent(new Event('touchstart'))
@@ -728,8 +732,8 @@ it('confirms completed-group attendance changes without losing results on cancel
   expect(calls.save.mock.calls[0]![0].payload.attendance[0].status).toBe('absent')
 })
 
-it('preserves the last row on completion with only the missing document scroll range', async () => {
-  const { workspace, inputs } = await setEditingGeometry()
+it('preserves the last row through closing before handing back the document scroll range', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
   Object.defineProperty(document.documentElement, 'scrollHeight', {
     configurable: true,
     get: () => 844 + (parseFloat(workspace.style.marginBottom) || 0)
@@ -740,6 +744,11 @@ it('preserves the last row on completion with only the missing document scroll r
     await act(async () =>
       host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
     )
+    expect(document.body.style.position).toBe('fixed')
+    expect(inputs.at(-1)!.getBoundingClientRect().top).toBe(before)
+    expect(window.scrollTo).not.toHaveBeenCalled()
+    viewport.height = 844
+    await act(async () => viewport.dispatchEvent(new Event('resize')))
     const destination = inputs.at(-1)!.getBoundingClientRect().top - before
     expect(window.scrollTo).toHaveBeenLastCalledWith({ top: destination, behavior: 'instant' })
     expect(parseFloat(workspace.style.marginBottom)).toBe(destination)
@@ -810,6 +819,26 @@ it('does not end editing when a free scroll starts on the space between rows', a
   expect(host.querySelector('.set-input-advance-dock')).not.toBeNull()
 })
 
+it('keeps the row still through a native blur gap before a new focus or keyboard closure', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  await frame()
+  const before = inputs[0]!.getBoundingClientRect().top
+  await act(async () => inputs[0]!.blur())
+  viewport.height = 620
+  viewport.offsetTop = 90
+  workspace.scrollTop += 170
+  await frame()
+  expect(inputs[0]!.getBoundingClientRect().top - viewport.offsetTop).toBe(before)
+  expect(document.body.style.position).toBe('fixed')
+  // A delayed native Next still owns the same session, without a dock remount.
+  const dock = host.querySelector('.set-input-advance-dock')
+  await act(async () => inputs[1]!.focus())
+  await frame()
+  expect(host.querySelector('.set-input-advance-dock')).toBe(dock)
+  expect(document.activeElement).toBe(inputs[1])
+})
+
 it('releases the scroll owner only after the keyboard closes and restores document scrolling', async () => {
   const { workspace, inputs, viewport } = await setEditingGeometry()
   await act(async () => inputs[0]!.focus())
@@ -822,6 +851,26 @@ it('releases the scroll owner only after the keyboard closes and restores docume
   expect(document.documentElement.classList.contains('is-session-set-editing')).toBe(false)
   expect(workspace.style.getPropertyValue('--session-input-height')).toBe('')
   expect(window.scrollTo).toHaveBeenCalledOnce()
+})
+
+it('applies the final closing geometry before React commits the keyboard-close state', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  await frame()
+  const before = inputs[0]!.getBoundingClientRect().top
+  await act(async () => inputs[0]!.blur())
+  workspace.scrollTop += 170
+  viewport.height = 780
+  viewport.offsetTop = 10
+  await act(async () => {
+    viewport.dispatchEvent(new Event('resize'))
+    expect(inputs[0]!.getBoundingClientRect().top - viewport.offsetTop).toBe(before)
+  })
+  expect(document.body.style.position).toBe('fixed')
+  viewport.height = 844
+  viewport.offsetTop = 0
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  expect(document.body.style.position).toBe('')
 })
 
 it('keeps the exact next field and dock when viewport height expands during a focus handoff', async () => {
@@ -968,7 +1017,8 @@ it.each(
       }
     })
     calls.save.mockImplementation(async ({ payload }) => accept(payload))
-    vi.stubGlobal('visualViewport', Object.assign(new EventTarget(), { height: 480, offsetTop: 0 }))
+    const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
+    vi.stubGlobal('visualViewport', viewport)
     await act(async () => render(current, 'entry'))
     const inputs = [...host.querySelectorAll<HTMLInputElement>('.training-set-card input')]
     expect(inputs).toHaveLength(3 * (recordingTypes[type].dimensions.length + 1))
@@ -998,6 +1048,9 @@ it.each(
       }
     }
     expect(host.querySelector('.set-input-advance-dock')).toBeNull()
+    expect(document.body.style.position).toBe('fixed')
+    viewport.height = 844
+    await act(async () => viewport.dispatchEvent(new Event('resize')))
     expect(document.body.style.position).toBe('')
     await act(async () => vi.advanceTimersByTimeAsync(2500))
     expect(calls.save).toHaveBeenCalled()

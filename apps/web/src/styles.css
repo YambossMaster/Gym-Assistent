@@ -18463,7 +18463,7 @@ button:disabled {
   html.is-session-set-editing .session-workspace {
     position: fixed;
     z-index: 35;
-    top: var(--session-input-top, 0px);
+    top: calc(var(--session-input-top, 0px) + var(--session-input-shift, 0px));
     right: 0;
     left: 0;
     height: var(--session-input-height, 100dvh);
@@ -18489,6 +18489,8 @@ button:disabled {
     transition: none;
   }
 
+  html.is-session-set-editing .session-workspace .session-bottom,
+  html.is-session-set-editing .app-shell > .bottom-nav,
   .session-workspace.is-set-input-focused .session-bottom {
     display: none;
   }
@@ -18497,7 +18499,9 @@ button:disabled {
     position: fixed;
     touch-action: none;
     z-index: 24;
-    top: calc(var(--session-input-top) + var(--session-input-height) - 8px);
+    top: calc(
+      var(--session-input-top) + var(--session-input-height) - 8px + var(--session-dock-shift, 0px)
+    );
     right: 10px;
     bottom: auto;
     left: 10px;
