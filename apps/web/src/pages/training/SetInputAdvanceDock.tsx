@@ -7,17 +7,20 @@ export function SetInputAdvanceDock({
   onBeforeAdvance,
   onGestureStart,
   onGestureRelease,
-  onGestureEnd
+  onGestureEnd,
+  onComplete
 }: {
   target: HTMLInputElement | null
   onBeforeAdvance?: (next: HTMLInputElement) => void
   onGestureStart?: () => void
   onGestureRelease?: () => void
   onGestureEnd?: () => void
+  onComplete?: () => void
 }) {
   const advancedOnPointerUp = useRef(false)
   const advance = () => {
     advanceTrainingSetInput(target, onBeforeAdvance)
+    if (describeTrainingSetInput(target)?.isLast) onComplete?.()
     onGestureEnd?.()
   }
   const step = describeTrainingSetInput(target)
@@ -27,6 +30,10 @@ export function SetInputAdvanceDock({
       <span aria-live="polite">{step.context}</span>
       <button
         type="button"
+        onMouseDown={(event) => event.preventDefault()}
+        onKeyDown={() => {
+          advancedOnPointerUp.current = false
+        }}
         onPointerDown={(event) => {
           event.preventDefault()
           advancedOnPointerUp.current = false
@@ -41,8 +48,8 @@ export function SetInputAdvanceDock({
           advance()
         }}
         onPointerCancel={onGestureEnd}
-        onClick={(event) => {
-          if (event.detail !== 0 && advancedOnPointerUp.current) {
+        onClick={() => {
+          if (advancedOnPointerUp.current) {
             advancedOnPointerUp.current = false
             return
           }

@@ -5,6 +5,10 @@
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
+## M11 release 71 失敗後的修正與發布（2026-10-22，分支待整合）
+
+Product Owner 在 release 71 交接後再次回報：按 Next 直接關閉鍵盤且不前進；點選輸入框有時沒有操作列。**release 71 基本功能未達標，不能因舊 CI／部署成功標為已修復。** 完整交接後已要求恢復工程；本地 `codex/m11-input-incident-status` 的 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md) 記錄本輪失敗迴圈、修正、97 項 affected checks 與受限的 WebKit touch 證據。最新明確授權為「先完整驗證，再部署」：本版 PR／Main checks 通過後才部署，部署後再驗安裝 iPhone PWA。目前尚未發布此候選，實機驗收仍開放。
+
 ## Released baseline
 
 | Area         | Integrated fact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionTraining } from '../../api'
 import { TrainingWorkspace } from './TrainingWorkspace'
 import * as startAnchorExperiment from './exercise-drag-start-anchor'
+import { emptyMeasurements, recordingTypes, type RecordingType } from './recording'
 
 const calls = vi.hoisted(() => ({ save: vi.fn() }))
 const planState = vi.hoisted(() => ({ tier: 'advanced' }))
@@ -542,6 +543,201 @@ it('releases the scroll owner only after the keyboard closes and restores docume
   expect(workspace.style.getPropertyValue('--session-input-height')).toBe('')
   expect(window.scrollTo).toHaveBeenCalledOnce()
 })
+
+it('keeps the exact next field and dock when viewport height expands during a focus handoff', async () => {
+  const { inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const button = host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!
+  await act(async () => {
+    pointer(button, 'pointerdown', 440, 'touch')
+    pointer(button, 'pointerup', 440, 'touch')
+  })
+  expect(document.activeElement).toBe(inputs[1])
+  // A viewport resize is geometry, not proof that the user finished editing.
+  viewport.height = 844
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  expect(document.activeElement).toBe(inputs[1])
+  expect(host.querySelector('.set-input-advance-dock button')).toBe(button)
+  viewport.height = 480
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  await act(async () => {
+    pointer(button, 'pointerdown', 440, 'touch')
+    pointer(button, 'pointerup', 440, 'touch')
+  })
+  expect(document.activeElement).toBe(inputs[2])
+})
+
+it('can reenter the same still-focused field after a viewport expansion', async () => {
+  const { inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  viewport.height = 844
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  viewport.height = 480
+  await act(async () => {
+    inputs[0]!.click()
+    viewport.dispatchEvent(new Event('resize'))
+  })
+  expect(document.activeElement).toBe(inputs[0])
+  expect(host.querySelector('.set-input-advance-dock')).not.toBeNull()
+})
+
+it('keeps editing when a focus-time layout change retargets the release click to the row', async () => {
+  const { inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const dock = host.querySelector('.set-input-advance-dock')
+  await act(async () => inputs[2]!.focus())
+  const row = inputs[2]!.closest<HTMLElement>('.training-set-card')!
+  await act(async () => row.click())
+  expect(document.activeElement).toBe(inputs[2])
+  expect(host.querySelector('.set-input-advance-dock')).toBe(dock)
+})
+
+it('ends numeric editing when explicitly switching to the Coach Note tab', async () => {
+  const { inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const tab = host.querySelector<HTMLButtonElement>('[aria-controls="session-note-panel"]')!
+  await act(async () => tab.click())
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+  expect(host.querySelector('.set-input-advance-dock')).toBeNull()
+  expect(document.body.style.position).toBe('')
+  expect(document.activeElement).not.toBe(inputs[0])
+})
+
+it('finishes a native dismissal when viewport expansion arrives before blur', async () => {
+  const { inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  viewport.height = 844
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  await act(async () => {
+    inputs[0]!.blur()
+    await vi.advanceTimersByTimeAsync(0)
+  })
+  expect(host.querySelector('.set-input-advance-dock')).toBeNull()
+  expect(document.body.style.position).toBe('')
+})
+
+it.each(
+  (['solo', 'timeline', 'student'] as const).flatMap((mode) =>
+    (Object.keys(recordingTypes) as RecordingType[]).map((type) => ({ mode, type }))
+  )
+)(
+  'preserves exact navigation, values and save/reopen for $mode / $type',
+  async ({ mode, type }) => {
+    const people = ['a', 'b', 'c'].map((id) => ({
+      studentId: id,
+      name: `測試${id}`,
+      status: 'present' as const
+    }))
+    const current = {
+      ...training,
+      session: {
+        ...training.session,
+        id: `input-${mode}-${type}`,
+        studentKind: mode === 'solo' ? 'person' : 'group'
+      },
+      participants: mode === 'solo' ? undefined : people,
+      record: {
+        ...training.record,
+        attendance: mode === 'solo' ? undefined : people,
+        exercises: [
+          {
+            ...training.record.exercises[0]!,
+            recording: { type, metrics: recordingTypes[type].metrics },
+            sets: Array.from({ length: 3 }, (_, index) => ({
+              id: `set-${index}`,
+              studentId: mode === 'solo' ? undefined : people[index % 3]!.studentId,
+              measurements: emptyMeasurements(training, type),
+              plannedWeight: null,
+              plannedReps: null,
+              actualReps: null,
+              rpe: null,
+              result: null,
+              unit: 'kg'
+            }))
+          }
+        ]
+      }
+    } as SessionTraining
+    localStorage.setItem('group-training-view:gesture-coach', mode)
+    const render = (value: SessionTraining, key: string) =>
+      root.render(
+        <MemoryRouter key={key}>
+          <TrainingWorkspace
+            session={{ user: { id: 'gesture-coach' } } as Session}
+            query={
+              { data: value, isLoading: false, isError: false } as UseQueryResult<
+                SessionTraining,
+                Error
+              >
+            }
+            onBack={() => {}}
+            timeZone="Asia/Taipei"
+          />
+        </MemoryRouter>
+      )
+    const accept = (payload: import('../../api').TrainingDraftPayload): SessionTraining => ({
+      ...current,
+      record: {
+        ...current.record,
+        ...payload,
+        version: 2,
+        exercises: payload.exercises.map((exercise) => ({
+          ...current.record.exercises.find((item) => item.id === exercise.id)!,
+          ...exercise
+        }))
+      }
+    })
+    calls.save.mockImplementation(async ({ payload }) => accept(payload))
+    vi.stubGlobal('visualViewport', Object.assign(new EventTarget(), { height: 480, offsetTop: 0 }))
+    await act(async () => render(current, 'entry'))
+    const inputs = [...host.querySelectorAll<HTMLInputElement>('.training-set-card input')]
+    expect(inputs).toHaveLength(3 * (recordingTypes[type].dimensions.length + 1))
+    await act(async () => inputs[0]!.focus())
+    const dock = host.querySelector('.set-input-advance-dock')
+    for (let index = 0; index < inputs.length; index++) {
+      expect(document.activeElement).toBe(inputs[index])
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(
+          inputs[index],
+          '7'
+        )
+        inputs[index]!.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      expect(host.querySelector('.set-input-advance-dock')).toBe(dock)
+      const button = host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!
+      expect(button.textContent).toContain(index === inputs.length - 1 ? '完成輸入' : '下一格')
+      await act(async () => {
+        pointer(button, 'pointerdown', 440, 'touch')
+        pointer(button, 'pointerup', 440, 'touch')
+      })
+      if (index < inputs.length - 1) {
+        await act(async () =>
+          button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }))
+        )
+        expect(document.activeElement).toBe(inputs[index + 1])
+      }
+    }
+    expect(host.querySelector('.set-input-advance-dock')).toBeNull()
+    expect(document.body.style.position).toBe('')
+    await act(async () => vi.advanceTimersByTimeAsync(2500))
+    expect(calls.save).toHaveBeenCalled()
+    const payload = calls.save.mock.calls.at(-1)![0].payload
+    for (const set of payload.exercises[0].sets) {
+      expect(set.rpe).toBe(7)
+      for (const dimension of recordingTypes[type].dimensions)
+        expect(set.measurements[dimension]).toBe(7)
+      expect(set.studentId).toBe(
+        current.record.exercises[0]!.sets.find((item) => item.id === set.id)!.studentId
+      )
+    }
+    const accepted = accept(payload)
+    await act(async () => render(accepted, 'reopened'))
+    const reopened = [...host.querySelectorAll<HTMLInputElement>('.training-set-card input')]
+    expect(reopened.map((input) => input.value)).toEqual(inputs.map(() => '7'))
+    await act(async () => reopened.at(-1)!.focus())
+    expect(host.querySelector('.set-input-advance-dock button')?.textContent).toContain('完成輸入')
+  }
+)
 
 it('starts editing an empty canvas immediately and leaves it read-only again on return', async () => {
   const editor = host.querySelector<HTMLElement>('.mobile-note-content')!

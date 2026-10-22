@@ -1299,6 +1299,10 @@ function TrainingEditor({
     )
   }
   const selectMobileTab = (tab: 'training' | 'note', toggleSelected = true) => {
+    if (activeSetInput) {
+      activeSetInput.blur()
+      setActiveSetInput(null)
+    }
     if (tab === mobileTab) {
       if (toggleSelected) setClassInfoExpanded((expanded) => !expanded)
       return
@@ -1382,13 +1386,25 @@ function TrainingEditor({
       }}
       onClickCapture={(event) => {
         if (
+          event.target instanceof HTMLInputElement &&
+          event.target.matches('.training-set-card input')
+        ) {
+          // Tapping an already-focused field need not dispatch focus again.
+          setActiveSetInput(event.target)
+          setInputViewport.placeInput(event.target)
+          return
+        }
+        if (
           activeSetInput &&
           event.target instanceof Element &&
-          !event.target.closest('.training-set-card input, .set-input-advance-dock')
+          !event.target.closest('.training-set-card input, .set-input-advance-dock') &&
+          !(
+            document.activeElement instanceof HTMLInputElement &&
+            event.currentTarget.contains(document.activeElement) &&
+            document.activeElement.matches('.training-set-card input')
+          )
         )
           setActiveSetInput(null)
-        else if (event.target instanceof HTMLInputElement && event.target === activeSetInput)
-          setInputViewport.placeInput(event.target)
       }}
       onBlurCapture={(event) => {
         if (
@@ -1452,6 +1468,11 @@ function TrainingEditor({
           className="session-mobile-tabs"
           role="tablist"
           aria-label="課堂工作區"
+          onMouseDownCapture={(event) => {
+            // Preserve the numeric scroll surface until the tab's click runs;
+            // blurring on mousedown would move the tab before release.
+            if (activeSetInput) event.preventDefault()
+          }}
           onKeyDown={(event) => {
             const next =
               event.key === 'ArrowLeft' || event.key === 'Home'
@@ -1933,6 +1954,7 @@ function TrainingEditor({
       </div>
       <SetInputAdvanceDock
         target={activeSetInput}
+        onComplete={() => setActiveSetInput(null)}
         onBeforeAdvance={setInputViewport.prepareFocus}
         onGestureStart={() => {
           setInputViewport.cancelPlacement()
