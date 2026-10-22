@@ -504,6 +504,171 @@ it('aligns the next field again after the keyboard finishes resizing', async () 
   expect(rect.bottom).toBeLessThan(viewport.offsetTop + viewport.height - 88)
 })
 
+it('rechecks placement when native panning reports a window scroll rather than an inner scroll', async () => {
+  const { workspace, inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const anchor = inputs[0]!.getBoundingClientRect().top
+  await act(async () => vi.advanceTimersByTimeAsync(400))
+  workspace.scrollTop -= 200
+  window.dispatchEvent(new Event('scroll'))
+  await act(async () => vi.advanceTimersByTimeAsync(150))
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(anchor)
+})
+
+it('keeps the last open-keyboard geometry through a full-height focused transient', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  viewport.height = 844
+  viewport.offsetTop = 0
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  expect(workspace.style.getPropertyValue('--session-input-height')).toBe('480px')
+})
+
+it('corrects a late native document reset after completion and cancels recovery on manual touch', async () => {
+  const { inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs.at(-1)!.focus())
+  await act(async () =>
+    host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+  )
+  vi.mocked(window.scrollTo).mockClear()
+  viewport.height = 650
+  viewport.dispatchEvent(new Event('resize'))
+  window.dispatchEvent(new Event('scroll'))
+  expect(window.scrollTo).toHaveBeenCalled()
+  vi.mocked(window.scrollTo).mockClear()
+  window.dispatchEvent(new Event('touchstart'))
+  window.dispatchEvent(new Event('scroll'))
+  expect(window.scrollTo).not.toHaveBeenCalled()
+})
+
+it('cancels the previous dismissal recovery when the user reenters an input', async () => {
+  const { inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs.at(-1)!.focus())
+  await act(async () =>
+    host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+  )
+  await act(async () => inputs[0]!.focus())
+  vi.mocked(window.scrollTo).mockClear()
+  viewport.dispatchEvent(new Event('resize'))
+  window.dispatchEvent(new Event('scroll'))
+  await act(async () => vi.advanceTimersByTimeAsync(300))
+  expect(window.scrollTo).not.toHaveBeenCalled()
+  expect(document.activeElement).toBe(inputs[0])
+  expect(document.body.style.position).toBe('fixed')
+})
+
+it('confirms populated exercise removal in-app and preserves the draft on cancel', async () => {
+  const nativeConfirm = vi.fn(() => true)
+  vi.stubGlobal('confirm', nativeConfirm)
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  const remove = host.querySelector<HTMLButtonElement>('.training-exercise-card .icon-button')!
+  await act(async () => remove.click())
+  expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain('移除動作')
+  expect(host.querySelectorAll('.training-exercise-card')).toHaveLength(5)
+  const cancel = host.querySelector<HTMLButtonElement>('[role="alertdialog"] .ui-action-cancel')!
+  await act(async () => cancel.click())
+  expect(host.querySelectorAll('.training-exercise-card')).toHaveLength(5)
+  await act(async () => remove.click())
+  const confirm = host.querySelector<HTMLButtonElement>('[role="alertdialog"] .ui-action-delete')!
+  await act(async () => confirm.click())
+  expect(host.querySelectorAll('.training-exercise-card')).toHaveLength(4)
+  expect(nativeConfirm).not.toHaveBeenCalled()
+})
+
+it('does not trigger a native leave dialog while a Training save is pending', async () => {
+  calls.save.mockImplementation(() => new Promise(() => {}))
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  await act(async () => vi.advanceTimersByTimeAsync(1000))
+  const event = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(event)
+  expect(event.defaultPrevented).toBe(false)
+})
+
+async function confirmationGroup(status: 'scheduled' | 'completed' = 'scheduled') {
+  const people = ['a', 'b', 'c'].map((studentId) => ({
+    studentId,
+    name: `測試${studentId}`,
+    status: 'present' as const
+  }))
+  const value = {
+    ...training,
+    session: { ...training.session, studentKind: 'group', status },
+    participants: people,
+    record: {
+      ...training.record,
+      attendance: people,
+      exercises: [
+        {
+          ...training.record.exercises[0]!,
+          recording: { type: 'weight_reps', metrics: ['weight', 'reps'] },
+          sets: people.map((person, i) => ({
+            id: `group-${i}`,
+            studentId: person.studentId,
+            measurements: emptyMeasurements(training, 'weight_reps'),
+            plannedWeight: null,
+            plannedReps: null,
+            actualReps: null,
+            rpe: null,
+            result: null,
+            unit: 'kg'
+          }))
+        }
+      ]
+    },
+    allowedActions: { canEditTraining: true, canComplete: status === 'scheduled', canReopen: false }
+  } as SessionTraining
+  calls.save.mockClear()
+  calls.save.mockResolvedValue(value)
+  await act(async () =>
+    root.render(
+      <MemoryRouter key="confirmation-group">
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: value, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+}
+
+it('requires in-app acceptance before completing and charging one group lesson', async () => {
+  await confirmationGroup()
+  const complete = host.querySelector<HTMLButtonElement>('.session-bottom button')!
+  await act(async () => complete.click())
+  expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain('扣一堂')
+  await act(async () => host.querySelector<HTMLButtonElement>('.ui-action-cancel')!.click())
+  expect(calls.save).not.toHaveBeenCalled()
+  await act(async () => complete.click())
+  await act(async () =>
+    host.querySelector<HTMLButtonElement>('[role="alertdialog"] .primary-button')!.click()
+  )
+  expect(calls.save).toHaveBeenCalledTimes(1)
+  expect(calls.save.mock.calls[0]![0].complete).toBe(true)
+})
+
+it('confirms completed-group attendance changes without losing results on cancel', async () => {
+  await confirmationGroup('completed')
+  const attendance = host.querySelector<HTMLButtonElement>('.group-training-attendance button')!
+  await act(async () => attendance.click())
+  expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain('舊成果連結也會失效')
+  await act(async () => host.querySelector<HTMLButtonElement>('.ui-action-cancel')!.click())
+  expect(attendance.getAttribute('aria-pressed')).toBe('true')
+  expect(calls.save).not.toHaveBeenCalled()
+  await act(async () => attendance.click())
+  await act(async () => host.querySelector<HTMLButtonElement>('.ui-action-delete')!.click())
+  expect(attendance.getAttribute('aria-pressed')).toBe('false')
+  await act(async () => vi.advanceTimersByTimeAsync(2500))
+  expect(calls.save).toHaveBeenCalledTimes(1)
+  expect(calls.save.mock.calls[0]![0].payload.attendance[0].status).toBe('absent')
+})
+
 it('preserves the last row on completion with only the missing document scroll range', async () => {
   const { workspace, inputs } = await setEditingGeometry()
   Object.defineProperty(document.documentElement, 'scrollHeight', {

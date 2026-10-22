@@ -392,6 +392,12 @@ function TrainingEditor({
     } | null>(null),
     [trendLockedId, setTrendLockedId] = useState<string | null>(null),
     [completing, setCompleting] = useState(false),
+    [confirmation, setConfirmation] = useState<{
+      title: string
+      text: string
+      confirmLabel: string
+      tone?: 'danger' | 'neutral'
+    } | null>(null),
     [dragOrder, setDragOrder] = useState<string[] | null>(null),
     [draggingId, setDraggingId] = useState<string | null>(null),
     [pressedDragId, setPressedDragId] = useState<string | null>(null),
@@ -405,6 +411,19 @@ function TrainingEditor({
     conflictRef = useRef(false)
   const key = draftKey(import.meta.env.MODE, session.user.id, initial.session.id)
   const latest = useRef(draft)
+  const confirmationResult = useRef<((accepted: boolean) => void) | null>(null)
+  const askConfirmation = (options: NonNullable<typeof confirmation>) =>
+    new Promise<boolean>((resolve) => {
+      confirmationResult.current?.(false)
+      confirmationResult.current = resolve
+      setConfirmation(options)
+    })
+  const resolveConfirmation = (accepted: boolean) => {
+    confirmationResult.current?.(accepted)
+    confirmationResult.current = null
+    setConfirmation(null)
+  }
+  useEffect(() => () => confirmationResult.current?.(false), [])
   useEffect(() => {
     if (plan.data?.tier === 'free') setTrendId(null)
   }, [plan.data?.tier])
@@ -716,15 +735,6 @@ function TrainingEditor({
     session.user.id,
     store
   ])
-  useEffect(() => {
-    const before = (event: BeforeUnloadEvent) => {
-      if (coordinator.pending) {
-        event.preventDefault()
-      }
-    }
-    addEventListener('beforeunload', before)
-    return () => removeEventListener('beforeunload', before)
-  }, [coordinator])
   useEffect(() => () => void coordinator.flush().catch(() => undefined), [coordinator])
   const change = (next: TrainingDraftPayload) => {
     latest.current = next
@@ -1192,6 +1202,24 @@ function TrainingEditor({
     })
     setPicker(false)
   }
+  const removeExercise = async (exerciseId: string) => {
+    const exercise = latest.current.exercises.find((item) => item.id === exerciseId)
+    if (!exercise) return
+    if (
+      exercise.sets.length &&
+      !(await askConfirmation({
+        title: '移除動作？',
+        text: '這個動作與所有組數都會移除。',
+        confirmLabel: '移除動作'
+      }))
+    )
+      return
+    change({
+      ...latest.current,
+      exercises: latest.current.exercises.filter((item) => item.id !== exerciseId),
+      operationId: crypto.randomUUID()
+    })
+  }
   const complete = async () => {
     if (completing) return
     const absent =
@@ -1208,9 +1236,12 @@ function TrainingEditor({
     )
     if (
       initial.session.studentKind === 'group' &&
-      !confirm(
-        `${absent.length === initial.participants?.length ? '全員缺席，仍要完成這堂課並扣群組一堂？' : '完成這堂群組課並扣一堂？'}${omitted ? `\n${omitted} 組缺席者的草稿結果將不納入成果。` : ''}`
-      )
+      !(await askConfirmation({
+        title: '完成群組課堂？',
+        text: `${absent.length === initial.participants?.length ? '全員缺席，仍要完成這堂課並扣群組一堂？' : '完成這堂群組課並扣一堂？'}${omitted ? ` ${omitted} 組缺席者的草稿結果將不納入成果。` : ''}`,
+        confirmLabel: '完成上課',
+        tone: 'neutral'
+      }))
     )
       return
     setCompleting(true)
@@ -1326,18 +1357,22 @@ function TrainingEditor({
             aria-pressed={!absent}
             className={absent ? 'is-absent' : undefined}
             aria-label={`${person.name}，${absent ? '缺席' : '出席'}，點擊切換`}
-            onClick={() => {
+            onClick={async () => {
               if (
                 !absent &&
                 initial.session.status === 'completed' &&
                 draft.exercises.some((exercise) =>
                   exercise.sets.some((set) => set.studentId === person.studentId)
                 ) &&
-                !confirm(`將 ${person.name} 改為缺席並移除其正式組數結果？舊成果連結也會失效。`)
+                !(await askConfirmation({
+                  title: '變更為缺席？',
+                  text: `將 ${person.name} 改為缺席並移除其正式組數結果，舊成果連結也會失效。`,
+                  confirmLabel: '改為缺席'
+                }))
               )
                 return
               change({
-                ...draft,
+                ...latest.current,
                 attendance: initial.participants!.map((item) => ({
                   studentId: item.studentId,
                   status:
@@ -1345,8 +1380,9 @@ function TrainingEditor({
                       ? absent
                         ? 'present'
                         : 'absent'
-                      : (draft.attendance?.find((entry) => entry.studentId === item.studentId)
-                          ?.status ?? 'present')
+                      : (latest.current.attendance?.find(
+                          (entry) => entry.studentId === item.studentId
+                        )?.status ?? 'present')
                 })),
                 operationId: crypto.randomUUID()
               })
@@ -1752,8 +1788,14 @@ function TrainingEditor({
                 {adoptingConflict ? '儲存中…' : '採用目前內容'}
               </button>
               <button
-                onClick={() => {
-                  if (confirm('載入伺服器上的最新紀錄？目前尚未同步的輸入將被捨棄。')) {
+                onClick={async () => {
+                  if (
+                    await askConfirmation({
+                      title: '載入最新紀錄？',
+                      text: '目前尚未同步的輸入將被捨棄。',
+                      confirmLabel: '載入最新紀錄'
+                    })
+                  ) {
                     void store
                       .deleteSession(session.user.id, initial.session.id)
                       .then(() => location.reload())
@@ -1833,13 +1875,7 @@ function TrainingEditor({
                       operationId: crypto.randomUUID()
                     })
                   }
-                  onRemove={() =>
-                    change({
-                      ...draft,
-                      exercises: draft.exercises.filter((item) => item.id !== exercise.id),
-                      operationId: crypto.randomUUID()
-                    })
-                  }
+                  onRemove={() => void removeExercise(exercise.id)}
                 />
               ))}
               <button
@@ -1904,14 +1940,7 @@ function TrainingEditor({
                             operationId: crypto.randomUUID()
                           })
                         }
-                        onRemove={() => {
-                          if (!exercise.sets.length || confirm('移除這個動作與所有組數？'))
-                            change({
-                              ...draft,
-                              exercises: draft.exercises.filter((item) => item.id !== exercise.id),
-                              operationId: crypto.randomUUID()
-                            })
-                        }}
+                        onRemove={() => void removeExercise(exercise.id)}
                       />
                     )
                   }
@@ -1960,6 +1989,14 @@ function TrainingEditor({
           setInputViewport.cancelPlacement()
         }}
       />
+      {confirmation && (
+        <Confirmation
+          {...confirmation}
+          disabled={false}
+          onCancel={() => resolveConfirmation(false)}
+          onConfirm={() => resolveConfirmation(true)}
+        />
+      )}
       <footer className="session-bottom">
         <div>
           <span>
@@ -2269,9 +2306,7 @@ export function GroupExerciseCard({
           type="button"
           className="icon-button"
           aria-label={`移除${exercise.definitionName}動作`}
-          onClick={() => {
-            if (!exercise.sets.length || confirm('移除這個動作與所有組數？')) onRemove()
-          }}
+          onClick={onRemove}
         >
           <XCircle />
         </button>

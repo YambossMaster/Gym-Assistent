@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { getSetInputFocusAdjustment } from './set-input-navigation'
+import { settleSetInputDismissal } from './set-input-dismissal'
 
 // One scroll owner for the entire keyboard session. Field changes never release
 // the document lock or recreate the viewport listeners.
@@ -19,11 +20,14 @@ export function useSetInputViewport(
   const prepared = useRef<HTMLInputElement | null>(null)
   const restingHeight = useRef(document.documentElement.clientHeight || window.innerHeight)
   const restingSpace = useRef<{ workspace: HTMLElement; margin: string } | null>(null)
+  const stopDismissal = useRef<(() => void) | null>(null)
   const enabled = input !== null && window.matchMedia('(max-width: 720px)').matches
 
   useLayoutEffect(() => {
     const workspace = workspaceRef.current
     if (!enabled || !workspace) return
+    stopDismissal.current?.()
+    stopDismissal.current = null
     const viewport = window.visualViewport
     const root = document.documentElement
     const body = document.body
@@ -95,6 +99,14 @@ export function useSetInputViewport(
         close.current()
         return
       }
+      // A focused full-height sample during handoff is not a new keyboard edge.
+      // Keep the last open geometry until blur or a real open-keyboard sample.
+      if (keyboardSeen && !open && setInputFocused) {
+        top = nextTop
+        workspace.style.setProperty('--session-input-top', `${top}px`)
+        recheck()
+        return
+      }
       height = nextHeight
       top = nextTop
       keyboardSeen ||= open
@@ -116,6 +128,7 @@ export function useSetInputViewport(
     viewport?.addEventListener('resize', update)
     viewport?.addEventListener('scroll', update)
     window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, { passive: true })
     const checkAfterBlur = () => {
       clearTimeout(blurCheck)
       // focusout precedes focusin. Inspect the settled DOM focus, including
@@ -134,6 +147,7 @@ export function useSetInputViewport(
       viewport?.removeEventListener('resize', update)
       viewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update)
       workspace.removeEventListener('focusout', checkAfterBlur)
       workspace.removeEventListener('scroll', recheck)
       workspace.removeEventListener('touchmove', cancel)
@@ -156,23 +170,34 @@ export function useSetInputViewport(
         '--session-keyboard-space'
       ])
         workspace.style.removeProperty(property)
-      const destination = Math.max(
-        0,
-        anchorTop !== null && anchor?.isConnected
-          ? window.scrollY + anchor.getBoundingClientRect().top - anchorTop
-          : restoreY
-      )
-      // Only add the missing scroll range. Keep it after dismissal so a final
-      // row can stay where it was; removing it would clamp the document upward.
-      const missing = Math.max(0, destination + layoutHeight - root.scrollHeight)
-      if (missing > 0)
-        workspace.style.marginBottom = `${(parseFloat(getComputedStyle(workspace).marginBottom) || 0) + missing}px`
-      window.scrollTo({ top: destination, behavior: 'instant' })
+      const restore = () => {
+        if (!workspace.isConnected || (anchor && !anchor.isConnected)) return false
+        const destination = Math.max(
+          0,
+          anchorTop !== null && anchor?.isConnected
+            ? window.scrollY +
+                anchor.getBoundingClientRect().top -
+                anchorTop -
+                (viewport?.offsetTop ?? 0)
+            : restoreY
+        )
+        // Keep the existing minimum tail range; this is not space reclamation.
+        const missing = Math.max(0, destination + layoutHeight - root.scrollHeight)
+        if (missing > 0)
+          workspace.style.marginBottom = `${(parseFloat(getComputedStyle(workspace).marginBottom) || 0) + missing}px`
+        if (Math.abs(window.scrollY - destination) > 1)
+          window.scrollTo({ top: destination, behavior: 'instant' })
+        return true
+      }
+      restore()
+      if (anchorTop !== null && !workspace.classList.contains('is-note-tab'))
+        stopDismissal.current = settleSetInputDismissal(viewport, layoutHeight, restore)
     }
   }, [enabled, workspaceRef])
 
   useLayoutEffect(
     () => () => {
+      stopDismissal.current?.()
       if (restingSpace.current) {
         restingSpace.current.workspace.style.marginBottom = restingSpace.current.margin
         delete restingSpace.current.workspace.dataset.setInputResting
