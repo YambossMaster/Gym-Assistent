@@ -380,7 +380,7 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
 
   await act(async () => inputs[0]!.focus())
   await frame()
-  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('428px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('364px')
   expect(workspace.style.getPropertyValue('--session-keyboard-space')).toBe('712px')
   await act(async () => vi.advanceTimersByTimeAsync(160))
   await frame()
@@ -389,7 +389,7 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
   viewport.offsetTop = 96
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
-  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('332px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('268px')
   expect(workspace.style.getPropertyValue('--session-keyboard-space')).toBe('712px')
   expect(scrollBy).toHaveBeenCalledTimes(scrollsAfterFocus)
 
@@ -397,10 +397,10 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
   viewport.offsetTop = 151
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
-  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('277px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('213px')
 })
 
-it('aligns the first and subsequent fields once without correcting manual scrolling', async () => {
+it('places the first field once and only reveals a covered later field without chasing manual scroll', async () => {
   const viewport = Object.assign(new EventTarget(), { height: 700, offsetTop: 0 })
   vi.stubGlobal('visualViewport', viewport)
   vi.stubGlobal('innerHeight', 844)
@@ -409,6 +409,7 @@ it('aligns the first and subsequent fields once without correcting manual scroll
     scrollOffset += top
   })
   vi.stubGlobal('scrollBy', scrollBy)
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
   await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
   const inputs = host.querySelectorAll<HTMLInputElement>('.training-set-card input')
   let inputTop = 480
@@ -436,22 +437,163 @@ it('aligns the first and subsequent fields once without correcting manual scroll
   expect(scrollBy).toHaveBeenCalledWith({ top: 288, behavior: 'instant' })
 
   inputTop = 480
+  viewport.offsetTop = 96
   await act(async () => inputs[1]!.focus({ preventScroll: true }))
+  viewport.dispatchEvent(new Event('scroll'))
   await act(async () => vi.advanceTimersByTimeAsync(160))
   await frame()
   expect(scrollBy).toHaveBeenCalledOnce()
 
+  viewport.offsetTop = 0
   inputTop = 850
-  await act(async () => inputs[0]!.focus({ preventScroll: true }))
+  await act(async () => inputs[3]!.focus({ preventScroll: true }))
   await act(async () => vi.advanceTimersByTimeAsync(160))
   await frame()
   expect(scrollBy).toHaveBeenCalledTimes(2)
-  expect(scrollBy).toHaveBeenLastCalledWith({ top: 370, behavior: 'instant' })
+  expect(scrollBy).toHaveBeenLastCalledWith({ top: 54, behavior: 'instant' })
 
   viewport.offsetTop = 96
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
   expect(scrollBy).toHaveBeenCalledTimes(2)
+})
+
+it('does not drop the dock or collapse scroll space during an iOS drag resize transient', async () => {
+  const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
+  vi.stubGlobal('visualViewport', viewport)
+  vi.stubGlobal('innerHeight', 844)
+  vi.stubGlobal('scrollBy', vi.fn())
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  await act(async () => host.querySelector<HTMLInputElement>('.training-set-card input')!.focus())
+  await frame()
+  const workspace = host.querySelector<HTMLElement>('.session-workspace')!
+  const before = workspace.style.getPropertyValue('--session-keyboard-space')
+  const beforeDock = workspace.style.getPropertyValue('--session-keyboard-inset')
+
+  // WebKit #226689: during a drag innerHeight temporarily reports the visual
+  // height although the layout viewport and physical keyboard have not changed.
+  vi.stubGlobal('innerHeight', 480)
+  viewport.dispatchEvent(new Event('resize'))
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-space')).toBe(before)
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe(beforeDock)
+})
+
+it('reveals a covered next row before focus and performs no delayed or same-row scroll', async () => {
+  const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
+  vi.stubGlobal('visualViewport', viewport)
+  vi.stubGlobal('innerHeight', 844)
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  const inputs = Array.from(host.querySelectorAll<HTMLInputElement>('.training-set-card input'))
+  let scroll = 0
+  const events: string[] = []
+  vi.stubGlobal(
+    'scrollBy',
+    vi.fn(({ top }: { top: number }) => {
+      scroll += top
+      events.push('scroll')
+    })
+  )
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement
+  ) {
+    const top = this.classList.contains('set-input-advance-dock')
+      ? 416
+      : (inputs.indexOf(this as HTMLInputElement) >= 3 ? 580 : 200) - scroll
+    return {
+      x: 0,
+      y: top,
+      top,
+      bottom: top + 40,
+      left: 0,
+      right: 390,
+      width: 390,
+      height: 40,
+      toJSON() {}
+    }
+  })
+  inputs.forEach((input, i) => input.addEventListener('focus', () => events.push(`focus-${i}`)))
+  await act(async () => inputs[0]!.focus())
+  await frame()
+  await act(async () => vi.advanceTimersByTimeAsync(160))
+  await frame()
+  events.length = 0
+  const next = () =>
+    host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+  await act(async () => next())
+  await act(async () => next())
+  await act(async () => vi.advanceTimersByTimeAsync(200))
+  await frame()
+  expect(events).toEqual(['focus-1', 'focus-2'])
+
+  await act(async () => next())
+  expect(events.slice(-2)).toEqual(['scroll', 'focus-3'])
+  const before = scroll
+  viewport.dispatchEvent(new Event('scroll'))
+  await act(async () => vi.advanceTimersByTimeAsync(300))
+  await frame()
+  expect(scroll).toBe(before)
+  expect(inputs[3]!.getBoundingClientRect().bottom).toBeLessThanOrEqual(404)
+})
+
+it('releases keyboard geometry on blur and measures a newly opened keyboard again', async () => {
+  const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
+  vi.stubGlobal('visualViewport', viewport)
+  vi.stubGlobal('innerHeight', 844)
+  vi.stubGlobal('scrollBy', vi.fn())
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  const input = host.querySelector<HTMLInputElement>('.training-set-card input')!
+  const workspace = host.querySelector<HTMLElement>('.session-workspace')!
+  await act(async () => input.focus())
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('364px')
+  await act(async () => input.blur())
+  await act(async () => vi.advanceTimersByTimeAsync(300))
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('0px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-space')).toBe('0px')
+  viewport.height = 600
+  await act(async () => input.focus())
+  await frame()
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('244px')
+})
+
+it('cancels pending first placement as soon as a fast next gesture begins', async () => {
+  vi.stubGlobal('visualViewport', Object.assign(new EventTarget(), { height: 480, offsetTop: 0 }))
+  vi.stubGlobal('innerHeight', 844)
+  const scrollBy = vi.fn()
+  vi.stubGlobal('scrollBy', scrollBy)
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  const inputs = host.querySelectorAll<HTMLInputElement>('.training-set-card input')
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement
+  ) {
+    const top = this.classList.contains('set-input-advance-dock') ? 416 : 200
+    return {
+      x: 0,
+      y: top,
+      top,
+      bottom: top + 40,
+      left: 0,
+      right: 390,
+      width: 390,
+      height: 40,
+      toJSON() {}
+    }
+  })
+  await act(async () => inputs[0]!.focus())
+  await frame()
+  const next = host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!
+  await act(async () => pointer(next, 'pointerdown', 440, 'touch'))
+  await act(async () => vi.advanceTimersByTimeAsync(200))
+  await frame()
+  expect(scrollBy).not.toHaveBeenCalled()
+  await act(async () => next.click())
+  await act(async () => vi.advanceTimersByTimeAsync(200))
+  await frame()
+  expect(document.activeElement).toBe(inputs[1])
+  expect(scrollBy).not.toHaveBeenCalled()
 })
 
 it('starts editing an empty canvas immediately and leaves it read-only again on return', async () => {

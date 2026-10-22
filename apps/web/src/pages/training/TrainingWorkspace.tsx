@@ -1,10 +1,6 @@
 import { MeasurementInputs } from './MeasurementInputs'
-import {
-  advanceTrainingSetInput,
-  getSetInputDockInset,
-  getSetInputFocusAdjustment,
-  selectTrainingSetValue
-} from './set-input-navigation'
+import { advanceTrainingSetInput, selectTrainingSetValue } from './set-input-navigation'
+import { useSetInputViewport } from './useSetInputViewport'
 import { numericInputKeyDown } from '../../shared/numeric-input'
 import {
   emptyMeasurements,
@@ -414,6 +410,7 @@ function TrainingEditor({
   }, [plan.data?.tier])
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const workspaceRef = useRef<HTMLElement | null>(null)
+  const setInputViewport = useSetInputViewport(workspaceRef, activeSetInput)
   const setInputDockGesture = useRef(false)
   const setInputDockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
@@ -505,89 +502,6 @@ function TrainingEditor({
       noteTouch.current = null
     }
   }, [noteFocused])
-  useLayoutEffect(() => {
-    const workspace = workspaceRef.current
-    if (!workspace) return
-    if (!activeSetInput) {
-      workspace.style.setProperty('--session-keyboard-inset', '0px')
-      workspace.style.setProperty('--session-keyboard-space', '0px')
-      return
-    }
-    const viewport = window.visualViewport
-    let frame = 0
-    let visibilityTimer: ReturnType<typeof setTimeout> | undefined
-    let focusAligned = false
-    const positionDock = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => {
-        if (!activeSetInput.isConnected) return
-        const inset = getSetInputDockInset({
-          layoutHeight: window.innerHeight,
-          visualHeight: viewport?.height ?? window.innerHeight,
-          visualOffsetTop: viewport?.offsetTop ?? 0
-        })
-        workspace.style.setProperty('--session-keyboard-inset', `${inset}px`)
-        // Reserve scroll range for the keyboard independently of viewport panning.
-        // Its height stays constant as WebKit moves the visual viewport.
-        const keyboardHeight = Math.max(
-          0,
-          window.innerHeight - (viewport?.height ?? window.innerHeight)
-        )
-        const visualHeight = viewport?.height ?? window.innerHeight
-        // Leave enough document below the last row to reach the preferred
-        // focus position, not merely enough to uncover it by a few pixels.
-        const scrollSpace =
-          keyboardHeight > 120
-            ? Math.ceil(window.innerHeight - Math.min(180, visualHeight * 0.4) + 48)
-            : 88
-        workspace.style.setProperty('--session-keyboard-space', `${scrollSpace}px`)
-      })
-    }
-    const alignFocusedInput = () => {
-      if (focusAligned || !activeSetInput.isConnected || document.activeElement !== activeSetInput)
-        return
-      const dock = workspace.querySelector<HTMLElement>('.set-input-advance-dock')
-      const inputRect = activeSetInput.getBoundingClientRect()
-      const viewportTop = viewport?.offsetTop ?? 0
-      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight)
-      const adjustment = getSetInputFocusAdjustment({
-        inputTop: inputRect.top,
-        inputBottom: inputRect.bottom,
-        visibleTop: viewportTop + 12,
-        visibleBottom:
-          Math.min(viewportBottom, dock?.getBoundingClientRect().top ?? viewportBottom) - 12
-      })
-      if (adjustment) window.scrollBy({ top: adjustment, behavior: 'instant' })
-      focusAligned = true
-    }
-    const scheduleFocusAlignment = () => {
-      if (focusAligned) return
-      clearTimeout(visibilityTimer)
-      // One alignment after keyboard geometry and WebKit's focus pan settle.
-      // Subsequent manual scrolling never triggers another correction.
-      visibilityTimer = setTimeout(() => requestAnimationFrame(alignFocusedInput), 160)
-    }
-    const onResize = () => {
-      positionDock()
-      scheduleFocusAlignment()
-    }
-    positionDock()
-    scheduleFocusAlignment()
-    viewport?.addEventListener('resize', onResize)
-    const onViewportScroll = () => {
-      positionDock()
-      scheduleFocusAlignment()
-    }
-    viewport?.addEventListener('scroll', onViewportScroll)
-    window.addEventListener('resize', onResize)
-    return () => {
-      cancelAnimationFrame(frame)
-      clearTimeout(visibilityTimer)
-      viewport?.removeEventListener('resize', onResize)
-      viewport?.removeEventListener('scroll', onViewportScroll)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [activeSetInput])
   const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)
   const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragPointer = useRef<number | null>(null)
@@ -2014,7 +1928,9 @@ function TrainingEditor({
       </div>
       <SetInputAdvanceDock
         target={activeSetInput}
+        onBeforeAdvance={setInputViewport.prepareFocus}
         onGestureStart={() => {
+          setInputViewport.cancelPlacement()
           setInputDockGesture.current = true
           if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
         }}

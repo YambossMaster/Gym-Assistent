@@ -3,11 +3,13 @@ import { advanceTrainingSetInput, describeTrainingSetInput } from './set-input-n
 
 export function SetInputAdvanceDock({
   target,
+  onBeforeAdvance,
   onGestureStart,
   onGestureRelease,
   onGestureEnd
 }: {
   target: HTMLInputElement | null
+  onBeforeAdvance?: (next: HTMLInputElement) => void
   onGestureStart?: () => void
   onGestureRelease?: () => void
   onGestureEnd?: () => void
@@ -26,7 +28,7 @@ export function SetInputAdvanceDock({
         onPointerUp={onGestureRelease}
         onPointerCancel={onGestureEnd}
         onClick={() => {
-          advanceTrainingSetInput(target)
+          advanceTrainingSetInput(target, onBeforeAdvance)
           onGestureEnd?.()
         }}
       >
