@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `1a5de19f3cc72d25e4ee05431f6fbca1b60dacdc` and the M11 PWA input motion release.
+> `9447eb72c0968610a360dddfe978053cb3429630` and the M11 stable keyboard surface release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -67,6 +67,8 @@ page showed both empty messages at 13px with matching color and line-height. The
 remaining device limitation. No migration or payment change was made.
 
 ## Active workstreams
+
+The Product Owner rejected release 70's remaining keyboard dock flicker, displacement and covered fields. PR #88 gives mobile numeric editing one internal scroll owner, keeps the dock through transient blur, positions it at the current visual viewport edge, and advances within the actual touch-release gesture. [PR #88](https://github.com/YambossMaster/Gym-Assistent/pull/88) head `fd07655764242e284fab1c07c247c23199250a43` passed [PR CI #349](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39748140843) verify/build, browser UI and migration dry-run. It merged as Main `9447eb72c0968610a360dddfe978053cb3429630`; [Main CI #350](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39748630058) passed all five jobs. Production preview found no pending migration. Fly release 71 runs the exact matching `GH_SHA` with passing readiness/service check. Independent `/api/ready`, `/` and `/login` returned HTTP 200. Local affected checks passed 80 tests; actual WebKit touch replay checked 72 exact field targets, 48 same-row transitions without scrolling, dock DOM continuity, real hit targets and free manual scrolling. **Installed-iPhone keyboard acceptance remains open** in the [correction workstream](status/M11-PWA-INPUT-CORRECTION.md).
 
 The Product Owner rejected release 69's keyboard gap and input jumps. [PR #86](https://github.com/YambossMaster/Gym-Assistent/pull/86) corrected keyboard-session geometry and reveals a covered next field before focus, with no delayed same-row recentering. It merged as Main `1a5de19f3cc72d25e4ee05431f6fbca1b60dacdc`; [Main CI #346](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39740002135) passed all five jobs and deployed the exact SHA to Fly release 70. Running image `GH_SHA` matches, service check passes, and independent `/api/ready`, `/` and `/login` returned 200. Local affected checks passed 73 tests; actual Workspace/CSS WebKit replay passed 72 fields across single and both group views, including 48 same-row advances without page scroll. **Physical installed-iPhone keyboard acceptance remains open** in the [correction workstream](status/M11-PWA-INPUT-CORRECTION.md).
 
