@@ -1,17 +1,17 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `ea853e8216c8151fe064ab47e91f05922c5617f7` and the M11 session race / native-dialog correction release.
+> Integrated Main router, reconciled 2026-10-23 against deployed application commit
+> `c501ee5f0d7d43802303230168f5c526ee06c1c4` and the M11 viewport commit / pre-blur position correction.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
-## M11 release 75 已部署，工程重查通過；21:46實機問題待新版驗證（2026-10-22）
+## M11 release 76 已部署，五項時序缺陷已紅綠驗證；原生實機待驗（2026-10-23）
 
-使用者再次回報release74偶發選取失位／完成回頂及原生confirm，並取消底部留白優化。此次修正聚焦中的全高viewport transient、晚到window scroll，以及完成／重新聚焦交接的競態；保留已接受dock、外框與尾部空間。五處Training確認統一採站內Confirmation，移除Training／ExportDownloads的原生離頁提示，保留本地草稿恢復與匯出取消，新增全站原生訊息policy。
+使用者以五段23:15–23:36影片再次退回選取遮擋與完成跳位；本輪開始正式站為release75。原因矩陣逐項涵蓋事件／座標、觸控、捲動owner、React、Shell及版本。五個新回歸先證明舊碼失敗：viewport屬性晚於事件提交、無事件的晚到原生捲動、微小touchmove誤取消、關閉擴大再次置中、blur後才保存位置。修正為編輯期間讀取每個frame的新幾何、辨識實際滑動、擴大不下移，以及使用blur前最後位置。保留已接受dock／外框／尾部空間與站內確認。
 
-PR #95最終2441d38／PR CI #365與應用Main ea853e8216c8151fe064ab47e91f05922c5617f7／Main CI #366全部必要檢查成功（root41／API402／Web499、browser7、migration no-op、Production無pending），才部署。Fly release75 complete，同SHA started／service passing，獨立三入口200、公開／origin版本與資產一致。鎖定依賴後重跑24格式／189欄、15時序、36競態、27Next、Shell6、桌機／窄手機／筆記、6組站內確認及2組真IndexedDB恢復皆通過。最初#364測試compiler API不相容被CI攔下，修正測試工具及對齊依賴後重跑，未略過。
+[PR #97](https://github.com/YambossMaster/Gym-Assistent/pull/97) 最終ff89089／[PR CI #369](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39815531198)及應用Main c501ee5f0d7d43802303230168f5c526ee06c1c4／[Main CI #370](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39816970871)全部必要檢查成功（root41／API402／Web504、完整check/build、browser、migration no-op、Production preview）後部署。Fly release76 complete，同SHA started／service passing，獨立三入口200、公開／origin版本與資產一致。affected110測試、Chrome新時序首中末36/36、WebKit12/12及按學生5/5、24格式／189欄、15時序、36競態、Shell6和同伴流程通過；編輯穩定時無重複style寫入，關閉停止frame觀測。
 
-**原生iPhone PWA未宣告通過或M11結案。** P02／P04／P05保留release74 FAIL，P07新增原生訊息重驗；其餘未證明項目維持未勾。現在關閉多工PWA再重開即可驗證，保留網站資料，不需刪真實課堂或扣堂。buildId local-1792681874134，入口 /assets/index-Bz9fg-ib.js。完整證據、失敗歷史與唯一Next見[完整Status](status/M11-PWA-INPUT-CORRECTION.md)。無API／schema／Auth／CSS／依賴版本／部署設定變更。
+**六項工程／交付完成；原生iPhone PWA未宣告通過或M11結案。** 保留release74／75失敗與未勾項，不把合成viewport當作手機OSK證據。唯一Next為關閉多工PWA再重開，驗單人及群組兩檢視的選取、Next、完成與[唯一檢查清單](status/M11-PWA-INPUT-CORRECTION.md)。保留網站資料，不需刪真實課堂或扣堂。新版buildId local-1792687925378，入口 /assets/index-Db1ycerI.js。本輪無API／schema／Auth／CSS／依賴版本／部署設定變更。
 
 ## Released baseline
 

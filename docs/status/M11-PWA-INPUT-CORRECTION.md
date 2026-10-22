@@ -5,9 +5,10 @@
 - **目標：** 單人、群組「按時序／按學生」都能穩定選取、輸入、Next、完成及重進；整個輸入框可見、不跳動、不丟值。
 - **規則：** 直接選取時定位；Next 同列不動、跨列才調整；手動滑動不拉回；完成只收鍵盤與操作列，保留剛才欄位的位置。禁止產品使用原生 alert／confirm／prompt／離頁提示。
 - **保留：** 已接受的操作列、群組新增／編輯與外觀。使用者已取消底部留白優化，勿順便修改。
-- **最新回報：** 2026-10-23 Product Owner 提供五段 23:15–23:36 影片，再次退回選取遮擋及完成位移。正式站讀回仍是 **release 75／`ea853e8`**、buildId `local-1792681874134`；影片沒有內嵌 buildId，不能逐片證明載入版本，也不能以快取猜測否定回報。任務未結案。
-- **本輪候選：** `codex/m11-input-viewport-commit` 從 `codex/m11-input-handoff`／`f2eb028` 繼續；只改數值輸入 viewport controller 與回歸測試，保留既有 UI、資料與尾部留白。Product Owner 本次明示授權完整驗證後直接部署，手機驗收在部署後進行。
-- **六項工作盤點：** ①版本／交接、②影片、③原因矩陣、④紅綠修正已完成；⑤受影響回歸已完成；⑥exact-SHA CI／部署／讀回待完成。手機原生驗收另保留未勾。
+- **最新回報：** 2026-10-23 Product Owner 提供五段 23:15–23:36 影片，再次退回選取遮擋及完成位移。本輪開始時正式站讀回為 **release 75／`ea853e8`**、buildId `local-1792681874134`；影片沒有內嵌 buildId，不能逐片證明載入版本，也不能以快取猜測否定回報。任務未結案。
+- **本輪已部署：** [PR #97](https://github.com/YambossMaster/Gym-Assistent/pull/97) 候選 `ff89089` 合併為應用 Main **`c501ee5f0d7d43802303230168f5c526ee06c1c4`**，完整 CI 後部署 **release 76**。只改數值輸入 viewport controller 與回歸測試，保留既有 UI、資料與尾部留白。Product Owner 已明示授權完整驗證後直接部署；手機驗收仍待回報。
+- **六項工作盤點：** ①版本／交接、②影片、③原因矩陣、④紅綠修正、⑤受影響回歸、⑥exact-SHA CI／部署／讀回 **6/6 完成**。沒有新增功能範圍；五個紅綠案例屬原定排查。唯一剩餘項為 release 76 手機原生驗收，未勾項維持。
+- **唯一 Next：** Product Owner 從多工關閉再開已安裝 PWA，重驗單人／群組兩檢視的「直接選取 → 下一格 → 完成」及第 4 節；不清網站資料、不刪課堂。buildId **`local-1792687925378`**，入口 **`/assets/index-Db1ycerI.js`**。工程無待部署項，等待此版本實機結果。
 
 ## 2. 下一個 Agent 先做什麼
 
@@ -32,7 +33,7 @@
 | F. 兩個捲動 owner、捲動空間不足、尾部 clamp、sticky／容器裁切          | 保留單一 session scroller、關閉交回 document 及既有差額留白；以首中末欄、上中下起點、九點命中、Shell 首末欄和三模式八格式重查。不以多補 padding 作本輪修正。                                                     |
 | G. Next 事件重複／漏發、focus 轉移、React 重繪／保存重建節點           | 既有 gesture suite 加新紅綠、精確欄序、改值保存 reload／模式切換重查；資料、key、Next 元件本輪未改。不將此當作新的根因。                                                                                         |
 | H. Shell route reset、筆記鎖頁、其他 scrollIntoView、桌機／窄手機      | 程式審計：route reset 只依 pathname；history scrollIntoView 只依 exercise/session；筆記與數值各自清理。補受影響 Shell、1440px Enter、320px 與數值→筆記流程。                                                     |
-| I. 部署／Service Worker／舊資產、依賴不一致                            | 已讀回 Production buildId／入口仍為 release 75；Web TypeScript 7.0.2、root 5.9.3。候選發布後須再讀 Main／CI／Fly SHA 與公開及 origin 資產，不要求清除使用者資料。                                                |
+| I. 部署／Service Worker／舊資產、依賴不一致                            | 排查起點讀回 release 75；現 release 76 的 Main／CI／Fly SHA、公開及 origin 版本與入口資產一致。Web TypeScript 7.0.2、root 5.9.3。尚未讀取使用者手機快取，不將問題推給快取，也不要求清資料。                      |
 | J. 裝置特有的錯誤 DOMRect、OSK 高度回報錯誤、原生關閉仍保留 DOM focus  | **沒有原生 trace，未宣稱排除。** Windows WebKit 只驗引擎／合成 viewport；完全失真的 OS 資料、長時間全高但仍聚焦，不能與真實鍵盤狀態等同。保留手機驗收；不以延長 timer 或 UA 特判猜修。                           |
 
 本輪正式回歸先紅：`TrainingWorkspace.gesture.test.tsx` 的五個新增案例。瀏覽器 `output/playwright/m11-viewport-root-repro.js`：最初三類時序 × 三模式 **0/9**；補 blur reveal 在第一候選仍 **9/12**，再修成 Chrome／WebKit **12/12**。完整 JSON：`output/pwa-input-audit/{root-red,blur-reveal-red,root-green,root-webkit}.json`。這些是受控重播，並非手機遙測。
@@ -55,24 +56,24 @@
 **尚未證實或不能宣稱排除：**
 
 - 「全部只是頁面不夠高」不成立：部分末列確需補足捲動範圍，但晚到事件與容器裁切也能獨立重現。目前保留按差額補高，不回收留白。
-- 已重現原因已有修正與回歸保護，但**尚不能保證原生偶發問題已徹底根治**：缺 release 75 實機結果及失敗當下事件次序。WebKit 問題紀錄只能幫助提出假設，不能當成本機根因證明。
-- 若 75 仍失敗，優先驗兩個**待證假設**：晚到事件超出關閉保護窗／被新 gesture 提前取消；真正關鍵盤關閉仍保留 DOM 焦點，被誤當全高暫態。先用第 2 節時間線確認，勿直接延長 timer。
-- 舊驗證漏看精確欄序／整框命中、末列、真實改值保存及關閉後事件，並把模擬鍵盤當實機；現在已補相應斷言，後續不可退回舊標準。
+- 已重現原因已有修正與回歸保護，但**尚不能保證原生偶發問題已徹底根治**：release 75 已收到再次失敗回報，release 76 缺實機結果與失敗當下原生事件 trace。WebKit 問題紀錄只能幫助提出假設，不能當成本機根因證明。
+- 若 76 仍失敗，先核對載入版本，依第 2 節時間線判斷是已覆蓋案例仍失敗，或新事件模型；保留的**待證假設**包括關閉保護窗外／被新 gesture 取消的原生捲動，以及原生關閉仍保留 DOM focus 或錯誤 viewport／DOMRect。勿直接延長 timer。
+- 本輪找到舊驗證的具體盲點：測試先改 viewport 屬性再同步發事件，未涵蓋屬性晚於事件提交、無後續事件、tap jitter、擴大早於 blur，以及 blur 捲動早於 cleanup。舊版在新案例確實失敗，修後通過；工程重播與原生驗收仍分開。
 
 ## 4. 唯一檢查清單
 
-工程欄保留 release 75 基線，本輪新增結果見第 3／6 節；**方框只代表實機驗收**。`[ ]` 是未可靠證明通過，保留 release 74 失敗，不因工程綠燈自動勾選。
+工程欄包括 release 76 重查結果，見第 3／6 節；**方框只代表實機驗收**。`[ ]` 是未可靠證明通過，保留 release 74／75 失敗，不因工程綠燈自動勾選。目前待驗版本為已部署 release 76。
 
-| 實機項目                   | 通過條件                                                                                     | 工程結果／實機狀態                                                   |
-| -------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [x] P01 操作列             | 高度及可點位置穩定，不閃爍、不誤觸底層。                                                     | 使用者已接受；維持。                                                 |
-| [ ] 基本輸入（F01–F03）    | 每次選取都有操作列；Next 精確進一欄、鍵盤保持開啟；最後欄才完成。                            | 工程通過；本輪候選待實機。                                           |
-| [ ] P02／P05／P06 可見性   | 首、中、末列及任意起始高度直接點選；整個 input 不被操作列、頁首或自身容器裁切。              | 九點／容器檢查通過；74 選取曾 FAIL，本輪候選待實機。                 |
-| [ ] P03 前進／滑動         | 同列不動、跨列一次到位；手動滑動不追，下一次選取再定位；連按不漏進或跳兩欄。                 | 工程通過；本輪候選待實機。                                           |
-| [ ] P04 完成／重進         | 完成或原生關閉後仍見剛才欄位、不回頂；涵蓋動畫、晚到事件、兩種 blur／resize 次序及立即重進。 | 時序完成位移 0px；74 曾 FAIL，本輪候選待實機。                       |
-| [ ] 保存／模式（F04、F12） | 逐欄輸入不同值、保存重開、切群組檢視，不丟值、不改錯學生；三模式八格式皆適用。               | 24 組／189 欄 fixture 保存通過；非新的正式 DB 證據。                 |
-| [ ] P07 站內確認           | 移除、完成群組、改缺席、衝突重載用站內視窗；取消保留、接受一次；無原生離頁提示。             | policy／6 組流程／2 組草稿恢復通過；本輪候選待手機確認，可只按取消。 |
-| [ ] 同伴流程               | 桌機 Enter 正常且無手機 dock／鎖頁；320px 不遮擋；教練筆記切換、工具列與保存正常。           | 工程通過；手機同伴待驗。                                             |
+| 實機項目                   | 通過條件                                                                                     | 工程結果／實機狀態                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [x] P01 操作列             | 高度及可點位置穩定，不閃爍、不誤觸底層。                                                     | 使用者已接受；維持。                                                    |
+| [ ] 基本輸入（F01–F03）    | 每次選取都有操作列；Next 精確進一欄、鍵盤保持開啟；最後欄才完成。                            | 工程通過；release 76 待實機。                                           |
+| [ ] P02／P05／P06 可見性   | 首、中、末列及任意起始高度直接點選；整個 input 不被操作列、頁首或自身容器裁切。              | 九點／容器檢查通過；74 選取曾 FAIL，release 76 待實機。                 |
+| [ ] P03 前進／滑動         | 同列不動、跨列一次到位；手動滑動不追，下一次選取再定位；連按不漏進或跳兩欄。                 | 工程通過；release 76 待實機。                                           |
+| [ ] P04 完成／重進         | 完成或原生關閉後仍見剛才欄位、不回頂；涵蓋動畫、晚到事件、兩種 blur／resize 次序及立即重進。 | 時序完成位移 0px；74 曾 FAIL，release 76 待實機。                       |
+| [ ] 保存／模式（F04、F12） | 逐欄輸入不同值、保存重開、切群組檢視，不丟值、不改錯學生；三模式八格式皆適用。               | 24 組／189 欄 fixture 保存通過；非新的正式 DB 證據。                    |
+| [ ] P07 站內確認           | 移除、完成群組、改缺席、衝突重載用站內視窗；取消保留、接受一次；無原生離頁提示。             | policy／6 組流程／2 組草稿恢復通過；release 76 待手機確認，可只按取消。 |
+| [ ] 同伴流程               | 桌機 Enter 正常且無手機 dock／鎖頁；320px 不遮擋；教練筆記切換、工具列與保存正常。           | 工程通過；手機同伴待驗。                                                |
 
 若再改碼，先驗基本輸入，再驗全部受影響歷史情境；不可只交出新測試數量或一張穩定後截圖。
 
@@ -95,9 +96,10 @@
 
 ## 6. 證據與維護規則
 
-- **本輪發布前驗證：** `npm run check:affected -- ea853e8` exit 0，changed formatting／whitespace／Web typecheck、6 檔 110 項測試通過。Chrome 新時序首中末欄 **36/36**、WebKit 新時序 **12/12** 及按學生 temporal **5/5**；三模式八格式 **24/24、189 欄**精確 Next／保存重開／模式切換／手動滑動通過，既有 temporal **15/15**、session race **36/36**、Shell **6/6**、桌機／320px／筆記 **4 組**通過。Frame 生命週期實測：穩定時 500ms **0 次 style 寫入**，完成後 **0 個新增觀測 frame**。結果在 `output/pwa-input-audit/`，尚未宣稱手機 OSK 或遠端 CI 通過。
-- **發布：** `ea853e8216c8151fe064ab47e91f05922c5617f7`；[PR #95](https://github.com/YambossMaster/Gym-Assistent/pull/95)、[Main CI #366](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39801710987)。完整檢查、browser、migration／部署通過；Fly 同 SHA、健康檢查、三入口 200 已讀回。
-- **工程證據：** `output/playwright/2441d38/`；正式讀回 `output/github/m11-session-race-production-readback.json`。涵蓋 24 組格式、15 個時序、36 個競態、27 欄 Next、Shell 6 案及同伴流程。
+- **本輪發布前驗證：** `npm run check:affected -- ea853e8` exit 0，changed formatting／whitespace／Web typecheck、6 檔 110 項測試通過。Chrome 新時序首中末欄 **36/36**、WebKit 新時序 **12/12** 及按學生 temporal **5/5**；三模式八格式 **24/24、189 欄**精確 Next／保存重開／模式切換／手動滑動通過，既有 temporal **15/15**、session race **36/36**、Shell **6/6**、桌機／320px／筆記 **4 組**通過。Frame 生命週期實測：穩定時 500ms **0 次 style 寫入**，完成後 **0 個新增觀測 frame**。結果凍結在 `output/pwa-input-audit/ff89089/`，含 SHA256 manifest；不宣稱手機 OSK 通過。
+- **exact-SHA CI：** PR #97 head `ff890895267c1c122cdb7ab4391ccb69fefb71b5` 的 [PR CI #369](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39815531198) 通過後合併。應用 Main `c501ee5f0d7d43802303230168f5c526ee06c1c4` 與候選 Web diff 為空；[Main CI #370](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39816970871) 五 jobs 全 success（root 41／API 402／Web 504、完整 check/build、browser、migration dry-run、Production preview、部署與 readiness）。無新 migration。GitHub 當時 Actions／PR 狀態傳播延遲，等待保護檢查成功後才合併，未跳過 gate。
+- **正式讀回：** Fly **release 76 complete**，machine started、`GH_SHA=c501ee5f0d7d43802303230168f5c526ee06c1c4`、service passing；獨立 `/api/ready`、`/`、`/login` **200**。公開網域與 origin 的 buildId／資產一致，首頁引用新入口；入口 JS SHA256 **`9167c18d29556878c42b7bbd2fcd6dc44573b5d72256b7f8b68e0b4af85c781e`**。證據 `output/github/m11-viewport-production-readback.json`。buildId 不是 Git SHA；映像 label 和 exact-SHA CI 為版本身分證據。
+- **前輪工程基線：** release 75／`ea853e8`、PR #95／Main CI #366；`output/playwright/2441d38/` 與 `output/github/m11-session-race-production-readback.json`。五段新影片已退回其選取／完成表現，不以舊工程通過覆蓋回報。
 - **前輪失敗素材：** `C:/Users/User/Downloads/` 的 `ScreenRecording_10-22-2026 21-46-06_1.mp4`、`21-45-29_1.mp4`（同前綴）、`IMG_0655.PNG`，均為 release 74。歷史曾反覆工程通過卻實機退回，release 73 又發生取消部署太晚；必須先驗再發布，部署成功不等於功能通過。
 - **完整歷史：** `git show bb3672e:docs/status/M11-PWA-INPUT-CORRECTION.md`；整合紀錄見 `docs/status/log/2026-10.md`。
 
