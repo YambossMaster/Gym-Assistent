@@ -13,6 +13,10 @@ export function advanceTrainingSetInput(target: EventTarget | null) {
   else target.blur()
 }
 
+export function getSetInputScrollAdjustment(inputBottom: number, dockTop: number) {
+  return Math.max(0, Math.ceil(inputBottom - dockTop + 12))
+}
+
 export function describeTrainingSetInput(target: EventTarget | null) {
   if (!(target instanceof HTMLInputElement) || !target.matches('.training-set-card input'))
     return null

@@ -40,3 +40,41 @@ it('offers an app-owned next action when a numeric keyboard has no Enter key', a
 
   await act(async () => root.unmount())
 })
+
+it('keeps the advance target through a touch blur and focuses the next input on click', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  const exercise = document.createElement('article')
+  exercise.className = 'training-exercise-card'
+  exercise.innerHTML = '<div class="training-set-card"><input><input></div>'
+  const host = document.createElement('div')
+  document.body.append(exercise, host)
+  const root = createRoot(host)
+  const inputs = exercise.querySelectorAll<HTMLInputElement>('input')
+  let gestureActive = false
+  const props = {
+    onGestureStart: () => {
+      gestureActive = true
+    },
+    onGestureEnd: () => {
+      gestureActive = false
+    }
+  }
+  inputs[0]!.focus()
+  await act(async () => root.render(<SetInputAdvanceDock target={inputs[0]!} {...props} />))
+
+  const button = host.querySelector<HTMLButtonElement>('button')!
+  await act(async () => {
+    button.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' })
+    )
+    inputs[0]!.blur()
+    // The workspace retains the target while the dock gesture is in progress.
+    await root.render(<SetInputAdvanceDock target={gestureActive ? inputs[0]! : null} {...props} />)
+  })
+  expect(gestureActive).toBe(true)
+  await act(async () => host.querySelector<HTMLButtonElement>('button')!.click())
+  expect(document.activeElement).toBe(inputs[1])
+  expect(gestureActive).toBe(false)
+  await act(async () => root.unmount())
+  host.remove()
+})

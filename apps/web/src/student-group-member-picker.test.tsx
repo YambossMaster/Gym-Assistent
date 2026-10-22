@@ -8,7 +8,7 @@ import { GroupMemberPicker } from './coach-workspace'
 
 vi.mock('./supabase', () => ({ supabase: { auth: {} } }))
 
-it('keeps one member selected and assigns blue, orange, then pink by selection order', async () => {
+it('lets the last member be deselected and preserves avatar, name, and check for selected members', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
   const host = document.createElement('div')
   document.body.append(host)
@@ -44,9 +44,14 @@ it('keeps one member selected and assigns blue, orange, then pink by selection o
         </QueryClientProvider>
       )
     )
-    expect(choice('甲').disabled).toBe(true)
+    expect(choice('甲').disabled).toBe(false)
     expect(choice('甲').classList.contains('tone-0')).toBe(true)
+    expect(host.textContent).not.toContain('點選一起上課的學生加入群組')
+    expect(choice('甲').querySelector('.group-member-avatar')?.textContent).toBe('甲')
+    expect(choice('甲').querySelector('svg')).not.toBeNull()
+    expect(host.textContent).toContain('已選 1 / 3 位')
     await act(async () => choice('乙').click())
+    expect(host.textContent).toContain('已選 2 / 3 位')
     expect(choice('甲').disabled).toBe(false)
     expect(choice('乙').classList.contains('tone-1')).toBe(true)
     await act(async () => choice('丙').click())
@@ -56,6 +61,11 @@ it('keeps one member selected and assigns blue, orange, then pink by selection o
     expect(choice('乙').classList.contains('tone-0')).toBe(true)
     expect(choice('丙').classList.contains('tone-1')).toBe(true)
     expect(choice('丁').disabled).toBe(false)
+    await act(async () => choice('乙').click())
+    await act(async () => choice('丙').click())
+    expect(host.textContent).toContain('已選 0 / 3 位')
+    expect(choice('甲').querySelector('.student-group-choice-mark')).not.toBeNull()
+    expect(choice('甲').querySelector('.group-member-avatar')).toBeNull()
   } finally {
     await act(async () => root.unmount())
     host.remove()

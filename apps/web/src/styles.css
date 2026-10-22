@@ -4994,6 +4994,7 @@ textarea:focus {
 }
 
 .student-group-member-picker {
+  position: relative;
   display: grid;
   gap: 12px;
   margin: 0;
@@ -5005,6 +5006,17 @@ textarea:focus {
   padding-inline: 4px;
   font-size: 12px;
   font-weight: 700;
+}
+.student-group-member-count {
+  position: absolute;
+  top: -11px;
+  right: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--white);
+  font-weight: 800;
+  font-size: 11px;
+  color: var(--ink);
 }
 .student-group-member-choices {
   display: grid;
@@ -5023,6 +5035,7 @@ textarea:focus {
   background: #f8f8f3;
   color: var(--ink);
   font-weight: 700;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
@@ -5051,7 +5064,7 @@ textarea:focus {
 .student-group-member-choice[aria-pressed='true']:disabled {
   opacity: 1;
 }
-.student-group-member-choice > span:not(.group-member-avatar) {
+.student-group-member-choice > span:nth-child(2) {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5060,11 +5073,24 @@ textarea:focus {
 .student-group-member-choice .group-member-avatar {
   flex: none;
 }
-.student-group-member-choice svg {
+.student-group-member-choice > svg {
   width: 16px;
   height: 16px;
   margin-left: auto;
   flex: none;
+}
+.student-group-choice-mark {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: #747e69;
+}
+.student-group-choice-mark svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2.5;
 }
 .student-group-member-create {
   display: flex;
@@ -5073,8 +5099,27 @@ textarea:focus {
 .student-group-member-create input {
   flex: 1;
   min-width: 0;
+  min-height: 42px;
+  height: 42px;
+  padding-inline: 10px;
+  font-size: 13px;
 }
 .student-group-member-create button {
+  flex: none;
+  min-height: 42px;
+  height: 42px;
+  padding-inline: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.student-group-member-create button svg {
+  width: 17px;
+  height: 17px;
   flex: none;
 }
 .student-group-member-create button:disabled {
@@ -5086,6 +5131,59 @@ textarea:focus {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.4;
+}
+@media (max-width: 720px) {
+  .student-group-member-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .student-group-member-choice {
+    min-height: 42px;
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+  .student-group-member-choice .group-member-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+  .student-group-member-choice > svg {
+    width: 14px;
+    height: 14px;
+  }
+  .student-group-member-create input,
+  .student-group-member-create button {
+    font-size: 12px;
+  }
+}
+@media (max-width: 360px) {
+  .student-group-member-count {
+    right: 8px;
+    padding-inline: 5px;
+    font-size: 10px;
+  }
+  .student-group-member-choice {
+    gap: 4px;
+    padding-inline: 6px;
+    font-size: 11px;
+  }
+  .student-group-member-choice .group-member-avatar {
+    width: 20px;
+    height: 20px;
+  }
+  .student-group-member-choice > svg {
+    width: 12px;
+    height: 12px;
+  }
+  .student-group-member-create {
+    flex-direction: column;
+  }
+  .student-group-member-create input,
+  .student-group-member-create button {
+    font-size: 11px;
+  }
+  .student-group-member-create button {
+    width: 100%;
+  }
 }
 .student-group-members,
 .student-group-performance {

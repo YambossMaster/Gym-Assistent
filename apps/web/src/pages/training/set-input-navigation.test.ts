@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest'
-import { advanceTrainingSetInput, selectTrainingSetValue } from './set-input-navigation'
+import {
+  advanceTrainingSetInput,
+  getSetInputScrollAdjustment,
+  selectTrainingSetValue
+} from './set-input-navigation'
 
 afterEach(() => {
   document.body.replaceChildren()
@@ -48,4 +52,9 @@ it('moves through dimensions and RPE across sets but stops at the exercise bound
   advanceTrainingSetInput(inputs[5])
   expect(document.activeElement).not.toBe(inputs[6])
   expect(document.activeElement).not.toBe(inputs[5])
+})
+
+it('scrolls a focused field clear of the keyboard action dock', () => {
+  expect(getSetInputScrollAdjustment(334, 310)).toBe(36)
+  expect(getSetInputScrollAdjustment(280, 310)).toBe(0)
 })
