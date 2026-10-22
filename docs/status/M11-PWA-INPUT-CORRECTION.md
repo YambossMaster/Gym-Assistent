@@ -47,6 +47,19 @@
 
 本輪沒有新增產品功能；補中途畫面與連續跨動作是第③／⑤項原定排查所需，不能把每個故障注入計成已排除一種裝置原因。WebKit [207049](https://bugs.webkit.org/show_bug.cgi?id=207049) 與 [311821](https://bugs.webkit.org/show_bug.cgi?id=311821) 支持檢查固定定位原點；[254861](https://bugs.webkit.org/show_bug.cgi?id=254861) 記錄可見位置與觸控不同步，故保留hit斷言；均不是此手機的根因證明。
 
+### 為何有時正常、有時失敗：同條件配對對照
+
+Product Owner追加要求後，暫緩發布，在獨立本機埠載入release76的原hook／dismissal／CSS，和候選共用相同TrainingWorkspace、隔離資料與瀏覽器；固定同一欄位，只改下列條件。Chrome及WebKit各30案／版本，兩引擎結果完全一致：舊版18/30，新版30/30。這是刻意選定條件的對照，**不是實機失敗率**。屬原第③／⑤項的因果驗證加深，沒有新產品範圍。
+
+| 固定操作下改變的條件     | 舊版正常條件                                  | 舊版觸發失敗的條件                                | 新版與可下的結論                                                                               |
+| ------------------------ | --------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 完成後同樣250px原生pan   | 無pan，或pan後同幀送出scroll／resize，0px偏移 | pan已發生但事件延後5幀：三模式168–250px，再回原位 | 全部0px；失敗取決於畫面／事件交錯，終點回正會掩蓋錯誤                                          |
+| 同樣170px內部捲動        | input仍focus，或已到全高關閉交接，0px         | 已blur但viewport仍620px的null-focus空窗，170px    | 全部0px；焦點／鍵盤進度的組合是必要區別，不是欄位高低                                          |
+| 第一動作／完成後第二動作 | 原點一致時兩者皆正常                          | 人為移動workspace -380px、dock -190px，兩者皆失敗 | 兩者皆修復，無累積；第二動作本身不是必要條件。**原生為何產生原點偏移仍待證，注入不能回答此點** |
+| 關閉動畫進度             | 幾何在舊期限前全高，正常結束                  | 2.4s仍更新780px／offset10，舊helper在2.5s提前結束 | 正式紅綠＋慢速瀏覽器重播通過；正常與失敗差在實際進度，不是任意延長等待                         |
+
+資料：`output/pwa-input-audit/r77/paired-triggers-{chrome,webkit}.json`；重現 `output/playwright/m11-r77-paired-triggers.js`。其餘216循環涵蓋短間隔、動畫中再點、不同動作／學生、正負獨立原點及無事件更新。這些條件共同解釋程式缺陷的偶發性；影片缺原生時間線，仍不能斷言每次手機故障都符合此模型。後續若再退回，必須比較成功／失敗的原生focus、viewport、rect、hit及scroll時間線，不能只另加單一猜測。
+
 ### 前輪 release 76：五段影片及原因矩陣
 
 影片依使用者提供順序：`23-16-13` 正常對照；`23-15-44` 完成後向上位移；`23-36-14` 按學生、`23-31-19` 按學生末段、`23-16-48` 按時序末段，選取後活動列被操作列／鍵盤遮住，Next 有前進，關閉後才重新出現。來源皆為 Downloads 的 `ScreenRecording_10-22-2026 <時間>_1.mp4`；抽幀在忽略的 `output/pwa-input-audit/`。影片能證明症狀，不能提供 JavaScript 事件／座標的原生 trace。
@@ -124,7 +137,8 @@
 
 ## 6. 證據與維護規則
 
-- **本輪最終本機驗證：** `npm run check:affected -- c501ee5` exit 0，格式／whitespace／Web typecheck、8檔122測試通過。三模式新重現 Chrome／WebKit **9/9**；兩種關閉 **6/6、108動畫取樣位移0px**，另覆蓋刻意放慢且超過舊固定期限的關閉。Chrome／WebKit 連續重進各 **108/108**。24格式／189欄、Chrome首中末36、WebKit舊時序12、temporal15、race36、延後Next27、Shell6、同伴4、站內確認6、真IndexedDB草稿恢復2通過。生命週期：活動30frames、穩定0次style寫入、完成後0新增frame。這是實際瀏覽器＋合成鍵盤幾何／隔離API，不是原生手機或新的正式DB驗收。
+- **CI攔截及處置：** PR CI #373在舊CSS文字斷言失敗，要求dock top只能使用原公式，未允許本輪的實測原點補償；更新斷言保留fixed／viewport公式／translateY／flex並明確要求補償項，9項mobile shell測試及affected131通過。應用程式未因此修改，所有瀏覽器證據仍對應同一runtime。保留失敗紀錄，等待新head完整CI。
+- **本輪最終本機驗證：** `npm run check:affected -- c501ee5` exit 0，格式／whitespace／Web typecheck、9檔131測試通過。三模式新重現 Chrome／WebKit **9/9**；兩種關閉 **6/6、108動畫取樣位移0px**，另覆蓋刻意放慢且超過舊固定期限的關閉。Chrome／WebKit 連續重進各 **108/108**。24格式／189欄、Chrome首中末36、WebKit舊時序12、temporal15、race36、延後Next27、Shell6、同伴4、站內確認6、真IndexedDB草稿恢復2通過。生命週期：活動30frames、穩定0次style寫入、完成後0新增frame。這是實際瀏覽器＋合成鍵盤幾何／隔離API，不是原生手機或新的正式DB驗收。
 - **release 76 歷史發布前驗證：** `npm run check:affected -- ea853e8` exit 0，changed formatting／whitespace／Web typecheck、6 檔 110 項測試通過。Chrome 新時序首中末欄 **36/36**、WebKit 新時序 **12/12** 及按學生 temporal **5/5**；三模式八格式 **24/24、189 欄**精確 Next／保存重開／模式切換／手動滑動通過，既有 temporal **15/15**、session race **36/36**、Shell **6/6**、桌機／320px／筆記 **4 組**通過。Frame 生命週期實測：穩定時 500ms **0 次 style 寫入**，完成後 **0 個新增觀測 frame**。結果凍結在 `output/pwa-input-audit/ff89089/`，含 SHA256 manifest；不宣稱手機 OSK 通過。
 - **release 76 歷史 exact-SHA CI：** PR #97 head `ff890895267c1c122cdb7ab4391ccb69fefb71b5` 的 [PR CI #369](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39815531198) 通過後合併。應用 Main `c501ee5f0d7d43802303230168f5c526ee06c1c4` 與候選 Web diff 為空；[Main CI #370](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39816970871) 五 jobs 全 success（root 41／API 402／Web 504、完整 check/build、browser、migration dry-run、Production preview、部署與 readiness）。無新 migration。GitHub 當時 Actions／PR 狀態傳播延遲，等待保護檢查成功後才合併，未跳過 gate。
 - **release 76 基線讀回：** Fly **release 76 complete**，machine started、`GH_SHA=c501ee5f0d7d43802303230168f5c526ee06c1c4`、service passing；獨立 `/api/ready`、`/`、`/login` **200**。公開網域與 origin 的 buildId／資產一致，首頁引用新入口；入口 JS SHA256 **`9167c18d29556878c42b7bbd2fcd6dc44573b5d72256b7f8b68e0b4af85c781e`**。證據 `output/github/m11-viewport-production-readback.json`。buildId 不是 Git SHA；映像 label 和 exact-SHA CI 為版本身分證據。
