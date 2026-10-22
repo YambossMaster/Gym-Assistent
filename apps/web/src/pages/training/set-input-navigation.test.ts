@@ -99,7 +99,7 @@ it.each([0, 55, 96, 151])(
     const dockBottom = layoutHeight - inset - 8
     const visibleKeyboardTop = visualOffsetTop + visualHeight
 
-    expect(dockBottom).toBe(visibleKeyboardTop - 72)
+    expect(dockBottom).toBe(visibleKeyboardTop - 8)
   }
 )
 
