@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { getSetInputFocusAdjustment } from './set-input-navigation'
 import { settleSetInputDismissal } from './set-input-dismissal'
+import { reconcileSetInputGeometry } from './set-input-geometry'
 
 // One scroll owner for the entire keyboard session. Field changes never release
 // the document lock or recreate the viewport listeners.
@@ -89,7 +90,19 @@ export function useSetInputViewport(
     // without another event. Observe the active session at paint time, reading
     // fresh geometry; an old event snapshot plus a delayed align is insufficient.
     const recheck = () => {
+      reconcileSetInputGeometry(workspace, top, height)
       if (pending && document.activeElement === pending) align(pending)
+      else if (
+        pending &&
+        lastVisible?.input === pending &&
+        !workspace.querySelector('.training-set-card input:focus')
+      ) {
+        // Native Done and native Next both pass through a null-focus gap.
+        // Preserve the last visible row during that gap without ending the
+        // session; an actual manual gesture has already cleared pending.
+        const delta = pending.getBoundingClientRect().top - top - lastVisible.top
+        if (Math.abs(delta) > 1) workspace.scrollTop += delta
+      }
       // Capture while still editing. Native blur can move the scroller before
       // React's cleanup runs; reading for the first time there saves the jump.
       if (lastInput && document.activeElement === lastInput)
@@ -133,6 +146,13 @@ export function useSetInputViewport(
         workspace.contains(focused) &&
         focused.matches('.training-set-card input')
       if (keyboardSeen && !open && !setInputFocused) {
+        // React may commit the close after this paint. Apply the closing sample
+        // and preserve the row before requesting that state transition.
+        height = nextHeight
+        top = nextTop
+        setProperty('--session-input-top', `${top}px`)
+        setProperty('--session-input-height', `${height}px`)
+        recheck()
         close.current()
         return
       }
@@ -210,17 +230,45 @@ export function useSetInputViewport(
       // Dismissal must not bring a sticky heading back over the row that was
       // just edited. It remains in normal flow and can be reached by scrolling up.
       workspace.dataset.setInputResting = 'true'
-      root.classList.remove('is-session-set-editing')
-      Object.assign(body.style, bodyStyles)
-      workspace.scrollTop = 0
-      for (const property of [
-        '--session-input-top',
-        '--session-input-height',
-        '--session-keyboard-space'
-      ])
-        workspace.style.removeProperty(property)
+      let released = false
+      const release = () => {
+        if (released) return
+        released = true
+        root.classList.remove('is-session-set-editing')
+        Object.assign(body.style, bodyStyles)
+        workspace.scrollTop = 0
+        for (const property of [
+          '--session-input-top',
+          '--session-input-height',
+          '--session-input-shift',
+          '--session-dock-shift',
+          '--session-keyboard-space'
+        ])
+          workspace.style.removeProperty(property)
+      }
       const restore = () => {
         if (!workspace.isConnected || (anchor && !anchor.isConnected)) return false
+        // Keep the current scroll owner while the keyboard is animating away.
+        // Releasing fixed layout at blur exposes the document to native reveal,
+        // which can paint a jump before its delayed scroll event is delivered.
+        if (!released) {
+          const closingHeight = viewport?.height ?? window.innerHeight
+          const closingTop = viewport?.offsetTop ?? 0
+          if (
+            anchorTop !== null &&
+            anchor &&
+            layoutHeight - closingHeight > 2 &&
+            !workspace.classList.contains('is-note-tab')
+          ) {
+            setProperty('--session-input-top', `${closingTop}px`)
+            setProperty('--session-input-height', `${closingHeight}px`)
+            reconcileSetInputGeometry(workspace, closingTop, closingHeight)
+            const delta = anchor.getBoundingClientRect().top - closingTop - anchorTop
+            if (Math.abs(delta) > 1) workspace.scrollTop += delta
+            return true
+          }
+          release()
+        }
         const destination = Math.max(
           0,
           anchorTop !== null && anchor?.isConnected
@@ -240,7 +288,12 @@ export function useSetInputViewport(
       }
       restore()
       if (anchorTop !== null && !workspace.classList.contains('is-note-tab'))
-        stopDismissal.current = settleSetInputDismissal(viewport, layoutHeight, restore)
+        stopDismissal.current = settleSetInputDismissal(viewport, layoutHeight, restore, () => {
+          if (released) return
+          release()
+          restore()
+        })
+      else release()
     }
   }, [enabled, workspaceRef])
 

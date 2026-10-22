@@ -95,7 +95,7 @@ describe('mobile app shell behavior', () => {
   it('keeps an app-owned next-input action above mobile numeric keyboards', () => {
     expect(trainingWorkspace).toMatch(/<SetInputAdvanceDock\s+target=\{activeSetInput\}/)
     expect(styles).toMatch(
-      /\.set-input-advance-dock\s*\{[^}]*position:\s*fixed;[^}]*top:\s*calc\(var\(--session-input-top\)\s*\+\s*var\(--session-input-height\)\s*-\s*8px\);[^}]*transform:\s*translateY\(-100%\);[^}]*display:\s*flex/s
+      /\.set-input-advance-dock\s*\{[^}]*position:\s*fixed;[^}]*top:\s*calc\(\s*var\(--session-input-top\)\s*\+\s*var\(--session-input-height\)\s*-\s*8px\s*\+\s*var\(--session-dock-shift,\s*0px\)\s*\);[^}]*transform:\s*translateY\(-100%\);[^}]*display:\s*flex/s
     )
   })
 })
