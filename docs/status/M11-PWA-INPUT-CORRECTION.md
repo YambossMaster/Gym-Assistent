@@ -1,5 +1,30 @@
 # M11 學生群組與手機 PWA 輸入：完整問題紀錄及接手檢查清單
 
+## 2026-10-22 最新結果：部署前完整驗證通過，release 72 已發布，實機待驗
+
+**順序已依最新指示完成：完整驗證 → 合併 → Main 發布檢查 → 部署 → 獨立讀回。** 本輪發布關卡 4/4 完成；原六項清單的工程／交付部分完成，iPhone PWA F／K 實機結果仍未取得，不能宣告 M11 或原生鍵盤問題已結案。
+
+| 證據               | 最終結果                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 修正版本           | [PR #90](https://github.com/YambossMaster/Gym-Assistent/pull/90)，最終 head `e1bc8359bf2f3611dab4b13d096079edd14a4904`；squash Main／應用 SHA **`a8f298d991c42e4c00df1d089258e00be5b11595`**。合併後 Web 與已驗證候選 diff 為空。                                                                                                                                                                      |
+| 部署前完整 CI      | [PR CI #354](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39762927100) 成功：root **40**、API **402**、Web **481** 測試，完整格式／型別／production build、桌機／手機 browser-ui、無 migration 的成功 no-op。最終 affected preflight **98/98**。                                                                                                                                        |
+| 受影響完整 browser | 最終版本重新跑 `output/playwright/m11-full-verify.js`，3 檢視 × 8 格式 **24/24**、**189 欄**不同值輸入／精確 touch Next／保存 reload、16 次群組檢視往返、72 個上中下直接點選、自由滑動、完成／重進皆通過。Windows WebKit、模擬鍵盤與 API。                                                                                                                                                             |
+| 同伴流程           | `m11-full-peer-verify.js`：1440px Enter／保存 reload／dock 隱藏／不鎖 body；320px 群組兩模式各 9 欄命中／前進／完成；390px 數值→筆記一次 click／tap 切換、工具列、數值鎖清理、實際筆記輸入保存皆通過。完整驗證曾攔下筆記切換缺陷，修正後重測再發布，詳見下方。                                                                                                                                         |
+| Main 發布 CI       | [Main CI #355](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39763437009) **五個 jobs 全部成功**：verify、browser-ui、migration-dry-run、production-migration-preview、deploy-production。Main full check/build 同為 root 40／API 402／Web 481。Production history log：`Linked database migration history matches this commit.`，無 pending／無 SQL 套用。                              |
+| Fly 執行證據       | **release 72，status `complete`**；machine `874ddec06064d8` 為 started；image label `GH_SHA` 與 `a8f298d...` 完全一致；image digest `sha256:72634cbdfd1fb53c3bf54183b9348b3f187fb59cc70e692d3b61a0dccce990c4`；`servicecheck-00-http-3000=passing`。                                                                                                                                                   |
+| 獨立正式站讀回     | `https://formcoachdesk.com/api/ready`、`/`、`/login` **200**，SPA 讀回帶 `Accept: text/html`。正式網域與 `formcoachdesk.fly.dev` 的 app-version、assets 和入口 JS SHA256 相同；首頁引用新版入口。buildId **`local-1792665235858`**，入口 `/assets/index-BYi9hcyN.js`，SHA256 `bb1e8a3b0453e9e45e4a9343922305eed80c0f4987f3d85771201296f42133b4`。buildId 不是 Git SHA，Git 身分由 CI／Fly label 證明。 |
+| 影響範圍           | 正式產品僅三個 Training 檔案的焦點／dock／tab 交接；兩個正式測試檔新增共 31 案例；無 API、schema、Auth、共用 CSS、依賴或部署設定變更。群組建立／編輯與已接受設計保留。未操作真實課堂或草稿。                                                                                                                                                                                                           |
+
+### 目前唯一下一步：Product Owner 安裝 iPhone PWA 實機驗證
+
+正式入口：[Form Coach Desk](https://formcoachdesk.com)。先從多工畫面關閉已安裝 PWA 再重新開啟，確保重新載入新版；保留現有草稿及衝突選擇，不要求清除網站資料或重建帳號。可識別版本為 release 72／應用 `a8f298d`，公開 buildId `local-1792665235858`。
+
+先檢查 F01–F03：單人與群組按時序／按學生，點任一數值欄，確認操作列出現；連續「下一格」精確前進且原生鍵盤持續開啟。再按原清單檢查同列／跨列／末列、手動滑動後重點、實際輸入保存重開、完成後重進及數值→筆記切換。**所有原生 iPhone F／K 項仍待實機，原清單不勾成通過；工程測試、CI、發布與 HTTP 成功不取代此結果。**
+
+本地證據：`output/playwright/m11-final-verification-summary.json`、`m11-full-{view}-{format}.png`、`m11-full-desktop.png`、`m11-full-320-{timeline,student}.png`；獨立讀回腳本及原始摘要 `output/github/m11-production-readback.{ps1,json}`。均為忽略的測試輸出。發布證據文件分支 `codex/m11-input-verification-release`，基底為上述應用 Main；本段不改應用或再部署。
+
+以下授權、在途 gate 與本機交接段落為歷史過程，當前狀態以本節為準。
+
 ## 2026-10-22 目前授權：先完整驗證，再部署
 
 Product Owner 已明確指示「請先完成完整驗證後，再進行部署」，並保留先前「尚未部署，請先進行部署，才能手機 PWA 實機驗證」的發布授權。因此本候選可執行完整驗證、提交／推送 PR、必要檢查通過後合併 Main 及部署；不再等待本機預覽核准。安裝 iPhone PWA 驗收仍排在部署之後，未以測試或部署成功代替。
