@@ -1,7 +1,17 @@
 import { ArrowRight, Check } from 'lucide-react'
 import { advanceTrainingSetInput, describeTrainingSetInput } from './set-input-navigation'
 
-export function SetInputAdvanceDock({ target }: { target: HTMLInputElement | null }) {
+export function SetInputAdvanceDock({
+  target,
+  onGestureStart,
+  onGestureRelease,
+  onGestureEnd
+}: {
+  target: HTMLInputElement | null
+  onGestureStart?: () => void
+  onGestureRelease?: () => void
+  onGestureEnd?: () => void
+}) {
   const step = describeTrainingSetInput(target)
   if (!step) return null
   return (
@@ -9,8 +19,16 @@ export function SetInputAdvanceDock({ target }: { target: HTMLInputElement | nul
       <span aria-live="polite">{step.context}</span>
       <button
         type="button"
-        onPointerDown={(event) => event.preventDefault()}
-        onClick={() => advanceTrainingSetInput(target)}
+        onPointerDown={(event) => {
+          event.preventDefault()
+          onGestureStart?.()
+        }}
+        onPointerUp={onGestureRelease}
+        onPointerCancel={onGestureEnd}
+        onClick={() => {
+          advanceTrainingSetInput(target)
+          onGestureEnd?.()
+        }}
       >
         {step.isLast ? (
           <>

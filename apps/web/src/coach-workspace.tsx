@@ -2589,6 +2589,9 @@ export function GroupMemberPicker({
       <legend>
         <RequiredFieldLabel>群組成員（1–3 位）</RequiredFieldLabel>
       </legend>
+      <span className="student-group-member-count" aria-live="polite">
+        已選 {selectedIds.length} / 3 位
+      </span>
       <div className="student-group-member-choices">
         {available.map((person) => {
           const selected = selectedIds.includes(person.id)
@@ -2599,9 +2602,7 @@ export function GroupMemberPicker({
               type="button"
               className={`student-group-member-choice${selected ? ` tone-${tone}` : ''}`}
               aria-pressed={selected}
-              disabled={
-                (selected && selectedIds.length === 1) || (!selected && selectedIds.length >= 3)
-              }
+              disabled={!selected && selectedIds.length >= 3}
               onClick={() =>
                 onChange(
                   selected
@@ -2610,9 +2611,13 @@ export function GroupMemberPicker({
                 )
               }
             >
-              {selected && (
+              {selected ? (
                 <span className={`group-member-avatar tone-${tone}`} aria-hidden="true">
                   {person.name.slice(0, 1)}
+                </span>
+              ) : (
+                <span className="student-group-choice-mark" aria-hidden="true">
+                  <Plus />
                 </span>
               )}
               <span>{person.name}</span>

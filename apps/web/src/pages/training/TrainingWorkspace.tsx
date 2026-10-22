@@ -1,5 +1,9 @@
 import { MeasurementInputs } from './MeasurementInputs'
-import { advanceTrainingSetInput, selectTrainingSetValue } from './set-input-navigation'
+import {
+  advanceTrainingSetInput,
+  getSetInputScrollAdjustment,
+  selectTrainingSetValue
+} from './set-input-navigation'
 import { numericInputKeyDown } from '../../shared/numeric-input'
 import {
   emptyMeasurements,
@@ -411,6 +415,14 @@ function TrainingEditor({
   }, [plan.data?.tier])
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const workspaceRef = useRef<HTMLElement | null>(null)
+  const setInputDockGesture = useRef(false)
+  const setInputDockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
+    },
+    []
+  )
   const touchStartY = useRef<number | null>(null)
   const noteTouch = useRef<{ x: number; y: number; canvas: HTMLElement | null } | null>(null)
   const keyboardFocused = activeSetInput !== null
@@ -523,6 +535,32 @@ function TrainingEditor({
       window.removeEventListener('resize', updateInset)
     }
   }, [keyboardFocused])
+  useEffect(() => {
+    if (!activeSetInput) return
+    const viewport = window.visualViewport
+    let frame = 0
+    const keepInputAboveDock = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        if (!activeSetInput.isConnected || document.activeElement !== activeSetInput) return
+        const dock = workspaceRef.current?.querySelector<HTMLElement>('.set-input-advance-dock')
+        if (!dock) return
+        const adjustment = getSetInputScrollAdjustment(
+          activeSetInput.getBoundingClientRect().bottom,
+          dock.getBoundingClientRect().top
+        )
+        if (adjustment) window.scrollBy({ top: adjustment, behavior: 'instant' })
+      })
+    }
+    keepInputAboveDock()
+    viewport?.addEventListener('resize', keepInputAboveDock)
+    viewport?.addEventListener('scroll', keepInputAboveDock)
+    return () => {
+      cancelAnimationFrame(frame)
+      viewport?.removeEventListener('resize', keepInputAboveDock)
+      viewport?.removeEventListener('scroll', keepInputAboveDock)
+    }
+  }, [activeSetInput])
   const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)
   const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragPointer = useRef<number | null>(null)
@@ -1409,15 +1447,31 @@ function TrainingEditor({
       }}
       onBlurCapture={(event) => {
         if (
+          event.target instanceof Element &&
+          event.target.closest('.set-input-advance-dock') &&
+          !(
+            event.relatedTarget instanceof HTMLInputElement &&
+            event.relatedTarget.matches('.training-set-card input')
+          )
+        )
+          setActiveSetInput(null)
+        if (
           event.target instanceof HTMLInputElement &&
           event.target.matches('.training-set-card input')
-        )
+        ) {
+          if (
+            setInputDockGesture.current ||
+            (event.relatedTarget instanceof Element &&
+              event.relatedTarget.closest('.set-input-advance-dock'))
+          )
+            return
           setActiveSetInput(
             event.relatedTarget instanceof HTMLInputElement &&
               event.relatedTarget.matches('.training-set-card input')
               ? event.relatedTarget
               : null
           )
+        }
       }}
     >
       <header className="session-topbar">
@@ -1932,7 +1986,33 @@ function TrainingEditor({
           )}
         </main>
       </div>
-      <SetInputAdvanceDock target={activeSetInput} />
+      <SetInputAdvanceDock
+        target={activeSetInput}
+        onGestureStart={() => {
+          setInputDockGesture.current = true
+          if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
+        }}
+        onGestureRelease={() => {
+          setInputDockTimer.current = setTimeout(() => {
+            setInputDockGesture.current = false
+            if (
+              !(document.activeElement instanceof HTMLInputElement) ||
+              !document.activeElement.matches('.training-set-card input')
+            )
+              setActiveSetInput(null)
+          }, 500)
+        }}
+        onGestureEnd={() => {
+          setInputDockGesture.current = false
+          if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
+          setInputDockTimer.current = null
+          if (
+            !(document.activeElement instanceof HTMLInputElement) ||
+            !document.activeElement.matches('.training-set-card input')
+          )
+            setActiveSetInput(null)
+        }}
+      />
       <footer className="session-bottom">
         <div>
           <span>
