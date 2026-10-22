@@ -1,13 +1,15 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `a8f298d991c42e4c00df1d089258e00be5b11595` and the M11 input/tab handoff correction release.
+> `9b2594310a2b26e987a5dfa81c2c34c91d3367be` and the M11 input/tab handoff correction release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
-## M11 release 72 已部署，安裝 iPhone PWA 實機待驗（2026-10-22）
+## M11 release 73 已部署；補驗攔下數值控制項裁切（2026-10-22）
 
-release 71 再次發生 Next 關鍵盤不前進、點欄偶無操作列，依完整交接清單恢復修正。Product Owner 要求「先完整驗證，再部署」；[PR #90](https://github.com/YambossMaster/Gym-Assistent/pull/90) 最終 head `e1bc835` 通過 [PR CI #354](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39762927100) full check/build（root 40／API 402／Web 481）、browser-ui 與 migration no-op，24 組／189 欄及桌機／320px／筆記同伴檢查通過後才合併。完整驗證另抓到數值→筆記切換失敗，已修正並重新驗證。Main `a8f298d991c42e4c00df1d089258e00be5b11595` 的 [CI #355](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39763437009) 五 jobs 全成功，Production history 無 pending，Fly **release 72** running image `GH_SHA` 相同、service passing；正式網域與 Fly origin 新版資產一致，獨立 `/api/ready`、`/`、`/login` 為 200。無 API／migration／Auth 改動。**Windows WebKit 使用模擬鍵盤與 API；安裝 iPhone PWA 原生鍵盤 F／K 驗收仍待 Product Owner，不能宣告問題結案。** 下一步、版本識別與全部清單見 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md)。
+release 72 實機仍有遮擋／亂跳與完成回跳，按影片分開修正選取、Next 和完成。PR #92／Main `9b2594310a2b26e987a5dfa81c2c34c91d3367be` 之 PR CI #358 成功、Main CI #359 必要 jobs 成功（部署後取消令 run overall cancelled）（root 40／API 402／Web 484），Fly release 73 同 SHA、service passing，獨立三入口 200。工程重現完成回跳 505px → 0px；原生 iPhone 尚未驗收。
+
+補上 Shell 頁首／導覽邊界時，另發現按學生首欄被自身 38px 容器裁掉 52px input 上緣，已列 P06／K15。取消要求未趕在 release 73 完成前；後續三行 CSS 修正與完整工程重測已在 `codex/m11-input-control-clip`完成，尚待最後 CI 再發布。全部清單、證據與下一步見 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md)。
 
 ## Released baseline
 

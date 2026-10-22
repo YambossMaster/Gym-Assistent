@@ -1,5 +1,22 @@
 # M11 學生群組與手機 PWA 輸入：完整問題紀錄及接手檢查清單
 
+## 2026-10-22 最新補驗：release 73 已發布，發現並修正數值控制項自身裁切，完整工程重查通過，待最後發布
+
+**當前正式版本：release 73／Main `9b2594310a2b26e987a5dfa81c2c34c91d3367be`，不是 release 72。** [PR #92](https://github.com/YambossMaster/Gym-Assistent/pull/92) 候選 `71eca63` 已完成下方工程檢查，PR CI #358（run 39777343356）成功；Main CI #359（run 39777910807）五個 jobs 均 success，但部署後才生效的取消令整個 run conclusion 為 cancelled：root 40／API 402／Web 484、完整 check/build、browser、migration no-op、Production history 匹配無 pending；Fly release 73 complete、同 SHA started／service passing，正式 `/api/ready`、`/`、`/login` 200。公開 buildId `local-1792671994815`，入口 `index-UlCi0TLk.js`，正式網域／Fly origin 同資產。這只證明 release 73 已發布，不代表原生問題通過。
+
+原四項工程工作完成後，**新增第 5 項 P1**：補上原 fixture 未帶入的 CoachWorkspace 頁首／底部導覽 DOM 與 CSS 邊界，三模式首欄／末欄完成後九點命中。不是新增功能；其目的為排除完成後仍看不到剛編輯欄位。按學生首欄雖位移 0，上方三個取樣點卻命中 row，故立即判 FAIL。自動部署取消請求送出時 deploy job 已完成，獨立讀回確認 release 73；沒有聲稱已成功阻止發布，採最小後續修正，不退回已知定位失敗的 release 72。
+
+### 第 5 項工作／P06（修正及完整工程重查完成，待最後 CI／發布）
+
+- [ ] **P06 / K15：input 不能被自己的容器裁切。** 選取中與完成後，所有數值 input 的上下邊界應在 measurement-control 內，且九點命中；首欄／末欄、單人／群組兩檢視、八格式都重查。這是 P05 的新具體失敗，不可用欄位中心點可點代替。
+- **確定原因：** 全域 `input { min-height:52px }`，但數值 `measurement-control` 只有 38px（overflow hidden），input 本身 height 36px 被 min-height 撐至 52px。完成後按學生首欄 input top 163.5、container top 178.5，頂部 15px 被裁掉；上方三點失敗，中心／下方仍可點。這也說明為何只檢中心點會漏掉。
+- **最小修正：** `.measurement-inputs input` 加 `min-height:0`，直接 RPE input 亦解除 min-height 並使用既有 label 的 100% 高度，讓既有 36px input 遵守原本 38px 控制項設計。外框／排版、dock、定位 hook、API／DB 不改。相同 Shell 六案由 FAIL 轉 **6/6 PASS**，完成位移都是 0px。
+- **最終重查完成：** 24 格式矩陣全部改成九點命中，新增 blur 後所有 measurement input 不超出容器；重跑 15 案 temporal、27 欄 Next、六個 Shell 邊界與桌機／320px／筆記同伴。全部通過後推送本分支 `codex/m11-input-control-clip`、exact-head CI、合併、部署、讀回。未做新的實機勾選。
+- **影響面：** measurementInputs 的八格式單人及群組兩檢視、桌機同元件；保留現有 38px 外框。只修 measurement 時，矩陣又攔下同列轉 RPE 會移動：RPE 仍被全域 52px 撐大，已一併讓其遵守既有外框。純 CSS 修正，既有三個 hook regression 及 release 73 full suite 是未變邏輯基線；新 CSS geometry 由真瀏覽器重跑，不能以未選出 unit test 當證據。
+
+**三行 CSS 的最終結果：** 全部 **24/24、189 欄**重新跑完，逐欄九點命中、完整不遮擋、同列不動、每例改值保存 reload、八格式在 blur 後不超出容器通過；72 次直接選取／自由滑動、16 次群組檢視往返通過。重新執行 **15/15 temporal**（所有完成位移 0px）、**27 欄 Next** 延後捲動／九點命中／一致高度，以及 **Shell 6/6** 首欄／末欄完成可見／導覽恢復。1440px Enter／保存、320px 兩群組模式、390px 手動滑回頁首切筆記與筆記保存同伴皆重新通過。正式檢查 `npm run check:affected -- origin/main` exit 0：format／whitespace／Web typecheck；CSS-only 無 statically related unit tests，未將此當 browser pass。最終原始及摘要仍在 `output/playwright/m11-placement-{matrix,temporal,next,shell,peer}-results.json`。原生實機項目仍保留未勾。
+以下 19:32 回報與 release 72／73 的工程紀錄保留，當前 Next 以本節為準。
+
 ## 2026-10-22 19:32 實機退回：release 72 定位／完成失敗，本輪工程驗證已通過
 
 **本節取代下方「實機待驗／唯一下一步」的舊結論。** Product Owner 的兩支 iPhone 錄影已證明 release 72 仍未修好；已接受操作列固定高度，保留其設計與位置。不可再把模擬矩陣通過寫成原生問題通過。
