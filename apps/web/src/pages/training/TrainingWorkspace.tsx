@@ -1382,13 +1382,25 @@ function TrainingEditor({
       }}
       onClickCapture={(event) => {
         if (
+          event.target instanceof HTMLInputElement &&
+          event.target.matches('.training-set-card input')
+        ) {
+          // Tapping an already-focused field need not dispatch focus again.
+          setActiveSetInput(event.target)
+          setInputViewport.placeInput(event.target)
+          return
+        }
+        if (
           activeSetInput &&
           event.target instanceof Element &&
-          !event.target.closest('.training-set-card input, .set-input-advance-dock')
+          !event.target.closest('.training-set-card input, .set-input-advance-dock') &&
+          !(
+            document.activeElement instanceof HTMLInputElement &&
+            event.currentTarget.contains(document.activeElement) &&
+            document.activeElement.matches('.training-set-card input')
+          )
         )
           setActiveSetInput(null)
-        else if (event.target instanceof HTMLInputElement && event.target === activeSetInput)
-          setInputViewport.placeInput(event.target)
       }}
       onBlurCapture={(event) => {
         if (
@@ -1933,6 +1945,7 @@ function TrainingEditor({
       </div>
       <SetInputAdvanceDock
         target={activeSetInput}
+        onComplete={() => setActiveSetInput(null)}
         onBeforeAdvance={setInputViewport.prepareFocus}
         onGestureStart={() => {
           setInputViewport.cancelPlacement()

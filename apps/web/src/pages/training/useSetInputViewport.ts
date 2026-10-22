@@ -37,6 +37,7 @@ export function useSetInputViewport(
     let keyboardSeen = false
     let pending: HTMLInputElement | null = activeInput.current
     let settle: ReturnType<typeof setTimeout> | undefined
+    let blurCheck: ReturnType<typeof setTimeout> | undefined
     let height = viewport?.height ?? window.innerHeight
     let top = viewport?.offsetTop ?? 0
     const place = (target: HTMLInputElement) => {
@@ -61,7 +62,15 @@ export function useSetInputViewport(
       height = viewport?.height ?? window.innerHeight
       top = viewport?.offsetTop ?? 0
       const open = layoutHeight - height > 120
-      if (keyboardSeen && !open) {
+      // Geometry alone does not end an editing session. A viewport expansion
+      // can arrive while the next field still owns focus. Dropping React's
+      // target here leaves that input focused with no way to reopen the dock.
+      const focused = document.activeElement
+      const setInputFocused =
+        focused instanceof HTMLInputElement &&
+        workspace.contains(focused) &&
+        focused.matches('.training-set-card input')
+      if (keyboardSeen && !open && !setInputFocused) {
         close.current()
         return
       }
@@ -89,15 +98,24 @@ export function useSetInputViewport(
     viewport?.addEventListener('resize', update)
     viewport?.addEventListener('scroll', update)
     window.addEventListener('resize', update)
+    const checkAfterBlur = () => {
+      clearTimeout(blurCheck)
+      // focusout precedes focusin. Inspect the settled DOM focus, including
+      // native dismissal whose viewport resize arrived before this blur.
+      blurCheck = setTimeout(update, 0)
+    }
+    workspace.addEventListener('focusout', checkAfterBlur)
     workspace.addEventListener('touchmove', cancel, { passive: true })
     workspace.addEventListener('wheel', cancel, { passive: true })
     return () => {
       cancel()
+      clearTimeout(blurCheck)
       controller.current = null
       prepared.current = null
       viewport?.removeEventListener('resize', update)
       viewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
+      workspace.removeEventListener('focusout', checkAfterBlur)
       workspace.removeEventListener('touchmove', cancel)
       workspace.removeEventListener('wheel', cancel)
       const restoreY = originalY + workspace.scrollTop + originalTop - top
