@@ -18457,7 +18457,7 @@ button:disabled {
     display: none;
   }
 
-  html.is-session-set-editing .session-workspace.is-set-input-focused {
+  html.is-session-set-editing .session-workspace {
     position: fixed;
     z-index: 35;
     top: var(--session-input-top, 0px);
@@ -18479,7 +18479,8 @@ button:disabled {
     overscroll-behavior: none;
   }
 
-  html.is-session-set-editing .app-shell .session-workspace .session-topbar {
+  html.is-session-set-editing .app-shell .session-workspace .session-topbar,
+  .session-workspace[data-set-input-resting].is-training-tab .session-topbar {
     position: static;
     transform: none;
     transition: none;
