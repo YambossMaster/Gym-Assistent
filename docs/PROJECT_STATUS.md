@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `13b492d00088ddc447044293fd6f78d98a402ff4` and the M11 PWA viewport correction release.
+> `c10627d39e54b8db796cfb7a77eaa6cba6df0528` and the M11 PWA keyboard stability release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -73,6 +73,8 @@ M11 Student Groups [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/
 The installed-PWA input and member-picker correction [PR #78](https://github.com/YambossMaster/Gym-Assistent/pull/78) merged as Main `4028d377`; [Main CI #329](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39720697116) passed all five jobs and deployed that exact SHA to Fly release 66 with no pending migration. Running image `GH_SHA` matches Main; independent `/api/ready`, `/` and `/login` returned 200. The Product Owner accepted the revised picker before deployment and passed group create/edit on the installed PWA; training input alignment needed a follow-up.
 
 The Product Owner passed group create/edit on the installed PWA but reported drifting training input alignment. [PR #80](https://github.com/YambossMaster/Gym-Assistent/pull/80) corrected visual-viewport positioning and merged as Main `13b492d`; [Main CI #334](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39724604357) passed all five jobs, including no-pending Production preview and exact-SHA Fly deployment to release 67. The running image and passing service check match Main; independent `/api/ready`, `/` and `/login` returned 200. **Single/group training keyboard alignment awaits the Product Owner's installed-iPhone PWA recheck**; see the [correction workstream](status/M11-PWA-INPUT-CORRECTION.md).
+
+The next installed-iPhone recording showed the release 67 dock sometimes under the keyboard's native toolbar and page jitter during manual scrolling. [PR #82](https://github.com/YambossMaster/Gym-Assistent/pull/82) separated keyboard-edge positioning from a one-time visibility check per focused input and merged as Main `c10627d39e54b8db796cfb7a77eaa6cba6df0528`. [Main CI #338](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39727865977) passed all five jobs and deployed the exact SHA to Fly release 68 with a passing service check. Independent `/api/ready`, `/` and `/login` returned 200. **Physical single/group keyboard behavior still awaits installed-iPhone PWA acceptance**; see the [correction workstream](status/M11-PWA-INPUT-CORRECTION.md).
 
 | Workstream   | Owns                                                                         | State and entry                                                                                                                                                                                                                               |
 | ------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
