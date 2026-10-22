@@ -6,9 +6,9 @@
 - **規則：** 直接選取時定位；Next 同列不動、跨列才調整；手動滑動不拉回；完成只收鍵盤與操作列，保留剛才欄位的位置。禁止產品使用原生 alert／confirm／prompt／離頁提示。
 - **保留：** 已接受的操作列、群組新增／編輯與外觀。使用者已取消底部留白優化，勿順便修改。
 - **最新回報：** 2026-10-23 Product Owner 驗收 release 76 再退回；01:16:42 影片第一動作正常，完成後點第二動作，整個輸入區及 dock 向上偏移；01:15:21 影片完成後先跳到下方再返回。P01 操作列重新開啟驗收，不能保留為無條件通過。影片沒有原生事件 trace，不能把受控案例冒稱裝置根因已證實。
-- **發布基線（已被實機退回）：** [PR #97](https://github.com/YambossMaster/Gym-Assistent/pull/97) 候選 `ff89089` 合併為應用 Main **`c501ee5f0d7d43802303230168f5c526ee06c1c4`**，完整 CI 後部署 **release 76**。只改數值輸入 viewport controller 與回歸測試，保留既有 UI、資料與尾部留白。Product Owner 已明示授權完整驗證後直接部署；其手機驗收已收到上列失敗回報。
-- **本輪六項工作盤點：** ①版本／交接、②影片、③原因矩陣、④紅綠修正完成；⑤完整清單回歸完成，⑥exact-SHA CI／部署／讀回待完成。分支 `codex/m11-input-reentry-geometry`，base `fd92478`、應用基線 `c501ee5`。使用者已授權修正、完整驗證及部署，無待決產品選項。
-- **唯一 Next：** 本機工程 E01–E07 已完成，接續 E08 exact-SHA PR／Main CI，通過後部署；目前正式站仍 release 76／buildId `local-1792687925378`，不是新候選。不得以最終座標回正代替關閉動畫每一幀穩定。
+- **本輪已部署：** [PR #99](https://github.com/YambossMaster/Gym-Assistent/pull/99) 候選 494aa0a 合併為應用 Main **db1a8f59bf1ff4bc65fa0fd0d6ea153382b50669**，完整 CI 後部署 **release 77**。本輪修正關閉每幀位置、原生 blur 空窗、幾何進度交接及 frame／dock 獨立原點；保留已接受外觀與尾部空間。實機未宣告通過。
+- **本輪六項工作盤點：** ①版本／交接、②影片、③原因矩陣、④紅綠修正、⑤完整清單回歸、⑥exact-SHA CI／部署／獨立讀回全部完成。工程 E01–E08 完成；手機 P01–P07／F 實機驗收仍開放。使用者已授權完整驗證及直接部署，無待決產品選項。
+- **唯一 Next：** Product Owner 從多工關閉再開手機 PWA，依第4節驗單人與群組兩檢視，優先重演連續跨動作與完成；目前正式站 release 77／buildId local-1792694323802。不清網站資料，不以最終座標回正代替關閉中途穩定。
 
 ## 2. 下一個 Agent 先做什麼
 
@@ -43,7 +43,7 @@
 - [x] E05 15時序、36關閉／重進競態、延後Next與Shell首末6案；檢查中途穩定，不只終點。
 - [x] E06 桌機Enter、320px、教練筆記、站內確認取消／接受與草稿恢復。
 - [x] E07 手動滑動不追、同欄重點、關閉／新gesture／unmount停止觀測、穩定不重寫style；卸載不遺留鎖定。
-- [ ] E08 affected格式／型別／unit、exact-SHA PR／Main CI、部署與獨立版本／三入口讀回。
+- [x] E08 affected格式／型別／unit、exact-SHA PR／Main CI、部署與獨立版本／三入口讀回。
 
 本輪沒有新增產品功能；補中途畫面與連續跨動作是第③／⑤項原定排查所需，不能把每個故障注入計成已排除一種裝置原因。WebKit [207049](https://bugs.webkit.org/show_bug.cgi?id=207049) 與 [311821](https://bugs.webkit.org/show_bug.cgi?id=311821) 支持檢查固定定位原點；[254861](https://bugs.webkit.org/show_bug.cgi?id=254861) 記錄可見位置與觸控不同步，故保留hit斷言；均不是此手機的根因證明。
 
@@ -103,17 +103,17 @@ Product Owner追加要求後，暫緩發布，在獨立本機埠載入release76�
 
 ## 4. 唯一檢查清單
 
-工程欄包括 release 76 重查結果，見第 3／6 節；**方框只代表實機驗收**。`[ ]` 是未可靠證明通過，保留 release 74／75 失敗，不因工程綠燈自動勾選。目前待驗版本為已部署 release 76。
+工程欄包括 release 77 重查結果，見第 3／6 節；**方框只代表實機驗收**。`[ ]` 是未可靠證明通過，保留 release 74／75 失敗，不因工程綠燈自動勾選。目前待驗版本為已部署 release 77。
 
 | 實機項目                   | 通過條件                                                                                     | 工程結果／實機狀態                                                      |
 | -------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [ ] P01 操作列             | 高度及可點位置穩定，不閃爍、不誤觸底層；跨動作連續重進亦成立。                               | release76 第二動作實機 FAIL；重新開啟驗收。                             |
-| [ ] 基本輸入（F01–F03）    | 每次選取都有操作列；Next 精確進一欄、鍵盤保持開啟；最後欄才完成。                            | 工程通過；release 76 待實機。                                           |
-| [ ] P02／P05／P06 可見性   | 首、中、末列及任意起始高度直接點選；整個 input 不被操作列、頁首或自身容器裁切。              | 九點／容器檢查通過；74 選取曾 FAIL，release 76 待實機。                 |
-| [ ] P03 前進／滑動         | 同列不動、跨列一次到位；手動滑動不追，下一次選取再定位；連按不漏進或跳兩欄。                 | 工程通過；release 76 待實機。                                           |
-| [ ] P04 完成／重進         | 完成或原生關閉後仍見剛才欄位、不回頂；涵蓋動畫、晚到事件、兩種 blur／resize 次序及立即重進。 | 時序完成位移 0px；74 曾 FAIL，release 76 待實機。                       |
+| [ ] P01 操作列             | 高度及可點位置穩定，不閃爍、不誤觸底層；跨動作連續重進亦成立。                               | release76 第二動作實機 FAIL；本輪216循環工程通過，release 77 待實機。   |
+| [ ] 基本輸入（F01–F03）    | 每次選取都有操作列；Next 精確進一欄、鍵盤保持開啟；最後欄才完成。                            | 工程通過；release 77 待實機。                                           |
+| [ ] P02／P05／P06 可見性   | 首、中、末列及任意起始高度直接點選；整個 input 不被操作列、頁首或自身容器裁切。              | 九點／容器檢查通過；74 選取曾 FAIL，release 77 待實機。                 |
+| [ ] P03 前進／滑動         | 同列不動、跨列一次到位；手動滑動不追，下一次選取再定位；連按不漏進或跳兩欄。                 | 工程通過；release 77 待實機。                                           |
+| [ ] P04 完成／重進         | 完成或原生關閉後仍見剛才欄位、不回頂；涵蓋動畫、晚到事件、兩種 blur／resize 次序及立即重進。 | 本輪兩種關閉逐幀位移0px；74／76 曾 FAIL，release 77 待實機。            |
 | [ ] 保存／模式（F04、F12） | 逐欄輸入不同值、保存重開、切群組檢視，不丟值、不改錯學生；三模式八格式皆適用。               | 24 組／189 欄 fixture 保存通過；非新的正式 DB 證據。                    |
-| [ ] P07 站內確認           | 移除、完成群組、改缺席、衝突重載用站內視窗；取消保留、接受一次；無原生離頁提示。             | policy／6 組流程／2 組草稿恢復通過；release 76 待手機確認，可只按取消。 |
+| [ ] P07 站內確認           | 移除、完成群組、改缺席、衝突重載用站內視窗；取消保留、接受一次；無原生離頁提示。             | policy／6 組流程／2 組草稿恢復通過；release 77 待手機確認，可只按取消。 |
 | [ ] 同伴流程               | 桌機 Enter 正常且無手機 dock／鎖頁；320px 不遮擋；教練筆記切換、工具列與保存正常。           | 工程通過；手機同伴待驗。                                                |
 
 若再改碼，先驗基本輸入，再驗全部受影響歷史情境；不可只交出新測試數量或一張穩定後截圖。
@@ -137,7 +137,10 @@ Product Owner追加要求後，暫緩發布，在獨立本機埠載入release76�
 
 ## 6. 證據與維護規則
 
-- **CI攔截及處置：** PR CI #373在舊CSS文字斷言失敗，要求dock top只能使用原公式，未允許本輪的實測原點補償；更新斷言保留fixed／viewport公式／translateY／flex並明確要求補償項，9項mobile shell測試及affected131通過。應用程式未因此修改，所有瀏覽器證據仍對應同一runtime。保留失敗紀錄，等待新head完整CI。
+- **本輪 exact-SHA 發布：** [PR #99](https://github.com/YambossMaster/Gym-Assistent/pull/99) head 494aa0afbf27e00a50f13adaaa349d3fc5dd39b5／[PR CI #374](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39830458841) 成功後合併為 db1a8f59bf1ff4bc65fa0fd0d6ea153382b50669；候選與 Main Web diff 空。[Main CI #375](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39831223666) 必要五jobs全成功（root41／API402／Web510），完整check/build、browser、migration dry-run、Production preview、deploy/readiness通過。無新migration。
+- **本輪獨立讀回：** Fly release 77 complete、machine started、GH_SHA=db1a8f59bf1ff4bc65fa0fd0d6ea153382b50669、service passing；/api/ready、/、/login 200。公開／origin 的buildId與assets相同，首頁引用 /assets/index-BOtnx1RO.js，入口JS SHA256 e787ac86b8c2c12e3613fc627b9f68da86e28718c8049dd55d57b06cf97d4295；buildId local-1792694323802。證據 output/github/m11-r77-production-readback.json。候選本機證據凍結 output/pwa-input-audit/r77/494aa0a/，含SHA256 manifest。部署成功不等於原生iPhone驗收。
+
+- **CI攔截及處置：** PR CI #373在舊CSS文字斷言失敗，要求dock top只能使用原公式，未允許本輪的實測原點補償；更新斷言保留fixed／viewport公式／translateY／flex並明確要求補償項，9項mobile shell測試及affected131通過。應用程式未因此修改，所有瀏覽器證據仍對應同一runtime。保留失敗紀錄；最終head 494aa0a的PR／Main完整CI已通過，見本節發布證據。
 - **本輪最終本機驗證：** `npm run check:affected -- c501ee5` exit 0，格式／whitespace／Web typecheck、9檔131測試通過。三模式新重現 Chrome／WebKit **9/9**；兩種關閉 **6/6、108動畫取樣位移0px**，另覆蓋刻意放慢且超過舊固定期限的關閉。Chrome／WebKit 連續重進各 **108/108**。24格式／189欄、Chrome首中末36、WebKit舊時序12、temporal15、race36、延後Next27、Shell6、同伴4、站內確認6、真IndexedDB草稿恢復2通過。生命週期：活動30frames、穩定0次style寫入、完成後0新增frame。這是實際瀏覽器＋合成鍵盤幾何／隔離API，不是原生手機或新的正式DB驗收。
 - **release 76 歷史發布前驗證：** `npm run check:affected -- ea853e8` exit 0，changed formatting／whitespace／Web typecheck、6 檔 110 項測試通過。Chrome 新時序首中末欄 **36/36**、WebKit 新時序 **12/12** 及按學生 temporal **5/5**；三模式八格式 **24/24、189 欄**精確 Next／保存重開／模式切換／手動滑動通過，既有 temporal **15/15**、session race **36/36**、Shell **6/6**、桌機／320px／筆記 **4 組**通過。Frame 生命週期實測：穩定時 500ms **0 次 style 寫入**，完成後 **0 個新增觀測 frame**。結果凍結在 `output/pwa-input-audit/ff89089/`，含 SHA256 manifest；不宣稱手機 OSK 通過。
 - **release 76 歷史 exact-SHA CI：** PR #97 head `ff890895267c1c122cdb7ab4391ccb69fefb71b5` 的 [PR CI #369](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39815531198) 通過後合併。應用 Main `c501ee5f0d7d43802303230168f5c526ee06c1c4` 與候選 Web diff 為空；[Main CI #370](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39816970871) 五 jobs 全 success（root 41／API 402／Web 504、完整 check/build、browser、migration dry-run、Production preview、部署與 readiness）。無新 migration。GitHub 當時 Actions／PR 狀態傳播延遲，等待保護檢查成功後才合併，未跳過 gate。
