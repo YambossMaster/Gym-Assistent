@@ -7250,6 +7250,7 @@ textarea:focus {
 
 /* M7.5 Session workspace: route-scoped FORM workbench convergence. */
 .session-workspace {
+  --session-keyboard-inset: 0px;
   min-height: 100vh;
   padding-bottom: 76px;
   background: #eae8df;

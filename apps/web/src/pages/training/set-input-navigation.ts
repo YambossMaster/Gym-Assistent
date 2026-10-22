@@ -17,6 +17,22 @@ export function getSetInputScrollAdjustment(inputBottom: number, dockTop: number
   return Math.max(0, Math.ceil(inputBottom - dockTop + 12))
 }
 
+export function getSetInputDockInset({
+  layoutHeight,
+  visualHeight,
+  visualOffsetTop
+}: {
+  layoutHeight: number
+  visualHeight: number
+  visualOffsetTop: number
+}) {
+  const keyboardHeight = layoutHeight - visualHeight
+  if (keyboardHeight <= 120) return 0
+  // A fixed element is positioned in the layout viewport. The keyboard edge is
+  // the *bottom* of the visual viewport, which can pan without changing height.
+  return Math.max(0, Math.round(layoutHeight - visualOffsetTop - visualHeight))
+}
+
 export function describeTrainingSetInput(target: EventTarget | null) {
   if (!(target instanceof HTMLInputElement) || !target.matches('.training-set-card input'))
     return null

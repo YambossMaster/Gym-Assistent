@@ -1,6 +1,7 @@
 import { MeasurementInputs } from './MeasurementInputs'
 import {
   advanceTrainingSetInput,
+  getSetInputDockInset,
   getSetInputScrollAdjustment,
   selectTrainingSetValue
 } from './set-input-navigation'
@@ -16,7 +17,7 @@ import {
 import { MultiMetricTrend } from './MultiMetricTrend'
 import { PerformanceTrend } from './PerformanceTrend'
 import { keepNoteBlockVisible, MobileNoteEditor, shouldContainNoteTouch } from './MobileNoteEditor'
-import { getNoteFocusViewport, getNoteKeyboardInset } from './note-viewport'
+import { getNoteFocusViewport } from './note-viewport'
 import { SetInputAdvanceDock } from './SetInputAdvanceDock'
 import { adoptTrainingDraft } from './conflict-recovery'
 import {
@@ -59,7 +60,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode
@@ -385,7 +385,6 @@ function TrainingEditor({
     [classInfoExpanded, setClassInfoExpanded] = useState(true),
     [noteFocused, setNoteFocused] = useState(false),
     [activeSetInput, setActiveSetInput] = useState<HTMLInputElement | null>(null),
-    [keyboardInset, setKeyboardInset] = useState(0),
     [picker, setPicker] = useState(false),
     [offline, setOffline] = useState(!navigator.onLine),
     [storageError, setStorageError] = useState(false),
@@ -425,7 +424,6 @@ function TrainingEditor({
   )
   const touchStartY = useRef<number | null>(null)
   const noteTouch = useRef<{ x: number; y: number; canvas: HTMLElement | null } | null>(null)
-  const keyboardFocused = activeSetInput !== null
   useLayoutEffect(() => {
     const root = document.documentElement
     root.classList.toggle('is-session-note-focused', noteFocused)
@@ -507,43 +505,27 @@ function TrainingEditor({
       noteTouch.current = null
     }
   }, [noteFocused])
-  useEffect(() => {
-    if (!keyboardFocused) {
-      workspaceRef.current?.style.setProperty('--session-keyboard-inset', '0px')
-      setKeyboardInset(0)
+  useLayoutEffect(() => {
+    const workspace = workspaceRef.current
+    if (!workspace) return
+    if (!activeSetInput) {
+      workspace.style.setProperty('--session-keyboard-inset', '0px')
       return
     }
     const viewport = window.visualViewport
-    const updateInset = () => {
-      const nextInset = getNoteKeyboardInset({
-        layoutHeight: window.innerHeight,
-        visualHeight: viewport?.height ?? window.innerHeight,
-        visualOffsetTop: viewport?.offsetTop ?? 0
-      })
-      // Apply the keyboard geometry synchronously during the native animation.
-      // React state follows for declarative consistency, but the dock does not wait for a render.
-      workspaceRef.current?.style.setProperty('--session-keyboard-inset', `${nextInset}px`)
-      setKeyboardInset(nextInset)
-    }
-    updateInset()
-    viewport?.addEventListener('resize', updateInset)
-    viewport?.addEventListener('scroll', updateInset)
-    window.addEventListener('resize', updateInset)
-    return () => {
-      viewport?.removeEventListener('resize', updateInset)
-      viewport?.removeEventListener('scroll', updateInset)
-      window.removeEventListener('resize', updateInset)
-    }
-  }, [keyboardFocused])
-  useEffect(() => {
-    if (!activeSetInput) return
-    const viewport = window.visualViewport
     let frame = 0
-    const keepInputAboveDock = () => {
+    const alignInputAndDock = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
-        if (!activeSetInput.isConnected || document.activeElement !== activeSetInput) return
-        const dock = workspaceRef.current?.querySelector<HTMLElement>('.set-input-advance-dock')
+        if (!activeSetInput.isConnected) return
+        const inset = getSetInputDockInset({
+          layoutHeight: window.innerHeight,
+          visualHeight: viewport?.height ?? window.innerHeight,
+          visualOffsetTop: viewport?.offsetTop ?? 0
+        })
+        workspace.style.setProperty('--session-keyboard-inset', `${inset}px`)
+        if (document.activeElement !== activeSetInput) return
+        const dock = workspace.querySelector<HTMLElement>('.set-input-advance-dock')
         if (!dock) return
         const adjustment = getSetInputScrollAdjustment(
           activeSetInput.getBoundingClientRect().bottom,
@@ -552,13 +534,15 @@ function TrainingEditor({
         if (adjustment) window.scrollBy({ top: adjustment, behavior: 'instant' })
       })
     }
-    keepInputAboveDock()
-    viewport?.addEventListener('resize', keepInputAboveDock)
-    viewport?.addEventListener('scroll', keepInputAboveDock)
+    alignInputAndDock()
+    viewport?.addEventListener('resize', alignInputAndDock)
+    viewport?.addEventListener('scroll', alignInputAndDock)
+    window.addEventListener('resize', alignInputAndDock)
     return () => {
       cancelAnimationFrame(frame)
-      viewport?.removeEventListener('resize', keepInputAboveDock)
-      viewport?.removeEventListener('scroll', keepInputAboveDock)
+      viewport?.removeEventListener('resize', alignInputAndDock)
+      viewport?.removeEventListener('scroll', alignInputAndDock)
+      window.removeEventListener('resize', alignInputAndDock)
     }
   }, [activeSetInput])
   const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)
@@ -1426,7 +1410,6 @@ function TrainingEditor({
     <section
       ref={workspaceRef}
       className={`session-workspace is-${mobileTab}-tab ${classInfoExpanded ? 'is-context-expanded' : 'is-context-collapsed'}${noteFocused ? ' is-note-focused' : ''}${activeSetInput ? ' is-set-input-focused' : ''}`}
-      style={{ '--session-keyboard-inset': `${keyboardInset}px` } as CSSProperties}
       onTouchStartCapture={(event) => {
         touchStartY.current = event.touches[0]?.clientY ?? null
       }}

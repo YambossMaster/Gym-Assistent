@@ -76,7 +76,6 @@ describe('mobile app shell behavior', () => {
       /root\.classList\.toggle\('is-session-note-focused', noteFocused\)/
     )
     expect(trainingWorkspace).toContain("window.addEventListener('session-note-focus-exit'")
-    expect(trainingWorkspace).toContain('const keyboardFocused = activeSetInput !== null')
     expect(trainingWorkspace).not.toContain('session-note-focus-actions')
     expect(workspace).toContain("window.dispatchEvent(new Event('session-note-focus-exit'))")
     expect(styles).toMatch(
