@@ -1,13 +1,13 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `9447eb72c0968610a360dddfe978053cb3429630` and the M11 stable keyboard surface release.
+> `a8f298d991c42e4c00df1d089258e00be5b11595` and the M11 input/tab handoff correction release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
-## M11 release 71 失敗後的修正與發布（2026-10-22，分支待整合）
+## M11 release 72 已部署，安裝 iPhone PWA 實機待驗（2026-10-22）
 
-Product Owner 在 release 71 交接後再次回報：按 Next 直接關閉鍵盤且不前進；點選輸入框有時沒有操作列。**release 71 基本功能未達標，不能因舊 CI／部署成功標為已修復。** 完整交接後已要求恢復工程；本地 `codex/m11-input-incident-status` 的 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md) 記錄本輪失敗迴圈、修正、97 項 affected checks 與受限的 WebKit touch 證據。最新明確授權為「先完整驗證，再部署」：本版 PR／Main checks 通過後才部署，部署後再驗安裝 iPhone PWA。目前尚未發布此候選，實機驗收仍開放。
+release 71 再次發生 Next 關鍵盤不前進、點欄偶無操作列，依完整交接清單恢復修正。Product Owner 要求「先完整驗證，再部署」；[PR #90](https://github.com/YambossMaster/Gym-Assistent/pull/90) 最終 head `e1bc835` 通過 [PR CI #354](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39762927100) full check/build（root 40／API 402／Web 481）、browser-ui 與 migration no-op，24 組／189 欄及桌機／320px／筆記同伴檢查通過後才合併。完整驗證另抓到數值→筆記切換失敗，已修正並重新驗證。Main `a8f298d991c42e4c00df1d089258e00be5b11595` 的 [CI #355](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39763437009) 五 jobs 全成功，Production history 無 pending，Fly **release 72** running image `GH_SHA` 相同、service passing；正式網域與 Fly origin 新版資產一致，獨立 `/api/ready`、`/`、`/login` 為 200。無 API／migration／Auth 改動。**Windows WebKit 使用模擬鍵盤與 API；安裝 iPhone PWA 原生鍵盤 F／K 驗收仍待 Product Owner，不能宣告問題結案。** 下一步、版本識別與全部清單見 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md)。
 
 ## Released baseline
 
