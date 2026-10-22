@@ -1,7 +1,7 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `e1dd82d5073ac855378353dbf7b7a6d3b67a2ea2` and the M11 PWA focus alignment release.
+> `1a5de19f3cc72d25e4ee05431f6fbca1b60dacdc` and the M11 PWA input motion release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
@@ -67,6 +67,8 @@ page showed both empty messages at 13px with matching color and line-height. The
 remaining device limitation. No migration or payment change was made.
 
 ## Active workstreams
+
+The Product Owner rejected release 69's keyboard gap and input jumps. [PR #86](https://github.com/YambossMaster/Gym-Assistent/pull/86) corrected keyboard-session geometry and reveals a covered next field before focus, with no delayed same-row recentering. It merged as Main `1a5de19f3cc72d25e4ee05431f6fbca1b60dacdc`; [Main CI #346](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39740002135) passed all five jobs and deployed the exact SHA to Fly release 70. Running image `GH_SHA` matches, service check passes, and independent `/api/ready`, `/` and `/login` returned 200. Local affected checks passed 73 tests; actual Workspace/CSS WebKit replay passed 72 fields across single and both group views, including 48 same-row advances without page scroll. **Physical installed-iPhone keyboard acceptance remains open** in the [correction workstream](status/M11-PWA-INPUT-CORRECTION.md).
 
 M11 Student Groups [PR #72](https://github.com/YambossMaster/Gym-Assistent/pull/72) merged as Main `2f1fb24`; [Main CI #325](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39648245349) passed verify, browser UI, Development dry-run and Production preview. [Production backup #25](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39648461248) passed isolated restore. [Production release #13](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39649133820) applied all four M11 migrations and deployed that exact SHA to Fly release 65. Supabase migration history and Fly image were read back; `/api/ready`, `/` and `/login` returned 200. Product Owner approved the browser preview and mobile layout; **installed mobile PWA acceptance remains open**. The [M11 workstream](status/STUDENT-GROUP.md) owns its exact handoff and limitations.
 
