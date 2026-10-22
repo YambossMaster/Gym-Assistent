@@ -504,6 +504,65 @@ it('aligns the next field again after the keyboard finishes resizing', async () 
   expect(rect.bottom).toBeLessThan(viewport.offsetTop + viewport.height - 88)
 })
 
+it('reads keyboard geometry that commits after resize without a second event', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  viewport.height = 740
+  await act(async () => inputs[0]!.focus())
+  viewport.dispatchEvent(new Event('resize'))
+  viewport.height = 400
+  viewport.offsetTop = 75
+  await frame()
+  await act(async () => vi.advanceTimersByTimeAsync(150))
+  expect(workspace.style.getPropertyValue('--session-input-height')).toBe('400px')
+  expect(workspace.style.getPropertyValue('--session-input-top')).toBe('75px')
+  expect(inputs[0]!.getBoundingClientRect().bottom).toBeLessThan(75 + 400 - 88)
+})
+
+it('does not move an already placed row down during keyboard expansion before blur', async () => {
+  const { inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  const before = inputs[0]!.getBoundingClientRect().top
+  viewport.height = 650
+  viewport.dispatchEvent(new Event('resize'))
+  await frame()
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(before)
+})
+
+it('repairs a late native reveal even if no scroll event follows the visual change', async () => {
+  const { workspace, inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  await act(async () => vi.advanceTimersByTimeAsync(500))
+  const before = inputs[0]!.getBoundingClientRect().top
+  workspace.scrollTop -= 300
+  await frame()
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(before)
+})
+
+it('does not cancel placement for tap jitter before the keyboard settles', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  touch(workspace, 'touchstart', 100, 300)
+  await act(async () => inputs[0]!.focus())
+  touch(workspace, 'touchmove', 100, 302)
+  const before = inputs[0]!.getBoundingClientRect().top
+  workspace.scrollTop -= 300
+  viewport.dispatchEvent(new Event('resize'))
+  await frame()
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(before)
+})
+
+it('preserves the last editing position when native blur scrolls before React cleanup', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  const input = inputs[0]!
+  await act(async () => input.focus())
+  await frame()
+  const before = input.getBoundingClientRect().top
+  input.addEventListener('blur', () => (workspace.scrollTop += 250), { once: true })
+  await act(async () => input.blur())
+  viewport.height = 844
+  await act(async () => viewport.dispatchEvent(new Event('resize')))
+  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 280 - before, behavior: 'instant' })
+})
+
 it('rechecks placement when native panning reports a window scroll rather than an inner scroll', async () => {
   const { workspace, inputs } = await setEditingGeometry()
   await act(async () => inputs[0]!.focus())

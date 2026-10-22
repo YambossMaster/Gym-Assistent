@@ -21,7 +21,18 @@ export function useSetInputViewport(
   const restingHeight = useRef(document.documentElement.clientHeight || window.innerHeight)
   const restingSpace = useRef<{ workspace: HTMLElement; margin: string } | null>(null)
   const stopDismissal = useRef<(() => void) | null>(null)
+  const touchOrigin = useRef<{ x: number; y: number } | null>(null)
   const enabled = input !== null && window.matchMedia('(max-width: 720px)').matches
+
+  useLayoutEffect(() => {
+    const workspace = workspaceRef.current
+    const start = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      touchOrigin.current = touch ? { x: touch.clientX, y: touch.clientY } : null
+    }
+    workspace?.addEventListener('touchstart', start, { passive: true })
+    return () => workspace?.removeEventListener('touchstart', start)
+  }, [workspaceRef])
 
   useLayoutEffect(() => {
     const workspace = workspaceRef.current
@@ -44,7 +55,11 @@ export function useSetInputViewport(
     let keyboardSeen = false
     let pending: HTMLInputElement | null = activeInput.current
     let lastInput = activeInput.current
-    let settle: ReturnType<typeof setTimeout> | undefined
+    let frame = 0
+    let disposed = false
+    let placementHeight = Infinity
+    let placementTop: number | null = null
+    let lastVisible: { input: HTMLInputElement; top: number } | null = null
     let blurCheck: ReturnType<typeof setTimeout> | undefined
     let height = viewport?.height ?? window.innerHeight
     let top = viewport?.offsetTop ?? 0
@@ -54,26 +69,37 @@ export function useSetInputViewport(
       const dockTop = workspace
         .querySelector('.set-input-advance-dock')
         ?.getBoundingClientRect().top
-      const delta = getSetInputFocusAdjustment({
+      const proposed = getSetInputFocusAdjustment({
         inputTop: rect.top,
         inputBottom: rect.bottom,
         visibleTop: top + 12,
         visibleBottom: dockTop && dockTop > top ? dockTop - 24 : top + height - 88
       })
+      // Shrinking the keyboard's available area can require a new anchor.
+      // Expansion (including the first frames of native Done) must not push a
+      // correctly placed row down and then save that shifted dismissal position.
+      if (placementTop === null || height < placementHeight) {
+        placementTop = rect.top - top - proposed
+        placementHeight = height
+      }
+      const delta = Math.round(rect.top - top - placementTop)
       if (Math.abs(delta) > 2) workspace.scrollTop += delta
     }
-    // Native focus can scroll *after* focus()/click, including after the first
-    // keyboard resize. Retain the focus intent until a manual scroll cancels it;
-    // recheck on geometry/scroll events and once after settling, never in a polling loop.
+    // Native reveal and viewport properties can commit after their event, or
+    // without another event. Observe the active session at paint time, reading
+    // fresh geometry; an old event snapshot plus a delayed align is insufficient.
     const recheck = () => {
-      clearTimeout(settle)
-      if (!pending) return
-      if (document.activeElement === pending) align(pending)
-      settle = setTimeout(() => {
-        if (pending && document.activeElement === pending) align(pending)
-      }, 100)
+      if (pending && document.activeElement === pending) align(pending)
+      // Capture while still editing. Native blur can move the scroller before
+      // React's cleanup runs; reading for the first time there saves the jump.
+      if (lastInput && document.activeElement === lastInput)
+        lastVisible = { input: lastInput, top: lastInput.getBoundingClientRect().top - top }
     }
     const place = (target: HTMLInputElement) => {
+      if (target.closest('.training-set-card') !== lastInput?.closest('.training-set-card')) {
+        placementTop = null
+        placementHeight = Infinity
+      }
       lastInput = target
       pending = target
       align(target)
@@ -81,7 +107,18 @@ export function useSetInputViewport(
     }
     const cancel = () => {
       pending = null
-      clearTimeout(settle)
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches?.[0]
+      const origin = touchOrigin.current
+      // A tap can contain a tiny touchmove. Only intentional movement gives
+      // scrolling to the user; otherwise a late keyboard reveal loses its owner.
+      if (!touch || !origin || Math.hypot(touch.clientX - origin.x, touch.clientY - origin.y) > 8)
+        cancel()
+    }
+    const setProperty = (property: string, value: string) => {
+      if (workspace.style.getPropertyValue(property) !== value)
+        workspace.style.setProperty(property, value)
     }
     const update = () => {
       const nextHeight = viewport?.height ?? window.innerHeight
@@ -103,18 +140,18 @@ export function useSetInputViewport(
       // Keep the last open geometry until blur or a real open-keyboard sample.
       if (keyboardSeen && !open && setInputFocused) {
         top = nextTop
-        workspace.style.setProperty('--session-input-top', `${top}px`)
+        setProperty('--session-input-top', `${top}px`)
         recheck()
         return
       }
       height = nextHeight
       top = nextTop
       keyboardSeen ||= open
-      workspace.style.setProperty('--session-input-top', `${top}px`)
-      workspace.style.setProperty('--session-input-height', `${height}px`)
+      setProperty('--session-input-top', `${top}px`)
+      setProperty('--session-input-height', `${height}px`)
       // Internal padding, never document padding; the final row can reach the
       // same anchor as the first without moving the keyboard's containing page.
-      workspace.style.setProperty('--session-keyboard-space', `${Math.ceil(height)}px`)
+      setProperty('--session-keyboard-space', `${Math.ceil(height)}px`)
       recheck()
     }
     update()
@@ -125,6 +162,12 @@ export function useSetInputViewport(
     // Preserve the content position while changing the scroll owner.
     workspace.scrollTop = Math.max(0, -originalTop + top)
     controller.current = { place, cancel }
+    const observe = () => {
+      if (disposed) return
+      update()
+      frame = requestAnimationFrame(observe)
+    }
+    frame = requestAnimationFrame(observe)
     viewport?.addEventListener('resize', update)
     viewport?.addEventListener('scroll', update)
     window.addEventListener('resize', update)
@@ -137,9 +180,11 @@ export function useSetInputViewport(
     }
     workspace.addEventListener('focusout', checkAfterBlur)
     workspace.addEventListener('scroll', recheck, { passive: true })
-    workspace.addEventListener('touchmove', cancel, { passive: true })
+    workspace.addEventListener('touchmove', onTouchMove, { passive: true })
     workspace.addEventListener('wheel', cancel, { passive: true })
     return () => {
+      disposed = true
+      cancelAnimationFrame(frame)
       cancel()
       clearTimeout(blurCheck)
       controller.current = null
@@ -150,13 +195,17 @@ export function useSetInputViewport(
       window.removeEventListener('scroll', update)
       workspace.removeEventListener('focusout', checkAfterBlur)
       workspace.removeEventListener('scroll', recheck)
-      workspace.removeEventListener('touchmove', cancel)
+      workspace.removeEventListener('touchmove', onTouchMove)
       workspace.removeEventListener('wheel', cancel)
       // The viewport lock belongs to this effect, not React's focused class.
       // Read the last content position before releasing it. Otherwise removing
       // overflow resets scrollTop before cleanup and jumps back to the entry row.
       const anchor = workspace.querySelector<HTMLInputElement>('input:focus') ?? lastInput
-      const anchorTop = anchor?.isConnected ? anchor.getBoundingClientRect().top - top : null
+      const anchorTop = anchor?.isConnected
+        ? lastVisible?.input === anchor
+          ? lastVisible.top
+          : anchor.getBoundingClientRect().top - top
+        : null
       const restoreY = originalY + workspace.scrollTop + originalTop - top
       // Dismissal must not bring a sticky heading back over the row that was
       // just edited. It remains in normal flow and can be reached by scrolling up.
