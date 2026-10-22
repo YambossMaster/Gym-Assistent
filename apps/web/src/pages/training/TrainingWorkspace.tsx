@@ -410,14 +410,8 @@ function TrainingEditor({
   }, [plan.data?.tier])
   const noteRef = useRef<HTMLTextAreaElement | null>(null)
   const workspaceRef = useRef<HTMLElement | null>(null)
-  const setInputViewport = useSetInputViewport(workspaceRef, activeSetInput)
-  const setInputDockGesture = useRef(false)
-  const setInputDockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(
-    () => () => {
-      if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
-    },
-    []
+  const setInputViewport = useSetInputViewport(workspaceRef, activeSetInput, () =>
+    setActiveSetInput(null)
   )
   const touchStartY = useRef<number | null>(null)
   const noteTouch = useRef<{ x: number; y: number; canvas: HTMLElement | null } | null>(null)
@@ -1372,6 +1366,7 @@ function TrainingEditor({
       }}
       onTouchEndCapture={(event) => {
         if (
+          !activeSetInput &&
           touchStartY.current !== null &&
           touchStartY.current - (event.changedTouches[0]?.clientY ?? touchStartY.current) > 48
         )
@@ -1384,6 +1379,16 @@ function TrainingEditor({
           event.target.matches('.training-set-card input')
         )
           setActiveSetInput(event.target)
+      }}
+      onClickCapture={(event) => {
+        if (
+          activeSetInput &&
+          event.target instanceof Element &&
+          !event.target.closest('.training-set-card input, .set-input-advance-dock')
+        )
+          setActiveSetInput(null)
+        else if (event.target instanceof HTMLInputElement && event.target === activeSetInput)
+          setInputViewport.placeInput(event.target)
       }}
       onBlurCapture={(event) => {
         if (
@@ -1399,18 +1404,18 @@ function TrainingEditor({
           event.target instanceof HTMLInputElement &&
           event.target.matches('.training-set-card input')
         ) {
+          // iOS may report a null relatedTarget between two native field
+          // focuses. Only an actual destination or keyboard closure ends editing.
           if (
-            setInputDockGesture.current ||
-            (event.relatedTarget instanceof Element &&
-              event.relatedTarget.closest('.set-input-advance-dock'))
-          )
-            return
-          setActiveSetInput(
             event.relatedTarget instanceof HTMLInputElement &&
-              event.relatedTarget.matches('.training-set-card input')
-              ? event.relatedTarget
-              : null
+            event.relatedTarget.matches('.training-set-card input')
           )
+            setActiveSetInput(event.relatedTarget)
+          else if (
+            event.relatedTarget instanceof Element &&
+            !event.relatedTarget.closest('.set-input-advance-dock')
+          )
+            setActiveSetInput(null)
         }
       }}
     >
@@ -1931,28 +1936,6 @@ function TrainingEditor({
         onBeforeAdvance={setInputViewport.prepareFocus}
         onGestureStart={() => {
           setInputViewport.cancelPlacement()
-          setInputDockGesture.current = true
-          if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
-        }}
-        onGestureRelease={() => {
-          setInputDockTimer.current = setTimeout(() => {
-            setInputDockGesture.current = false
-            if (
-              !(document.activeElement instanceof HTMLInputElement) ||
-              !document.activeElement.matches('.training-set-card input')
-            )
-              setActiveSetInput(null)
-          }, 500)
-        }}
-        onGestureEnd={() => {
-          setInputDockGesture.current = false
-          if (setInputDockTimer.current) clearTimeout(setInputDockTimer.current)
-          setInputDockTimer.current = null
-          if (
-            !(document.activeElement instanceof HTMLInputElement) ||
-            !document.activeElement.matches('.training-set-card input')
-          )
-            setActiveSetInput(null)
         }}
       />
       <footer className="session-bottom">
