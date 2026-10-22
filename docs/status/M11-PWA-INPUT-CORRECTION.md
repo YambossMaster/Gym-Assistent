@@ -1,8 +1,42 @@
 # M11 學生群組與手機 PWA 輸入：完整問題紀錄及接手檢查清單
 
-## 2026-10-22 最終發布：release 74 已部署，完整工程清單重跑通過；原生 iPhone 待驗
+## 2026-10-22 21:46 再次實機退回：選取／完成偶發失位、原生訊息禁止（目前工作）
 
-**本節為目前狀態。五項工程／交付工作 5/5 完成，沒有宣告原生 iPhone 或 M11 結案。** 新版正式入口：[Form Coach Desk](https://formcoachdesk.com)。應用 SHA **89e08b6270e7287a878887d13851a8f675f2c863**，Fly **release 74 complete**；公開 buildId **local-1792673603571**，入口 **/assets/index-DUHrX0EU.js**。先從多工關閉已安裝 PWA 再重開，保留網站資料與既有草稿；現在只需實機重驗「任意高度直接選取、Next 同列／跨列、完成保持原位置」及原 F／K 清單。
+**本節取代下方 release 74「工程完成」的當前結論。** Product Owner 的 `21-46-06`（35.63s）及 `21-45-29`（19.24s）錄影再次證明選取偶發不可見、完成後回頂；IMG_0655 顯示移除動作仍使用原生 confirm。原生 P02／P04／P05 重新標為 **FAIL**，其餘未證明的實機項目維持未勾選。操作列與 input 外框沿用已接受版本；**底部留白優化已由使用者明確取消，本輪不回收留白**。
+
+工作樹 `output/m11-student-group`，分支 `codex/m11-input-session-race`，基底 Main `3874bbb0dc92bb3e4e8746a5918786a1dae5dbb2`；正式應用仍為 release 74 / `89e08b6`。既有「完整驗證後部署」授權適用於本次繼續修正；順序為重現、修正、全部受影響驗證、exact-SHA CI、合併／部署／讀回，不能因單一模擬通過提前部署。
+
+### 本輪有界清單（共五項）
+
+1. **完成：影片與可失敗的重現。** 抽幀在忽略的 `output/playwright/video-review/race-{long,short}.jpg`。長片約 19–22s 完成後頁面回頂／大片空白，再重新進入；短片有選取低位／遮擋。沒有原生 event trace，不能聲稱已唯一辨識 iPhone OS 缺陷。以實際 Workspace／CSS 注入晚到 document reset：舊版最後欄 top **163.5 → 1983.5**，位移 **1820px**、window scroll=0；候選同序列 **163.5 → 163.5 / 0px**（`m11-close-race-repro.js`）。
+2. **完成修正及工程重查：數值 session 時序。** 鍵盤已開且 input 仍聚焦時，暫時全高 viewport 不再把輸入 surface 撐大；window scroll 也重查仍有效的焦點意圖。完成交還 document 後，僅在最長 2.5s 的關閉交接內修復晚到 scroll／resize，以最後欄位的螢幕相對位置為準；新 pointerdown／touchstart／wheel、重進或 unmount 立即取消。沒有常駐輪詢、沒有移除既有尾部空間。三個正式 regression 已在 pristine Main 各自 FAIL，再修至 PASS。
+3. **完成修正及工程重查：禁止產品原生訊息。** 訓練五處 confirm（單人／群組移除動作、群組完成扣堂、已完成群組改缺席、捨棄衝突草稿）統一使用既有站內 Confirmation。全站掃描另找出 Training 與 ExportDownloads 的 beforeunload 原生離頁訊息，移除 listener，保留 IndexedDB 草稿／outbox／autosave 及匯出中狀態／取消。這是同一禁止原生訊息規則的第二 consumer，非新功能或 Roadmap 擴張。舊版四項正式測試全部 FAIL；AST 掃描確實找到五個 confirm 及兩個 listener。確認取消不得刪資料／扣堂，確認接受只執行一次；補上全站 policy regression，防止再引入原生 alert／confirm／prompt／beforeunload。
+4. **全部通過：重跑受影響檢查。** 三模式八格式／189欄／保存 reload、Next 與全框九點、首次／末欄、延後 scroll、分段 viewport／pan、快速完成重進、手動取消、桌機／320px／筆記、Shell 邊界；新站內確認取消／接受與離線草稿 reload。Windows WebKit／模擬 viewport／攔截 API 證據不等於 iPhone OSK 或新的 DB／扣堂證據。
+5. **待驗證後交付：** affected check、exact-head PR／Main CI、Fly 同 SHA／資產／健康讀回；部署後交付可辨識版本給實機重驗。不能把工程 PASS 勾成原生 PWA PASS。
+
+**目前 Next：** 已完成npm ci（Web TypeScript7.0.2／root工具5.9.3），policy移至scripts並重新先紅後綠。最終鎖定環境affected exit 0：format／whitespace／Web typecheck、10檔126/126 Web測試、23/23工作流程測試，另獨立policy 1/1通過。產品碼與2757b1a相同；接續在同PR提交工具相容修正、exact-head完整CI，同時鎖定環境重跑受影響瀏覽器；兩者全部成功後才合併／部署／讀回。無需 Product Owner 操作真實課堂或提供新帳號。未改API／schema／Auth／群組建立介面／CSS／依賴版本／部署設定。
+
+外部資料只用於設計可失敗的時序重播：[WebKit #254861](https://bugs.webkit.org/show_bug.cgi?id=254861)、[#226689](https://bugs.webkit.org/show_bug.cgi?id=226689)；[MDN beforeunload](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event) 確認 preventDefault 會觸發瀏覽器訊息，不能在瀏覽器關閉事件中以非同步站內對話框取代。既有本地草稿／站內操作確認分別處理其可恢復與需決定的操作。
+
+### 本輪瀏覽器重新驗證（目前候選，未部署）
+
+| 範圍             | 實際結果與界線                                                                                                                                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 三模式 × 八格式  | 24/24，189欄逐欄不同值／保存 reload、整框九點命中、不超出容器、同列不動、72次直接選取、16次群組切換全部通過。                                                                                                                                                                                                 |
+| 既有完整時間序列 | 15/15 temporal（分段高度／pan、延後捲動、手動取消、再點選、兩種原生關閉順序），完成位移均0px；27欄 Next 延後捲動通過；Shell 首末欄6/6、完成後全框命中。1440px Enter／保存、不鎖 body、不顯示手機 dock；320px群組兩模式；390px數值→筆記／工具／保存皆通過。                                                    |
+| 新增關閉競態壓力 | `m11-session-race-{solo,timeline,student}.js` 共36/36：晚到 document reset 先／後 viewport、0／80／350／650ms 間隔、全高 transient、viewport pan、完成／原生 blur、關閉未完立即重進。一般關閉位移均0px；重進欄全框命中，手動 gesture 後不再拉回。這是受控事件重播，不是iPhone event telemetry。               |
+| 站內確認         | 新獨立 WebKit context 未 suppress beforeunload，原生API替身遇呼叫即失敗。6/6組通過：單人／群組兩檢視移除取消／接受、完成群組取消／只接受一次、已完成改缺席取消／接受、衝突取消保留123／接受刪本地稿並reload至伺服器fixture40。逐案檢查視窗完整可見、焦點及畫面；只攔截fixture API，不作新的正式扣堂／DB證據。 |
+| 未同步草稿／離頁 | 輸入123後100ms，以及2.5s已送出未回應兩案：真 IndexedDB已有草稿、beforeunload不被preventDefault、無原生API呼叫，真reload後恢復123及站內恢復提示，2/2通過。保留既有store／outbox，不要求清網站資料。                                                                                                            |
+
+JSON證據在忽略的 `output/playwright/m11-placement-{matrix,temporal,next,shell,peer}-results.json`、`m11-session-race-results.json`、`m11-inapp-dialogs-results.json`、`m11-draft-reload-results.json`。先前多瀏覽器並行時一個既有矩陣unit超過5s，未算通過；最後關閉診斷瀏覽器後以正式 affected preflight 統一重跑。原生實機 P02／P04／P05 仍為 FAIL／待新版驗收，沒有自動勾選。
+
+### 遠端 CI 攔下的工具相容問題（未合併／未部署）
+
+PR #95 head 2757b1a 的 PR CI #364 / run 39797381313：browser 7/7通過，API402通過，但Web型別檢查FAIL。原因為本機node_modules實際提供TypeScript5.9，Web lock指定7.0.2；新增policy測試呼叫7.0不提供的JS compiler API。這不是產品回歸通過證據，亦不能用本機127/127掩蓋。第4／5項重新開啟：執行鎖定npm ci，將全站AST policy搬至既有儲存庫script層（root/API既有5.9 JS compiler），不改依賴／產品碼；重跑policy紅綠及affected、再送新exact-head full CI。
+
+## 2026-10-22 release 74 發布快照（歷史，已由21:46實機退回）
+
+**本節為release 74發布時快照。五項工程／交付工作當時5/5完成，之後已由21:46回報重新開啟；沒有宣告原生 iPhone 或 M11 結案。** 新版正式入口：[Form Coach Desk](https://formcoachdesk.com)。應用 SHA **89e08b6270e7287a878887d13851a8f675f2c863**，Fly **release 74 complete**；公開 buildId **local-1792673603571**，入口 **/assets/index-DUHrX0EU.js**。先從多工關閉已安裝 PWA 再重開，保留網站資料與既有草稿；現在只需實機重驗「任意高度直接選取、Next 同列／跨列、完成保持原位置」及原 F／K 清單。
 
 - **修正與根因：** 選取／Next 保留焦點定位意圖以處理稍後的 native scroll／resize，手動滑動立即取消；完成前讀取最後欄位幾何再解除 scroll owner，只補實際不足的尾部空間，頁首不返回遮擋。另解除 measurement／RPE input 的全域 52px minimum 與 38px 外框衝突，保留既有外框和已接受 dock。先前中心點檢查漏掉 input 上緣被自身容器裁切，現已加入全框九點及 blur 後容器範圍。
 - **完整重新驗證：** 最終 CSS 候選 e1e6a390a079051a87f1c0f9b056ddbf82cd6d0f，24/24 三模式八格式、189 欄九點命中／不同值保存 reload／同列不動／不超容器，72 次直接點選、16 次群組切換；15/15 temporal 完成位移均 0px、27 欄延後 Next、Shell 首末欄 6/6、1440px／320px／筆記同伴全部通過。CSS-only affected format／whitespace／Web typecheck exit 0，沒有相關 unit test 被誤算為 browser 證據；hook 三個新回歸及 97/97 affected 已於前一應用完成。Windows WebKit + 模擬 keyboard／fixture API 不取代實機或新 DB 證據。

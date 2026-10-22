@@ -131,3 +131,13 @@ it('aborts and clears private state on Coach identity change', async () => {
   expect(oldSignal.aborted).toBe(true)
   expect(document.querySelector('.export-download-notice')).toBeNull()
 })
+
+it('keeps the in-app pending notice without requesting a native leave dialog', async () => {
+  await setup()
+  await click('開始匯出')
+  const event = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(event)
+  expect(event.defaultPrevented).toBe(false)
+  expect(document.body.textContent).toContain('正在準備檔案')
+  expect(document.body.textContent).toContain('取消匯出')
+})

@@ -64,14 +64,8 @@ export function ExportDownloads({ session, children }: { session: Session; child
       () => setElapsed(Math.floor((Date.now() - started) / 1000)),
       1000
     )
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', beforeUnload)
     return () => {
       window.clearInterval(tick)
-      window.removeEventListener('beforeunload', beforeUnload)
     }
   }, [download.isPending])
   useEffect(() => {
