@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import {
   advanceTrainingSetInput,
   getSetInputDockInset,
+  getSetInputFocusAdjustment,
   getSetInputScrollAdjustment,
   selectTrainingSetValue
 } from './set-input-navigation'
@@ -80,6 +81,13 @@ it('scrolls a focused field clear of the keyboard action dock', () => {
       visibleBottom: 310
     })
   ).toBe(-8)
+})
+
+it('uses the same resting position for every field in a row, including the first focus', () => {
+  const bounds = { visibleTop: 0, visibleBottom: 560 }
+  expect(getSetInputFocusAdjustment({ inputTop: 480, inputBottom: 520, ...bounds })).toBe(300)
+  expect(getSetInputFocusAdjustment({ inputTop: 180, inputBottom: 220, ...bounds })).toBe(0)
+  expect(getSetInputFocusAdjustment({ inputTop: 620, inputBottom: 660, ...bounds })).toBe(440)
 })
 
 it.each([0, 55, 96, 151])(
