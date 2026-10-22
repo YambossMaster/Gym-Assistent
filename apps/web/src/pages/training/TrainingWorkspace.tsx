@@ -514,7 +514,9 @@ function TrainingEditor({
     }
     const viewport = window.visualViewport
     let frame = 0
-    const alignInputAndDock = () => {
+    let visibilityTimer: ReturnType<typeof setTimeout> | undefined
+    let visibilityChecked = false
+    const positionDock = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         if (!activeSetInput.isConnected) return
@@ -524,25 +526,51 @@ function TrainingEditor({
           visualOffsetTop: viewport?.offsetTop ?? 0
         })
         workspace.style.setProperty('--session-keyboard-inset', `${inset}px`)
-        if (document.activeElement !== activeSetInput) return
-        const dock = workspace.querySelector<HTMLElement>('.set-input-advance-dock')
-        if (!dock) return
-        const adjustment = getSetInputScrollAdjustment(
-          activeSetInput.getBoundingClientRect().bottom,
-          dock.getBoundingClientRect().top
-        )
-        if (adjustment) window.scrollBy({ top: adjustment, behavior: 'instant' })
       })
     }
-    alignInputAndDock()
-    viewport?.addEventListener('resize', alignInputAndDock)
-    viewport?.addEventListener('scroll', alignInputAndDock)
-    window.addEventListener('resize', alignInputAndDock)
+    const checkInitialVisibility = () => {
+      if (
+        visibilityChecked ||
+        !activeSetInput.isConnected ||
+        document.activeElement !== activeSetInput
+      )
+        return
+      visibilityChecked = true
+      const dock = workspace.querySelector<HTMLElement>('.set-input-advance-dock')
+      const inputRect = activeSetInput.getBoundingClientRect()
+      const viewportTop = viewport?.offsetTop ?? 0
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight)
+      const adjustment = getSetInputScrollAdjustment({
+        inputTop: inputRect.top,
+        inputBottom: inputRect.bottom,
+        visibleTop: viewportTop + 12,
+        visibleBottom:
+          Math.min(viewportBottom, dock?.getBoundingClientRect().top ?? viewportBottom) - 12
+      })
+      if (adjustment) window.scrollBy({ top: adjustment, behavior: 'instant' })
+    }
+    const scheduleInitialVisibility = () => {
+      if (visibilityChecked) return
+      clearTimeout(visibilityTimer)
+      // Let the keyboard finish resizing before the one visibility correction
+      // for this focus. Viewport scrolls after that only reposition the dock.
+      visibilityTimer = setTimeout(() => requestAnimationFrame(checkInitialVisibility), 160)
+    }
+    const onResize = () => {
+      positionDock()
+      scheduleInitialVisibility()
+    }
+    positionDock()
+    scheduleInitialVisibility()
+    viewport?.addEventListener('resize', onResize)
+    viewport?.addEventListener('scroll', positionDock)
+    window.addEventListener('resize', onResize)
     return () => {
       cancelAnimationFrame(frame)
-      viewport?.removeEventListener('resize', alignInputAndDock)
-      viewport?.removeEventListener('scroll', alignInputAndDock)
-      window.removeEventListener('resize', alignInputAndDock)
+      clearTimeout(visibilityTimer)
+      viewport?.removeEventListener('resize', onResize)
+      viewport?.removeEventListener('scroll', positionDock)
+      window.removeEventListener('resize', onResize)
     }
   }, [activeSetInput])
   const dragBuffer = useRef<ExerciseReorderBuffer | null>(null)

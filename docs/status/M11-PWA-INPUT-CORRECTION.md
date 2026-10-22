@@ -1,4 +1,4 @@
-# M11 installed-PWA input correction — viewport follow-up released; device recheck open
+# M11 installed-PWA input correction — keyboard stability follow-up in delivery
 
 > Owner: M11 PWA correction; integrated Main `4028d377fa6eb10a047f56484e505fcf73532842` on 2026-10-22.
 > Previous release: Fly release 66 ran `GH_SHA=4028d377fa6eb10a047f56484e505fcf73532842` before the viewport follow-up.
@@ -33,4 +33,17 @@ The Product Owner's 12:21 and 12:23 installed-iPhone recordings confirm that「�
 
 ## One Next
 
-Product Owner rechecks both single and group numeric entry on the installed iPhone PWA at Fly release 67: tap fields at different heights, advance through weight → reps → RPE and into the next set, and confirm the focused field stays visible with the dock immediately above the keyboard. Report any remaining drift with the field, scroll state and a short recording. Keep this workstream open until physical keyboard behavior passes.
+The Product Owner's third installed-iPhone recording at release 67 showed that the action dock can still overlap the iOS numeric keyboard's own toolbar. The released effect also called `window.scrollBy` on every `visualViewport.scroll`, so manual scrolling could trigger another correction and visible jitter. The Product Owner approved a simpler behavior: anchor the dock above the keyboard, check field visibility once after each focus (including「下一格」), and leave subsequent manual scrolling alone.
+
+## 2026-10-22 keyboard stability follow-up inventory
+
+| Item                                              | State                                             | Evidence / remaining gate                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Diagnose third device recording                | Complete                                          | Dock sometimes sits under the iOS numeric keyboard's native toolbar; viewport scroll listener and page scroll correction run in a feedback loop during manual gestures.                                                                                                                                                                                                                                                       |
+| 2. Correct focus and dock behavior                | Implemented in `codex/m11-pwa-keyboard-stability` | Keep the dock 64px clear of the measured keyboard edge; update only its position on viewport scroll. After each input focus, wait for keyboard resize to settle and check whether the field is fully visible above the dock; scroll once only if obscured. Programmatic「下一格」focus uses `preventScroll`.                                                                                                                  |
+| 3. Focused checks                                 | Passed locally                                    | `npm run check:affected`: formatting, Web typecheck, 8 related files and 68/68 tests. Added cases for no scroll on a visible same-row field, one correction for a covered next field, and no correction during later manual viewport scrolling. Test runner required the approved non-sandboxed path because Windows sandbox temp-file rename returned `EPERM` before test loading. Physical iOS behavior remains unverified. |
+| 4. Exact-SHA release and installed-PWA acceptance | Pending                                           | Push reviewed branch, confirm PR CI, merge and confirm Main/Fly exact SHA and readiness. Product Owner then rechecks single and group numeric entry, field focus at multiple heights, next-field across rows, and free manual scrolling on installed iPhone PWA.                                                                                                                                                              |
+
+## One Next
+
+Deliver the keyboard stability follow-up through the already authorized PR/Main/Production gate, then hand off the exact Fly release for installed-iPhone PWA acceptance. Keep this workstream open until the physical keyboard behavior passes.

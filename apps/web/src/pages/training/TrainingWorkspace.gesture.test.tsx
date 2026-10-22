@@ -372,25 +372,78 @@ it('keeps the set input dock anchored as the iOS visual viewport pans between fi
   const viewport = Object.assign(new EventTarget(), { height: 480, offsetTop: 0 })
   vi.stubGlobal('visualViewport', viewport)
   vi.stubGlobal('innerHeight', 844)
-  vi.stubGlobal('scrollBy', vi.fn())
+  const scrollBy = vi.fn()
+  vi.stubGlobal('scrollBy', scrollBy)
   await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
   const inputs = host.querySelectorAll<HTMLInputElement>('.training-set-card input')
   const workspace = host.querySelector<HTMLElement>('.session-workspace')!
 
   await act(async () => inputs[0]!.focus())
   await frame()
-  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('364px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('428px')
+  await act(async () => vi.advanceTimersByTimeAsync(160))
+  await frame()
+  const scrollsAfterFocus = scrollBy.mock.calls.length
 
   viewport.offsetTop = 96
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
-  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('268px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('332px')
+  expect(scrollBy).toHaveBeenCalledTimes(scrollsAfterFocus)
 
   await act(async () => inputs[1]!.focus())
   viewport.offsetTop = 151
   viewport.dispatchEvent(new Event('scroll'))
   await frame()
-  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('213px')
+  expect(workspace.style.getPropertyValue('--session-keyboard-inset')).toBe('277px')
+})
+
+it('checks visibility once per focused field and never corrects manual scrolling', async () => {
+  const viewport = Object.assign(new EventTarget(), { height: 700, offsetTop: 0 })
+  vi.stubGlobal('visualViewport', viewport)
+  vi.stubGlobal('innerHeight', 844)
+  const scrollBy = vi.fn()
+  vi.stubGlobal('scrollBy', scrollBy)
+  await act(async () => host.querySelector<HTMLButtonElement>('.set-add')!.click())
+  const inputs = host.querySelectorAll<HTMLInputElement>('.training-set-card input')
+  let inputTop = 480
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement
+  ) {
+    const top = this.classList.contains('set-input-advance-dock')
+      ? 560
+      : this === inputs[1]
+        ? inputTop
+        : 480
+    return {
+      x: 0,
+      y: top,
+      top,
+      bottom: top + 40,
+      left: 0,
+      right: 390,
+      width: 390,
+      height: 40,
+      toJSON() {}
+    }
+  })
+
+  await act(async () => inputs[0]!.focus())
+  await act(async () => vi.advanceTimersByTimeAsync(160))
+  await frame()
+  expect(scrollBy).not.toHaveBeenCalled()
+
+  inputTop = 550
+  await act(async () => inputs[1]!.focus({ preventScroll: true }))
+  await act(async () => vi.advanceTimersByTimeAsync(160))
+  await frame()
+  expect(scrollBy).toHaveBeenCalledOnce()
+  expect(scrollBy).toHaveBeenCalledWith({ top: 42, behavior: 'instant' })
+
+  viewport.offsetTop = 96
+  viewport.dispatchEvent(new Event('scroll'))
+  await frame()
+  expect(scrollBy).toHaveBeenCalledOnce()
 })
 
 it('starts editing an empty canvas immediately and leaves it read-only again on return', async () => {
