@@ -1,5 +1,17 @@
 # M11 學生群組與手機 PWA 輸入：完整問題紀錄及接手檢查清單
 
+## 2026-10-22 最終發布：release 74 已部署，完整工程清單重跑通過；原生 iPhone 待驗
+
+**本節為目前狀態。五項工程／交付工作 5/5 完成，沒有宣告原生 iPhone 或 M11 結案。** 新版正式入口：[Form Coach Desk](https://formcoachdesk.com)。應用 SHA **89e08b6270e7287a878887d13851a8f675f2c863**，Fly **release 74 complete**；公開 buildId **local-1792673603571**，入口 **/assets/index-DUHrX0EU.js**。先從多工關閉已安裝 PWA 再重開，保留網站資料與既有草稿；現在只需實機重驗「任意高度直接選取、Next 同列／跨列、完成保持原位置」及原 F／K 清單。
+
+- **修正與根因：** 選取／Next 保留焦點定位意圖以處理稍後的 native scroll／resize，手動滑動立即取消；完成前讀取最後欄位幾何再解除 scroll owner，只補實際不足的尾部空間，頁首不返回遮擋。另解除 measurement／RPE input 的全域 52px minimum 與 38px 外框衝突，保留既有外框和已接受 dock。先前中心點檢查漏掉 input 上緣被自身容器裁切，現已加入全框九點及 blur 後容器範圍。
+- **完整重新驗證：** 最終 CSS 候選 e1e6a390a079051a87f1c0f9b056ddbf82cd6d0f，24/24 三模式八格式、189 欄九點命中／不同值保存 reload／同列不動／不超容器，72 次直接點選、16 次群組切換；15/15 temporal 完成位移均 0px、27 欄延後 Next、Shell 首末欄 6/6、1440px／320px／筆記同伴全部通過。CSS-only affected format／whitespace／Web typecheck exit 0，沒有相關 unit test 被誤算為 browser 證據；hook 三個新回歸及 97/97 affected 已於前一應用完成。Windows WebKit + 模擬 keyboard／fixture API 不取代實機或新 DB 證據。
+- **exact-SHA 發布：** [PR #93](https://github.com/YambossMaster/Gym-Assistent/pull/93)，[PR CI #360](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39780549432) 成功，完整 check/build、root 40／API 402／Web 484、browser、migration no-op。應用 Main 的 [完整發布 CI](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39781532911) 所有必要 jobs 成功、Production history 匹配且無 pending，才部署。Main Web 與候選內容相同。無 API／schema／Auth／依賴／部署設定修改。
+- **獨立讀回：** Fly machine started，image GH_SHA 與上述應用 SHA 相同，service passing；正式 /api/ready、/、/login 200，正式網域與 Fly origin 的 app-version／assets／入口 JS 相同，入口 SHA256 b2d6cb855321bd1ae4e6d5f1848a843c878c7fce1bff00029b69b24c7f0d073c。原始讀回 output/github/m11-final-production-readback.json；browser JSON 為 output/playwright/m11-placement-{matrix,temporal,next,shell,peer}-results.json。
+- **剩餘與 Next：** P01 已由使用者接受；P02–P06、F／K／I 原生安裝 PWA 項未勾選，不把 release 72 的實機 FAIL 因工程 PASS 自動關閉。所有本次受影響工程清單已重新檢查；已部署可供 Product Owner 手機驗證。未操作真實課堂、帳號或草稿衝突。release 73 的晚取消與 input 裁切失敗保留在下方歷史，不隱藏。
+
+以下是修正、失敗與中間發布歷史；目前下一步以上述已部署版本為準。
+
 ## 2026-10-22 最新補驗：release 73 已發布，發現並修正數值控制項自身裁切，完整工程重查通過，待最後發布
 
 **當前正式版本：release 73／Main `9b2594310a2b26e987a5dfa81c2c34c91d3367be`，不是 release 72。** [PR #92](https://github.com/YambossMaster/Gym-Assistent/pull/92) 候選 `71eca63` 已完成下方工程檢查，PR CI #358（run 39777343356）成功；Main CI #359（run 39777910807）五個 jobs 均 success，但部署後才生效的取消令整個 run conclusion 為 cancelled：root 40／API 402／Web 484、完整 check/build、browser、migration no-op、Production history 匹配無 pending；Fly release 73 complete、同 SHA started／service passing，正式 `/api/ready`、`/`、`/login` 200。公開 buildId `local-1792671994815`，入口 `index-UlCi0TLk.js`，正式網域／Fly origin 同資產。這只證明 release 73 已發布，不代表原生問題通過。

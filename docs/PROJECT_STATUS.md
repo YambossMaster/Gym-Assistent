@@ -1,15 +1,15 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-22 against deployed application commit
-> `9b2594310a2b26e987a5dfa81c2c34c91d3367be` and the M11 input/tab handoff correction release.
+> `89e08b6270e7287a878887d13851a8f675f2c863` and the M11 input/tab handoff correction release.
 > Main code and confirmed Production deployment are recorded separately below. Branch-local work
 > and its next action belong to that branch's workstream Status, not this page.
 
-## M11 release 73 已部署；補驗攔下數值控制項裁切（2026-10-22）
+## M11 release 74 已部署，完整工程清單通過，iPhone PWA 待驗（2026-10-22）
 
-release 72 實機仍有遮擋／亂跳與完成回跳，按影片分開修正選取、Next 和完成。PR #92／Main `9b2594310a2b26e987a5dfa81c2c34c91d3367be` 之 PR CI #358 成功、Main CI #359 必要 jobs 成功（部署後取消令 run overall cancelled）（root 40／API 402／Web 484），Fly release 73 同 SHA、service passing，獨立三入口 200。工程重現完成回跳 505px → 0px；原生 iPhone 尚未驗收。
+已按兩支實機影片修正直接選取／Next 後被遮擋、完成回跳與返回頁首遮擋；完整補驗另攔下 input 52px minimum 超出 38px 外框，以及只修 measurement 後 RPE 同列位移，均已修正再驗。最終 PR #93／應用 Main 89e08b6270e7287a878887d13851a8f675f2c863，PR CI #360 和 Main run 39781532911 全部必要 jobs 成功（root 40／API 402／Web 484），Fly release 74 同 SHA started／passing，獨立三入口 200、公開／origin 資產相同。重跑 24 組／189 欄全框九點、15 temporal、27 Next、Shell 6 案與桌機／窄手機／筆記，全部通過；完成位移 0px。無 API／migration／Auth 變更。
 
-補上 Shell 頁首／導覽邊界時，另發現按學生首欄被自身 38px 容器裁掉 52px input 上緣，已列 P06／K15。取消要求未趕在 release 73 完成前；後續三行 CSS 修正與完整工程重測已在 `codex/m11-input-control-clip`完成，尚待最後 CI 再發布。全部清單、證據與下一步見 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md)。
+原生鍵盤仍待安裝 iPhone PWA 實機確認，未宣告問題或 M11 結案。正式 buildId local-1792673603571；關閉多工 PWA 再重開即可驗證，不清網站資料。完整清單、所有失敗歷史、版本及唯一下一步見 [完整 Status](status/M11-PWA-INPUT-CORRECTION.md)。
 
 ## Released baseline
 
