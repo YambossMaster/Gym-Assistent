@@ -1,16 +1,16 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-23 against deployed application commit
-> `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164` and the M11 viewport coordinate correction.
+> `a1d614204cc72234cbba284bb91c33524bbc0503` and the M11 input-completion correction.
 > Main code and confirmed Production deployment are recorded separately below.
 
-## M11 release 78 已部署，修正輸入座標重複補償；實機待驗（2026-10-23）
+## M11 release 79 已部署，補齊完成輸入的時序缺口；實機待驗（2026-10-23）
 
-Product Owner四段11:24–11:29錄影退回release77：選取時上方大片空白、input錯位、dock不可見，也口述鍵盤開著改選時失敗；完成輸入已有改善。已重現CSS offset與DOMRect共同原點不同時被重複補償；同欄位無pan正常，有80／180px pan失敗。新增獨立fixed zero換算，選取／dock／完成共用同一座標，保留原關閉時序及UI。綠色露出部分可能是完成上課，影片未能辨識，工程已分別檢查兩個DOM與hit。
+Product Owner最新三段12:58–13:03影片：release78選取與操作列位置目前正常，但完成偶發滑動。已重現三類缺口：dock按下／原生blur空窗失去位置保護；非同步fixed origin與offset相加製造移動原點；高度已恢復就提前結束觀測，漏掉晚回復的原點。分別補上手勢守位、session座標系辨識與原點穩定判斷；Next仍使用原定位策略，手動滑動仍可接手，原時間常數／CSS／尾部空間不變。
 
-[PR101](https://github.com/YambossMaster/Gym-Assistent/pull/101)／[PR CI378](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39899906946)成功，合併應用Main `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`；[Main CI379](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39900392267)五jobs成功並部署，run因稍後取消請求標示cancelled，詳見工作流Status的發布順序紀錄。Fly release 78 complete，同SHA started／service passing，三入口200、公開／origin資產一致。affected118通過；同條件舊3/9→兩引擎各9/9，新36與歷史108循環各通過，關閉取樣0px；189欄及歷史／同伴清單通過。舊race事件資料缺漏在部署後補驗，兩引擎各36案0例外，取代該批舊證據。
+[PR103](https://github.com/YambossMaster/Gym-Assistent/pull/103) head `971676b`／[PR CI382](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39907902340)成功；合併應用Main `a1d614204cc72234cbba284bb91c33524bbc0503`與已測Web一致，[Main CI383](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39908866519)五jobs全成功。Fly79 complete，同SHA started／service passing，三入口200，公開與origin資產一致。最終affected8檔138測試通過；兩引擎各36新完成矩陣0px、9原點、36循環、108壓力、36競態與清理通過；24格式／189欄與完整歷史／同伴清單通過。新12案先紅再綠；候選離屏Next回歸也在發布前攔下修正，全部最終批次阻擋pageerror。
 
-**六項工程／交付完成，手機驗收仍開放。** [唯一清單](status/M11-PWA-INPUT-CORRECTION.md)保留release74–77失敗，不把合成viewport當原生通過。Next：多工關閉再開PWA，驗首次選取、鍵盤開著直接改選、完成後第二動作與關閉中途位置；不清資料。buildId `local-1792729892819`，入口 `/assets/index-CtDBztG5.js`。無API／schema／Auth／依賴／部署設定變更。
+**六項工程／交付完成，手機驗收仍開放。** [唯一清單](status/M11-PWA-INPUT-CORRECTION.md)保留release78選取正面回報及P04完成失敗；合成viewport不能代替原生驗收。Next：多工關閉再開PWA，對比app／原生完成、先手動滑動、完成後第二動作，並保護選取／Next。不要清資料。buildId `local-1792735460451`，入口 `/assets/index-CTL9HJg9.js`。沒有API／schema／Auth／依賴／部署設定變更。
 
 ## Released baseline
 
