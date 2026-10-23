@@ -4,10 +4,10 @@
 
 - **目標：** 單人、群組按時序／按學生，選取與 Next 保持整框及操作列可見可點；同列不移動、手動滑動不拉回；完成只收鍵盤與操作列，保留剛才欄位的位置與數值。
 - **最新實機回報（2026-10-23 12:58–13:03）：** release78選取與操作列位置目前正常；完成輸入仍偶發滑動／偏移。三部新影片中第一、第三失敗，第二正常。不得把release78的工程綠燈視為P04通過，也不把選取的正面回報抹掉。
-- **正式站基底：** Fly78 complete，應用 `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`，本輪已重新讀回同SHA／三入口200／公開與origin資產一致。buildId `local-1792729892819`。
-- **工作樹：** `output/m11-student-group`，分支 `codex/m11-dismissal-origin-handoff`，基底 `5d46f8a080b6a253f8bfa589bcd718876e491574`；主目錄既有修改不屬本輪。
-- **六項盤點：** ①版本核對、②正常／失敗影片比較、③配對重現、④紅綠修正完成；⑤完整清單回歸進行中，⑥exact-SHA CI／部署／獨立讀回待執行。使用者已授權完整驗證及直接部署。
-- **唯一 Next：** 固定候選後完成雙引擎回歸，解釋任何失敗；全部工程門檻通過才走PR／Main CI部署。手機最終驗收仍需Product Owner。
+- **本輪正式站：** Fly79 complete，應用 `a1d614204cc72234cbba284bb91c33524bbc0503`，Main CI383五jobs全成功；同SHA machine started／service passing、三入口200、公開與origin資產一致。buildId `local-1792735460451`。部署正常不等於實機驗收。
+- **工作樹：** `output/m11-student-group`，應用候選 `971676b6d8247112e4b5825951ed9a506c1c5a16`，基底 `5d46f8a080b6a253f8bfa589bcd718876e491574`，PR103合併為 `a1d614204cc72234cbba284bb91c33524bbc0503`；接手先核對Git HEAD／分支；主目錄既有修改不屬本輪。
+- **六項盤點：** ①版本核對、②正常／失敗影片比較、③配對重現、④紅綠修正、⑤完整清單回歸、⑥exact-SHA CI／部署／獨立讀回全部完成。手機驗收仍開放。使用者已授權完整驗證及直接部署。
+- **唯一 Next：** Product Owner多工關閉再開PWA，驗release79：同一欄位分別以app完成／原生完成收鍵盤，加入先手動滑動與完成後換第二動作；每幀及最終位置均應不變，再依第4節保護清單確認選取／Next。不要清網站資料，不要求真實刪除或扣堂。
 - **範圍：** 只改數值輸入手勢、座標換算與關閉穩定條件。保留外觀、CSS、尾部空間、dismissal期限；沒有API／schema／Auth／依賴／部署設定變更。
 
 ## 2. 已重現的缺陷、正常條件與修正
@@ -31,7 +31,7 @@
 - 新影片位於 `C:/Users/User/Downloads/`，前綴 `ScreenRecording_10-23-2026`：`13-03-52_1.mp4`、`13-00-23_1.mp4`、`12-58-47_1.mp4`。第一、第三走到app完成，第二在中途收鍵盤；第三約8.4–8.8s可見關閉途中位移。抽幀在忽略的 `output/pwa-input-audit/r79/`。
 - `apps/web/output/pwa-input-review.html`，Vite5180，`mode=solo|timeline|student&scenario=complete`。使用真實TrainingWorkspace／CSS，API全攔截，沒有正式資料寫入。
 - `output/playwright/m11-r79-dismiss-trigger.js`：4案配對；原始3/4，修正4/4。
-- `m11-r79-closing-origins.js`：同步／offset晚／origin晚×兩種完成；舊2/6，候選Chromium6/6。保留root transform至原點歸零，刻意檢驗高度已恢復但原點未恢復的交接。此模型也會建立fixed containing block，不能把其中scrollY數字當iOS實測。
+- `m11-r79-closing-origins.js`：同步／offset晚／origin晚×兩種完成；舊2/6，最終Chromium慢速6/6、WebKit一般6/6。保留root transform至原點歸零，刻意檢驗高度已恢復但原點未恢復的交接。此模型也會建立fixed containing block，不能把其中scrollY數字當iOS實測。
 - `m11-r79-dismissal-matrix.js`：三模式×三種恢復順序×兩種完成×是否先手動滑動，共36案；同時在手勢／blur空窗注入正負40px。第一候選27/36揭露原生手動邊界；最終結果見第5節。
 - `m11-r79-batch.ps1`對所有新舊腳本加入pageerror阻擋並寫r79 JSON；缺touch資料的舊r77 race不用，改用r78完整事件版。熱更新中斷的結果不計通過。
 - 正式碼：`TrainingWorkspace.tsx`、`useSetInputViewport.ts`、`set-input-geometry.ts`、`set-input-dismissal.ts`。回歸在 `TrainingWorkspace.gesture.test.tsx`，新增10案；dismissal另新增2案，既有geometry／dock測試保留。
@@ -41,19 +41,23 @@
 
 手機欄只記使用者實機證據；工程通過不得自動變成手機通過。
 
-| 項目                | 必須保留的結果                                           | 手機回報／本輪工程                                                 |
-| ------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| P01 操作列          | 存在、位置正確、整框可點；不是完成上課露出               | release78目前正面回報；候選待驗。雙引擎新舊矩陣進行中。            |
-| F01–F03 基本輸入    | Next精確一欄、鍵盤不關，最後才完成                       | 24格式／189欄及正式回歸待最終確認。                                |
-| P02／P05／P06 選取  | 首中末／任意位置／直接改選，無空白、整框可見可點         | release78目前正面回報；候選待驗。共同原點／獨立位移皆須回歸。      |
-| P03 前進／滑動      | 同列不動、跨列定位、手動不拉回、離屏後Next重新可見       | 新離屏Next紅綠已補；完整循環進行中。                               |
-| P04 完成／重進      | 每幀及最終保留原欄位置；兩種完成、手動後完成、跨動作重進 | **release78實機失敗，未驗收。** 新36案及歷史關閉／競態待最終確認。 |
-| F04／F12 保存／模式 | 不丟值、不改錯學生；保存重開／切換一致                   | 資料碼未改，仍重驗189欄／草稿。                                    |
-| P07 站內確認        | 取消保留、接受一次、無原生阻擋對話框                     | 未改；歷史確認與IndexedDB恢復待回歸。                              |
-| 同伴流程            | 桌機Enter／320px／教練筆記正常；離頁清理鎖定及probe      | 正式清理測試與瀏覽器同伴待最終確認。                               |
+| 項目                | 必須保留的結果                                           | 手機回報／本輪工程                                                                |
+| ------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| P01 操作列          | 存在、位置正確、整框可點；不是完成上課露出               | release78目前正面回報；候選手機待驗。兩引擎9原點／36循環／108壓力通過。           |
+| F01–F03 基本輸入    | Next精確一欄、鍵盤不關，最後才完成                       | 24格式／189欄、正式回歸全部通過。                                                 |
+| P02／P05／P06 選取  | 首中末／任意位置／直接改選，無空白、整框可見可點         | release78目前正面回報；候選手機待驗。共同／獨立原點、直接改選及36起點通過。       |
+| P03 前進／滑動      | 同列不動、跨列定位、手動不拉回、離屏後Next重新可見       | 新離屏Next紅綠、雙引擎循環、temporal15／Next27通過。                              |
+| P04 完成／重進      | 每幀及最終保留原欄位置；兩種完成、手動後完成、跨動作重進 | **release78實機失敗，未驗收。** 兩引擎新36案皆0px；一般／慢速關閉、各36競態通過。 |
+| F04／F12 保存／模式 | 不丟值、不改錯學生；保存重開／切換一致                   | 189欄保存重開／模式切換、2案真IndexedDB草稿恢復通過；非新DB證據。                 |
+| P07 站內確認        | 取消保留、接受一次、無原生阻擋對話框                     | 未改；6案站內確認、2案IndexedDB恢復通過。                                         |
+| 同伴流程            | 桌機Enter／320px／教練筆記正常；離頁清理鎖定及probe      | 正式清理與4組瀏覽器同伴通過；穩定0次style重寫、關閉後0觀測frame。                 |
 
 ## 5. 工程與發布證據
 
 - 新正式紅燈已分別執行：完成手勢4案、非同步原點4案、手動後原生blur1案；修正後通過。另加1案攔下本輪離屏Next候選回歸並修正。原始瀏覽器配對也重跑。
-- 進行中：固定最終程式後的affected、雙引擎完整批次、24格式矩陣。此前127測試通過是中間候選，不冒充最終SHA證據。
-- 尚未push／merge／部署；沒有把被熱更新打斷或局部通過的批次當發布依據。後續須記錄候選SHA、PR／Main完整CI、Fly版本、獨立三入口與資產讀回。
+- 最終 `npm run check:affected -- 5d46f8a`：格式、whitespace、Web typecheck、8檔138測試exit0。首次並行負載下11案超過既有5000ms；關閉已完成的瀏覽器後，同碼、同時限重跑全過，未放寬斷言。新增正式12案均有先紅再綠。
+- 最終Chrome／WebKit各36新完成矩陣（最大取樣位移0px）、9原點、36直接改選／重進、108歷史壓力、36競態及生命週期通過；一般關閉各6案／108取樣，WebKit慢速6案、Chrome原點慢速6案通過。Chrome另通過36起點、12根因、temporal15、Next27、Shell6、確認6、草稿2、同伴4及24格式／189欄。每批加入pageerror阻擋；所有最終批次0未處理例外。
+- 診斷期間的熱更新曾重載頁面／中斷module，已剔除；13:38最後修改後固定runtime，重新完成上述全批次。源碼hash與提交一致，證據凍結 `output/pwa-input-audit/r79/971676b/manifest.json`。隔離瀏覽器及Vite已停止。
+- [PR103](https://github.com/YambossMaster/Gym-Assistent/pull/103) head `971676b6d8247112e4b5825951ed9a506c1c5a16`／[PR CI382](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39907902340)完整成功，合併為Main `a1d614204cc72234cbba284bb91c33524bbc0503`；與已測候選Web diff空。[Main CI383](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39908866519)五jobs全成功，含完整check/build、browser、dry-run、Production preview與部署/readiness；沒有新migration。
+- 獨立讀回：Fly79 complete，同SHA machine started／service passing；`/api/ready`、`/`、`/login`200，公開與origin buildId／assets／入口JS一致。buildId `local-1792735460451`，入口 `/assets/index-CTL9HJg9.js`，JS SHA256 `caa42daff2d07879bc287779c07d2cfe681fcac36cd22d31527b4ee0e50c3bf7`；映像 `sha256:9bfcfea2829298e38c613c5cc1b1c8cb54c5bf6d8c69129b804fe41b1fe0b232`。證據 `output/github/m11-r79-production-readback.json`。
+- 所有發布前回歸完成後才合併；本輪沒有以取消Main workflow當作暫停部署，也沒有部署後補驗取代發布門檻。原生iPhone事件時間線與最終實機驗收仍未取得。
