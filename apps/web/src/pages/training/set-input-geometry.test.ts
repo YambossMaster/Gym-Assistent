@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest'
-import { reconcileSetInputGeometry } from './set-input-geometry'
+import { createSetInputCoordinates, reconcileSetInputGeometry } from './set-input-geometry'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -54,4 +54,43 @@ it('does not reposition a normal flow workspace or accept invalid geometry', () 
   reconcileSetInputGeometry(workspace, NaN, 480)
   reconcileSetInputGeometry(workspace, 0, 0)
   expect(write).not.toHaveBeenCalled()
+})
+
+it('separates a moving common origin from independent box displacement', () => {
+  const coordinates = createSetInputCoordinates()
+  const origin = document.querySelector<HTMLElement>('[data-set-input-origin]')!
+  const workspace = document.createElement('section')
+  workspace.style.position = 'fixed'
+  let common = 0
+  let independent = 0
+  let layoutTop = 0
+  vi.spyOn(origin, 'getBoundingClientRect').mockImplementation(() => ({ top: common }) as DOMRect)
+  vi.spyOn(workspace, 'getBoundingClientRect').mockImplementation(
+    () =>
+      ({
+        top:
+          layoutTop +
+          common +
+          independent +
+          (parseFloat(workspace.style.getPropertyValue('--session-input-shift')) || 0)
+      }) as DOMRect
+  )
+  const write = vi.spyOn(workspace.style, 'setProperty')
+  for (const pan of [0, 80, 180, 40, 0]) {
+    layoutTop = pan
+    common = -pan
+    reconcileSetInputGeometry(workspace, coordinates.clientTop(layoutTop), 480)
+    expect(workspace.getBoundingClientRect().top).toBe(0)
+  }
+  expect(write).not.toHaveBeenCalled()
+  common = -180
+  layoutTop = 180
+  independent = -120
+  reconcileSetInputGeometry(workspace, coordinates.clientTop(layoutTop), 480)
+  expect(workspace.getBoundingClientRect().top).toBe(0)
+  independent = 0
+  reconcileSetInputGeometry(workspace, coordinates.clientTop(layoutTop), 480)
+  expect(workspace.getBoundingClientRect().top).toBe(0)
+  coordinates.dispose()
+  expect(origin.isConnected).toBe(false)
 })
