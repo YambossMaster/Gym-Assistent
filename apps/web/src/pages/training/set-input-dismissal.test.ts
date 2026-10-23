@@ -103,3 +103,50 @@ it('keeps an advancing close animation protected past the original session deadl
   expect(restore).not.toHaveBeenCalled()
   expect(vi.getTimerCount()).toBe(0)
 })
+
+it('waits for the measured origin after height and offset have already settled', () => {
+  vi.useFakeTimers()
+  const viewport = Object.assign(new EventTarget(), { height: 844, offsetTop: 0 })
+  let origin = -80
+  const restore = vi.fn(() => true)
+  const stopped = vi.fn()
+  settleSetInputDismissal(viewport as VisualViewport, 844, restore, stopped, () => origin)
+  vi.advanceTimersByTime(1100)
+  expect(stopped).not.toHaveBeenCalled()
+  origin = -30
+  vi.advanceTimersToNextFrame()
+  vi.advanceTimersByTime(2400)
+  expect(stopped).not.toHaveBeenCalled()
+  origin = 0
+  vi.advanceTimersToNextFrame()
+  vi.advanceTimersByTime(251)
+  expect(stopped).toHaveBeenCalledOnce()
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('bounds a stalled origin and lets a new gesture stop its recovery', () => {
+  vi.useFakeTimers()
+  const viewport = Object.assign(new EventTarget(), { height: 844, offsetTop: 0 })
+  const stopped = vi.fn()
+  settleSetInputDismissal(
+    viewport as VisualViewport,
+    844,
+    () => true,
+    stopped,
+    () => -30
+  )
+  vi.advanceTimersByTime(2499)
+  expect(stopped).not.toHaveBeenCalled()
+  vi.advanceTimersByTime(1)
+  expect(stopped).toHaveBeenCalledOnce()
+  settleSetInputDismissal(
+    viewport as VisualViewport,
+    844,
+    () => true,
+    stopped,
+    () => -30
+  )
+  window.dispatchEvent(new Event('pointerdown'))
+  expect(stopped).toHaveBeenCalledTimes(2)
+  expect(vi.getTimerCount()).toBe(0)
+})

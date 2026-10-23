@@ -521,6 +521,61 @@ it('moves the internal scroll owner once per row and never scrolls the document 
   expect(window.scrollTo).not.toHaveBeenCalled()
 })
 
+it.each([
+  [false, -60, 80],
+  [true, -60, 80],
+  [false, -80, 60],
+  [true, -80, 60]
+])(
+  'keeps a visual-coordinate row still during asynchronous closing (native=%s, origin=%s, offset=%s)',
+  async (native, closingOrigin, closingOffset) => {
+    const { viewport, workspace, inputs } = await setEditingGeometry()
+    let origin = -80
+    viewport.offsetTop = 80
+    workspace.style.position = 'fixed'
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function (
+      this: HTMLElement
+    ) {
+      const frameTop =
+        origin +
+        (parseFloat(workspace.style.getPropertyValue('--session-input-top')) || 0) +
+        (parseFloat(workspace.style.getPropertyValue('--session-input-shift')) || 0)
+      const index = inputs.indexOf(this as HTMLInputElement)
+      const top = this.hasAttribute('data-set-input-origin')
+        ? origin
+        : this === workspace
+          ? frameTop
+          : index >= 0
+            ? frameTop + 280 + Math.floor(index / 2) * 180 - workspace.scrollTop
+            : 0
+      return {
+        x: 0,
+        y: top,
+        top,
+        bottom: top + 40,
+        left: 0,
+        right: 390,
+        width: 390,
+        height: 40,
+        toJSON() {}
+      }
+    })
+    const input = inputs.at(-1)!
+    await act(async () => input.focus())
+    await frame()
+    const before = input.getBoundingClientRect().top
+    await act(async () => {
+      if (native) input.blur()
+      else host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!.click()
+    })
+    origin = closingOrigin
+    viewport.offsetTop = closingOffset
+    viewport.height = 620
+    await frame()
+    expect(input.getBoundingClientRect().top).toBe(before)
+  }
+)
+
 it('allows free manual scrolling until another focus action, with no correction on viewport events', async () => {
   const { workspace, inputs, viewport } = await setEditingGeometry()
   await act(async () => inputs[0]!.focus())
@@ -828,6 +883,37 @@ it('preserves the last row through closing before handing back the document scro
   }
 })
 
+it.each([
+  [false, -40],
+  [false, 40],
+  [true, -40],
+  [true, 40]
+])(
+  'holds the completion position across pointer release (manual=%s, reveal=%s)',
+  async (manual, reveal) => {
+    const { workspace, inputs } = await setEditingGeometry()
+    const input = inputs.at(-1)!
+    await act(async () => input.focus())
+    await frame()
+    if (manual) {
+      workspace.dispatchEvent(new Event('wheel'))
+      workspace.scrollTop -= 25
+      await frame()
+    }
+    const before = input.getBoundingClientRect().top
+    const button = host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!
+    await act(async () => pointer(button, 'pointerdown', 440, 'touch'))
+    // Native reveal can land between touch down and release. This is not a
+    // user scroll: the dock has touch-action:none and owns the completion tap.
+    workspace.scrollTop += reveal
+    await frame()
+    expect(input.getBoundingClientRect().top).toBe(before)
+    await act(async () => pointer(button, 'pointerup', 440, 'touch'))
+    expect(host.querySelector('.set-input-advance-dock')).toBeNull()
+    expect(input.getBoundingClientRect().top).toBe(before)
+  }
+)
+
 it('keeps keyboard geometry through innerHeight transients without recreating the session', async () => {
   const { workspace, inputs, viewport } = await setEditingGeometry()
   await act(async () => inputs[0]!.focus())
@@ -901,6 +987,37 @@ it('keeps the row still through a native blur gap before a new focus or keyboard
   await frame()
   expect(host.querySelector('.set-input-advance-dock')).toBe(dock)
   expect(document.activeElement).toBe(inputs[1])
+})
+
+it('holds the manually chosen position when native completion blurs before viewport expansion', async () => {
+  const { workspace, inputs, viewport } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  workspace.dispatchEvent(new Event('wheel'))
+  workspace.scrollTop -= 25
+  await frame()
+  const before = inputs[0]!.getBoundingClientRect().top
+  await act(async () => inputs[0]!.blur())
+  workspace.scrollTop -= 40
+  await frame()
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(before)
+  viewport.height = 620
+  await frame()
+  expect(inputs[0]!.getBoundingClientRect().top).toBe(before)
+})
+
+it('reveals the next field after the user scrolls the active row out of view', async () => {
+  const { workspace, inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  await frame()
+  const before = inputs[0]!.getBoundingClientRect().top
+  workspace.dispatchEvent(new Event('wheel'))
+  workspace.scrollTop += 300
+  await frame()
+  const button = host.querySelector<HTMLButtonElement>('.set-input-advance-dock button')!
+  await act(async () => pointer(button, 'pointerdown', 440, 'touch'))
+  await act(async () => pointer(button, 'pointerup', 440, 'touch'))
+  expect(document.activeElement).toBe(inputs[1])
+  expect(inputs[1]!.getBoundingClientRect().top).toBe(before)
 })
 
 it('releases the scroll owner only after the keyboard closes and restores document scrolling', async () => {

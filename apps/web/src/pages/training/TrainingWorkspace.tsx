@@ -1986,7 +1986,7 @@ function TrainingEditor({
         onComplete={() => setActiveSetInput(null)}
         onBeforeAdvance={setInputViewport.prepareFocus}
         onGestureStart={() => {
-          setInputViewport.cancelPlacement()
+          setInputViewport.holdPosition()
         }}
       />
       {confirmation && (
