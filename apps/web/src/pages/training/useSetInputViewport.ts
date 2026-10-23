@@ -17,6 +17,7 @@ export function useSetInputViewport(
   const controller = useRef<{
     place: (target: HTMLInputElement) => void
     cancel: () => void
+    hold: () => void
   } | null>(null)
   const prepared = useRef<HTMLInputElement | null>(null)
   const restingHeight = useRef(document.documentElement.clientHeight || window.innerHeight)
@@ -61,6 +62,7 @@ export function useSetInputViewport(
     let disposed = false
     let placementHeight = Infinity
     let placementTop: number | null = null
+    let holding = false
     let lastVisible: { input: HTMLInputElement; top: number } | null = null
     let blurCheck: ReturnType<typeof setTimeout> | undefined
     let height = viewport?.height ?? window.innerHeight
@@ -94,11 +96,11 @@ export function useSetInputViewport(
     const recheck = () => {
       const clientTop = coordinates.clientTop(top)
       reconcileSetInputGeometry(workspace, clientTop, height)
-      if (pending && document.activeElement === pending) align(pending)
+      if (pending && document.activeElement === pending && !holding) align(pending)
       else if (
         pending &&
         lastVisible?.input === pending &&
-        !workspace.querySelector('.training-set-card input:focus')
+        (holding || !workspace.querySelector('.training-set-card input:focus'))
       ) {
         // Native Done and native Next both pass through a null-focus gap.
         // Preserve the last visible row during that gap without ending the
@@ -112,6 +114,7 @@ export function useSetInputViewport(
         lastVisible = { input: lastInput, top: lastInput.getBoundingClientRect().top - clientTop }
     }
     const place = (target: HTMLInputElement) => {
+      holding = false
       if (target.closest('.training-set-card') !== lastInput?.closest('.training-set-card')) {
         placementTop = null
         placementHeight = Infinity
@@ -123,6 +126,21 @@ export function useSetInputViewport(
     }
     const cancel = () => {
       pending = null
+      holding = false
+    }
+    const hold = () => {
+      if (!lastInput?.isConnected) return
+      // A dock press is an input action, not a manual scroll. Keep the row
+      // where the user sees it throughout pointerdown -> pointerup -> blur.
+      // In particular, do not record a late native reveal as the new resting
+      // position. A previous manual scroll may have cleared pending, so capture
+      // its current position without running focus placement again.
+      lastVisible = {
+        input: lastInput,
+        top: lastInput.getBoundingClientRect().top - coordinates.clientTop(top)
+      }
+      pending = lastInput
+      holding = true
     }
     const onTouchMove = (event: TouchEvent) => {
       const touch = event.touches?.[0]
@@ -184,7 +202,7 @@ export function useSetInputViewport(
     body.style.width = '100%'
     // Preserve the content position while changing the scroll owner.
     workspace.scrollTop = Math.max(0, -originalTop + coordinates.clientTop(top))
-    controller.current = { place, cancel }
+    controller.current = { place, cancel, hold }
     const observe = () => {
       if (disposed) return
       update()
@@ -196,6 +214,11 @@ export function useSetInputViewport(
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, { passive: true })
     const checkAfterBlur = () => {
+      // Manual scrolling suspends focus placement, but does not surrender the
+      // closing handoff to native reveal. lastVisible already tracks the user's
+      // chosen position while focused; preserve that position through the blur
+      // gap rather than reading a potentially shifted rectangle after blur.
+      if (!pending && lastVisible?.input === lastInput) pending = lastInput
       clearTimeout(blurCheck)
       // focusout precedes focusin. Inspect the settled DOM focus, including
       // native dismissal whose viewport resize arrived before this blur.
@@ -292,13 +315,19 @@ export function useSetInputViewport(
       }
       restore()
       if (anchorTop !== null && !workspace.classList.contains('is-note-tab'))
-        stopDismissal.current = settleSetInputDismissal(viewport, layoutHeight, restore, () => {
-          if (!released) {
-            release()
-            restore()
-          }
-          coordinates.dispose()
-        })
+        stopDismissal.current = settleSetInputDismissal(
+          viewport,
+          layoutHeight,
+          restore,
+          () => {
+            if (!released) {
+              release()
+              restore()
+            }
+            coordinates.dispose()
+          },
+          coordinates.originTop
+        )
       else {
         release()
         coordinates.dispose()
@@ -324,6 +353,7 @@ export function useSetInputViewport(
 
   return {
     placeInput: (target: HTMLInputElement) => controller.current?.place(target),
+    holdPosition: () => controller.current?.hold(),
     prepareFocus: (next: HTMLInputElement) => {
       controller.current?.place(next)
       prepared.current = next

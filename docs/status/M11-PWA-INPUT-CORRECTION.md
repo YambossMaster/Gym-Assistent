@@ -2,79 +2,58 @@
 
 ## 1. 目標、版本與唯一 Next
 
-- **目標：** 單人、群組按時序／按學生，選取與 Next 都讓整框及操作列可見、可點；同列不移動、手動滑動不拉回；完成只收鍵盤與操作列，保留剛才欄位的位置與數值。
-- **保留：** 已接受外觀、群組操作、尾部空間與 release 77 的關閉改善。不新增 API／schema／Auth／依賴／部署設定或產品診斷介面。
-- **最新實機回報：** release 77 在 2026-10-23 11:24–11:29 四段錄影再次失敗：選取時頁面上方出現大片空白，輸入框錯位，操作列不可見；亦有鍵盤開著直接換欄的口述失敗。完成輸入有改善。綠色露出部分可能是「完成上課」，**不能只憑影片認定是「下一格」**。
-- **本輪正式站：** Fly release 78／應用 SHA `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`，PR101／Main CI379已完成；獨立三入口200、公開與origin版本資產一致。buildId `local-1792729892819`。部署正常不等於手機驗收。
-- **工作樹：** `output/m11-student-group`；候選 `0d5d4486abbb6cb7ac46261130848121f4e2aa04`，基底 `ac2802b`，PR101合併為應用Main `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`；與候選Web diff空。主目錄既有修改不屬本輪。接手先核對目前Git分支／HEAD。
-- **六項盤點：** ①版本核對、②影片、③正常／失敗條件對照、④紅綠修正、⑤完整清單／雙引擎回歸、⑥exact-SHA CI／部署／獨立讀回全部完成。手機驗收仍開放。使用者已授權完整驗證及直接部署，無待決產品選項。
-- **唯一 Next：** Product Owner多工關閉再開手機PWA，驗release 78的首次選取、鍵盤開著直接換欄、完成後第二動作與關閉中途位置，再依第4節清單確認；不清網站資料，不要求刪除或扣堂。若仍失敗，比較成功／失敗的原生座標時間線，勿只重跑同步模擬。
+- **目標：** 單人、群組按時序／按學生，選取與 Next 保持整框及操作列可見可點；同列不移動、手動滑動不拉回；完成只收鍵盤與操作列，保留剛才欄位的位置與數值。
+- **最新實機回報（2026-10-23 12:58–13:03）：** release78選取與操作列位置目前正常；完成輸入仍偶發滑動／偏移。三部新影片中第一、第三失敗，第二正常。不得把release78的工程綠燈視為P04通過，也不把選取的正面回報抹掉。
+- **正式站基底：** Fly78 complete，應用 `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`，本輪已重新讀回同SHA／三入口200／公開與origin資產一致。buildId `local-1792729892819`。
+- **工作樹：** `output/m11-student-group`，分支 `codex/m11-dismissal-origin-handoff`，基底 `5d46f8a080b6a253f8bfa589bcd718876e491574`；主目錄既有修改不屬本輪。
+- **六項盤點：** ①版本核對、②正常／失敗影片比較、③配對重現、④紅綠修正完成；⑤完整清單回歸進行中，⑥exact-SHA CI／部署／獨立讀回待執行。使用者已授權完整驗證及直接部署。
+- **唯一 Next：** 固定候選後完成雙引擎回歸，解釋任何失敗；全部工程門檻通過才走PR／Main CI部署。手機最終驗收仍需Product Owner。
+- **範圍：** 只改數值輸入手勢、座標換算與關閉穩定條件。保留外觀、CSS、尾部空間、dismissal期限；沒有API／schema／Auth／依賴／部署設定變更。
 
-## 2. 本輪原因與修正
+## 2. 已重現的缺陷、正常條件與修正
 
-**已證實的程式缺陷：** 原先將 CSS 的 `visualViewport.offsetTop` 直接與 `getBoundingClientRect()` 比較。當鍵盤平移使固定元素的量測原點一起改變，校正器把共同位移誤當成容器自己的錯位，再補一次，製造上方空白並把 dock 推到鍵盤下。輸入定位及關閉交接也使用同樣未換算的座標。
+這次不能只用「偶發」概括。固定欄位與操作，分開改變事件空窗和原點恢復順序，得到以下配對。這些是可重現程式缺陷，**不是手機原生trace，不能宣稱已識別影片內所有事件**。
 
-**為何有時正常：** 固定原點沒有變時，兩組數字剛好同原點；有共同平移時則不同。固定同一輸入框／操作，只改共同原點0、80、180px：release77三模式 **3/9**，候選 **9/9**；舊版80／180px空白與同量dock下移，候選frame top0、dock bottom472、input top163／163.5且實際可點。這是可重現的程式缺陷，**不是手機失敗率或原生 trace**。
+| 原因與可推翻預測                                                                | 證據／處置                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 按下dock取消定位，放開前的native reveal被記成新位置；無reveal正常、有reveal失敗 | 同欄注入40px，原生完成正常、dock完成偏移40px；無注入兩者正常。改為pointerdown至pointerup短暫守住目前位置，前進時恢復既有定位策略。正式4案正負偏移／先手動滑動先紅再綠。                                               |
+| 手動滑動已取消pending，原生blur空窗不再守位                                     | 三模式交叉矩陣中9個「手動→原生完成」仍偏移40px；正式元件亦紅。blur時恢復對最後可見位置的保護，不重新讀取可能已偏移的rect。                                                                                            |
+| 把不同幀的fixed zero與offsetTop相加，製造會動的原點                             | 同步恢復正常，offset先到或原點先到均失敗；正式4案各±20px。辨識非零pan下的visual座標後，該session保留visible origin=0；未辨識時保留layout換算。兩種座標系及獨立frame／dock誤差都要回歸。                               |
+| 按鈕守位誤改Next的定位目標                                                      | 本輪候選測試攔到「手動把active列滑出畫面→Next也留在畫面外」。已分開holding與placement，正式測試先紅再綠。未發布有此回歸的版本。                                                                                       |
+| 解鎖太早、遲到document scroll、尾端範圍不足                                     | WebKit抓到高度／offset已回復而原點未回復，觀測提早停止，後續留下30px。新增origin讀值進度與穩定條件；不改250／1000／2500ms期限，新手勢仍即時接手、停滯仍有上限。正式2案先紅再綠，原始WebKit6案重驗通過；尾部空間不變。 |
+| 舊版本／快取、input重建、保存或學生歸屬                                         | 正式服務78已讀回；未取得手機快取身分，不歸咎快取。不改資料或key；24格式／189欄、儲存重開及模式切換列為保護條件。                                                                                                      |
+| 尚未觀測的原生compositor／hit時序                                               | 未取得原生事件時間線，保留實機門檻，不用桌面WebKit保證零Bug。若再失敗應捕獲原生focus／viewport／fixed zero／rect／scroll時間線，避免又只重跑同一合成模型。                                                            |
 
-**處置：** session 建立獨立、不可見且不佔空間的 fixed zero 量測點，把 CSS top 換成 client 座標後再比對 frame、dock、input。保留真正的獨立容器誤差校正；選取、換欄、null-focus 空窗及完成交接共用換算。量測點持續至關閉交接完成，新操作／筆記／離頁會清理。沒有增加延遲或改關閉期限。
+[WebKit257375](https://bugs.webkit.org/show_bug.cgi?id=257375)提供Safari DOMRect與fixed CSS座標差異的原始重現；[WebKit254861](https://bugs.webkit.org/show_bug.cgi?id=254861)記錄installed web app的鍵盤恢復及事件／屬性不同步。來源支持檢查方向，不證明本手機的具體成因。
 
-| 原因／可推翻預測                                  | 本輪判定與處置                                                                                                                                         |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 共同原點被重複補償；同欄位無pan正常、有pan失敗    | 已重現；正式元件80／180px先紅再綠。瀏覽器三模式3/9→9/9，新增真實遮擋與hit檢查。                                                                        |
-| frame／dock真的各自移動；移除全部校正會讓前輪退化 | 保留校正但先統一原點。單測混合共同原點與獨立位移；36次新循環含兩者疊加，Chrome／WebKit皆通過。                                                         |
-| 換欄／跨動作殘留anchor、舊observer或補償          | 新循環含Next、直接改選、重進、共同原點恢復；一個session只有一個量測點。兩引擎各36個新循環與既有108循環通過。                                           |
-| 完成時換回document或blur空窗再次移動              | 保留release77逐幀／進度交接，只換算座標。新36循環兩引擎四段關閉皆0px；歷史一般兩引擎各108取樣及WebKit慢速關閉通過。                                    |
-| 「下一格」被卸載，或「完成上課」意外露出          | fixture啟用可完成課堂，同時讀兩個DOM及computed display，另有模擬鍵盤做hit遮擋。新案例中dock存在可點、完成上課隱藏；影片中的綠色身分仍未知。            |
-| viewport事件早於屬性、無事件reveal、tap jitter    | 保留每幀讀取、定位意圖與8px手勢判定；新共同原點循環不送resize。舊時序15、根因12、首中末36全部通過。                                                    |
-| 捲動範圍、裁切、sticky、Shell、桌機及筆記互相影響 | 不改CSS或範圍策略；首中末／九點hit、320px、Shell、桌機與筆記全部通過。                                                                                 |
-| 保存／學生歸屬或重繪重建input                     | 不改資料及key；24格式／189欄、save/reload／模式切換通過。                                                                                              |
-| 部署舊檔／PWA版本                                 | 正式站77已核對；尚未讀到使用者手機快取身分，不將失敗推給快取，不要求清資料。發布後再核對映像SHA及入口資產。                                            |
-| 原生數值本身失真、hit座標不一致、其他未捕獲時序   | 未取得手機原生trace，不能宣稱排除；保留實機清單。若再失敗，先比較focus、viewport、fixed zero、frame／dock／input rect與hit、scroll的成功／失敗時間線。 |
+## 3. 重現入口與驗證邊界
 
-舊測試的盲點是只改個別元素位移，沒有同時改變所有DOMRect的共同原點。外部原始資料 [WebKit 257375](https://bugs.webkit.org/show_bug.cgi?id=257375) 記錄DOMRect與fixed定位於鍵盤出現時的座標差異；[Visual Viewport原始說明](https://github.com/WICG/visual-viewport)說明layout與visual viewport區分。它們支持測試方向，不證明這四段手機影片的內部事件。
-
-## 3. 影片與可重現入口
-
-影片位於 `C:/Users/User/Downloads/`，同前綴 `ScreenRecording_10-23-2026`：
-
-- `11-29-41_1.mp4`：首次正常，約5s重選出現空白，約12s關閉恢復。
-- `11-28-38_1.mp4`：約4s選取就錯位，約7s關閉恢復，再選仍失敗。
-- `11-25-08_1.mp4`：第一動作／Next正常，完成後約6–7s第二動作失敗。
-- `11-24-29_1.mp4`：約6s第一次選取失敗，約12s關閉恢復。
-
-抽幀及JSON在忽略的 `output/pwa-input-audit/r78/`。綠色碎片身分未知；不能由顏色推斷是哪個按鈕。直接換欄失敗只有使用者口述，工程矩陣仍納入。
-
-- 本機隔離頁：`apps/web/output/pwa-input-review.html`，Vite5180；`scenario=complete`使完成上課存在，API全攔截，未寫正式資料。
-- 新最小重現：`output/playwright/m11-r78-native-pan.js`，三模式×共同原點0／80／180；先紅JSON `native-pan-red.json`，再綠 `native-pan-green.json`。
-- 新36循環：`m11-r78-coordinate-cycles.js`，選取→同列Next→直接改選→手動滑動→末欄→兩種完成→跨動作重進；同時檢查frame、dock、input、Finish及量測點清理。
-- 模型邊界：用root transform製造共同座標移動，鍵盤關閉必須移除此transform。初版在關閉後留下`translateY(0)`，額外製造fixed containing block／document feedback，並非產品CSS；修正模型後再驗，沒有為此改應用程式或放寬位移斷言。
-- 歷史重播仍用`m11-r77-*`、`m11-root-positions`、`m11-viewport-root-repro`、`m11-temporal-*`、`m11-next-temporal`、`m11-shell-boundary`、`m11-inapp-dialogs`、`m11-draft-reload`。新批次 `m11-r78-batch.ps1` 將結果保存在r78，舊檔名不代表測舊runtime。
-- 正式碼：`apps/web/src/pages/training/useSetInputViewport.ts`、`set-input-geometry.ts`；正式回歸為同目錄 `TrainingWorkspace.gesture.test.tsx`、`set-input-geometry.test.ts`，歷史dismissal helper保持不變。
-- `output/`不入Git，其他機器缺檔時重建同等隔離流程。WebKit desktop及合成鍵盤不是原生iPhone OSK。
+- 新影片位於 `C:/Users/User/Downloads/`，前綴 `ScreenRecording_10-23-2026`：`13-03-52_1.mp4`、`13-00-23_1.mp4`、`12-58-47_1.mp4`。第一、第三走到app完成，第二在中途收鍵盤；第三約8.4–8.8s可見關閉途中位移。抽幀在忽略的 `output/pwa-input-audit/r79/`。
+- `apps/web/output/pwa-input-review.html`，Vite5180，`mode=solo|timeline|student&scenario=complete`。使用真實TrainingWorkspace／CSS，API全攔截，沒有正式資料寫入。
+- `output/playwright/m11-r79-dismiss-trigger.js`：4案配對；原始3/4，修正4/4。
+- `m11-r79-closing-origins.js`：同步／offset晚／origin晚×兩種完成；舊2/6，候選Chromium6/6。保留root transform至原點歸零，刻意檢驗高度已恢復但原點未恢復的交接。此模型也會建立fixed containing block，不能把其中scrollY數字當iOS實測。
+- `m11-r79-dismissal-matrix.js`：三模式×三種恢復順序×兩種完成×是否先手動滑動，共36案；同時在手勢／blur空窗注入正負40px。第一候選27/36揭露原生手動邊界；最終結果見第5節。
+- `m11-r79-batch.ps1`對所有新舊腳本加入pageerror阻擋並寫r79 JSON；缺touch資料的舊r77 race不用，改用r78完整事件版。熱更新中斷的結果不計通過。
+- 正式碼：`TrainingWorkspace.tsx`、`useSetInputViewport.ts`、`set-input-geometry.ts`、`set-input-dismissal.ts`。回歸在 `TrainingWorkspace.gesture.test.tsx`，新增10案；dismissal另新增2案，既有geometry／dock測試保留。
+- 舊歷史檢查入口與release74–78詳細原因／證據留Git：`git show 5d46f8a:docs/status/M11-PWA-INPUT-CORRECTION.md`。綠色碎片可能是完成上課，未定性為Next；fixture分別驗兩個DOM。
 
 ## 4. 唯一檢查清單
 
-方框只代表手機實機驗收；**目前所有手機項目未通過本輪驗收**。release74–77的退回紀錄保留，工程通過不能自動勾選。
+手機欄只記使用者實機證據；工程通過不得自動變成手機通過。
 
-| 手機項目                 | 通過條件                                                         | 本輪工程結果                                       |
-| ------------------------ | ---------------------------------------------------------------- | -------------------------------------------------- |
-| [ ] P01 操作列           | 不失蹤、不被鍵盤遮住、整框可點；確認不是完成上課露出。           | 兩引擎各9案、36新循環與108歷史循環通過。           |
-| [ ] 基本輸入F01–F03      | 每次選取都有dock；Next精確一欄、鍵盤不關，最後欄才完成。         | 正式相關測試與24格式／189欄通過。                  |
-| [ ] P02／P05／P06 可見性 | 首中末及高低任意起點、直接改選都沒有上方空白，整框可見可點。     | 兩引擎新共同原點／直接換欄及歷史36起點通過。       |
-| [ ] P03 前進／滑動       | 同列不動、跨列定位、手動滑動不追、重點選恢復定位。               | 兩引擎新36循環、舊時序15／延後Next27通過。         |
-| [ ] P04 完成／重進       | 收鍵盤每幀及最終都保留原欄位置，兩種關閉與快速跨動作重進均成立。 | 兩引擎新36循環／一般108取樣0px，慢速與36競態通過。 |
-| [ ] 保存／模式F04、F12   | 不丟值、不改錯學生；三模式八格式保存重開與切換一致。             | 24格式／189欄通過，隔離API不代表新DB證據。         |
-| [ ] P07 站內確認         | 取消保留、接受一次；沒有原生alert／confirm／prompt／離頁提示。   | 本輪未改；6站內確認與2真IndexedDB草稿恢復通過。    |
-| [ ] 同伴流程             | 桌機Enter／320px／教練筆記正常；離頁不留鎖定或量測點。           | 筆記／離頁清理測試及4組瀏覽器同伴通過。            |
+| 項目                | 必須保留的結果                                           | 手機回報／本輪工程                                                 |
+| ------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| P01 操作列          | 存在、位置正確、整框可點；不是完成上課露出               | release78目前正面回報；候選待驗。雙引擎新舊矩陣進行中。            |
+| F01–F03 基本輸入    | Next精確一欄、鍵盤不關，最後才完成                       | 24格式／189欄及正式回歸待最終確認。                                |
+| P02／P05／P06 選取  | 首中末／任意位置／直接改選，無空白、整框可見可點         | release78目前正面回報；候選待驗。共同原點／獨立位移皆須回歸。      |
+| P03 前進／滑動      | 同列不動、跨列定位、手動不拉回、離屏後Next重新可見       | 新離屏Next紅綠已補；完整循環進行中。                               |
+| P04 完成／重進      | 每幀及最終保留原欄位置；兩種完成、手動後完成、跨動作重進 | **release78實機失敗，未驗收。** 新36案及歷史關閉／競態待最終確認。 |
+| F04／F12 保存／模式 | 不丟值、不改錯學生；保存重開／切換一致                   | 資料碼未改，仍重驗189欄／草稿。                                    |
+| P07 站內確認        | 取消保留、接受一次、無原生阻擋對話框                     | 未改；歷史確認與IndexedDB恢復待回歸。                              |
+| 同伴流程            | 桌機Enter／320px／教練筆記正常；離頁清理鎖定及probe      | 正式清理測試與瀏覽器同伴待最終確認。                               |
 
 ## 5. 工程與發布證據
 
-- 本輪affected：`npm run check:affected -- ac2802b`，最終格式／whitespace／Web typecheck及7檔118測試exit0，含離頁與筆記清理。
-- 新正式紅燈：共同原點80／180px，舊碼workspace top預期0卻分別80／180；換算後通過。幾何helper另驗共同原點與獨立位移疊加／撤回。
-- 預設fork worker首次啟動逾時，改threads成功；之後affected使用預設pool亦成功。這是工具啟動錯誤，不當成功能紅燈或忽略測試。
-- **exact-SHA發布：** [PR101](https://github.com/YambossMaster/Gym-Assistent/pull/101) head `0d5d4486abbb6cb7ac46261130848121f4e2aa04`／[PR CI378](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39899906946)成功後合併為 `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`；[Main CI379](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39900392267)五jobs成功，包含完整check/build、browser、migration dry-run、Production preview及部署/readiness。候選與Main Web diff空，無新migration。
-- **發布順序／取消紀錄：** Main run379整體標示cancelled，五個job實際success。收尾讀Vite日誌才發現舊race腳本缺`touches`，位置斷言雖通過仍有handler例外，因此送出取消；實際部署已完成，不能宣稱取消阻止了發布。產品碼未改，改以完整touch資料及pageerror斷言重跑，Chrome／WebKit各36案、0未處理例外。這批有效競態補驗是在部署後完成，取代舊race結果；其餘本輪回歸在部署前完成。沒有為清除run標籤而重複部署。
-- **獨立讀回：** Fly release 78 complete、同SHA machine started／service passing；`/api/ready`、`/`、`/login`200，公開與origin buildId／assets／入口JS相同。buildId `local-1792729892819`，入口 `/assets/index-CtDBztG5.js`，JS SHA256 `bf1fc12a32798ab2eec0c230d0f0843116ecc7378d38a1c2a65c3060f48f20d4`。證據 `output/github/m11-r78-production-readback.json`。
-- **完整本機：** Chrome／WebKit各9/9新原點、36/36直接改選／重進、108/108歷史壓力；兩引擎一般關閉6案／108取樣0px，WebKit慢速6案亦通過。24格式／189欄、首中末36、根因12、temporal15、race36、延後Next27、Shell6、同伴4、站內確認6、真IndexedDB恢復2全部通過。兩引擎穩定0次style重寫、完成後0新增觀測frame，量測點清理通過。
-- 候選證據凍結 `output/pwa-input-audit/r78/0d5d448/`，含SHA256 manifest。所有合成鍵盤／隔離API結果與原生手機驗收分開；綠色碎片身分仍不推定。
-- 上輪歷史：PR99／應用Main `db1a8f59`／Main CI375／Fly77；完整舊原因表及證據在 `git show ac2802b:docs/status/M11-PWA-INPUT-CORRECTION.md` 及 `docs/status/log/2026-10.md`，不要再將舊逐輪日誌追加成本文件的「最新結論」。
+- 新正式紅燈已分別執行：完成手勢4案、非同步原點4案、手動後原生blur1案；修正後通過。另加1案攔下本輪離屏Next候選回歸並修正。原始瀏覽器配對也重跑。
+- 進行中：固定最終程式後的affected、雙引擎完整批次、24格式矩陣。此前127測試通過是中間候選，不冒充最終SHA證據。
+- 尚未push／merge／部署；沒有把被熱更新打斷或局部通過的批次當發布依據。後續須記錄候選SHA、PR／Main完整CI、Fly版本、獨立三入口與資產讀回。
