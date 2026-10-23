@@ -5,10 +5,10 @@
 - **目標：** 單人、群組按時序／按學生，選取與 Next 都讓整框及操作列可見、可點；同列不移動、手動滑動不拉回；完成只收鍵盤與操作列，保留剛才欄位的位置與數值。
 - **保留：** 已接受外觀、群組操作、尾部空間與 release 77 的關閉改善。不新增 API／schema／Auth／依賴／部署設定或產品診斷介面。
 - **最新實機回報：** release 77 在 2026-10-23 11:24–11:29 四段錄影再次失敗：選取時頁面上方出現大片空白，輸入框錯位，操作列不可見；亦有鍵盤開著直接換欄的口述失敗。完成輸入有改善。綠色露出部分可能是「完成上課」，**不能只憑影片認定是「下一格」**。
-- **正式站基線：** 本輪獨立讀回 Fly release 77／應用 SHA `db1a8f59bf1ff4bc65fa0fd0d6ea153382b50669`；三入口200、公開與 origin 資產相同。部署正常不等於功能驗收。
-- **工作樹：** `output/m11-student-group`；分支 `codex/m11-input-coordinate-space`，基底 Main `ac2802b437fd4ef03f71b70daab4bd2be4d38c96`。主目錄既有修改不屬本輪。
-- **六項盤點：** ①版本核對、②影片、③正常／失敗條件對照、④紅綠修正、⑤歷史清單與雙引擎回歸完成；⑥exact-SHA CI／部署／獨立讀回待執行。使用者已授權完整驗證及直接部署，無待決產品選項。
-- **唯一 Next：** 第4節工程欄全部通過；提交本輪修正並依 PR／Main CI 發布，獨立讀回後更新本文件。不要把目前候選稱為已部署，也不要勾選手機驗收。
+- **本輪正式站：** Fly release 78／應用 SHA `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`，PR101／Main CI379已完成；獨立三入口200、公開與origin版本資產一致。buildId `local-1792729892819`。部署正常不等於手機驗收。
+- **工作樹：** `output/m11-student-group`；候選 `0d5d4486abbb6cb7ac46261130848121f4e2aa04`，基底 `ac2802b`，PR101合併為應用Main `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`；與候選Web diff空。主目錄既有修改不屬本輪。接手先核對目前Git分支／HEAD。
+- **六項盤點：** ①版本核對、②影片、③正常／失敗條件對照、④紅綠修正、⑤完整清單／雙引擎回歸、⑥exact-SHA CI／部署／獨立讀回全部完成。手機驗收仍開放。使用者已授權完整驗證及直接部署，無待決產品選項。
+- **唯一 Next：** Product Owner多工關閉再開手機PWA，驗release 78的首次選取、鍵盤開著直接換欄、完成後第二動作與關閉中途位置，再依第4節清單確認；不清網站資料，不要求刪除或扣堂。若仍失敗，比較成功／失敗的原生座標時間線，勿只重跑同步模擬。
 
 ## 2. 本輪原因與修正
 
@@ -72,5 +72,9 @@
 - 本輪affected：`npm run check:affected -- ac2802b`，最終格式／whitespace／Web typecheck及7檔118測試exit0，含離頁與筆記清理。
 - 新正式紅燈：共同原點80／180px，舊碼workspace top預期0卻分別80／180；換算後通過。幾何helper另驗共同原點與獨立位移疊加／撤回。
 - 預設fork worker首次啟動逾時，改threads成功；之後affected使用預設pool亦成功。這是工具啟動錯誤，不當成功能紅燈或忽略測試。
-- 本輪候選尚未提交／發布。必須核對exact-head PR CI→Main CI→Fly映像SHA→三入口／公開origin資產，再更新此節。
+- **exact-SHA發布：** [PR101](https://github.com/YambossMaster/Gym-Assistent/pull/101) head `0d5d4486abbb6cb7ac46261130848121f4e2aa04`／[PR CI378](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39899906946)成功後合併為 `d6479bcdc759004d0d5f8f2808ae5eb6c0fcc164`；[Main CI379](https://github.com/YambossMaster/Gym-Assistent/actions/runs/39900392267)五jobs成功，包含完整check/build、browser、migration dry-run、Production preview及部署/readiness。候選與Main Web diff空，無新migration。
+- **發布順序／取消紀錄：** Main run379整體標示cancelled，五個job實際success。收尾讀Vite日誌才發現舊race腳本缺`touches`，位置斷言雖通過仍有handler例外，因此送出取消；實際部署已完成，不能宣稱取消阻止了發布。產品碼未改，改以完整touch資料及pageerror斷言重跑，Chrome／WebKit各36案、0未處理例外。這批有效競態補驗是在部署後完成，取代舊race結果；其餘本輪回歸在部署前完成。沒有為清除run標籤而重複部署。
+- **獨立讀回：** Fly release 78 complete、同SHA machine started／service passing；`/api/ready`、`/`、`/login`200，公開與origin buildId／assets／入口JS相同。buildId `local-1792729892819`，入口 `/assets/index-CtDBztG5.js`，JS SHA256 `bf1fc12a32798ab2eec0c230d0f0843116ecc7378d38a1c2a65c3060f48f20d4`。證據 `output/github/m11-r78-production-readback.json`。
+- **完整本機：** Chrome／WebKit各9/9新原點、36/36直接改選／重進、108/108歷史壓力；兩引擎一般關閉6案／108取樣0px，WebKit慢速6案亦通過。24格式／189欄、首中末36、根因12、temporal15、race36、延後Next27、Shell6、同伴4、站內確認6、真IndexedDB恢復2全部通過。兩引擎穩定0次style重寫、完成後0新增觀測frame，量測點清理通過。
+- 候選證據凍結 `output/pwa-input-audit/r78/0d5d448/`，含SHA256 manifest。所有合成鍵盤／隔離API結果與原生手機驗收分開；綠色碎片身分仍不推定。
 - 上輪歷史：PR99／應用Main `db1a8f59`／Main CI375／Fly77；完整舊原因表及證據在 `git show ac2802b:docs/status/M11-PWA-INPUT-CORRECTION.md` 及 `docs/status/log/2026-10.md`，不要再將舊逐輪日誌追加成本文件的「最新結論」。
