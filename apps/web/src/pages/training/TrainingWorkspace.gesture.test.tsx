@@ -154,6 +154,10 @@ beforeEach(async () => {
       top = 0
       height = 0
     }
+    if (this.hasAttribute('data-set-input-origin')) {
+      top = 0
+      height = 0
+    }
     return {
       x: 0,
       y: top,
@@ -432,6 +436,66 @@ async function setEditingGeometry() {
   })
   return { viewport, workspace, inputs }
 }
+
+it.each([80, 180])(
+  'keeps the frame, dock and row in client coordinates when the fixed origin pans %spx',
+  async (pan) => {
+    const { viewport, workspace, inputs } = await setEditingGeometry()
+    let origin = 0
+    const shift = (property: string) => parseFloat(workspace.style.getPropertyValue(property)) || 0
+    workspace.style.position = 'fixed'
+    vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function (
+      this: HTMLElement
+    ) {
+      const index = inputs.indexOf(this as HTMLInputElement)
+      const frameTop = origin + viewport.offsetTop + shift('--session-input-shift')
+      const top = this.hasAttribute('data-set-input-origin')
+        ? origin
+        : this === workspace
+          ? frameTop
+          : this.classList.contains('set-input-advance-dock')
+            ? origin + viewport.offsetTop + viewport.height - 8 - 58 + shift('--session-dock-shift')
+            : index >= 0
+              ? frameTop + 280 + Math.floor(index / 2) * 180 - workspace.scrollTop
+              : 0
+      const height = this.classList.contains('set-input-advance-dock') ? 58 : 40
+      return {
+        x: 0,
+        y: top,
+        top,
+        bottom: top + height,
+        left: 0,
+        right: 390,
+        width: 390,
+        height,
+        toJSON() {}
+      }
+    })
+    await act(async () => inputs[0]!.focus())
+    const dock = host.querySelector<HTMLElement>('.set-input-advance-dock')!
+    dock.style.position = 'fixed'
+    await frame()
+    const anchor = inputs[0]!.getBoundingClientRect().top
+    // The CSS layout offset and the client-coordinate origin move together.
+    // The visible frame has not moved, so feedback must not add the pan again.
+    viewport.offsetTop = pan
+    origin = -pan
+    await frame() // No resize event: the same conversion is needed at paint time.
+    expect(workspace.getBoundingClientRect().top).toBe(0)
+    expect(dock.getBoundingClientRect().bottom).toBe(472)
+    expect(inputs[0]!.getBoundingClientRect().top).toBe(anchor)
+    await act(async () => inputs[2]!.focus())
+    await frame()
+    expect(inputs[2]!.getBoundingClientRect().bottom).toBeLessThan(dock.getBoundingClientRect().top)
+    const nextAnchor = inputs[2]!.getBoundingClientRect().top
+    viewport.offsetTop = 0
+    origin = 0
+    await frame()
+    expect(workspace.getBoundingClientRect().top).toBe(0)
+    expect(dock.getBoundingClientRect().bottom).toBe(472)
+    expect(inputs[2]!.getBoundingClientRect().top).toBe(nextAnchor)
+  }
+)
 
 it('moves the internal scroll owner once per row and never scrolls the document during advance', async () => {
   const { workspace, inputs } = await setEditingGeometry()
@@ -930,6 +994,18 @@ it('ends numeric editing when explicitly switching to the Coach Note tab', async
   expect(host.querySelector('.set-input-advance-dock')).toBeNull()
   expect(document.body.style.position).toBe('')
   expect(document.activeElement).not.toBe(inputs[0])
+  expect(document.querySelector('[data-set-input-origin]')).toBeNull()
+})
+
+it('removes the coordinate reference and keyboard lock when leaving during input', async () => {
+  const { inputs } = await setEditingGeometry()
+  await act(async () => inputs[0]!.focus())
+  expect(document.querySelectorAll('[data-set-input-origin]')).toHaveLength(1)
+  await act(async () => root.render(<div>Another route</div>))
+  expect(document.querySelector('[data-set-input-origin]')).toBeNull()
+  expect(document.body.style.position).toBe('')
+  expect(document.documentElement.classList.contains('is-session-set-editing')).toBe(false)
+  expect(frames.size).toBe(0)
 })
 
 it('finishes a native dismissal when viewport expansion arrives before blur', async () => {

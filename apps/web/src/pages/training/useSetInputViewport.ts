@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import { getSetInputFocusAdjustment } from './set-input-navigation'
 import { settleSetInputDismissal } from './set-input-dismissal'
-import { reconcileSetInputGeometry } from './set-input-geometry'
+import { createSetInputCoordinates, reconcileSetInputGeometry } from './set-input-geometry'
 
 // One scroll owner for the entire keyboard session. Field changes never release
 // the document lock or recreate the viewport listeners.
@@ -43,6 +43,7 @@ export function useSetInputViewport(
     const viewport = window.visualViewport
     const root = document.documentElement
     const body = document.body
+    const coordinates = createSetInputCoordinates()
     if (!restingSpace.current)
       restingSpace.current = { workspace, margin: workspace.style.marginBottom }
     const originalY = window.scrollY
@@ -66,6 +67,7 @@ export function useSetInputViewport(
     let top = viewport?.offsetTop ?? 0
     const align = (target: HTMLInputElement) => {
       if (!keyboardSeen || layoutHeight - height <= 120) return
+      const clientTop = coordinates.clientTop(top)
       const rect = target.getBoundingClientRect()
       const dockTop = workspace
         .querySelector('.set-input-advance-dock')
@@ -73,24 +75,25 @@ export function useSetInputViewport(
       const proposed = getSetInputFocusAdjustment({
         inputTop: rect.top,
         inputBottom: rect.bottom,
-        visibleTop: top + 12,
-        visibleBottom: dockTop && dockTop > top ? dockTop - 24 : top + height - 88
+        visibleTop: clientTop + 12,
+        visibleBottom: dockTop && dockTop > clientTop ? dockTop - 24 : clientTop + height - 88
       })
       // Shrinking the keyboard's available area can require a new anchor.
       // Expansion (including the first frames of native Done) must not push a
       // correctly placed row down and then save that shifted dismissal position.
       if (placementTop === null || height < placementHeight) {
-        placementTop = rect.top - top - proposed
+        placementTop = rect.top - clientTop - proposed
         placementHeight = height
       }
-      const delta = Math.round(rect.top - top - placementTop)
+      const delta = Math.round(rect.top - clientTop - placementTop)
       if (Math.abs(delta) > 2) workspace.scrollTop += delta
     }
     // Native reveal and viewport properties can commit after their event, or
     // without another event. Observe the active session at paint time, reading
     // fresh geometry; an old event snapshot plus a delayed align is insufficient.
     const recheck = () => {
-      reconcileSetInputGeometry(workspace, top, height)
+      const clientTop = coordinates.clientTop(top)
+      reconcileSetInputGeometry(workspace, clientTop, height)
       if (pending && document.activeElement === pending) align(pending)
       else if (
         pending &&
@@ -100,13 +103,13 @@ export function useSetInputViewport(
         // Native Done and native Next both pass through a null-focus gap.
         // Preserve the last visible row during that gap without ending the
         // session; an actual manual gesture has already cleared pending.
-        const delta = pending.getBoundingClientRect().top - top - lastVisible.top
+        const delta = pending.getBoundingClientRect().top - clientTop - lastVisible.top
         if (Math.abs(delta) > 1) workspace.scrollTop += delta
       }
       // Capture while still editing. Native blur can move the scroller before
       // React's cleanup runs; reading for the first time there saves the jump.
       if (lastInput && document.activeElement === lastInput)
-        lastVisible = { input: lastInput, top: lastInput.getBoundingClientRect().top - top }
+        lastVisible = { input: lastInput, top: lastInput.getBoundingClientRect().top - clientTop }
     }
     const place = (target: HTMLInputElement) => {
       if (target.closest('.training-set-card') !== lastInput?.closest('.training-set-card')) {
@@ -180,7 +183,7 @@ export function useSetInputViewport(
     body.style.top = `${-originalY}px`
     body.style.width = '100%'
     // Preserve the content position while changing the scroll owner.
-    workspace.scrollTop = Math.max(0, -originalTop + top)
+    workspace.scrollTop = Math.max(0, -originalTop + coordinates.clientTop(top))
     controller.current = { place, cancel }
     const observe = () => {
       if (disposed) return
@@ -224,9 +227,9 @@ export function useSetInputViewport(
       const anchorTop = anchor?.isConnected
         ? lastVisible?.input === anchor
           ? lastVisible.top
-          : anchor.getBoundingClientRect().top - top
+          : anchor.getBoundingClientRect().top - coordinates.clientTop(top)
         : null
-      const restoreY = originalY + workspace.scrollTop + originalTop - top
+      const restoreY = originalY + workspace.scrollTop + originalTop - coordinates.clientTop(top)
       // Dismissal must not bring a sticky heading back over the row that was
       // just edited. It remains in normal flow and can be reached by scrolling up.
       workspace.dataset.setInputResting = 'true'
@@ -262,8 +265,9 @@ export function useSetInputViewport(
           ) {
             setProperty('--session-input-top', `${closingTop}px`)
             setProperty('--session-input-height', `${closingHeight}px`)
-            reconcileSetInputGeometry(workspace, closingTop, closingHeight)
-            const delta = anchor.getBoundingClientRect().top - closingTop - anchorTop
+            const clientTop = coordinates.clientTop(closingTop)
+            reconcileSetInputGeometry(workspace, clientTop, closingHeight)
+            const delta = anchor.getBoundingClientRect().top - clientTop - anchorTop
             if (Math.abs(delta) > 1) workspace.scrollTop += delta
             return true
           }
@@ -275,7 +279,7 @@ export function useSetInputViewport(
             ? window.scrollY +
                 anchor.getBoundingClientRect().top -
                 anchorTop -
-                (viewport?.offsetTop ?? 0)
+                coordinates.clientTop(viewport?.offsetTop ?? 0)
             : restoreY
         )
         // Keep the existing minimum tail range; this is not space reclamation.
@@ -289,11 +293,16 @@ export function useSetInputViewport(
       restore()
       if (anchorTop !== null && !workspace.classList.contains('is-note-tab'))
         stopDismissal.current = settleSetInputDismissal(viewport, layoutHeight, restore, () => {
-          if (released) return
-          release()
-          restore()
+          if (!released) {
+            release()
+            restore()
+          }
+          coordinates.dispose()
         })
-      else release()
+      else {
+        release()
+        coordinates.dispose()
+      }
     }
   }, [enabled, workspaceRef])
 
