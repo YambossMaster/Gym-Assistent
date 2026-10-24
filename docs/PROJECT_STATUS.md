@@ -1,8 +1,12 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-24 against deployed application commit
-> `a1d614204cc72234cbba284bb91c33524bbc0503` and the M11 closure decision.
+> `eaac9bf7244d439e7f1336d8eafdacabaf4844f3` and the training-result share correction.
 > Main code and confirmed Production deployment are recorded separately below.
+
+## Training result sharing correction deployed (2026-10-24)
+
+After Product Owner UI review and deployment authorization, [PR #106](https://github.com/YambossMaster/Gym-Assistent/pull/106) corrected the public Coach name, group attendance/student identity on the share page and image, compact set rows, and empty-note sharing. The existing image download flow remains. The PR head `f4193dd` passed [PR CI #388](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40073488909); Main `eaac9bf7244d439e7f1336d8eafdacabaf4844f3` passed all five [Main CI #389](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40073769325) jobs and deployed to Fly release 80 with no new migration. Running image `GH_SHA` matches Main, service check passes, and independent `/api/ready`, `/`, `/login` returned 200. The served JS contains the new note message; an invalid public token returned 404 with no-cache/referrer protection. Valid-link live database round-trip and installed-iPhone visual acceptance remain unverified; the original missing note text was absent from the saved record and was not recovered. [Release evidence and scope](status/TRAINING-RESULT-SHARE-CORRECTION.md).
 
 ## M11 已依 Product Owner 決定以現況結束（2026-10-24）
 
