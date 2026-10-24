@@ -24,24 +24,86 @@ function noteNodes(editor: HTMLElement): HTMLDivElement[] {
   )
 }
 
+type NoteCaret = { index: number; offset: number }
+
+function isNativeBlock(node: Node): boolean {
+  return node instanceof HTMLElement && (node.tagName === 'DIV' || node.tagName === 'P')
+}
+
+function nativeText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
+  if (node instanceof HTMLBRElement) return '\n'
+  // A lone BR is the browser's placeholder for one empty contenteditable line.
+  if (node.childNodes.length === 1 && node.firstChild instanceof HTMLBRElement) return ''
+  let text = ''
+  let previous: Node | null = null
+  let previousText = ''
+  for (const child of node.childNodes) {
+    if (
+      previous &&
+      (isNativeBlock(previous) || isNativeBlock(child)) &&
+      !(previous instanceof HTMLBRElement) &&
+      !previousText.endsWith('\n')
+    )
+      text += '\n'
+    const childText = nativeText(child)
+    text += childText
+    previous = child
+    previousText = childText
+  }
+  return text
+}
+
+function readEditorState(editor: HTMLElement): { blocks: NoteBlock[]; caret: NoteCaret | null } {
+  const blocks: NoteBlock[] = []
+  const selection = window.getSelection()
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : null
+  const anchor = range?.startContainer
+  let caret: NoteCaret | null = null
+  for (const [position, node] of Array.from(editor.childNodes).entries()) {
+    if (anchor === editor && range?.startOffset === position)
+      caret = { index: blocks.length, offset: 0 }
+    if (node.nodeType !== Node.TEXT_NODE && !(node instanceof HTMLElement)) continue
+    const source: NoteBlock =
+      node instanceof HTMLDivElement && 'noteBlock' in node.dataset
+        ? {
+            kind: (node.dataset.kind as NoteBlock['kind']) ?? 'body',
+            indent: Number(node.dataset.indent ?? 0),
+            bold: node.dataset.bold === 'true',
+            text: '',
+            ...(node.dataset.sourceMarker ? { marker: node.dataset.sourceMarker } : {})
+          }
+        : { kind: 'body', indent: 0, text: '' }
+    const lines = nativeText(node).split('\n')
+    if (range && anchor && (node === anchor || node.contains(anchor))) {
+      const before = document.createRange()
+      before.selectNodeContents(node)
+      before.setEnd(anchor, range.startOffset)
+      const prefix = nativeText(before.cloneContents()).split('\n')
+      const line = Math.min(prefix.length - 1, lines.length - 1)
+      caret = { index: blocks.length + line, offset: prefix[line]?.length ?? 0 }
+    }
+    blocks.push(
+      ...lines.map(
+        (text, line): NoteBlock => ({
+          ...source,
+          kind: line > 0 && source.kind === 'heading' ? 'body' : source.kind,
+          ...(line > 0 ? { marker: undefined } : {}),
+          text
+        })
+      )
+    )
+  }
+  if (!blocks.length) blocks.push({ kind: 'body', indent: 0, text: '' })
+  if (anchor === editor && range?.startOffset === editor.childNodes.length)
+    caret = { index: blocks.length - 1, offset: blocks.at(-1)?.text.length ?? 0 }
+  if (caret && caret.index >= blocks.length)
+    caret = { index: blocks.length - 1, offset: blocks.at(-1)?.text.length ?? 0 }
+  return { blocks, caret }
+}
+
 function readBlocks(editor: HTMLElement): NoteBlock[] {
-  const blocks = Array.from(editor.childNodes).flatMap((node): NoteBlock[] => {
-    if (node instanceof HTMLDivElement && 'noteBlock' in node.dataset)
-      return [
-        {
-          kind: (node.dataset.kind as NoteBlock['kind']) ?? 'body',
-          indent: Number(node.dataset.indent ?? 0),
-          bold: node.dataset.bold === 'true',
-          text: node.textContent ?? '',
-          ...(node.dataset.sourceMarker ? { marker: node.dataset.sourceMarker } : {})
-        }
-      ]
-    if (node.nodeType !== Node.TEXT_NODE && !(node instanceof HTMLElement)) return []
-    // Native mobile editing can replace or append unmarked children. Include
-    // their visible text instead of interpreting the whole editor as empty.
-    return [{ kind: 'body', indent: 0, text: node.textContent ?? '' }]
-  })
-  return blocks.length ? blocks : [{ kind: 'body', indent: 0, text: '' }]
+  return readEditorState(editor).blocks
 }
 
 function blockAt(editor: HTMLElement, node: Node | null): HTMLDivElement | null {
@@ -50,15 +112,10 @@ function blockAt(editor: HTMLElement, node: Node | null): HTMLDivElement | null 
   return block && editor.contains(block) ? block : null
 }
 
-function caretOffset(block: HTMLElement): number {
-  const selection = window.getSelection()
-  if (!selection?.rangeCount) return block.textContent?.length ?? 0
-  const range = selection.getRangeAt(0)
-  if (!block.contains(range.startContainer)) return block.textContent?.length ?? 0
-  const before = range.cloneRange()
-  before.selectNodeContents(block)
-  before.setEnd(range.startContainer, range.startOffset)
-  return before.toString().length
+function directChildAt(editor: HTMLElement, node: Node | null): HTMLElement | null {
+  let current = node
+  while (current && current.parentNode !== editor) current = current.parentNode
+  return current instanceof HTMLElement ? current : null
 }
 
 function focusAt(editor: HTMLElement, index: number, offset: number) {
@@ -78,7 +135,16 @@ function focusAt(editor: HTMLElement, index: number, offset: number) {
   const selection = window.getSelection()
   selection?.removeAllRanges()
   selection?.addRange(range)
+  // iOS needs the intended caret in place during the trusted focus gesture.
+  // If focusing the host moves it, restore that same range immediately.
   editor.focus({ preventScroll: true })
+  if (
+    selection &&
+    (selection.anchorNode !== range.startContainer || selection.anchorOffset !== range.startOffset)
+  ) {
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
   const canvas = editor.closest<HTMLElement>('.mobile-note-canvas')
   if (canvas) keepNoteBlockVisible(canvas, block)
 }
@@ -196,7 +262,9 @@ export function MobileNoteEditor({
     if (focusIndex !== undefined) {
       setActiveIndex(focusIndex)
       setActiveBold(Boolean(blocks[focusIndex]?.bold))
-      requestAnimationFrame(() => focusAt(editor, focusIndex, offset))
+      // Restore the selection while this edit still owns the caret. A later
+      // frame can otherwise move it behind text typed after Return.
+      focusAt(editor, focusIndex, offset)
     }
   }
 
@@ -234,22 +302,23 @@ export function MobileNoteEditor({
   const updateActive = () => {
     const editor = editorRef.current
     if (!editor) return
-    const block = blockAt(editor, window.getSelection()?.anchorNode ?? null)
-    if (!block) return
-    setActiveIndex(noteNodes(editor).indexOf(block))
-    setActiveBold(block.dataset.bold === 'true')
+    const { blocks, caret } = readEditorState(editor)
+    if (!caret) return
+    const block = directChildAt(editor, window.getSelection()?.anchorNode ?? null)
+    setActiveIndex(caret.index)
+    setActiveBold(Boolean(blocks[caret.index]?.bold))
     requestAnimationFrame(() => {
       const canvas = editor.closest<HTMLElement>('.mobile-note-canvas')
-      if (canvas) keepNoteBlockVisible(canvas, block)
+      if (canvas && block && editor.contains(block)) keepNoteBlockVisible(canvas, block)
     })
   }
 
   const editActive = (change: (block: NoteBlock) => NoteBlock) => {
     const editor = editorRef.current
     if (!editor) return
-    const blocks = readBlocks(editor)
-    const index = Math.min(activeIndex, blocks.length - 1)
-    const offset = caretOffset(noteNodes(editor)[index]!)
+    const { blocks, caret } = readEditorState(editor)
+    const index = caret?.index ?? Math.min(activeIndex, blocks.length - 1)
+    const offset = caret?.offset ?? blocks[index]!.text.length
     blocks[index] = change(blocks[index]!)
     commit(blocks, index, offset)
     setMenu(null)
@@ -257,9 +326,9 @@ export function MobileNoteEditor({
 
   const insertLines = (lines: string[]) => {
     if (!lines.length || !editorRef.current) return
-    const blocks = readBlocks(editorRef.current)
+    const { blocks, caret } = readEditorState(editorRef.current)
     const additions: NoteBlock[] = lines.map((text) => ({ kind: 'body', indent: 0, text }))
-    let index = Math.min(activeIndex, blocks.length - 1)
+    let index = caret?.index ?? Math.min(activeIndex, blocks.length - 1)
     if (blocks.length === 1 && blocks[0]?.kind === 'body' && !blocks[0].text) {
       blocks.splice(0, 1, ...additions)
       index = additions.length - 1
@@ -274,20 +343,19 @@ export function MobileNoteEditor({
   const splitBlock = () => {
     const editor = editorRef.current
     const selection = window.getSelection()
-    if (!editor || !selection?.rangeCount) return
+    if (!editor || !selection?.rangeCount) return false
+    if (!readEditorState(editor).caret) return false
     if (!selection.isCollapsed) selection.getRangeAt(0).deleteContents()
-    const nodes = noteNodes(editor)
-    const selected = blockAt(editor, selection.anchorNode)
-    const index = selected ? nodes.indexOf(selected) : Math.min(activeIndex, nodes.length - 1)
-    const blocks = readBlocks(editor)
+    const { blocks, caret } = readEditorState(editor)
+    if (!caret) return false
+    const { index, offset } = caret
     const current = blocks[index]!
-    const offset = caretOffset(nodes[index]!)
     if (!current.text && (current.kind === 'bullet' || current.kind === 'number')) {
       blocks[index] = current.indent
         ? { ...current, indent: current.indent - 1 }
         : { ...current, kind: 'body', marker: undefined }
       commit(blocks, index, 0)
-      return
+      return true
     }
     blocks[index] = { ...current, text: current.text.slice(0, offset) }
     blocks.splice(index + 1, 0, {
@@ -296,6 +364,7 @@ export function MobileNoteEditor({
       text: current.text.slice(offset)
     })
     commit(blocks, index + 1, 0)
+    return true
   }
 
   // Use the native inputType from a mobile keyboard's beforeinput event.
@@ -309,8 +378,7 @@ export function MobileNoteEditor({
       if (event.inputType === 'deleteContentBackward' && backspaceAtStart()) {
         event.preventDefault()
       } else if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') {
-        event.preventDefault()
-        splitBlock()
+        if (splitBlock()) event.preventDefault()
       }
     }
     editor.addEventListener('beforeinput', handleBeforeInput)
@@ -320,20 +388,18 @@ export function MobileNoteEditor({
   const handleInput = () => {
     const editor = editorRef.current
     if (!editor) return
-    const blocks = readBlocks(editor)
-    const node = blockAt(editor, window.getSelection()?.anchorNode ?? null)
-    const index = node ? noteNodes(editor).indexOf(node) : -1
-    const current = blocks[index]
-    if (current?.kind === 'body' && node && caretOffset(node) === current.text.length) {
+    const { blocks, caret } = readEditorState(editor)
+    const current = caret ? blocks[caret.index] : undefined
+    if (current?.kind === 'body' && caret?.offset === current.text.length) {
       const shortcut = current.text.match(/^(?:([-*+]) |(\d+)\. |(#) )$/)
       if (shortcut) {
-        blocks[index] = {
+        blocks[caret.index] = {
           ...current,
           kind: shortcut[1] ? 'bullet' : shortcut[2] ? 'number' : 'heading',
           marker: shortcut[2] ? `${shortcut[2]}. ` : undefined,
           text: ''
         }
-        commit(blocks, index, 0)
+        commit(blocks, caret.index, 0)
         return
       }
     }
@@ -345,11 +411,9 @@ export function MobileNoteEditor({
     const editor = editorRef.current
     const selection = window.getSelection()
     if (!editor || !selection?.isCollapsed) return false
-    const node = blockAt(editor, selection.anchorNode)
-    if (!node || caretOffset(node) !== 0) return false
-    const nodes = noteNodes(editor)
-    const index = nodes.indexOf(node)
-    const blocks = readBlocks(editor)
+    const { blocks, caret } = readEditorState(editor)
+    if (!caret || caret.offset !== 0) return false
+    const { index } = caret
     const current = blocks[index]!
     if (current.indent > 0) {
       blocks[index] = { ...current, indent: current.indent - 1 }
@@ -371,9 +435,8 @@ export function MobileNoteEditor({
     if (event.nativeEvent.isComposing || !editorRef.current) return
     const editor = editorRef.current
     const selection = window.getSelection()
-    const node = blockAt(editor, selection?.anchorNode ?? null)
-    const index = node ? noteNodes(editor).indexOf(node) : activeIndex
-    const blocks = readBlocks(editor)
+    const { blocks, caret } = readEditorState(editor)
+    const index = caret?.index ?? activeIndex
     if (event.key === 'Backspace' && backspaceAtStart()) {
       event.preventDefault()
       return
@@ -385,16 +448,15 @@ export function MobileNoteEditor({
         ...current,
         indent: Math.max(0, Math.min(2, current.indent + (event.shiftKey ? -1 : 1)))
       }
-      commit(blocks, index, node ? caretOffset(node) : 0)
+      commit(blocks, index, caret?.offset ?? 0)
       return
     }
     if (event.key === 'Enter') {
-      event.preventDefault()
-      splitBlock()
+      if (splitBlock()) event.preventDefault()
       return
     }
-    if (!selection?.isCollapsed || !node) return
-    const offset = caretOffset(node)
+    if (!selection?.isCollapsed || !caret) return
+    const { offset } = caret
     if (
       event.key === 'Delete' &&
       offset === blocks[index]!.text.length &&
@@ -414,10 +476,9 @@ export function MobileNoteEditor({
     const selection = window.getSelection()
     if (!editor || !selection?.rangeCount) return
     if (!selection.isCollapsed) selection.getRangeAt(0).deleteContents()
-    const node = blockAt(editor, selection.anchorNode)
-    const index = node ? noteNodes(editor).indexOf(node) : activeIndex
-    const blocks = readBlocks(editor)
-    const offset = node ? caretOffset(node) : blocks[index]!.text.length
+    const { blocks, caret } = readEditorState(editor)
+    const index = caret?.index ?? activeIndex
+    const offset = caret?.offset ?? blocks[index]!.text.length
     const pieces = event.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n').split('\n')
     const current = blocks[index]!
     const before = current.text.slice(0, offset)
