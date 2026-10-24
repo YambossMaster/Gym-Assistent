@@ -1,14 +1,14 @@
-# Training result share correction — delivery gate
+# Training result share correction — released with device check unverified
 
-> Owner: `codex/training-result-share` in `output/training-result-share`; candidate base `14fdedb` on 2026-10-24.
-> Integration state: branch-local candidate; latest `origin/main` before rebase `e6c7cae`.
+> Owner: implementation `codex/training-result-share` in `output/training-result-share`.
+> Integrated Main `eaac9bf7244d439e7f1336d8eafdacabaf4844f3`; Production Fly release 80 on 2026-10-24.
 > Scope: Product Owner's 2026-10-24 correction request for M11 training result sharing. M11 released baseline and Roadmap completion remain unchanged.
 
 ## Boundary and dependencies
 
 - Outcome: share pages and downloaded images identify the saved Coach and each group student's sets in compact rows; empty private notes never appear as shared content or as a selectable share option.
 - Owned modules: public-access repository and route projections, public Web share route and image renderer, training autosave-to-share handoff, share dialog, and Coach name setting.
-- No schema migration or Roadmap edit. The Product Owner approved this reviewed UI for merge and deployment on 2026-10-24; exact-SHA CI and live checks still determine release evidence.
+- No schema migration or Roadmap edit. The Product Owner approved this reviewed UI for merge and deployment on 2026-10-24. Exact-SHA CI and Production readiness passed; valid-link and installed-iPhone behavior remain unverified.
 
 ## Inventory and evidence
 
@@ -21,7 +21,7 @@
 | Public result and image presentation        | Single-student rows, group ownership and attendance, visible nonempty notes, and compact mobile/desktop layout                  | Focused route/canvas tests and 390px/1080px previews; installed iPhone visual acceptance remains open until a device check.                     |
 | Settings Coach display name                 | The saved name is the public name; an unset legacy value is identified clearly                                                  | Settings typecheck and public projection test; no Auth nickname is substituted.                                                                 |
 
-Latest `origin/main` checked on 2026-10-24: `e6c7cae`, one M11 documentation commit ahead of this candidate's base `14fdedb`; no overlapping implementation files. Rebase before PR/merge.
+The candidate was rebased from `14fdedb` onto `e6c7cae` without application-code changes, then released through [PR #106](https://github.com/YambossMaster/Gym-Assistent/pull/106).
 
 | Item                                      | State                                  | Evidence and environment                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ----------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -45,12 +45,14 @@ Added 4b on 2026-10-24, Product Owner copy feedback within item 4: the unavailab
 - Scoped Prettier check and `git diff --check` passed.
 - Local browser preview with an isolated fixture API rendered 390px mobile and 1080px desktop group pages, a 390px single-student page with nonempty note, and both generated PNG downloads. All four artifacts were visually inspected. The normal browser tools could not reach this worktree's localhost; the already-installed Playwright browser was run with the fixture in the same local process. These previews do not establish live-link, Safari, installed-PWA or iPhone acceptance.
 - After Product Owner delivery authorization, `npm run check:affected -- origin/main` passed on 2026-10-24: changed-file format and whitespace, API typecheck and 49 related tests, Web typecheck and 151 related tests. The first run stopped on this Status file's formatting; it was formatted and the complete preflight then passed.
-- No `.env.e2e` or runtime `.env` is present in this worktree or the primary checkout. The isolated API/database live case and valid-link browser round-trip have not run; fixture previews and focused tests do not replace them. CI's Production migration preview and deployment readiness remain pending. Installed-iPhone acceptance can only be reported after a device check.
+- No `.env.e2e` or runtime `.env` is present in this worktree or the primary checkout. The isolated API/database live case and valid-link browser round-trip have not run; fixture previews and focused tests do not replace them. Installed-iPhone acceptance can only be reported after a device check.
+- [PR CI #388](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40073488909) passed exact-head `f4193dd50e4f6db781fc3e34479a7c63e1ac98e9` verify/build, browser UI and migration no-op. Squash merge produced Main `eaac9bf7244d439e7f1336d8eafdacabaf4844f3`. [Main CI #389](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40073769325) passed all five jobs, including Production migration-history preview with no pending migration and Fly deployment/readiness.
+- Independent readback: Fly release 80's started machine image label `GH_SHA` matches Main and its service check passes. `/api/ready`, `/` with `Accept: text/html`, and `/login` with the same header returned 200. Served `/assets/index-cJfAt3m9.js` returned 200 and contains `尚無已儲存的教練筆記`. An invalid public training token returned 404 with `Cache-Control: no-store, private` and `Referrer-Policy: no-referrer`. The plain HTTP probe without the browser `Accept` header received the site's intended 404 fallback rule, not a site outage.
 
 ### Current worktree inventory
 
-Staged candidate: `apps/api/src/{adapters/postgres-public-access-repository.ts,adapters/postgres-public-access-repository.test.ts,public-access/public-access.ts}`; `apps/web/src/pages/{public/CapabilityLinkManager.tsx,public/CapabilityLinkManager.test.tsx,public/PublicCapabilityPages.tsx,public/PublicCapabilityPages.test.tsx,public/trainingResultImage.ts,public/trainingResultImage.test.ts,public/trainingResultPeople.ts,sessions/SessionPage.tsx,settings/SettingsPage.tsx,training/TrainingWorkspace.tsx,training/drafts.ts,training/drafts.test.ts}`; `apps/web/src/styles.css`; this Status. Fixture scripts and screenshots under `output/playwright/` are ignored by Git.
+The implementation is in merged PR #106. The ignored fixture scripts and screenshots remain under `output/playwright/` in the isolated worktree. This release-evidence update is documentation-only on `codex/training-result-share-release`.
 
 ## One Next within this workstream
 
-Commit and rebase this candidate onto `e6c7cae`, run the scoped post-rebase check, then open a PR, confirm exact-head CI, merge and confirm same-SHA Production deployment. Verify public readiness and record the unverified valid-link/iPhone boundary without claiming device acceptance. The actual public Coach name must eventually be entered in Settings by its owner.
+No engineering release action remains. A future installed-iPhone check may confirm the group/single share page and downloaded image, but no device pass is claimed here. A valid-link database round-trip still needs an isolated Development credential set. The owner may set the public Coach name in Settings; the application displays `教練` until that saved name exists.
