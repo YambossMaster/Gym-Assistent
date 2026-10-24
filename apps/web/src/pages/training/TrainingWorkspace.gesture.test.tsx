@@ -820,6 +820,20 @@ async function confirmationGroup(status: 'scheduled' | 'completed' = 'scheduled'
   )
 }
 
+it('sends visible group Coach-note text after native editing replaces its block', async () => {
+  await confirmationGroup('completed')
+  const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+  await act(async () => editor.click())
+  editor.innerHTML = '<div>今天團體課動作穩定</div>'
+  await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
+  await act(async () => vi.advanceTimersByTimeAsync(2500))
+  expect(calls.save).toHaveBeenCalledWith(
+    expect.objectContaining({
+      payload: expect.objectContaining({ privateNote: '今天團體課動作穩定' })
+    })
+  )
+})
+
 it('requires in-app acceptance before completing and charging one group lesson', async () => {
   await confirmationGroup()
   const complete = host.querySelector<HTMLButtonElement>('.session-bottom button')!
