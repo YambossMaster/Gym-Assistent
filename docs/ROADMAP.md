@@ -1119,7 +1119,15 @@ listing is a separate Contract → Sol → CI package, not an automatic conseque
 deployment. LINE/Email/Push expansion, studio/multi-Coach roles, and health/medical data also need
 their own approved contracts and privacy review.
 
-### M11 — Student Groups and Shared Course Sessions — Contract frozen 2026-10-20
+### M11 — Student Groups and Shared Course Sessions — closed by Product Owner 2026-10-24
+
+**Closure exception:** The Contract was frozen on 2026-10-20 and the implementation,
+remote CI, Production migrations and release were completed. On 2026-10-24 the Product
+Owner accepted the deployed version as usable and ended M11 with the installed-PWA
+acceptance gap and intermittent input-completion movement still open as known UX
+limitations. This decision closes the package without claiming that the original
+device-acceptance criterion passed. See the [M11 Status](status/STUDENT-GROUP.md) and
+[input correction record](status/M11-PWA-INPUT-CORRECTION.md); further work needs new scope.
 
 **Integration priority:** Product Owner approved M11 integration ahead of the open M9 commercial
 refinement and conditional M10 decision. This is an explicit exception to the future-ID numeric

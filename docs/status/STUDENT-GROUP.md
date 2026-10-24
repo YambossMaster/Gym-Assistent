@@ -1,5 +1,7 @@
 # M11 Student Group workstream
 
+> **2026-10-24 Product Owner 閉案決定：** M11 以目前已部署、可使用的版本到此結束，不再修正或要求實機重測。原八面向的實作、遠端 CI、Production migration 與部署已完成；安裝手機 PWA 的完整群組流程驗收未取得通過證據，輸入完成時的偶發滑動／偏移仍是已知體驗限制。此為 Product Owner 接受現況並結束工作包，不代表手機體驗無缺陷或原驗收項目已通過。下方舊版「Next」均為歷史交接，不再執行；沒有 M11 下一步。
+
 > 2026-10-22 Production 交接：Product Owner 已授權本 M11 的遠端推送、合併、Production migration 與部署。PR #72 的 head `713d57e` 通過 CI／Development restore，合併為 Main `2f1fb24dda4f293a0d2d45aa4192907c9776636f`。同 SHA Main CI、遷移預覽、遷移前備份／隔離還原、四筆 Production migration、Fly release 65 部署及 readiness 均通過。剩下的第 8 面向是 Product Owner 在**已安裝手機 PWA**驗收實際三人群組課堂；瀏覽器尺寸預覽不取代此項。下方早期段落保留當時證據，遇到時態衝突以本段及 2026-10-22 發布紀錄為準。
 
 ## 2026-10-22 Production 發布與實機交接（目前有效）
