@@ -1,8 +1,12 @@
 # Gym Assistant project status
 
 > Integrated Main router, reconciled 2026-10-24 against deployed application commit
-> `eaac9bf7244d439e7f1336d8eafdacabaf4844f3` and the training-result share correction.
+> `5ad0d3171174503635ce0e9e9729d9bf56ca7189` and the adjacent-lesson release.
 > Main code and confirmed Production deployment are recorded separately below.
+
+## Training adjacent lessons deployed (2026-10-24)
+
+After Product Owner approval of the 5173/5174 design and deployment, [PR #108](https://github.com/YambossMaster/Gym-Assistent/pull/108) added same-owner `前次課堂`/`下次課堂` navigation, adjacent data prefetch and one consistent save-aware transition. PR head `12fe45f` passed [PR CI #392](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40080457816); Main `5ad0d3171174503635ce0e9e9729d9bf56ca7189` passed all five [Main CI #393](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40080700092) jobs and deployed to Fly release 81 with no migration. The running image `GH_SHA` matches Main, its service check passes, and independent `/api/ready`, `/`, `/login` returned 200. The public JS contains both control labels. Authenticated local desktop/mobile-preview switching passed; installed-iPhone PWA and Production lesson-to-lesson interaction remain unverified. [Release record](status/TRAINING-ADJACENT-SESSIONS.md).
 
 ## Training result sharing correction deployed (2026-10-24)
 
