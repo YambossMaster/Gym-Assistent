@@ -89,7 +89,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
         sessionNotice={
           notice || (query.isError ? '課堂資料暫時無法更新，顯示上次載入的內容。' : '')
         }
-        headerActions={
+        headerActions={(beforeShare) => (
           <>
             <button
               className="secondary-button"
@@ -101,6 +101,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
             <CapabilityLinkActions
               session={session}
               item={item}
+              onBeforeOpen={beforeShare}
               compactLabels
               initialPurpose={
                 searchParams.get('link') === 'reschedule' ? 'reschedule_session' : null
@@ -113,7 +114,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
               }}
             />
           </>
-        }
+        )}
       />
       {editing ? (
         <SessionEditor

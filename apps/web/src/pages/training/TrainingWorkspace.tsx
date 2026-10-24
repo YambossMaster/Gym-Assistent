@@ -119,7 +119,7 @@ export function TrainingWorkspace({
 }: {
   session: Session
   query: UseQueryResult<SessionTraining, Error>
-  headerActions?: ReactNode
+  headerActions?: (beforeShare: () => Promise<void>) => ReactNode
   onBack: () => void
   sessionNotice?: string
   timeZone: string
@@ -356,7 +356,7 @@ function TrainingEditor({
   session: Session
   initial: SessionTraining
   onRefresh: () => Promise<SessionTraining | undefined>
-  headerActions?: ReactNode
+  headerActions?: (beforeShare: () => Promise<void>) => ReactNode
   onBack: () => void
   sessionNotice?: string
   timeZone: string
@@ -742,6 +742,14 @@ function TrainingEditor({
     setDraft(next)
     setRevision(revisionRef.current)
     setSaveState('pending')
+  }
+  const beforeShare = async () => {
+    if (offline || conflictRef.current || !valid(latest.current))
+      throw new Error('training_not_saved')
+    if (revisionRef.current > 0) {
+      coordinator.change(latest.current, revisionRef.current)
+      await coordinator.drain()
+    }
   }
   useEffect(() => {
     if (!noteFocused) return
@@ -1490,7 +1498,7 @@ function TrainingEditor({
           </span>
         </Link>
         <div className="session-top-actions">
-          {headerActions}
+          {headerActions?.(beforeShare)}
           <span
             className={`session-save-status ${saveState}${offline ? ' offline' : ''}`}
             role="status"

@@ -17,6 +17,7 @@ import {
 import { Brand } from '../../shared/primitives'
 import { useModalScrollLock } from '../../shared/useDialogBehavior'
 import { createTrainingResultImage } from './trainingResultImage'
+import { participantIndex, participantInitials, sharedNote } from './trainingResultPeople'
 
 export function PublicCapabilityApp({ purpose }: { purpose: 'training' | 'reschedule' }) {
   const [client] = useState(
@@ -119,10 +120,17 @@ function TrainingResultPage() {
           </div>
         </header>
         {result.participants?.length ? (
-          <div className="public-participants" aria-label="本堂出席">
-            {result.participants.map((person) => (
-              <span key={person.studentId}>
-                {person.name} · {person.attendance === 'absent' ? '缺席' : '出席'}
+          <div className="public-participants" aria-label="課堂學生與出席狀態">
+            {result.participants.map((person, index) => (
+              <span
+                className={`public-person${person.attendance === 'absent' ? ' is-absent' : ''}`}
+                key={person.studentId}
+              >
+                <span className={`group-member-avatar tone-${index % 3}`} aria-hidden="true">
+                  {participantInitials(person.name)}
+                </span>
+                <span>{person.name}</span>
+                {person.attendance === 'absent' ? <small>缺席</small> : null}
               </span>
             ))}
           </div>
@@ -136,40 +144,58 @@ function TrainingResultPage() {
                   <h2>{exercise.definitionName}</h2>
                 </header>
                 <div className="public-set-grid">
-                  {exercise.sets.map((set, setIndex) => (
-                    <div className="public-set" key={set.position}>
-                      <strong>SET {setIndex + 1}</strong>
-                      {set.studentId ? (
-                        <span>
-                          {
-                            result.participants?.find(
-                              (person) => person.studentId === set.studentId
-                            )?.name
-                          }
-                        </span>
-                      ) : null}
-                      {exercise.recording && set.measurements ? (
-                        <span className="public-set-measurement recording">
-                          {formatMeasurements(exercise.recording, set.measurements)}
-                        </span>
-                      ) : (
-                        <>
+                  {exercise.sets.map((set, setIndex) => {
+                    const personIndex = participantIndex(result, set.studentId)
+                    const person = personIndex >= 0 ? result.participants?.[personIndex] : undefined
+                    return (
+                      <div
+                        className={`public-set${result.participants?.length ? ' is-group' : ''}`}
+                        key={set.position}
+                      >
+                        <strong>SET {setIndex + 1}</strong>
+                        {person ? (
+                          <span
+                            className={`group-member-avatar tone-${personIndex % 3}${person.attendance === 'absent' ? ' is-absent' : ''}`}
+                            role="img"
+                            aria-label={person.name}
+                          >
+                            {participantInitials(person.name)}
+                          </span>
+                        ) : null}
+                        {exercise.recording && set.measurements ? (
+                          <span className="public-set-measurement recording">
+                            {formatMeasurements(exercise.recording, set.measurements)}
+                          </span>
+                        ) : result.participants?.length ? (
                           <span className="public-set-measurement">
-                            {value(set.plannedWeight)} {set.plannedWeight === null ? '' : set.unit}
+                            {value(set.plannedWeight)}
+                            {set.plannedWeight === null ? '' : ` ${set.unit}`} ×{' '}
+                            {set.actualReps ?? '—'} 次
                           </span>
-                          <span className="public-set-reps">
-                            {set.actualReps === null ? '—' : `× ${set.actualReps}`}
-                          </span>
-                        </>
-                      )}
-                      <span className="public-set-rpe">RPE {set.rpe ?? '—'}</span>
-                      <em data-result={set.result ?? 'none'}>
-                        {set.result === 'completed' ? <Check aria-hidden="true" /> : null}
-                        {set.result === 'incomplete' ? <X aria-hidden="true" /> : null}
-                        {setResult(set.result)}
-                      </em>
-                    </div>
-                  ))}
+                        ) : (
+                          <>
+                            <span className="public-set-measurement">
+                              {value(set.plannedWeight)}{' '}
+                              {set.plannedWeight === null ? '' : set.unit}
+                            </span>
+                            <span className="public-set-reps">
+                              {set.actualReps === null ? '—' : `× ${set.actualReps}`}
+                            </span>
+                          </>
+                        )}
+                        <span className="public-set-rpe">RPE {set.rpe ?? '—'}</span>
+                        <em data-result={set.result ?? 'none'} aria-label={setResult(set.result)}>
+                          {set.result === 'completed' ? <Check aria-hidden="true" /> : null}
+                          {set.result === 'incomplete' ? <X aria-hidden="true" /> : null}
+                          {result.participants?.length
+                            ? set.result
+                              ? null
+                              : '—'
+                            : setResult(set.result)}
+                        </em>
+                      </div>
+                    )
+                  })}
                 </div>
               </section>
             ))}
@@ -180,7 +206,7 @@ function TrainingResultPage() {
             <h2>這堂課沒有動作紀錄。</h2>
           </section>
         )}
-        {result.trainingNote !== undefined ? (
+        {sharedNote(result) ? (
           <section className="public-note">
             <span>教練筆記</span>
             {result.trainingNote ? (
@@ -201,9 +227,7 @@ function TrainingResultPage() {
                   </p>
                 ))}
               </div>
-            ) : (
-              <p>—</p>
-            )}
+            ) : null}
           </section>
         ) : null}
       </article>
