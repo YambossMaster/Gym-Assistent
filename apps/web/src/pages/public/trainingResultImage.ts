@@ -1,6 +1,12 @@
 import type { PublicTrainingResult } from '../../api'
 import { formatMeasurements } from '../training/recording'
 import { plainNote } from '../training/note-format'
+import {
+  participantColors,
+  participantIndex,
+  participantInitials,
+  sharedNote
+} from './trainingResultPeople'
 
 const INK = '#151711'
 const PAPER = '#fbfaf5'
@@ -28,12 +34,13 @@ export async function createTrainingResultImage(
     context.font = `700 42px ${FONT}`
     return { exercise, nameLines: wrapLines(context, exercise.definitionName, 790) }
   })
+  const note = sharedNote(result)
   const noteLines =
-    result.trainingNote === undefined
+    note === undefined
       ? []
       : (() => {
           context.font = `400 32px ${FONT}`
-          return wrapLines(context, result.trainingNote ? plainNote(result.trainingNote) : '—', 810)
+          return wrapLines(context, plainNote(note), 810)
         })()
 
   const cardTop = 190
@@ -41,7 +48,8 @@ export async function createTrainingResultImage(
   const dateBaseline = titleBaseline + titleLines.length * 66 + 18
   const coachBaseline = dateBaseline + 58
   const dividerY = coachBaseline + 42
-  let contentY = dividerY + 30
+  const peopleHeight = result.participants?.length ? 90 : 0
+  let contentY = dividerY + 30 + peopleHeight
   if (sections.length === 0) contentY += 240
   for (const { exercise, nameLines } of sections) {
     contentY += 70 + (nameLines.length - 1) * 52 + exercise.sets.length * 80 + 32
@@ -88,7 +96,30 @@ export async function createTrainingResultImage(
   context.lineTo(984, dividerY)
   context.stroke()
 
-  let y = dividerY + 30
+  if (result.participants?.length) {
+    result.participants.forEach((person, index) => {
+      const x = 96 + index * 296
+      fillRoundedRect(context, x, dividerY + 22, 278, 60, 30, SOFT)
+      drawAvatar(
+        context,
+        person.name,
+        x + 32,
+        dividerY + 52,
+        person.attendance === 'absent' ? '#a9aaa4' : participantColors[index % 3]!
+      )
+      context.fillStyle = person.attendance === 'absent' ? MUTED : INK
+      context.font = `600 25px ${FONT}`
+      fitText(
+        context,
+        `${person.name}${person.attendance === 'absent' ? ' · 缺席' : ''}`,
+        x + 61,
+        dividerY + 61,
+        200,
+        25
+      )
+    })
+  }
+  let y = dividerY + 30 + peopleHeight
   if (sections.length === 0) {
     context.fillStyle = MUTED
     context.font = `500 36px ${FONT}`
@@ -107,7 +138,7 @@ export async function createTrainingResultImage(
     nameLines.forEach((line, index) => context.fillText(line, 174, y + 44 + index * 52))
     y += 70 + (nameLines.length - 1) * 52
     exercise.sets.forEach((set, setIndex) => {
-      drawSetRow(context, exercise, set, setIndex, y)
+      drawSetRow(context, result, exercise, set, setIndex, y)
       y += 80
     })
     y += 32
@@ -144,6 +175,7 @@ export async function createTrainingResultImage(
 
 function drawSetRow(
   context: CanvasRenderingContext2D,
+  result: PublicTrainingResult,
   exercise: Exercise,
   set: Exercise['sets'][number],
   setIndex: number,
@@ -153,6 +185,18 @@ function drawSetRow(
   context.fillStyle = MUTED
   context.font = `600 25px ${FONT}`
   context.fillText(`SET ${setIndex + 1}`, 120, y + 47)
+  const ownerIndex = participantIndex(result, set.studentId)
+  if (ownerIndex >= 0) {
+    const owner = result.participants![ownerIndex]!
+    drawAvatar(
+      context,
+      owner.name,
+      254,
+      y + 36,
+      owner.attendance === 'absent' ? '#a9aaa4' : participantColors[ownerIndex % 3]!,
+      18
+    )
+  }
   const measurement =
     exercise.recording && set.measurements
       ? formatMeasurements(exercise.recording, set.measurements)
@@ -175,6 +219,25 @@ function drawSetRow(
     set.result ? 866 : 838,
     y + 46
   )
+}
+
+function drawAvatar(
+  context: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+  color: string,
+  radius = 20
+) {
+  context.beginPath()
+  context.arc(x, y, radius, 0, Math.PI * 2)
+  context.fillStyle = color
+  context.fill()
+  context.fillStyle = '#fff'
+  context.textAlign = 'center'
+  context.font = `700 ${radius === 18 ? 15 : 17}px ${FONT}`
+  context.fillText(participantInitials(name), x, y + 6, radius * 1.8)
+  context.textAlign = 'left'
 }
 
 function drawResultIcon(
