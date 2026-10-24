@@ -223,7 +223,8 @@ it('states why note sharing is unavailable and only offers a link without notes'
     await vi.waitFor(() => expect(document.body.textContent).toContain('尚無已儲存的教練筆記'))
     expect(document.querySelector('input[type="checkbox"]')).toBeNull()
     expect(document.querySelector('.capability-note-state p')).toBeNull()
-    expect(document.body.textContent).toContain('建立連結（不含筆記）')
+    expect(document.body.textContent).toContain('建立連結')
+    expect(document.body.textContent).not.toContain('不含筆記')
   } finally {
     await act(async () => root.unmount())
     client.clear()
@@ -351,7 +352,8 @@ it('explains a note check failure and lets the coach retry', async () => {
     await act(async () => host.querySelector<HTMLButtonElement>('button')!.click())
     await vi.waitFor(() => expect(document.body.textContent).toContain('無法確認筆記'))
     expect(document.querySelector('input[type="checkbox"]')).toBeNull()
-    expect(document.body.textContent).toContain('建立連結（不含筆記）')
+    expect(document.body.textContent).toContain('建立連結')
+    expect(document.body.textContent).not.toContain('不含筆記')
     await act(async () =>
       [...document.querySelectorAll<HTMLButtonElement>('button')]
         .find((button) => button.textContent?.includes('重新確認筆記'))!
@@ -401,7 +403,7 @@ it('reissues an old note-enabled link without notes when its saved note is now e
     )
     expect(document.querySelector('input[type="checkbox"]')).toBeNull()
     const confirm = [...document.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
-      button.textContent?.includes('確認重新建立（不含筆記）')
+      button.textContent?.includes('確認重新建立')
     )!
     expect(confirm.disabled).toBe(false)
     await act(async () => confirm.click())

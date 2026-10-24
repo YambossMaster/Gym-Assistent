@@ -10,6 +10,60 @@ describe('mobile note editor', () => {
     localStorage.removeItem('gym-assistant.note-import-selection')
   })
 
+  it('keeps text when a native input replaces the note block with an ordinary element', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const values: string[] = []
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value=""
+          onChange={(value) => values.push(value)}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+          focused
+        />
+      )
+    )
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    editor.innerHTML = '<div>今天訓練穩定</div>'
+    await act(async () => editor.dispatchEvent(new InputEvent('input', { bubbles: true })))
+    expect(values.at(-1)).toBe('今天訓練穩定')
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
+  it('commits the final composed text when a mobile keyboard ends composition', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const onChange = vi.fn()
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value=""
+          onChange={onChange}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+          focused
+        />
+      )
+    )
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    editor.querySelector<HTMLElement>('.mobile-note-block')!.textContent = '深蹲穩定'
+    await act(async () =>
+      editor.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+    )
+    expect(onChange).toHaveBeenLastCalledWith('深蹲穩定')
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
   it('creates a saved paragraph from the native iOS beforeinput event', async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {

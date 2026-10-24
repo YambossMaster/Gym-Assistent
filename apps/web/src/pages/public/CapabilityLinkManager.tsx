@@ -439,11 +439,7 @@ function CapabilityLinkDialog({
                     disabled={pending || waitingForNote}
                     onClick={() => reissue.mutate(current)}
                   >
-                    {reissue.isPending
-                      ? '處理中…'
-                      : noteState === 'empty' || noteState === 'error'
-                        ? '確認重新建立（不含筆記）'
-                        : '確認重新建立'}
+                    {reissue.isPending ? '處理中…' : '確認重新建立'}
                   </button>
                 </div>
               </div>
@@ -465,10 +461,7 @@ function CapabilityLinkDialog({
                   ) : (
                     <>
                       <Plus aria-hidden="true" />
-                      {purpose === 'training_result' &&
-                      (noteState === 'empty' || noteState === 'error')
-                        ? '建立連結（不含筆記）'
-                        : '建立連結'}
+                      建立連結
                     </>
                   )}
                 </button>

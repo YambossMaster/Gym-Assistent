@@ -25,15 +25,23 @@ function noteNodes(editor: HTMLElement): HTMLDivElement[] {
 }
 
 function readBlocks(editor: HTMLElement): NoteBlock[] {
-  const nodes = noteNodes(editor)
-  if (!nodes.length) return [{ kind: 'body', indent: 0, text: '' }]
-  return nodes.map((node) => ({
-    kind: (node.dataset.kind as NoteBlock['kind']) ?? 'body',
-    indent: Number(node.dataset.indent ?? 0),
-    bold: node.dataset.bold === 'true',
-    text: node.textContent ?? '',
-    ...(node.dataset.sourceMarker ? { marker: node.dataset.sourceMarker } : {})
-  }))
+  const blocks = Array.from(editor.childNodes).flatMap((node): NoteBlock[] => {
+    if (node instanceof HTMLDivElement && 'noteBlock' in node.dataset)
+      return [
+        {
+          kind: (node.dataset.kind as NoteBlock['kind']) ?? 'body',
+          indent: Number(node.dataset.indent ?? 0),
+          bold: node.dataset.bold === 'true',
+          text: node.textContent ?? '',
+          ...(node.dataset.sourceMarker ? { marker: node.dataset.sourceMarker } : {})
+        }
+      ]
+    if (node.nodeType !== Node.TEXT_NODE && !(node instanceof HTMLElement)) return []
+    // Native mobile editing can replace or append unmarked children. Include
+    // their visible text instead of interpreting the whole editor as empty.
+    return [{ kind: 'body', indent: 0, text: node.textContent ?? '' }]
+  })
+  return blocks.length ? blocks : [{ kind: 'body', indent: 0, text: '' }]
 }
 
 function blockAt(editor: HTMLElement, node: Node | null): HTMLDivElement | null {
@@ -210,6 +218,13 @@ export function MobileNoteEditor({
     acceptedValue.current = next
     onChange(next)
     return true
+  }
+
+  const commitCurrentText = () => {
+    const editor = editorRef.current
+    if (!editor) return
+    const blocks = readBlocks(editor)
+    if (serializeNote(blocks) !== acceptedValue.current) saveBlocks(blocks)
   }
 
   const commit = (blocks: NoteBlock[], index: number, offset: number) => {
@@ -523,6 +538,7 @@ export function MobileNoteEditor({
             if (!reading) onFocusChange(true)
           }}
           onBlur={(event) => {
+            commitCurrentText()
             if (!event.relatedTarget?.closest('.mobile-note-canvas, .session-note-tools')) {
               // iOS can blur a contenteditable while the keyboard or Visual Viewport is
               // settling. Mobile focus mode is explicit: only its confirm action exits.
@@ -531,6 +547,7 @@ export function MobileNoteEditor({
             }
           }}
           onInput={handleInput}
+          onCompositionEnd={commitCurrentText}
           onKeyDown={(event) => {
             if (reading) {
               if (event.key === 'Enter' || event.key === ' ') {
