@@ -1,10 +1,16 @@
 import { VenueField } from '../students/VenueField'
 import type { Session } from '@supabase/supabase-js'
-import { useQuery } from '@tanstack/react-query'
-import { CalendarClock, Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { CalendarClock, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ApiError, getSession, listStudents } from '../../api'
+import {
+  ApiError,
+  getSession,
+  getSessionTraining,
+  listStudents,
+  type CalendarSession
+} from '../../api'
 import { queryKeys } from '../../query-keys'
 import { FormSelect } from '../../shared/FormSelect'
 import { TimeSelect } from '../../shared/TimeSelect'
@@ -12,7 +18,11 @@ import { Confirmation, Page } from '../../shared/primitives'
 import { useSchedulingMutations } from '../calendar/queries'
 import { isoToLocalDateTime, localDateTimeToIso } from '../calendar/calendar-time'
 import { SchedulingDialog } from '../calendar/SchedulingDialog'
-import { TrainingLoading, TrainingWorkspace } from '../training/TrainingWorkspace'
+import {
+  formatAdjacentLessonTime,
+  TrainingLoading,
+  TrainingWorkspace
+} from '../training/TrainingWorkspace'
 import { useSessionTraining } from '../training/queries'
 import { CapabilityLinkActions } from '../public/CapabilityLinkManager'
 import { SeriesDatePicker } from '../students/SeriesDatePicker'
@@ -21,10 +31,15 @@ import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 export function SessionPage({ session, timeZone }: { session: Session; timeZone: string }) {
   const { sessionId = '' } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [notice, setNotice] = useState('')
+  const [switching, setSwitching] = useState<{
+    target: CalendarSession
+    direction: 'previous' | 'next'
+  } | null>(null)
   const query = useQuery({
     queryKey: queryKeys.session(session.user.id, sessionId),
     queryFn: () => getSession(session.access_token, sessionId)
@@ -35,9 +50,71 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
   })
   const trainingQuery = useSessionTraining(session, sessionId)
   const mutations = useSchedulingMutations(session)
-  if (query.isLoading) return <TrainingLoading />
+  const switchAdjacent = async (target: CalendarSession, beforeLeave?: () => Promise<void>) => {
+    const direction = query.data?.adjacent?.previous?.id === target.id ? 'previous' : 'next'
+    setSwitching({ target, direction })
+    const minimum = new Promise<void>((resolve) => window.setTimeout(resolve, 380))
+    try {
+      await beforeLeave?.()
+      await Promise.all([
+        minimum,
+        queryClient.ensureQueryData({
+          queryKey: queryKeys.session(session.user.id, target.id),
+          queryFn: () => getSession(session.access_token, target.id)
+        }),
+        queryClient.ensureQueryData({
+          queryKey: queryKeys.sessionTraining(session.user.id, target.id),
+          queryFn: () => getSessionTraining(session.access_token, target.id)
+        })
+      ])
+      navigate(`/sessions/${target.id}`)
+    } catch (error) {
+      setSwitching(null)
+      throw error
+    }
+  }
+  const withTransition = (content: ReactNode) => (
+    <>
+      {content}
+      {switching && (
+        <SessionSwitchTransition
+          target={switching.target}
+          direction={switching.direction}
+          timeZone={timeZone}
+        />
+      )}
+    </>
+  )
+  useEffect(() => {
+    if (
+      switching?.target.id === sessionId &&
+      ((query.isError && !query.data) || (trainingQuery.isError && !trainingQuery.data))
+    )
+      setSwitching(null)
+  }, [
+    query.data,
+    query.isError,
+    sessionId,
+    switching?.target.id,
+    trainingQuery.data,
+    trainingQuery.isError
+  ])
+  useEffect(() => {
+    for (const item of [query.data?.adjacent?.previous, query.data?.adjacent?.next]) {
+      if (!item) continue
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.session(session.user.id, item.id),
+        queryFn: () => getSession(session.access_token, item.id)
+      })
+      void queryClient.prefetchQuery({
+        queryKey: queryKeys.sessionTraining(session.user.id, item.id),
+        queryFn: () => getSessionTraining(session.access_token, item.id)
+      })
+    }
+  }, [query.data?.adjacent, queryClient, session.access_token, session.user.id])
+  if (query.isLoading) return withTransition(<TrainingLoading />)
   if (!query.data)
-    return (
+    return withTransition(
       <Page
         title={
           query.error instanceof ApiError && query.error.status === 404
@@ -66,7 +143,7 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
   const detail = query.data
   const item = detail.session
   if (item.isLegacy || !item.startsAt || !item.endsAt || item.version === null)
-    return (
+    return withTransition(
       <Page title="舊有堂數紀錄">
         <section className="empty-state">
           <CalendarClock />
@@ -79,15 +156,27 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
       </Page>
     )
   const pending = mutations.transitionSession.isPending
-  return (
+  const adjacent = detail.adjacent
+  return withTransition(
     <>
       <TrainingWorkspace
         session={session}
         query={trainingQuery}
         timeZone={timeZone}
         onBack={() => navigate(-1)}
+        adjacent={adjacent}
+        onSwitchAdjacent={switchAdjacent}
+        onAdjacentReady={(readySessionId) => {
+          if (readySessionId === sessionId)
+            setSwitching((current) => (current?.target.id === readySessionId ? null : current))
+        }}
         sessionNotice={
-          notice || (query.isError ? '課堂資料暫時無法更新，顯示上次載入的內容。' : '')
+          notice ||
+          (query.isError
+            ? '課堂資料暫時無法更新，顯示上次載入的內容。'
+            : trainingQuery.isError
+              ? '訓練紀錄暫時無法更新，顯示上次載入的內容。'
+              : '')
         }
         headerActions={(beforeShare) => (
           <>
@@ -181,6 +270,41 @@ export function SessionPage({ session, timeZone }: { session: Session; timeZone:
         />
       ) : null}
     </>
+  )
+}
+
+function SessionSwitchTransition({
+  target,
+  direction,
+  timeZone
+}: {
+  target: CalendarSession
+  direction: 'previous' | 'next'
+  timeZone: string
+}) {
+  const label = direction === 'previous' ? '前次課堂' : '下次課堂'
+  return (
+    <div
+      className={`session-switch-transition ${direction}`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <div className="session-switch-panel">
+        <span className="session-switch-eyebrow">切換課堂</span>
+        <div className="session-switch-destination">
+          {direction === 'previous' ? <ChevronLeft aria-hidden="true" /> : null}
+          <div>
+            <strong>{label}</strong>
+            <time dateTime={target.startsAt!}>
+              {formatAdjacentLessonTime(target.startsAt!, timeZone)}
+            </time>
+          </div>
+          {direction === 'next' ? <ChevronRight aria-hidden="true" /> : null}
+        </div>
+        <span className="session-switch-progress" aria-hidden="true" />
+      </div>
+    </div>
   )
 }
 

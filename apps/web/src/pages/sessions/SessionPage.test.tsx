@@ -11,13 +11,17 @@ import { queryKeys } from '../../query-keys'
 
 const requests = vi.hoisted(() => ({
   getSession: vi.fn(),
-  getSessionTraining: vi.fn()
+  getSessionTraining: vi.fn(),
+  getStudentDetail: vi.fn(),
+  listStudents: vi.fn()
 }))
 
 vi.mock('../../api', async (original) => ({
   ...(await original<typeof import('../../api')>()),
   getSession: requests.getSession,
-  getSessionTraining: requests.getSessionTraining
+  getSessionTraining: requests.getSessionTraining,
+  getStudentDetail: requests.getStudentDetail,
+  listStudents: requests.listStudents
 }))
 
 const session = { user: { id: 'coach' }, access_token: 'test-token' } as Session
@@ -26,7 +30,75 @@ afterEach(() => {
   document.body.innerHTML = ''
   requests.getSession.mockReset()
   requests.getSessionTraining.mockReset()
+  requests.getStudentDetail.mockReset()
+  requests.listStudents.mockReset()
   vi.unstubAllGlobals()
+})
+
+it('starts preloading both neighboring lessons without waiting for Student detail', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  requests.getSession.mockImplementation((_token: string, id: string) =>
+    Promise.resolve({
+      session: {
+        id,
+        studentId: 'student-1',
+        studentName: '學生甲',
+        status: 'scheduled',
+        startsAt: '2026-10-23T01:00:00.000Z',
+        endsAt: '2026-10-23T02:00:00.000Z',
+        version: 1,
+        isLegacy: false
+      },
+      conflicts: [],
+      lessonSummary: null,
+      adjacent:
+        id === 'session-1'
+          ? {
+              previous: { id: 'previous', startsAt: '2026-10-22T01:00:00.000Z' },
+              next: { id: 'next', startsAt: '2026-10-24T01:00:00.000Z' }
+            }
+          : { previous: null, next: null }
+    })
+  )
+  requests.getSessionTraining.mockReturnValue(new Promise(() => undefined))
+  requests.listStudents.mockReturnValue(new Promise(() => undefined))
+  requests.getStudentDetail.mockReturnValue(new Promise(() => undefined))
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter initialEntries={['/sessions/session-1']}>
+            <Routes>
+              <Route
+                path="/sessions/:sessionId"
+                element={<SessionPage session={session} timeZone="Asia/Taipei" />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    )
+    await vi.waitFor(() =>
+      expect(requests.getSession.mock.calls.map((call) => call[1])).toEqual([
+        'session-1',
+        'previous',
+        'next'
+      ])
+    )
+    expect(requests.getSessionTraining.mock.calls.map((call) => call[1])).toEqual([
+      'session-1',
+      'previous',
+      'next'
+    ])
+    expect(requests.getStudentDetail).not.toHaveBeenCalled()
+  } finally {
+    await act(async () => root.unmount())
+    client.clear()
+  }
 })
 
 it('starts session detail and training reads together on the first route render', async () => {

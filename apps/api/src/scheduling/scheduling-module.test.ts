@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SchedulingModule } from './scheduling-module.js'
 import { createBlockSchema, createSessionSchema } from './scheduling.js'
+import type { CourseSession } from './scheduling.js'
 import type {
   NewScheduleSeries,
   NewSession,
@@ -13,6 +14,45 @@ const identity = {
 }
 
 describe('SchedulingModule', () => {
+  it('includes adjacent lessons with Session detail without reading the full Student detail', async () => {
+    const lesson = (id: string, startsAt: string, studentId = 'student-1', status = 'completed') =>
+      ({
+        id,
+        studentId,
+        startsAt,
+        endsAt: '2026-10-22T02:00:00Z',
+        status,
+        isLegacy: false,
+      }) as CourseSession
+    const sessions = [
+      lesson('next', '2026-10-26T01:00:00Z', 'student-1', 'scheduled'),
+      lesson('participant-group', '2026-10-24T01:00:00Z', 'group-1'),
+      lesson('current', '2026-10-22T01:00:00Z'),
+      lesson('cancelled', '2026-10-21T01:00:00Z', 'student-1', 'cancelled'),
+      lesson('previous', '2026-10-19T01:00:00Z'),
+    ]
+    const calls: string[] = []
+    const module = new SchedulingModule({
+      resolveWorkspace: async () => 'workspace-1',
+      getSession: async () => sessions[2],
+      lessonSummary: async () => null,
+      getTimeZone: async () => 'Asia/Taipei',
+      listAvailability: async () => [],
+      getAvailabilityOverride: async () => null,
+      listStudentSessions: async (workspaceId: string, studentId: string) => {
+        calls.push(`${workspaceId}:${studentId}`)
+        return sessions
+      },
+      listSessions: async () => [],
+      listBlocks: async () => [],
+    } as unknown as SchedulingRepository)
+
+    await expect(module.session(identity, 'current')).resolves.toMatchObject({
+      adjacent: { previous: sessions[4], next: sessions[0] },
+    })
+    expect(calls).toEqual(['workspace-1:student-1'])
+  })
+
   it('uses date keys and an override when projecting effective availability', async () => {
     const module = new SchedulingModule({
       resolveWorkspace: async () => 'workspace-1',
