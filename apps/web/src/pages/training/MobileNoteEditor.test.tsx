@@ -206,6 +206,34 @@ describe('mobile note editor', () => {
     host.remove()
   })
 
+  it('retains consecutive native empty paragraphs after noncancelable Returns', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const onChange = vi.fn()
+    await act(async () =>
+      root.render(
+        <MobileNoteEditor
+          value="甲"
+          onChange={onChange}
+          onFocusChange={() => {}}
+          onLimit={() => {}}
+          importItems={[]}
+          focused
+        />
+      )
+    )
+    const editor = host.querySelector<HTMLElement>('.mobile-note-content')!
+    editor.firstElementChild!.innerHTML = '甲<div><br></div><div>乙</div>'
+    await act(async () =>
+      editor.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertParagraph' }))
+    )
+    expect(onChange).toHaveBeenLastCalledWith('甲\n\n乙')
+    await act(async () => root.unmount())
+    host.remove()
+  })
+
   it('edits the visible native paragraph with paste and Backspace after a browser DOM rewrite', async () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
     const host = document.createElement('div')

@@ -26,18 +26,30 @@ function noteNodes(editor: HTMLElement): HTMLDivElement[] {
 
 type NoteCaret = { index: number; offset: number }
 
+function isNativeBlock(node: Node): boolean {
+  return node instanceof HTMLElement && (node.tagName === 'DIV' || node.tagName === 'P')
+}
+
 function nativeText(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? ''
   if (node instanceof HTMLBRElement) return '\n'
   // A lone BR is the browser's placeholder for one empty contenteditable line.
   if (node.childNodes.length === 1 && node.firstChild instanceof HTMLBRElement) return ''
   let text = ''
+  let previous: Node | null = null
+  let previousText = ''
   for (const child of node.childNodes) {
-    if (child instanceof HTMLElement && (child.tagName === 'DIV' || child.tagName === 'P')) {
-      if (text && !text.endsWith('\n')) text += '\n'
-      text += nativeText(child)
-      if (child.nextSibling && !text.endsWith('\n')) text += '\n'
-    } else text += nativeText(child)
+    if (
+      previous &&
+      (isNativeBlock(previous) || isNativeBlock(child)) &&
+      !(previous instanceof HTMLBRElement) &&
+      !previousText.endsWith('\n')
+    )
+      text += '\n'
+    const childText = nativeText(child)
+    text += childText
+    previous = child
+    previousText = childText
   }
   return text
 }
