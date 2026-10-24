@@ -77,6 +77,12 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       const context = await this.lockIssueContext(client, workspaceId, sessionId, input.purpose)
       if (!context) return null
       const resourceVersion = eligibilityVersion(context, input.purpose, now)
+      if (
+        input.purpose === 'training_result' &&
+        input.includeTrainingNote &&
+        !String(context.private_note ?? '').trim()
+      )
+        throw new PublicCapabilityError('note_unavailable', 409)
       await client.query('select pg_advisory_xact_lock(hashtext($1))', [
         `capability:${workspaceId}:${sessionId}:${input.purpose}`,
       ])
@@ -130,6 +136,12 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       )
       if (!context) return null
       const resourceVersion = eligibilityVersion(context, original.purpose, now)
+      if (
+        original.purpose === 'training_result' &&
+        input.includeTrainingNote &&
+        !String(context.private_note ?? '').trim()
+      )
+        throw new PublicCapabilityError('note_unavailable', 409)
       await client.query('select pg_advisory_xact_lock(hashtext($1))', [
         `capability:${workspaceId}:${original.session_id}:${original.purpose}`,
       ])
@@ -250,7 +262,7 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
           .map((person) => String(person.student_id)),
       )
       const result: PublicTrainingResult = {
-        coachDisplayName: String(row.coach_name),
+        coachDisplayName: publicCoachName(row.coach_name),
         studentDisplayName: String(row.student_name),
         ...(row.student_kind === 'group'
           ? {
@@ -294,7 +306,8 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
             })),
         })),
       }
-      if (link.include_training_note) result.trainingNote = String(row.private_note)
+      if (link.include_training_note && String(row.private_note ?? '').trim())
+        result.trainingNote = String(row.private_note)
       return result
     })
   }
@@ -432,7 +445,7 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
         (select coalesce(sum(person.version + p.version),0) from app_private.course_session_participant p
           join app_private.student person on person.workspace_id=p.workspace_id and person.id=p.student_id
           where p.workspace_id=s.workspace_id and p.session_id=s.id) participant_version,
-        tr.id record_id,tr.version record_version
+        tr.id record_id,tr.version record_version,tr.private_note
        from app_private.course_session s
        join app_private.student owner on owner.workspace_id=s.workspace_id and owner.id=s.student_id
        left join app_private.training_record tr
@@ -441,11 +454,13 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       [workspaceId, sessionId],
     )
     const row = session.rows[0]
-    if (row && purpose === 'training_result' && row.record_id)
-      await client.query(
-        'select id from app_private.training_record where workspace_id=$1 and id=$2 for update',
+    if (row && purpose === 'training_result' && row.record_id) {
+      const locked = await client.query(
+        'select private_note from app_private.training_record where workspace_id=$1 and id=$2 for update',
         [workspaceId, row.record_id],
       )
+      row.private_note = locked.rows[0]?.private_note
+    }
     return row
   }
 
@@ -495,7 +510,7 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
       throw new PublicCapabilityError('expired_link', 410)
     const timeZone = String(row.time_zone)
     return {
-      coachDisplayName: String(row.coach_name),
+      coachDisplayName: publicCoachName(row.coach_name),
       studentDisplayName: String(row.student_name),
       timeZone,
       expiresAt: new Date(link.expires_at),
@@ -535,6 +550,11 @@ export class PostgresPublicAccessRepository implements PublicAccessRepository {
 
 function isSerializationFailure(error: unknown): error is { code: string } {
   return Boolean(error && typeof error === 'object' && 'code' in error && error.code === '40001')
+}
+
+export function publicCoachName(value: unknown): string {
+  const name = String(value ?? '').trim()
+  return name && name !== '我的工作台' ? name : '教練'
 }
 
 function trainingResourceVersion(row: Record<string, unknown>) {
@@ -599,7 +619,7 @@ async function usedSummary(client: Queryable, link: LinkRow): Promise<PublicUsed
     [link.workspace_id],
   )
   return {
-    coachDisplayName: String(row.rows[0]?.display_name ?? '教練'),
+    coachDisplayName: publicCoachName(row.rows[0]?.display_name),
     timeZone: String(row.rows[0]?.time_zone ?? 'Asia/Taipei'),
     redeemedStartsAt: new Date(link.redeemed_starts_at!),
   }

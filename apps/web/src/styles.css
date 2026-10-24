@@ -150,6 +150,41 @@
   font-size: 14px;
   line-height: 1.45;
 }
+.public-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px 32px 0;
+}
+.public-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.public-person .group-member-avatar {
+  width: 25px;
+  height: 25px;
+  font-size: 10px;
+}
+.public-person.is-absent {
+  color: var(--text-secondary);
+  background: var(--paper);
+}
+.public-person.is-absent .group-member-avatar {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.public-person small {
+  font-size: 10px;
+  font-weight: 600;
+}
 .public-exercise-list {
   padding: 0 32px;
 }
@@ -202,6 +237,35 @@
 }
 .public-set-measurement.recording {
   grid-column: span 2;
+}
+.public-set.is-group {
+  grid-template-columns: 42px 24px minmax(0, 1fr) 52px 18px;
+  gap: 9px;
+}
+.public-set.is-group .group-member-avatar {
+  width: 23px;
+  height: 23px;
+  font-size: 9px;
+  overflow-wrap: normal;
+}
+.public-set.is-group .group-member-avatar.is-absent {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.public-set.is-group .public-set-measurement,
+.public-set.is-group .public-set-rpe {
+  min-width: 0;
+  white-space: nowrap;
+}
+.public-set.is-group .public-set-measurement {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.public-set.is-group .public-set-measurement.recording {
+  grid-column: auto;
+}
+.public-set.is-group em {
+  justify-self: center;
 }
 .public-set-rpe {
   color: var(--text-secondary);
@@ -475,6 +539,34 @@
   border: 1px solid var(--line);
   border-radius: 12px;
 }
+.capability-note-state {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.capability-note-state strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.capability-note-state.is-error {
+  border-color: rgba(164, 56, 39, 0.34);
+  background: #faf0ed;
+}
+.capability-note-state.is-error strong {
+  color: #9c3929;
+}
+.capability-note-state > button {
+  justify-self: start;
+  min-height: 38px;
+  margin-top: 7px;
+}
+.capability-note-state > button svg {
+  width: 16px;
+  height: 16px;
+}
 .capability-note span {
   display: grid;
   gap: 4px;
@@ -622,6 +714,27 @@
   .public-set {
     grid-template-columns: 42px minmax(0, 1fr) 36px 52px 66px;
     gap: 6px;
+  }
+  .public-participants {
+    padding: 14px 20px 0;
+    gap: 6px;
+  }
+  .public-set.is-group {
+    grid-template-columns: 34px 22px minmax(0, 1fr) 42px 17px;
+    gap: 4px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .public-set.is-group strong:first-child {
+    font-size: 11px;
+  }
+  .public-set.is-group .group-member-avatar {
+    width: 21px;
+    height: 21px;
+    font-size: 8px;
+  }
+  .public-set.is-group .public-set-rpe {
+    font-size: 11px;
   }
   .public-set em {
     justify-self: end;

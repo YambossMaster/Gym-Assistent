@@ -41,7 +41,6 @@ import { CalendarIntegrationPanel } from './CalendarIntegrationPanel'
 import { CoachLocalStore } from '../../local-resilience'
 import { useDialogBehavior } from '../../shared/useDialogBehavior'
 import { MobilePageAppBar } from '../../shared/MobilePageAppBar'
-import { resolveCoachDisplayName } from '../../app-shell/coach-identity'
 import { RequiredFieldLabel } from '../../shared/FormFieldLabel'
 import { HelpPanel } from './HelpPanel'
 import { localBillingEnabled, localBillingServiceEnabled } from '../../config'
@@ -377,7 +376,6 @@ export function SettingsPage({ session }: { session: Session }) {
             <WorkspaceProfile
               state={profileState}
               settings={settingsQuery.data}
-              fallbackEmail={session.user.email}
               refreshFailed={Boolean(settingsQuery.data && settingsQuery.isError)}
               onRetry={() => void settingsQuery.refetch()}
               onNameChange={(displayName) => {
@@ -941,7 +939,6 @@ function TrainingPreferencePanel({ session }: { session: Session }) {
 function WorkspaceProfile({
   state,
   settings,
-  fallbackEmail,
   refreshFailed,
   onRetry,
   onNameChange,
@@ -949,7 +946,6 @@ function WorkspaceProfile({
 }: {
   state: SettingsPanelState
   settings: WorkspaceSettings | undefined
-  fallbackEmail?: string
   refreshFailed: boolean
   onRetry: () => void
   onNameChange: (value: string) => void
@@ -963,7 +959,7 @@ function WorkspaceProfile({
     )
   if (state === 'error' || !settings)
     return <PanelError title="暫時無法讀取教練資料" onRetry={onRetry} />
-  const displayName = resolveCoachDisplayName(settings.displayName, fallbackEmail)
+  const displayName = settings.displayName === '我的工作台' ? '' : settings.displayName
   return (
     <section className="settings-panel workspace-settings-panel">
       {refreshFailed && <RefreshError onRetry={onRetry} />}
@@ -972,12 +968,14 @@ function WorkspaceProfile({
           <strong>
             <RequiredFieldLabel>教練顯示名稱</RequiredFieldLabel>
           </strong>
-          <span>顯示在工作台上的名稱。</span>
+          <span>顯示在工作台與分享頁的名稱。</span>
+          {!displayName ? <span>尚未設定名稱，分享頁會顯示「教練」。</span> : null}
         </div>
         <input
           name="displayName"
           aria-label="教練顯示名稱"
           defaultValue={displayName}
+          placeholder="請輸入教練名稱"
           maxLength={120}
           required
           onBlur={(event) => {

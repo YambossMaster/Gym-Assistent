@@ -183,7 +183,7 @@ export function TrainingWorkspace({
 }: {
   session: Session
   query: UseQueryResult<SessionTraining, Error>
-  headerActions?: ReactNode
+  headerActions?: (beforeShare: () => Promise<void>) => ReactNode
   adjacent?: AdjacentLessons
   onSwitchAdjacent?: SwitchAdjacent
   onAdjacentReady?: (sessionId: string) => void
@@ -476,7 +476,7 @@ function TrainingEditor({
   session: Session
   initial: SessionTraining
   onRefresh: () => Promise<SessionTraining | undefined>
-  headerActions?: ReactNode
+  headerActions?: (beforeShare: () => Promise<void>) => ReactNode
   adjacent?: AdjacentLessons
   onSwitchAdjacent?: SwitchAdjacent
   onAdjacentReady?: (sessionId: string) => void
@@ -897,6 +897,14 @@ function TrainingEditor({
           : '目前內容尚未安全儲存，請先完成同步再切換課堂。'
       )
       setSwitchingSession(false)
+    }
+  }
+  const beforeShare = async () => {
+    if (offline || conflictRef.current || !valid(latest.current))
+      throw new Error('training_not_saved')
+    if (revisionRef.current > 0) {
+      coordinator.change(latest.current, revisionRef.current)
+      await coordinator.drain()
     }
   }
   useEffect(() => {
@@ -1654,7 +1662,7 @@ function TrainingEditor({
           </Link>
         </div>
         <div className="session-top-actions">
-          {headerActions}
+          {headerActions?.(beforeShare)}
           <span
             className={`session-save-status ${saveState}${offline ? ' offline' : ''}`}
             role="status"

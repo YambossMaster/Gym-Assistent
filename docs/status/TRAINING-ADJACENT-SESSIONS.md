@@ -1,6 +1,6 @@
 # Training adjacent sessions — local review
 
-> Owner: `codex/training-adjacent-sessions` in `output/training-adjacent-sessions`; original base `origin/main` at `14fdedb` on 2026-10-24. Branch-local, unpushed. Product Owner approved the final local UI and explicitly authorized merge and deployment on 2026-10-24.
+> Owner: `codex/training-adjacent-sessions` in `output/training-adjacent-sessions`; original base `origin/main` at `14fdedb` on 2026-10-24. Branch-local, unpushed; Main `136018e` has been integrated. Product Owner approved the final local UI and explicitly authorized merge and deployment on 2026-10-24.
 > Scope: Product Owner requested a quick previous/next lesson switch in the Training Record. This is a new post-M11 UI workstream; it does not change the completed M11 gate or Roadmap text.
 
 ## Boundary and contract
@@ -30,6 +30,11 @@
 - Focused tests cover owner-scoped ordering, preload initiation, pending-save switch, save-failure retention, delayed-target transition, editor-lease loading, and cached training fallback after a refresh error. Authenticated desktop and mobile-preview flow was inspected locally. Installed PWA and remote exact-SHA checks remain open pending Product Owner inspection of this local version.
 - Pre-integration impact map: current `origin/main` is `136018e`, three commits ahead of this branch's original base, including Training Result sharing changes in `SessionPage`, `TrainingWorkspace`, `drafts`, public result components, and shared styles. Preserve those new sharing controls, Coach note availability, draft behavior, and the accepted adjacent lesson navigation during integration. API adjacency must remain tenant/owner scoped; no migration was changed. Recheck those direct consumer flows and the 390px/desktop presentation after merging Main.
 
+## Integration gate — 2026-10-24
+
+- Local feature commit `11d00b1` was created after staged formatting passed. Current Main `136018e` was merged into the feature branch; the only content conflict was `TrainingWorkspace`'s `headerActions` callback and nearby save handlers. Resolution preserves Main's `beforeShare` drain and the adjacent switch's `beforeLeave` flush as separate actions. Main's result-sharing UI, note behavior, public projections and styles remain in the merge.
+- API and Web typechecks passed after resolution. Focused API Scheduling Module: 13/13. Focused Web SessionPage, transition, TrainingWorkspace gesture and CapabilityLinkManager suites: 126/126. Authenticated 5173 switched 8/24 → 9/7 with the share action and Coach note still present; 5174 switched 9/21 → 9/7 and retained mobile controls. No migration files changed. Exact-SHA remote CI, Production preview/deployment and installed PWA remain unverified at this point.
+
 ## One Next within this workstream
 
-Product Owner accepted the 5173/5174 version and authorized merge and deployment. Next: commit this scoped work, integrate current Main `136018e` without losing Training Result sharing or adjacent navigation, run the affected local and authenticated browser checks, push a PR, confirm exact-SHA PR CI, merge, then confirm exact-SHA Main CI, Production preview, Fly deployment and public readiness. Keep installed-iPhone PWA validation distinct from responsive browser evidence. No remote action has occurred yet; HEAD is `14fdedb` with the scoped files still unstaged.
+Product Owner accepted the 5173/5174 version and authorized merge and deployment. Next: push this branch, open a PR, confirm exact-SHA PR CI, merge, then confirm exact-SHA Main CI, Production preview, Fly deployment and public readiness. Keep installed-iPhone PWA validation distinct from responsive browser evidence. No remote action has occurred yet.

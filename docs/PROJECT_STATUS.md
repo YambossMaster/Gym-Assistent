@@ -1,10 +1,16 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-23 against deployed application commit
-> `a1d614204cc72234cbba284bb91c33524bbc0503` and the M11 input-completion correction.
+> Integrated Main router, reconciled 2026-10-24 against deployed application commit
+> `eaac9bf7244d439e7f1336d8eafdacabaf4844f3` and the training-result share correction.
 > Main code and confirmed Production deployment are recorded separately below.
 
-## M11 release 79 已部署，補齊完成輸入的時序缺口；實機待驗（2026-10-23）
+## Training result sharing correction deployed (2026-10-24)
+
+After Product Owner UI review and deployment authorization, [PR #106](https://github.com/YambossMaster/Gym-Assistent/pull/106) corrected the public Coach name, group attendance/student identity on the share page and image, compact set rows, and empty-note sharing. The existing image download flow remains. The PR head `f4193dd` passed [PR CI #388](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40073488909); Main `eaac9bf7244d439e7f1336d8eafdacabaf4844f3` passed all five [Main CI #389](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40073769325) jobs and deployed to Fly release 80 with no new migration. Running image `GH_SHA` matches Main, service check passes, and independent `/api/ready`, `/`, `/login` returned 200. The served JS contains the new note message; an invalid public token returned 404 with no-cache/referrer protection. Valid-link live database round-trip and installed-iPhone visual acceptance remain unverified; the original missing note text was absent from the saved record and was not recovered. [Release evidence and scope](status/TRAINING-RESULT-SHARE-CORRECTION.md).
+
+## M11 已依 Product Owner 決定以現況結束（2026-10-24）
+
+Product Owner 確認目前已部署版本可以使用，接受輸入體驗仍不理想，決定停止 M11 修正與重測。release 79 的工程／部署證據保持有效；安裝手機 PWA 的完整群組流程及該版 P04 完成輸入驗收未證實通過，偶發滑動／偏移列為已知限制。這是接受現況的閉案決定，不是宣稱 Bug 已根治。下方 2026-10-23 的「Next」及第 82 行舊交接為歷史紀錄，現已無 M11 待辦；詳見 [M11 Status](status/STUDENT-GROUP.md) 與 [輸入問題紀錄](status/M11-PWA-INPUT-CORRECTION.md)。
 
 Product Owner最新三段12:58–13:03影片：release78選取與操作列位置目前正常，但完成偶發滑動。已重現三類缺口：dock按下／原生blur空窗失去位置保護；非同步fixed origin與offset相加製造移動原點；高度已恢復就提前結束觀測，漏掉晚回復的原點。分別補上手勢守位、session座標系辨識與原點穩定判斷；Next仍使用原定位策略，手動滑動仍可接手，原時間常數／CSS／尾部空間不變。
 

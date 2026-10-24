@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import {
   ApiError,
   issueCapabilityLink,
+  getSessionTraining,
   listCapabilityLinks,
   reissueCapabilityLink,
   revokeCapabilityLink,
@@ -28,12 +29,14 @@ export function CapabilityLinkActions({
   item,
   compactLabels = false,
   initialPurpose = null,
+  onBeforeOpen,
   onClose
 }: {
   session: Session
   item: CalendarSession
   compactLabels?: boolean
   initialPurpose?: CapabilityPurpose | null
+  onBeforeOpen?: () => Promise<void>
   onClose?: () => void
 }) {
   const [purpose, setPurpose] = useState<CapabilityPurpose | null>(
@@ -50,6 +53,8 @@ export function CapabilityLinkActions({
     return value ? { coachId: session.user.id, sessionId: item.id, issued: value } : null
   })
   const rescheduleButton = useRef<HTMLButtonElement>(null)
+  const [opening, setOpening] = useState(false)
+  const [openError, setOpenError] = useState(false)
   useEffect(() => {
     if (!retained) return
     const remaining = Date.parse(retained.issued.link.expiresAt) - Date.now()
@@ -64,10 +69,21 @@ export function CapabilityLinkActions({
     }, remaining)
     return () => window.clearTimeout(timer)
   }, [retained])
-  const open = (nextPurpose: CapabilityPurpose) => {
+  const open = async (nextPurpose: CapabilityPurpose) => {
+    if (opening) return
+    setOpening(true)
+    setOpenError(false)
+    try {
+      if (nextPurpose === 'training_result') await onBeforeOpen?.()
+    } catch {
+      setOpenError(true)
+      setOpening(false)
+      return
+    }
     const value = readCapabilityLink(session.user.id, item.id, nextPurpose)
     setRetained(value ? { coachId: session.user.id, sessionId: item.id, issued: value } : null)
     setPurpose(nextPurpose)
+    setOpening(false)
   }
   const updateIssued = (value: IssuedCapabilityLink | null) => {
     if (value) saveCapabilityLink(session.user.id, item.id, value)
@@ -77,15 +93,20 @@ export function CapabilityLinkActions({
   return (
     <>
       {item.status === 'completed' ? (
-        <button className="secondary-button" onClick={() => open('training_result')}>
-          <Link2 /> {compactLabels ? '分享結果' : '分享訓練結果'}
+        <button
+          className="secondary-button"
+          disabled={opening}
+          onClick={() => void open('training_result')}
+        >
+          <Link2 /> {opening ? '正在儲存課堂紀錄…' : compactLabels ? '分享結果' : '分享訓練結果'}
         </button>
       ) : null}
+      {openError ? <span role="status">訓練紀錄尚未儲存，請確認儲存狀態後再試。</span> : null}
       {item.status === 'scheduled' ? (
         <button
           ref={rescheduleButton}
           className="secondary-button"
-          onClick={() => open('reschedule_session')}
+          onClick={() => void open('reschedule_session')}
         >
           <CalendarLinkIcon /> {compactLabels ? '改期連結' : '建立改期連結'}
         </button>
@@ -143,6 +164,24 @@ function CapabilityLinkDialog({
     queryKey: key,
     queryFn: () => listCapabilityLinks(session.access_token, sessionId)
   })
+  const noteQuery = useQuery({
+    queryKey: ['capability-share-note', session.user.id, sessionId],
+    queryFn: () => getSessionTraining(session.access_token, sessionId),
+    enabled: purpose === 'training_result',
+    retry: false,
+    refetchOnMount: 'always' as const
+  })
+  const noteAvailable = Boolean(noteQuery.data?.record.privateNote.trim())
+  const noteState: 'checking' | 'error' | 'empty' | 'ready' =
+    noteQuery.isPending || noteQuery.isFetching
+      ? 'checking'
+      : noteQuery.isError
+        ? 'error'
+        : noteAvailable
+          ? 'ready'
+          : 'empty'
+  const waitingForNote = purpose === 'training_result' && noteState === 'checking'
+  const shareWithNote = purpose === 'training_result' && noteState === 'ready' && includeNote
   const current = query.data?.find((link) => link.purpose === purpose) ?? null
   const availableIssued =
     current &&
@@ -157,6 +196,9 @@ function CapabilityLinkDialog({
       setIncludeNote(current.includeTrainingNote)
     }
   }, [current?.id, current?.includeTrainingNote, current?.purpose])
+  useEffect(() => {
+    if (noteState === 'empty' || noteState === 'error') setIncludeNote(false)
+  }, [noteState])
   useEffect(() => {
     if (confirmReissue) requestAnimationFrame(() => confirmReissueRef.current?.focus())
   }, [confirmReissue])
@@ -182,7 +224,7 @@ function CapabilityLinkDialog({
     mutationFn: () =>
       issueCapabilityLink(session.access_token, sessionId, {
         purpose,
-        includeTrainingNote: purpose === 'training_result' && includeNote
+        includeTrainingNote: shareWithNote
       }),
     retry: false,
     onSuccess: (value) => {
@@ -195,7 +237,9 @@ function CapabilityLinkDialog({
       setNotice(
         error instanceof ApiError && error.details.error === 'active_link_exists'
           ? '連結已建立，但無法再次顯示。請重新建立連結。'
-          : '暫時無法建立連結，請稍後再試。'
+          : error instanceof ApiError && error.details.error === 'note_unavailable'
+            ? '請先儲存教練筆記。'
+            : '暫時無法建立連結，請稍後再試。'
       )
       void refresh()
     }
@@ -204,7 +248,7 @@ function CapabilityLinkDialog({
     mutationFn: (link: CapabilityLinkMetadata) =>
       reissueCapabilityLink(session.access_token, link.id, {
         version: link.version,
-        includeTrainingNote: purpose === 'training_result' && includeNote
+        includeTrainingNote: shareWithNote
       }),
     retry: false,
     onSuccess: (value) => {
@@ -214,8 +258,12 @@ function CapabilityLinkDialog({
       setNotice('')
       void refresh()
     },
-    onError: () => {
-      setNotice('連結狀態已變更，請重新開啟後再試。')
+    onError: (error) => {
+      setNotice(
+        error instanceof ApiError && error.details.error === 'note_unavailable'
+          ? '請先儲存教練筆記。'
+          : '連結狀態已變更，請重新開啟後再試。'
+      )
       void refresh()
     }
   })
@@ -298,12 +346,12 @@ function CapabilityLinkDialog({
               連結會在 24 小時後失效。只有持有連結的人能查看這項內容。
             </p>
             {purpose === 'training_result' && !current ? (
-              <Checkbox
-                className="capability-note"
+              <TrainingNoteShareOption
+                state={noteState}
                 label="一併分享教練筆記"
-                description="只有這個連結會顯示本堂筆記。"
                 checked={includeNote}
                 onChange={setIncludeNote}
+                onRetry={() => void noteQuery.refetch()}
               />
             ) : null}
             {query.isLoading ? (
@@ -314,6 +362,11 @@ function CapabilityLinkDialog({
               </button>
             ) : null}
             {current ? <LinkMetadata link={current} /> : null}
+            {current?.includeTrainingNote && noteQuery.isSuccess && !noteAvailable ? (
+              <p className="form-notice" role="status">
+                此連結的筆記目前為空。
+              </p>
+            ) : null}
             {notice ? (
               <p className="form-notice" role="status">
                 {notice}
@@ -361,11 +414,12 @@ function CapabilityLinkDialog({
                 <strong>重新建立連結</strong>
                 <p>新連結建立後，先前的網址會立即失效。請將新網址分享給需要的人。</p>
                 {purpose === 'training_result' ? (
-                  <Checkbox
+                  <TrainingNoteShareOption
+                    state={noteState}
                     label="新連結一併分享教練筆記"
-                    description="只有新連結會顯示本堂筆記。"
                     checked={includeNote}
                     onChange={setIncludeNote}
+                    onRetry={() => void noteQuery.refetch()}
                   />
                 ) : null}
                 <div className="capability-reissue-actions">
@@ -382,10 +436,14 @@ function CapabilityLinkDialog({
                   <button
                     ref={confirmReissueRef}
                     className="primary-button"
-                    disabled={pending}
+                    disabled={pending || waitingForNote}
                     onClick={() => reissue.mutate(current)}
                   >
-                    {reissue.isPending ? '處理中…' : '確認重新建立'}
+                    {reissue.isPending
+                      ? '處理中…'
+                      : noteState === 'empty' || noteState === 'error'
+                        ? '確認重新建立（不含筆記）'
+                        : '確認重新建立'}
                   </button>
                 </div>
               </div>
@@ -399,7 +457,7 @@ function CapabilityLinkDialog({
               {!current ? (
                 <button
                   className="primary-button ui-action-add"
-                  disabled={pending || query.isLoading}
+                  disabled={pending || query.isLoading || waitingForNote}
                   onClick={() => issue.mutate()}
                 >
                   {issue.isPending ? (
@@ -407,7 +465,10 @@ function CapabilityLinkDialog({
                   ) : (
                     <>
                       <Plus aria-hidden="true" />
-                      建立連結
+                      {purpose === 'training_result' &&
+                      (noteState === 'empty' || noteState === 'error')
+                        ? '建立連結（不含筆記）'
+                        : '建立連結'}
                     </>
                   )}
                 </button>
@@ -437,6 +498,42 @@ function CapabilityLinkDialog({
       </section>
     </div>,
     document.body
+  )
+}
+
+function TrainingNoteShareOption({
+  state,
+  label,
+  checked,
+  onChange,
+  onRetry
+}: {
+  state: 'checking' | 'error' | 'empty' | 'ready'
+  label: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  onRetry: () => void
+}) {
+  if (state === 'ready')
+    return (
+      <Checkbox className="capability-note" label={label} checked={checked} onChange={onChange} />
+    )
+
+  const title =
+    state === 'checking'
+      ? '正在確認筆記…'
+      : state === 'error'
+        ? '無法確認筆記'
+        : '尚無已儲存的教練筆記'
+  return (
+    <div className={`capability-note-state is-${state}`} role="status" aria-live="polite">
+      <strong>{title}</strong>
+      {state === 'error' ? (
+        <button className="secondary-button" onClick={onRetry}>
+          <RefreshCw aria-hidden="true" /> 重新確認筆記
+        </button>
+      ) : null}
+    </div>
   )
 }
 

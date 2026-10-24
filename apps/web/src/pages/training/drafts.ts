@@ -217,6 +217,9 @@ export class AutosaveCoordinator<T, Prepared = T> {
       })
     return this.inFlight
   }
+  async drain() {
+    while (this.pending) await this.flush()
+  }
   get pending() {
     return Boolean(this.outstanding || (this.latest && this.latest.revision > this.acknowledged))
   }

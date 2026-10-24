@@ -139,6 +139,25 @@ describe('Training autosave coordinator', () => {
     await vi.waitFor(() => expect(send).toHaveBeenCalledWith('b', 2))
     expect(send).toHaveBeenCalledTimes(2)
   })
+  it('waits for the latest note revision before opening a result share', async () => {
+    let releaseFirst!: () => void
+    const first = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+    const sent: string[] = []
+    const autosave = new AutosaveCoordinator<string>(async (value) => {
+      if (value === 'old') await first
+      sent.push(value)
+    }, 0)
+    autosave.change('old', 1)
+    const firstFlush = autosave.flush()
+    autosave.change('latest note', 2)
+    const drain = autosave.drain()
+    releaseFirst()
+    await Promise.all([firstFlush, drain])
+    expect(sent).toEqual(['old', 'latest note'])
+    expect(autosave.pending).toBe(false)
+  })
   it('prepares a queued edit with the latest accepted server version when it is sent', async () => {
     let release!: () => void
     let acceptedVersion = 10

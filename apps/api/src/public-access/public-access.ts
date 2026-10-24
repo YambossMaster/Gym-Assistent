@@ -78,6 +78,7 @@ export type PublicCapabilityReason =
   | 'used_link'
   | 'slot_unavailable'
   | 'active_link_exists'
+  | 'note_unavailable'
   | 'version_conflict'
   | 'not_eligible'
 
