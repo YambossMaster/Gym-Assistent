@@ -1,8 +1,12 @@
 # Gym Assistant project status
 
-> Integrated Main router, reconciled 2026-10-24 against deployed application commit
-> `5ad0d3171174503635ce0e9e9729d9bf56ca7189` and the adjacent-lesson release.
+> Integrated Main router, reconciled 2026-10-25 against deployed application commit
+> `390f0edd18fdedf896ba1fb45bc7e6ba2eb96c94` and Coach-note Return correction.
 > Main code and confirmed Production deployment are recorded separately below.
+
+## Coach-note Return and caret correction deployed (2026-10-25)
+
+After the Product Owner reported intermittent iPhone PWA Return failures and authorized delivery, [PR #112](https://github.com/YambossMaster/Gym-Assistent/pull/112) made native line breaks, empty paragraphs and caret positions consistent in the shared Coach-note editor. PR head `06647bd` passed [CI #400](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40140986815). Main `390f0edd18fdedf896ba1fb45bc7e6ba2eb96c94` passed all five [CI #401](https://github.com/YambossMaster/Gym-Assistent/actions/runs/40141277332) jobs and deployed with no migration to Fly release 83. Running image `GH_SHA` matches Main; service check and independent `/api/ready`, `/`, `/login` pass. Installed-iPhone keyboard replay remains open for the Product Owner; local Chrome and CI cannot prove native PWA behavior. [Release record and repeatable cause checklist](status/TRAINING-NOTE-CARET-CORRECTION.md).
 
 ## Training Coach-note save correction deployed (2026-10-24)
 
