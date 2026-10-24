@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SessionTraining } from '../../api'
+import type { CalendarSession, SessionTraining } from '../../api'
 import { TrainingWorkspace } from './TrainingWorkspace'
 import * as startAnchorExperiment from './exercise-drag-start-anchor'
 import { emptyMeasurements, recordingTypes, type RecordingType } from './recording'
@@ -1413,6 +1413,194 @@ it('shows only the destination Session draft when navigating between Training re
   expect(host.querySelector('[data-exercise-id="destination-exercise"]')).not.toBeNull()
   expect(host.querySelector('[data-exercise-id="one"]')).toBeNull()
   expect(calls.save).not.toHaveBeenCalled()
+})
+
+it('shows only available adjacent lessons and saves a pending edit before switching', async () => {
+  function LocationProbe() {
+    return <output data-testid="current-route">{useLocation().pathname}</output>
+  }
+  await act(async () =>
+    root.render(
+      <MemoryRouter key="adjacent-success" initialEntries={['/sessions/gesture-session']}>
+        <LocationProbe />
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: training, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          adjacent={{
+            previous: {
+              id: 'previous-session',
+              startsAt: '2026-09-19T02:00:00Z'
+            } as CalendarSession,
+            next: null
+          }}
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  expect(host.querySelector('[aria-label^="前次課堂"]')).not.toBeNull()
+  expect(host.querySelector('[aria-label^="下次課堂"]')).toBeNull()
+  const addSetButton = [
+    ...host.querySelectorAll<HTMLButtonElement>('[data-exercise-id="one"] button')
+  ].find((button) => button.textContent?.includes('新增一組'))!
+  await act(async () => addSetButton.click())
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label^="前次課堂"]')!.click())
+  expect(calls.save).toHaveBeenCalled()
+  expect(host.querySelector('[data-testid="current-route"]')?.textContent).toBe(
+    '/sessions/previous-session'
+  )
+})
+
+it('keeps the current lesson visible while the next lesson is prepared', async () => {
+  let releasePreparation: () => void = () => {}
+  const prepared = new Promise<void>((resolve) => {
+    releasePreparation = resolve
+  })
+  function LocationProbe() {
+    return <output data-testid="current-route">{useLocation().pathname}</output>
+  }
+  function SwitchHarness() {
+    const navigate = useNavigate()
+    return (
+      <TrainingWorkspace
+        session={{ user: { id: 'gesture-coach' } } as Session}
+        query={
+          { data: training, isLoading: false, isError: false } as UseQueryResult<
+            SessionTraining,
+            Error
+          >
+        }
+        adjacent={{
+          previous: {
+            id: 'previous-session',
+            startsAt: '2026-09-19T02:00:00Z'
+          } as CalendarSession,
+          next: null
+        }}
+        onSwitchAdjacent={async (target, beforeLeave) => {
+          await beforeLeave?.()
+          await prepared
+          navigate(`/sessions/${target.id}`)
+        }}
+        onBack={() => {}}
+        timeZone="Asia/Taipei"
+      />
+    )
+  }
+  await act(async () =>
+    root.render(
+      <MemoryRouter key="adjacent-preparing" initialEntries={['/sessions/gesture-session']}>
+        <LocationProbe />
+        <SwitchHarness />
+      </MemoryRouter>
+    )
+  )
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label^="前次課堂"]')!.click())
+  expect(host.querySelector('[data-testid="current-route"]')?.textContent).toBe(
+    '/sessions/gesture-session'
+  )
+  expect(host.querySelector<HTMLButtonElement>('[aria-label^="前次課堂"]')?.disabled).toBe(true)
+  expect(host.querySelector('.session-workspace')).not.toBeNull()
+  await act(async () => releasePreparation())
+  expect(host.querySelector('[data-testid="current-route"]')?.textContent).toBe(
+    '/sessions/previous-session'
+  )
+})
+
+it('does not show another-tab ownership text before the editor lease is checked', async () => {
+  await act(async () => root.unmount())
+  root = createRoot(host)
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: training, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  expect(host.textContent).toContain('載入訓練紀錄中')
+  expect(host.textContent).not.toContain('這堂課已在另一個分頁編輯')
+})
+
+it('keeps cached training visible when a background refresh fails', async () => {
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            {
+              data: training,
+              isLoading: false,
+              isError: true,
+              error: new Error('refresh unavailable')
+            } as UseQueryResult<SessionTraining, Error>
+          }
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  expect(host.querySelector('.session-workspace')).not.toBeNull()
+  expect(host.textContent).not.toContain('無法載入訓練紀錄。')
+})
+
+it('keeps the current lesson open when an adjacent switch cannot save', async () => {
+  function LocationProbe() {
+    return <output data-testid="current-route">{useLocation().pathname}</output>
+  }
+  await act(async () =>
+    root.render(
+      <MemoryRouter key="adjacent-failure" initialEntries={['/sessions/gesture-session']}>
+        <LocationProbe />
+        <TrainingWorkspace
+          session={{ user: { id: 'gesture-coach' } } as Session}
+          query={
+            { data: training, isLoading: false, isError: false } as UseQueryResult<
+              SessionTraining,
+              Error
+            >
+          }
+          adjacent={{
+            previous: {
+              id: 'previous-session',
+              startsAt: '2026-09-19T02:00:00Z'
+            } as CalendarSession,
+            next: null
+          }}
+          onBack={() => {}}
+          timeZone="Asia/Taipei"
+        />
+      </MemoryRouter>
+    )
+  )
+  calls.save.mockRejectedValueOnce(new Error('save unavailable'))
+  const addSetButton = [
+    ...host.querySelectorAll<HTMLButtonElement>('[data-exercise-id="one"] button')
+  ].find((button) => button.textContent?.includes('新增一組'))!
+  await act(async () => addSetButton.click())
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label^="前次課堂"]')!.click())
+  expect(host.querySelector('[data-testid="current-route"]')?.textContent).toBe(
+    '/sessions/gesture-session'
+  )
+  expect(host.textContent).toContain('目前內容尚未安全儲存')
 })
 
 it('keeps a pending edit bound to its source Session during navigation', async () => {

@@ -663,6 +663,7 @@ export async function getSession(accessToken: string, sessionId: string) {
     session: CalendarProjection['sessions'][number]['session']
     lessonSummary: StudentDetail['lessonSummary'] | null
     conflicts: CalendarProjection['sessions'][number]['conflicts']
+    adjacent: { previous: CalendarSession | null; next: CalendarSession | null }
   }>(`/api/v1/sessions/${sessionId}`, accessToken)
 }
 

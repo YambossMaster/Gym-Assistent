@@ -66,6 +66,7 @@ import {
   ApiError,
   getExerciseLibrary,
   type ExerciseDefinition,
+  type CalendarSession,
   type SessionTraining,
   type TrainingDraftPayload,
   type TrainingSet
@@ -100,6 +101,66 @@ import {
 } from '../../local-resilience'
 
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'retrying' | 'conflict'
+type AdjacentLessons = { previous: CalendarSession | null; next: CalendarSession | null }
+type SwitchAdjacent = (target: CalendarSession, beforeLeave?: () => Promise<void>) => Promise<void>
+
+function AdjacentLessonNavigation({
+  adjacent,
+  timeZone,
+  onSelect,
+  disabled = false
+}: {
+  adjacent?: AdjacentLessons
+  timeZone: string
+  onSelect: (sessionId: string) => void
+  disabled?: boolean
+}) {
+  if (!adjacent?.previous && !adjacent?.next) return null
+  return (
+    <nav className="session-adjacent" aria-label="切換課堂">
+      <span className="session-adjacent-slot previous">
+        {adjacent.previous && (
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={`前次課堂，${formatAdjacentLessonTime(adjacent.previous.startsAt!, timeZone)}`}
+            title="前次課堂"
+            onClick={() => onSelect(adjacent.previous!.id)}
+          >
+            <ChevronLeft aria-hidden="true" />
+            <span className="session-adjacent-desktop">
+              <span>前次課堂</span>
+              <time dateTime={adjacent.previous.startsAt!}>
+                {formatAdjacentLessonTime(adjacent.previous.startsAt!, timeZone)}
+              </time>
+            </span>
+            <span className="session-adjacent-mobile">前次課堂</span>
+          </button>
+        )}
+      </span>
+      <span className="session-adjacent-slot next">
+        {adjacent.next && (
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={`下次課堂，${formatAdjacentLessonTime(adjacent.next.startsAt!, timeZone)}`}
+            title="下次課堂"
+            onClick={() => onSelect(adjacent.next!.id)}
+          >
+            <span className="session-adjacent-desktop">
+              <span>下次課堂</span>
+              <time dateTime={adjacent.next.startsAt!}>
+                {formatAdjacentLessonTime(adjacent.next.startsAt!, timeZone)}
+              </time>
+            </span>
+            <span className="session-adjacent-mobile">下次課堂</span>
+            <ChevronRight aria-hidden="true" />
+          </button>
+        )}
+      </span>
+    </nav>
+  )
+}
 type DragLayout = {
   compactHeight: number
   leading: number
@@ -113,6 +174,9 @@ export function TrainingWorkspace({
   session,
   query,
   headerActions,
+  adjacent,
+  onSwitchAdjacent,
+  onAdjacentReady,
   onBack,
   sessionNotice,
   timeZone
@@ -120,13 +184,16 @@ export function TrainingWorkspace({
   session: Session
   query: UseQueryResult<SessionTraining, Error>
   headerActions?: ReactNode
+  adjacent?: AdjacentLessons
+  onSwitchAdjacent?: SwitchAdjacent
+  onAdjacentReady?: (sessionId: string) => void
   onBack: () => void
   sessionNotice?: string
   timeZone: string
 }) {
   const access = usePlanAccess(session)
   if (query.isLoading) return <TrainingLoading />
-  if (query.isError || !query.data)
+  if (!query.data)
     return (
       <section className="training-workspace empty-state">
         <h2>
@@ -153,7 +220,16 @@ export function TrainingWorkspace({
   )
     return <PlanUpsellDialog title="學生群組" onClose={onBack} />
   if (query.data.session.studentKind === 'group' && access.data?.tier === 'free')
-    return <GroupTrainingHistory training={query.data} onBack={onBack} timeZone={timeZone} />
+    return (
+      <GroupTrainingHistory
+        training={query.data}
+        adjacent={adjacent}
+        onSwitchAdjacent={onSwitchAdjacent}
+        onAdjacentReady={onAdjacentReady}
+        onBack={onBack}
+        timeZone={timeZone}
+      />
+    )
   return (
     <ExclusiveTrainingEditor
       key={`${session.user.id}:${query.data.session.id}`}
@@ -161,6 +237,9 @@ export function TrainingWorkspace({
       initial={query.data}
       onRefresh={async () => (await query.refetch()).data}
       headerActions={headerActions}
+      adjacent={adjacent}
+      onSwitchAdjacent={onSwitchAdjacent}
+      onAdjacentReady={onAdjacentReady}
       onBack={onBack}
       sessionNotice={sessionNotice}
       timeZone={timeZone}
@@ -170,19 +249,48 @@ export function TrainingWorkspace({
 
 function GroupTrainingHistory({
   training,
+  adjacent,
+  onSwitchAdjacent,
+  onAdjacentReady,
   onBack,
   timeZone
 }: {
   training: SessionTraining
+  adjacent?: AdjacentLessons
+  onSwitchAdjacent?: SwitchAdjacent
+  onAdjacentReady?: (sessionId: string) => void
   onBack: () => void
   timeZone: string
 }) {
+  const navigate = useNavigate()
+  const [switching, setSwitching] = useState(false)
+  const [notice, setNotice] = useState('')
+  useEffect(() => onAdjacentReady?.(training.session.id), [onAdjacentReady, training.session.id])
+  const switchToSession = async (sessionId: string) => {
+    if (switching) return
+    const target = [adjacent?.previous, adjacent?.next].find((item) => item?.id === sessionId)
+    if (!target) return
+    setSwitching(true)
+    try {
+      if (onSwitchAdjacent) await onSwitchAdjacent(target)
+      else navigate(`/sessions/${sessionId}`)
+    } catch {
+      setNotice('另一堂課暫時無法載入，目前課堂沒有變更。')
+      setSwitching(false)
+    }
+  }
   return (
     <section className="training-workspace group-training-history">
       <button type="button" className="secondary-button compact" onClick={onBack}>
         返回
       </button>
       <header>
+        <AdjacentLessonNavigation
+          adjacent={adjacent}
+          timeZone={timeZone}
+          disabled={switching}
+          onSelect={(sessionId) => void switchToSession(sessionId)}
+        />
         <span className="eyebrow dark">TRAINING LOG</span>
         <h1>訓練紀錄</h1>
         <p>
@@ -190,6 +298,11 @@ function GroupTrainingHistory({
         </p>
         <p>群組已封存，過去紀錄可查看。</p>
       </header>
+      {notice && (
+        <p className="form-notice" role="status">
+          {notice}
+        </p>
+      )}
       {training.record.exercises.map((exercise) => (
         <article className="group-training-history-card" key={exercise.id}>
           <h2>{exercise.definitionName}</h2>
@@ -257,10 +370,13 @@ export function TrainingLoading() {
 }
 
 function ExclusiveTrainingEditor(props: Parameters<typeof TrainingEditor>[0]) {
-  const [ownsEditor, setOwnsEditor] = useState(false)
+  const [ownsEditor, setOwnsEditor] = useState<boolean | null>(null)
   const refreshRef = useRef(props.onRefresh)
   const ownerId = useRef(crypto.randomUUID())
   refreshRef.current = props.onRefresh
+  useEffect(() => {
+    if (ownsEditor === false) props.onAdjacentReady?.(props.initial.session.id)
+  }, [ownsEditor, props.initial.session.id, props.onAdjacentReady])
   useEffect(() => {
     let cancelled = false,
       waited = false
@@ -322,6 +438,7 @@ function ExclusiveTrainingEditor(props: Parameters<typeof TrainingEditor>[0]) {
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [props.initial.session.id, props.session.user.id])
+  if (ownsEditor === null) return <TrainingLoading />
   if (!ownsEditor)
     return (
       <section className="training-workspace training-loading" aria-live="polite">
@@ -349,6 +466,9 @@ function TrainingEditor({
   initial,
   onRefresh,
   headerActions,
+  adjacent,
+  onSwitchAdjacent,
+  onAdjacentReady,
   onBack,
   sessionNotice,
   timeZone
@@ -357,6 +477,9 @@ function TrainingEditor({
   initial: SessionTraining
   onRefresh: () => Promise<SessionTraining | undefined>
   headerActions?: ReactNode
+  adjacent?: AdjacentLessons
+  onSwitchAdjacent?: SwitchAdjacent
+  onAdjacentReady?: (sessionId: string) => void
   onBack: () => void
   sessionNotice?: string
   timeZone: string
@@ -370,6 +493,7 @@ function TrainingEditor({
   const [draft, setDraft] = useState(() => toDraft(initial)),
     [revision, setRevision] = useState(0),
     [saveState, setSaveState] = useState<SaveState>('idle'),
+    [switchingSession, setSwitchingSession] = useState(false),
     [conflictReason, setConflictReason] = useState<string>('version_conflict'),
     [adoptingConflict, setAdoptingConflict] = useState(false),
     [mobileTab, setMobileTab] = useState<'training' | 'note'>('training'),
@@ -424,6 +548,7 @@ function TrainingEditor({
     setConfirmation(null)
   }
   useEffect(() => () => confirmationResult.current?.(false), [])
+  useEffect(() => onAdjacentReady?.(initial.session.id), [initial.session.id, onAdjacentReady])
   useEffect(() => {
     if (plan.data?.tier === 'free') setTrendId(null)
   }, [plan.data?.tier])
@@ -742,6 +867,37 @@ function TrainingEditor({
     setDraft(next)
     setRevision(revisionRef.current)
     setSaveState('pending')
+  }
+  const switchToSession = async (sessionId: string) => {
+    if (switchingSession) return
+    const target = [adjacent?.previous, adjacent?.next].find((item) => item?.id === sessionId)
+    if (!target) return
+    if (offline || storageError || ['error', 'retrying', 'conflict'].includes(saveState)) {
+      setNotice('目前內容尚未安全儲存，請先完成同步再切換課堂。')
+      return
+    }
+    setSwitchingSession(true)
+    let saved = false
+    try {
+      const beforeLeave = async () => {
+        await coordinator.flush()
+        if (coordinator.pending) await coordinator.flush()
+        if (coordinator.pending) throw new Error('training_save_pending')
+        saved = true
+      }
+      if (onSwitchAdjacent) await onSwitchAdjacent(target, beforeLeave)
+      else {
+        await beforeLeave()
+        navigate(`/sessions/${sessionId}`)
+      }
+    } catch {
+      setNotice(
+        saved
+          ? '另一堂課暫時無法載入，目前課堂沒有變更。'
+          : '目前內容尚未安全儲存，請先完成同步再切換課堂。'
+      )
+      setSwitchingSession(false)
+    }
   }
   useEffect(() => {
     if (!noteFocused) return
@@ -1476,19 +1632,27 @@ function TrainingEditor({
           <ChevronLeft />
           返回
         </button>
-        <Link
-          className="session-title"
-          to={`/students/${initial.session.studentId}`}
-          aria-label={`前往${initial.session.studentName}的學生頁面`}
-        >
-          <span className="mini-avatar">{initial.session.studentName.slice(-2)}</span>
-          <span>
-            <strong>{initial.session.studentName}</strong>
-            <small className="session-title-date">
-              {formatSessionRange(initial.session.startsAt, initial.session.endsAt, timeZone)}
-            </small>
-          </span>
-        </Link>
+        <div className="session-title-cluster">
+          <AdjacentLessonNavigation
+            adjacent={adjacent}
+            timeZone={timeZone}
+            disabled={switchingSession}
+            onSelect={(sessionId) => void switchToSession(sessionId)}
+          />
+          <Link
+            className="session-title"
+            to={`/students/${initial.session.studentId}`}
+            aria-label={`前往${initial.session.studentName}的學生頁面`}
+          >
+            <span className="mini-avatar">{initial.session.studentName.slice(-2)}</span>
+            <span>
+              <strong>{initial.session.studentName}</strong>
+              <small className="session-title-date">
+                {formatSessionRange(initial.session.startsAt, initial.session.endsAt, timeZone)}
+              </small>
+            </span>
+          </Link>
+        </div>
         <div className="session-top-actions">
           {headerActions}
           <span
@@ -3316,6 +3480,21 @@ function formatSessionDate(startsAt: string, timeZone: string) {
     timeZone
   }).format(new Date(startsAt))
   return addWeekdaySpace(date)
+}
+
+export function formatAdjacentLessonTime(startsAt: string, timeZone: string) {
+  const date = new Intl.DateTimeFormat('zh-TW', {
+    month: 'numeric',
+    day: 'numeric',
+    timeZone
+  }).format(new Date(startsAt))
+  const time = new Intl.DateTimeFormat('zh-TW', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone
+  }).format(new Date(startsAt))
+  return `${date} · ${time}`
 }
 
 function addWeekdaySpace(value: string) {

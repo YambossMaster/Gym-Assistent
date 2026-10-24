@@ -154,12 +154,40 @@ export class SchedulingModule {
     const workspaceId = await this.repository.resolveWorkspace(identity)
     const session = await this.repository.getSession(workspaceId, sessionId)
     if (!session) return null
-    if (session.isLegacy) return { session, lessonSummary: null, conflicts: [] }
-    const [lessonSummary, result] = await Promise.all([
+    if (session.isLegacy)
+      return {
+        session,
+        lessonSummary: null,
+        conflicts: [],
+        adjacent: { previous: null, next: null },
+      }
+    const [lessonSummary, result, sessions] = await Promise.all([
       this.repository.lessonSummary(workspaceId, session.studentId),
       this.withConflicts(workspaceId, session),
+      this.repository.listStudentSessions(workspaceId, session.studentId),
     ])
-    return { ...result, lessonSummary }
+    const ordered = sessions
+      .filter(
+        (item) =>
+          item.studentId === session.studentId &&
+          !item.isLegacy &&
+          item.status !== 'cancelled' &&
+          item.startsAt,
+      )
+      .sort((a, b) =>
+        a.startsAt === b.startsAt
+          ? a.id.localeCompare(b.id)
+          : a.startsAt!.localeCompare(b.startsAt!),
+      )
+    const index = ordered.findIndex((item) => item.id === sessionId)
+    return {
+      ...result,
+      lessonSummary,
+      adjacent: {
+        previous: index > 0 ? ordered[index - 1]! : null,
+        next: index >= 0 ? (ordered[index + 1] ?? null) : null,
+      },
+    }
   }
   async studentSchedule(identity: AuthenticatedIdentity, studentId: string) {
     const workspaceId = await this.repository.resolveWorkspace(identity)
